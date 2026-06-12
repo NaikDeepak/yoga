@@ -56,6 +56,27 @@ describe('updatePatientAction', () => {
     expect(r).toEqual({ ok: true });
     expect((await getPatient(db, p.id))?.weightKg).toBe(68);
   });
+  it('returns validation error without updating', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    expect(await updatePatientAction(p.id, fd({ fullName: '', mobile: '12' }))).toMatchObject({ ok: false });
+    expect((await getPatient(db, p.id))?.fullName).toBe('Asha');
+  });
+  it('replaces photo when provided', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const photo = new File([new Uint8Array([9])], 'new.png', { type: 'image/png' });
+    expect(await updatePatientAction(p.id, fd({ fullName: 'Asha', mobile: '9876543210', photo })))
+      .toEqual({ ok: true });
+    const updated = await getPatient(db, p.id);
+    expect(updated?.photoPath).toContain(`patients/${p.id}/`);
+    expect(storage.files.has(updated!.photoPath!)).toBe(true);
+  });
+  it('rejects bad photo type without updating', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const photo = new File([new Uint8Array([9])], 'x.pdf', { type: 'application/pdf' });
+    expect(await updatePatientAction(p.id, fd({ fullName: 'Changed', mobile: '9876543210', photo })))
+      .toMatchObject({ ok: false });
+    expect((await getPatient(db, p.id))?.fullName).toBe('Asha');
+  });
 });
 
 describe('problems / treatment / visits actions', () => {
