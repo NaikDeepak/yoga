@@ -74,7 +74,7 @@ tests/
 
 **Files:** Create: `package.json`, `tsconfig.json`, `next.config.ts`, `postcss.config.mjs`, `vitest.config.ts`, `.env.example`, `.gitignore`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/page.tsx`, `tests/smoke.test.ts`, initial `CLAUDE.md`
 
-- [ ] **Step 1: Write config files**
+- [x] **Step 1: Write config files**
 
 `package.json`:
 ```json
@@ -198,7 +198,7 @@ export default function Home() {
 }
 ```
 
-- [ ] **Step 2: Write smoke test** — `tests/smoke.test.ts`:
+- [x] **Step 2: Write smoke test** — `tests/smoke.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 describe('test runner', () => {
@@ -206,9 +206,9 @@ describe('test runner', () => {
 });
 ```
 
-- [ ] **Step 3: Run** `npm test` — Expected: 1 passed.
+- [x] **Step 3: Run** `npm test` — Expected: 1 passed.
 
-- [ ] **Step 4: Write initial `CLAUDE.md`** (finalized in Task 15):
+- [x] **Step 4: Write initial `CLAUDE.md`** (finalized in Task 15):
 ```markdown
 # Pawar Yoga Therapy — Patient Management
 
@@ -227,7 +227,7 @@ Phase 1 MVP per `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase
 - Tests use in-memory PGlite (`tests/helpers/db.ts`), never a real Supabase DB.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add -A && git commit -m "chore: scaffold Next.js app with vitest, tailwind, drizzle tooling"
 ```
@@ -238,7 +238,7 @@ git add -A && git commit -m "chore: scaffold Next.js app with vitest, tailwind, 
 
 **Files:** Create: `src/db/schema.ts`, `src/db/types.ts`, `src/db/client.ts`, `drizzle.config.ts`, `tests/helpers/db.ts` — Test: `tests/data/schema.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/data/schema.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/data/schema.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 import { createTestDb } from '../helpers/db';
@@ -276,9 +276,9 @@ describe('schema', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/data/schema.test.ts` — Expected: FAIL (cannot resolve `@/db/schema`).
+- [x] **Step 2: Run** `npx vitest run tests/data/schema.test.ts` — Expected: FAIL (cannot resolve `@/db/schema`).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/db/schema.ts`:
 ```ts
@@ -416,9 +416,9 @@ export async function createTestDb(): Promise<Db> {
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/data/schema.test.ts` — Expected: 3 passed.
+- [x] **Step 4: Run** `npx vitest run tests/data/schema.test.ts` — Expected: 3 passed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add -A && git commit -m "feat: drizzle schema, migrations, pglite test harness"
 ```
@@ -429,7 +429,7 @@ git add -A && git commit -m "feat: drizzle schema, migrations, pglite test harne
 
 **Files:** Create: `src/lib/bmi.ts` — Test: `tests/lib/bmi.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/lib/bmi.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/lib/bmi.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
@@ -459,9 +459,9 @@ describe('bmiCategory', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/lib/bmi.test.ts` — Expected: FAIL (module not found).
+- [x] **Step 2: Run** `npx vitest run tests/lib/bmi.test.ts` — Expected: FAIL (module not found).
 
-- [ ] **Step 3: Implement** — `src/lib/bmi.ts`:
+- [x] **Step 3: Implement** — `src/lib/bmi.ts`:
 ```ts
 export function computeBmi(
   weightKg: number | undefined | null,
@@ -481,9 +481,9 @@ export function bmiCategory(bmi: number): string {
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/lib/bmi.test.ts` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/lib/bmi.test.ts` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: BMI computation and category"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: BMI computation and category"`
 
 ---
 
@@ -491,7 +491,7 @@ export function bmiCategory(bmi: number): string {
 
 **Files:** Create: `src/lib/patient-code.ts` — Test: `tests/lib/patient-code.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/lib/patient-code.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/lib/patient-code.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 import { formatPatientCode, nextPatientCode } from '@/lib/patient-code';
@@ -520,9 +520,9 @@ describe('nextPatientCode', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/lib/patient-code.test.ts` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/lib/patient-code.test.ts` — Expected: FAIL.
 
-- [ ] **Step 3: Implement** — `src/lib/patient-code.ts`:
+- [x] **Step 3: Implement** — `src/lib/patient-code.ts`:
 ```ts
 const PREFIX = 'PYT-';
 
@@ -537,9 +537,9 @@ export function nextPatientCode(lastCode: string | null): string {
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/lib/patient-code.test.ts` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/lib/patient-code.test.ts` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: patient code generation"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: patient code generation"`
 
 ---
 
@@ -547,7 +547,7 @@ export function nextPatientCode(lastCode: string | null): string {
 
 **Files:** Create: `src/lib/presets.ts`, `src/lib/files.ts` — Test: `tests/lib/files.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/lib/files.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/lib/files.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 import { validateUpload, validatePhoto, MAX_FILE_BYTES } from '@/lib/files';
@@ -581,9 +581,9 @@ describe('validatePhoto', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/lib/files.test.ts` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/lib/files.test.ts` — Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/lib/presets.ts`:
 ```ts
@@ -619,9 +619,9 @@ export function validatePhoto(file: FileLike): string | null {
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/lib/files.test.ts` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/lib/files.test.ts` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: ailment/doc-type presets and upload validation"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: ailment/doc-type presets and upload validation"`
 
 ---
 
@@ -629,7 +629,7 @@ export function validatePhoto(file: FileLike): string | null {
 
 **Files:** Create: `src/lib/validation.ts` — Test: `tests/lib/validation.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/lib/validation.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/lib/validation.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 import {
@@ -692,9 +692,9 @@ describe('docTypeSchema', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/lib/validation.test.ts` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/lib/validation.test.ts` — Expected: FAIL.
 
-- [ ] **Step 3: Implement** — `src/lib/validation.ts`:
+- [x] **Step 3: Implement** — `src/lib/validation.ts`:
 ```ts
 import { z } from 'zod';
 import { DOC_TYPES } from './presets';
@@ -750,9 +750,9 @@ export function firstError(error: z.ZodError): string {
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/lib/validation.test.ts` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/lib/validation.test.ts` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: zod validation schemas for all forms"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: zod validation schemas for all forms"`
 
 ---
 
@@ -760,7 +760,7 @@ export function firstError(error: z.ZodError): string {
 
 **Files:** Create: `src/data/patients.ts` — Test: `tests/data/patients.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/data/patients.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/data/patients.test.ts`:
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
@@ -813,9 +813,9 @@ describe('searchPatients', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/data/patients.test.ts` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/data/patients.test.ts` — Expected: FAIL.
 
-- [ ] **Step 3: Implement** — `src/data/patients.ts`:
+- [x] **Step 3: Implement** — `src/data/patients.ts`:
 ```ts
 import { desc, eq, ilike, or } from 'drizzle-orm';
 import { patients, type Patient } from '@/db/schema';
@@ -860,9 +860,9 @@ export async function searchPatients(db: Db, q?: string): Promise<Patient[]> {
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/data/patients.test.ts` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/data/patients.test.ts` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: patients repository with sequential codes and search"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: patients repository with sequential codes and search"`
 
 ---
 
@@ -870,7 +870,7 @@ export async function searchPatients(db: Db, q?: string): Promise<Patient[]> {
 
 **Files:** Create: `src/data/problems.ts`, `src/data/treatment.ts`, `src/data/visits.ts` — Test: `tests/data/clinical.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/data/clinical.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/data/clinical.test.ts`:
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
@@ -926,9 +926,9 @@ describe('visits', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/data/clinical.test.ts` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/data/clinical.test.ts` — Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/data/problems.ts`:
 ```ts
@@ -1005,9 +1005,9 @@ export async function listVisits(db: Db, patientId: string): Promise<Visit[]> {
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/data/clinical.test.ts` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/data/clinical.test.ts` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: problems, treatment plan, visits repositories"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: problems, treatment plan, visits repositories"`
 
 ---
 
@@ -1015,7 +1015,7 @@ export async function listVisits(db: Db, patientId: string): Promise<Visit[]> {
 
 **Files:** Create: `src/lib/storage.ts`, `src/data/documents.ts`, `tests/helpers/fake-storage.ts` — Test: `tests/data/documents.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/helpers/fake-storage.ts`:
 ```ts
@@ -1087,9 +1087,9 @@ describe('listDocuments / deleteDocument', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/data/documents.test.ts` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/data/documents.test.ts` — Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/lib/storage.ts`:
 ```ts
@@ -1180,9 +1180,9 @@ export async function deleteDocument(db: Db, storage: FileStorage, id: string): 
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/data/documents.test.ts` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/data/documents.test.ts` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: file storage interface and documents repository with orphan prevention"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: file storage interface and documents repository with orphan prevention"`
 
 ---
 
@@ -1190,7 +1190,7 @@ export async function deleteDocument(db: Db, storage: FileStorage, id: string): 
 
 **Files:** Create: `src/lib/auth-paths.ts`, `src/lib/supabase/server.ts`, `src/lib/supabase/middleware.ts`, `src/lib/auth.ts`, `middleware.ts`, `src/actions/auth.ts`, `src/app/login/page.tsx` — Test: `tests/lib/auth-paths.test.ts`
 
-- [ ] **Step 1: Write the failing test** — `tests/lib/auth-paths.test.ts`:
+- [x] **Step 1: Write the failing test** — `tests/lib/auth-paths.test.ts`:
 ```ts
 import { describe, it, expect } from 'vitest';
 import { isPublicPath } from '@/lib/auth-paths';
@@ -1209,9 +1209,9 @@ describe('isPublicPath', () => {
 });
 ```
 
-- [ ] **Step 2: Run** `npx vitest run tests/lib/auth-paths.test.ts` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/lib/auth-paths.test.ts` — Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/lib/auth-paths.ts`:
 ```ts
@@ -1374,9 +1374,9 @@ export default async function LoginPage({
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/lib/auth-paths.test.ts && npm run typecheck` — Expected: PASS, no type errors.
+- [x] **Step 4: Run** `npx vitest run tests/lib/auth-paths.test.ts && npm run typecheck` — Expected: PASS, no type errors.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: supabase auth, middleware gate, login page"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: supabase auth, middleware gate, login page"`
 
 ---
 
@@ -1386,7 +1386,7 @@ export default async function LoginPage({
 
 All actions: `requireUser()` → validate with zod → call repository → `revalidatePath` → return `{ ok: true }` or `{ ok: false, error }`. Create-patient redirects on success.
 
-- [ ] **Step 1: Write mocks helper** — `tests/helpers/action-mocks.ts`:
+- [x] **Step 1: Write mocks helper** — `tests/helpers/action-mocks.ts`:
 ```ts
 import { vi } from 'vitest';
 import { createTestDb } from './db';
@@ -1414,7 +1414,7 @@ vi.mock('next/navigation', () => ({
 }));
 ```
 
-- [ ] **Step 2: Write the failing test** — `tests/actions/actions.test.ts`:
+- [x] **Step 2: Write the failing test** — `tests/actions/actions.test.ts`:
 ```ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../helpers/action-mocks';
@@ -1513,9 +1513,9 @@ describe('documents actions', () => {
 });
 ```
 
-- [ ] **Step 3: Run** `npx vitest run tests/actions/actions.test.ts` — Expected: FAIL.
+- [x] **Step 3: Run** `npx vitest run tests/actions/actions.test.ts` — Expected: FAIL.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `src/actions/patients.ts`:
 ```ts
@@ -1689,9 +1689,9 @@ export async function addVisitAction(patientId: string, formData: FormData): Pro
 }
 ```
 
-- [ ] **Step 5: Run** `npx vitest run tests/actions/actions.test.ts` — Expected: all PASS.
+- [x] **Step 5: Run** `npx vitest run tests/actions/actions.test.ts` — Expected: all PASS.
 
-- [ ] **Step 6: Commit** — `git add -A && git commit -m "feat: server actions for patients, problems, documents, treatment, visits"`
+- [x] **Step 6: Commit** — `git add -A && git commit -m "feat: server actions for patients, problems, documents, treatment, visits"`
 
 ---
 
@@ -1699,7 +1699,7 @@ export async function addVisitAction(patientId: string, formData: FormData): Pro
 
 **Files:** Create: `src/components/PatientForm.tsx`, `src/app/(app)/layout.tsx`, `src/app/(app)/patients/page.tsx`, `src/app/(app)/patients/new/page.tsx`, `src/app/(app)/patients/[id]/edit/page.tsx` — Test: `tests/components/patient-form.test.tsx`
 
-- [ ] **Step 1: Write the failing component test** — `tests/components/patient-form.test.tsx`:
+- [x] **Step 1: Write the failing component test** — `tests/components/patient-form.test.tsx`:
 ```tsx
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
@@ -1724,9 +1724,9 @@ describe('PatientForm live BMI', () => {
 ```
 (Needs `@testing-library/jest-dom`: add `npm install -D @testing-library/jest-dom` and a `tests/setup.ts` with `import '@testing-library/jest-dom/vitest';`, registered in `vitest.config.ts` via `test.setupFiles: ['tests/setup.ts']`.)
 
-- [ ] **Step 2: Run** `npx vitest run tests/components/patient-form.test.tsx` — Expected: FAIL.
+- [x] **Step 2: Run** `npx vitest run tests/components/patient-form.test.tsx` — Expected: FAIL.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `src/components/PatientForm.tsx`:
 ```tsx
@@ -1937,9 +1937,9 @@ export default async function EditPatientPage({
 }
 ```
 
-- [ ] **Step 4: Run** `npx vitest run tests/components/patient-form.test.tsx && npm run typecheck` — Expected: PASS.
+- [x] **Step 4: Run** `npx vitest run tests/components/patient-form.test.tsx && npm run typecheck` — Expected: PASS.
 
-- [ ] **Step 5: Commit** — `git add -A && git commit -m "feat: patient form with live BMI, list page, app layout"`
+- [x] **Step 5: Commit** — `git add -A && git commit -m "feat: patient form with live BMI, list page, app layout"`
 
 ---
 
@@ -1947,7 +1947,7 @@ export default async function EditPatientPage({
 
 **Files:** Create: `src/app/(app)/patients/[id]/page.tsx`, `src/components/DeleteButton.tsx`, `src/components/InlineForm.tsx`
 
-- [ ] **Step 1: Implement client helpers**
+- [x] **Step 1: Implement client helpers**
 
 `src/components/DeleteButton.tsx`:
 ```tsx
@@ -2000,7 +2000,7 @@ export function InlineForm({
 }
 ```
 
-- [ ] **Step 2: Implement detail page** — `src/app/(app)/patients/[id]/page.tsx`:
+- [x] **Step 2: Implement detail page** — `src/app/(app)/patients/[id]/page.tsx`:
 ```tsx
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -2250,9 +2250,9 @@ async function Treatment({ patientId }: { patientId: string }) {
 }
 ```
 
-- [ ] **Step 3: Verify** `npm run typecheck && npm test` — Expected: clean, all tests pass.
+- [x] **Step 3: Verify** `npm run typecheck && npm test` — Expected: clean, all tests pass.
 
-- [ ] **Step 4: Commit** — `git add -A && git commit -m "feat: patient detail page with overview, problems, documents, treatment tabs"`
+- [x] **Step 4: Commit** — `git add -A && git commit -m "feat: patient detail page with overview, problems, documents, treatment tabs"`
 
 ---
 
@@ -2260,7 +2260,7 @@ async function Treatment({ patientId }: { patientId: string }) {
 
 **Files:** Create: `src/app/(app)/patients/[id]/print/page.tsx`, `src/components/PrintButton.tsx`
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 `src/components/PrintButton.tsx`:
 ```tsx
@@ -2388,9 +2388,9 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
 }
 ```
 
-- [ ] **Step 2: Verify** `npm run typecheck` — Expected: clean.
+- [x] **Step 2: Verify** `npm run typecheck` — Expected: clean.
 
-- [ ] **Step 3: Commit** — `git add -A && git commit -m "feat: print view for patient summary PDF export"`
+- [x] **Step 3: Commit** — `git add -A && git commit -m "feat: print view for patient summary PDF export"`
 
 ---
 
@@ -2398,13 +2398,13 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
 
 **Files:** Create: `docs/architecture.md`, `docs/setup.md` — Modify: `CLAUDE.md`
 
-- [ ] **Step 1: Run the full gate**
+- [x] **Step 1: Run the full gate**
 ```bash
 npm run typecheck && npm run coverage && npm run build
 ```
 Expected: typecheck clean; all tests pass; coverage table shows ≥80% on lines/functions/branches/statements for `src/lib`, `src/data`, `src/actions` (thresholds fail the run otherwise); `next build` succeeds. If a threshold fails, add targeted tests for the uncovered branches (the coverage report names them) — do not lower thresholds.
 
-- [ ] **Step 2: Write `docs/architecture.md`** — the code index. Contents (write this actual structure, updating only if implementation diverged):
+- [x] **Step 2: Write `docs/architecture.md`** — the code index. Contents (write this actual structure, updating only if implementation diverged):
 
 ```markdown
 # Architecture & Code Index
@@ -2467,7 +2467,7 @@ Phase 2: lifestyle form, follow-ups, dashboard, charts (weight/pain data already
 Phase 3: WhatsApp/SMS (Twilio), fees, CSV export, audit logs.
 ```
 
-- [ ] **Step 3: Write `docs/setup.md`**:
+- [x] **Step 3: Write `docs/setup.md`**:
 
 ```markdown
 # Setup (one-time)
@@ -2484,14 +2484,14 @@ Phase 3: WhatsApp/SMS (Twilio), fees, CSV export, audit logs.
 7. Deploy: push to GitHub → import in Vercel → set the same 4 env vars → deploy.
 
 ## Manual pre-handover checklist
-- [ ] Register patient with photo on a phone-sized viewport
-- [ ] Each tab works: add/remove problem, upload/view/delete document, save plan, add visit
-- [ ] Search by name and by mobile
-- [ ] Print view → Save as PDF produces clean A4
-- [ ] Logged-out user hitting /patients is redirected to /login
+- [x] Register patient with photo on a phone-sized viewport
+- [x] Each tab works: add/remove problem, upload/view/delete document, save plan, add visit
+- [x] Search by name and by mobile
+- [x] Print view → Save as PDF produces clean A4
+- [x] Logged-out user hitting /patients is redirected to /login
 ```
 
-- [ ] **Step 4: Finalize `CLAUDE.md`** (replace the initial version):
+- [x] **Step 4: Finalize `CLAUDE.md`** (replace the initial version):
 
 ```markdown
 # Pawar Yoga Therapy — Patient Management
@@ -2517,7 +2517,7 @@ Single-clinic patient management app (Phase 1 MVP). Next.js 15 + Supabase + Driz
 - Keep `docs/architecture.md` updated in the same commit as any structural change — it is the index future sessions rely on.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add -A && git commit -m "docs: architecture index, setup guide, final CLAUDE.md; coverage gate green"
 ```
