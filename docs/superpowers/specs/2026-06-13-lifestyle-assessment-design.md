@@ -65,28 +65,32 @@ export type LifestyleAssessment = typeof lifestyleAssessments.$inferSelect;
 
 After schema change: `npm run db:generate` → `npm run db:migrate`.
 
+**RLS:** `.enableRLS()` is sufficient — the migration will emit `ALTER TABLE "lifestyle_assessments" ENABLE ROW LEVEL SECURITY;`. No explicit policy is needed. The app connects via the Supabase transaction pooler using the `postgres` superuser, which bypasses RLS (same as all existing tables — no per-table policies exist in the migration files).
+
 ## Data Layer
 
 ### `src/data/lifestyle.ts`
 
 ```typescript
 getLifestyleAssessment(db, patientId): Promise<LifestyleAssessment | undefined>
-upsertLifestyleAssessment(db, patientId, input: LifestyleInput): Promise<LifestyleAssessment>
+upsertLifestyleAssessment(db, patientId, input: LifestyleInput): Promise<void>
 ```
 
-`upsertLifestyleAssessment` uses Drizzle's `.insert(...).onConflictDoUpdate({ target: lifestyleAssessments.patientId, set: { ...input, updatedAt: new Date() } })`.
+`upsertLifestyleAssessment` uses Drizzle's `.insert(...).onConflictDoUpdate({ target: lifestyleAssessments.patientId, set: { ...input, updatedAt: new Date() } })`. Returns `void` — the action does not use the return value (same as `upsertTreatmentPlan`).
 
 ### `src/lib/validation.ts`
 
 New `lifestyleSchema` (all fields optional):
-- Long text fields (`chiefComplaint`, `aggravatingFactors`, `relievingFactors`, `previousTreatment`, `primaryGoal`, `contraindicationDetails`): `z.string().trim().max(1000).optional()`
-- Short text fields (`duration`, `currentMedications`, `doctorDiagnosis`, `doctorRestrictions`, `sleepHours`, `previousExercise`, `activityStruggle`, `screenTime`): `z.string().trim().max(500).optional()`
-- `workType`: `z.enum(['desk', 'standing', 'physical']).optional()`
-- `dailySitting`: `z.enum(['<2h', '2-4h', '4-8h', '8+h']).optional()`
-- `activityLevel`: `z.enum(['sedentary', 'light', 'active']).optional()`
-- `fitnessLevel`: `z.enum(['beginner', 'intermediate', 'active']).optional()`
-- `sleepQuality`, `stressLevel`: `z.coerce.number().int().min(1).max(10).optional()`
-- `fearOfMovement`, `hasContraindications`: `z.preprocess(v => v === 'true' || v === true, z.boolean()).optional()`
+Use the existing `opt()` helper from `src/lib/validation.ts` for all fields — it wraps `blankToUndef` preprocessing so empty form strings become `undefined` (stored as `null`), not `""`. This is essential for "fill incrementally" semantics.
+
+- Long text fields (`chiefComplaint`, `aggravatingFactors`, `relievingFactors`, `previousTreatment`, `primaryGoal`, `contraindicationDetails`): `opt(z.string().trim().max(1000))`
+- Short text fields (`duration`, `currentMedications`, `doctorDiagnosis`, `doctorRestrictions`, `sleepHours`, `previousExercise`, `activityStruggle`, `screenTime`): `opt(z.string().trim().max(500))`
+- `workType`: `opt(z.enum(['desk', 'standing', 'physical']))`
+- `dailySitting`: `opt(z.enum(['<2h', '2-4h', '4-8h', '8+h']))`
+- `activityLevel`: `opt(z.enum(['sedentary', 'light', 'active']))`
+- `fitnessLevel`: `opt(z.enum(['beginner', 'intermediate', 'active']))`
+- `sleepQuality`, `stressLevel`: `opt(z.coerce.number().int().min(1).max(10))`
+- `fearOfMovement`, `hasContraindications`: `z.preprocess(v => v === 'true' || v === true, z.boolean()).optional()` (checkbox sends 'on'/'off', not blank, so `opt()` is not appropriate here)
 - `contraindicationDetails` only meaningful when `hasContraindications` is true — no cross-field validation needed (therapist manages this)
 
 ### `src/actions/lifestyle.ts`
@@ -99,17 +103,17 @@ Pattern: `requireUser` → parse formData → `lifestyleSchema.safeParse` → `u
 
 ## UI
 
-### `src/components/LifestyleForm.tsx`
+### No separate `LifestyleForm` component
 
-`'use client'` component. Props: `patientId: string`, `defaultValues: Partial<LifestyleAssessment>`. Uses `useTransition` + `startTransition` to call `saveLifestyleAssessmentAction`. Error displayed with the existing inline error pattern (`bg-destructive/10 text-destructive`). Success: error clears (no toast needed — save button returns to idle state).
+The Assessment tab follows the **same pattern as the Treatment Plan tab**: an async server component renders fields directly inside `<InlineForm action={saveLifestyleAssessmentAction.bind(null, patientId)}>`. No separate client component is needed — `InlineForm` (already `'use client'`) handles error display and form state. Do not create a `LifestyleForm.tsx` file.
 
 **Section 1 — Primary Concern / मुख्य तक्रार**
-Five `Textarea` fields:
-- What brings you here / कशासाठी आलात (`chiefComplaint`)
-- Since when / केव्हापासून (`duration`)
-- What makes it worse / काय त्रास वाढवते (`aggravatingFactors`)
-- What makes it better / काय आराम देते (`relievingFactors`)
-- Previous treatments tried / आधी कोणते उपचार केले (`previousTreatment`)
+Four `Textarea` + one `Input`:
+- What brings you here / कशासाठी आलात (`chiefComplaint`) — `Textarea`
+- Since when / केव्हापासून (`duration`) — `Input` (single-line, e.g. "2 months")
+- What makes it worse / काय त्रास वाढवते (`aggravatingFactors`) — `Textarea`
+- What makes it better / काय आराम देते (`relievingFactors`) — `Textarea`
+- Previous treatments tried / आधी कोणते उपचार केले (`previousTreatment`) — `Textarea`
 
 **Section 2 — Medications & Restrictions / औषधे**
 Three `Textarea` fields:
@@ -118,45 +122,46 @@ Three `Textarea` fields:
 - Doctor's restrictions / डॉक्टरांनी काय टाळायला सांगितले (`doctorRestrictions`)
 
 **Section 3 — Lifestyle / जीवनशैली**
-- Work type / कामाचा प्रकार (`workType`) — shadcn `Select`: Desk job | Standing | Physical labour
-- Daily sitting / दररोज बसणे (`dailySitting`) — `Select`: <2 hrs | 2–4 hrs | 4–8 hrs | 8+ hrs
-- Activity level / सक्रियता (`activityLevel`) — `Select`: Sedentary | Light | Active
-- Sleep hours / झोपेचे तास (`sleepHours`) — `Input` text
-- Sleep quality / झोपेचा दर्जा (`sleepQuality`) — `Select` 1–10
-- Stress level / ताण पातळी (`stressLevel`) — `Select` 1–10
-- Screen time / स्क्रीन वेळ (`screenTime`) — `Input` text
+- Work type / कामाचा प्रकार (`workType`) — shadcn `Select`: value `desk`/`standing`/`physical`, labels "Desk job / Standing / Physical labour"
+- Daily sitting / दररोज बसणे (`dailySitting`) — `Select`: values `<2h`/`2-4h`/`4-8h`/`8+h`
+- Activity level / सक्रियता (`activityLevel`) — `Select`: values `sedentary`/`light`/`active`
+- Sleep hours / झोपेचे तास (`sleepHours`) — `Input` text (e.g. "7")
+- Sleep quality / झोपेचा दर्जा (`sleepQuality`) — `<Input type="number" min="1" max="10" name="sleepQuality" defaultValue={...}>` (matches painScale pattern in visits form)
+- Stress level / ताण पातळी (`stressLevel`) — same `Input type="number" min="1" max="10"`
+- Screen time / स्क्रीन वेळ (`screenTime`) — `Input` text (e.g. "6 hrs")
 
 **Section 4 — Exercise History / व्यायामाचा इतिहास**
-- Previous exercise / आधीचा व्यायाम (`previousExercise`) — `Input` text (free text: "yoga, walking")
-- Fitness level / तंदुरुस्ती पातळी (`fitnessLevel`) — `Select`: Beginner | Intermediate | Active
-- Afraid movement worsens pain? / हालचालीची भीती (`fearOfMovement`) — `Checkbox` (shadcn)
+- Previous exercise / आधीचा व्यायाम (`previousExercise`) — `Input` text (e.g. "yoga, walking")
+- Fitness level / तंदुरुस्ती पातळी (`fitnessLevel`) — `Select`: values `beginner`/`intermediate`/`active`
+- Afraid movement worsens pain? / हालचालीची भीती (`fearOfMovement`) — `Checkbox` (shadcn); value `"true"` when checked, omitted when unchecked — Zod preprocessor handles both
 
 **Section 5 — Goals & Safety / उद्दिष्टे आणि सुरक्षितता**
 - Primary goal / मुख्य उद्दिष्ट (`primaryGoal`) — `Textarea`
 - Activity currently struggling with / अडचणीचे काम (`activityStruggle`) — `Input` text
-- Any contraindications? / काही धोके? (`hasContraindications`) — `Checkbox`; when checked, reveals `Textarea` for details (`contraindicationDetails`)
+- Any contraindications? / काही धोके? (`hasContraindications`) — `Checkbox`; `contraindicationDetails` `Textarea` always rendered but shown/hidden via `hidden` class — this is a server-rendered form so no JS toggle needed; therapist can see both
 
-**Save button**: full-width on mobile, right-aligned on desktop. Shows "Saving… / सेव्ह होत आहे…" while pending.
+**Save button**: full-width on mobile, right-aligned on desktop. No pending state indicator needed (same as Treatment Plan tab).
 
 ### Tab integration (`src/app/(app)/patients/[id]/page.tsx`)
 
 - Add `['assessment', 'Assessment / मूल्यांकन']` as 6th entry in `TABS`
 - Import `getLifestyleAssessment` from `@/data/lifestyle`
-- Import `LifestyleForm` from `@/components/LifestyleForm`
-- Add async `Assessment({ patientId })` server function: fetches assessment row, renders `LifestyleForm` with `defaultValues`
+- Import `InlineForm` from `@/components/InlineForm`
+- Import `saveLifestyleAssessmentAction` from `@/actions/lifestyle`
+- Add async `Assessment({ patientId })` server function: fetches existing row, renders 5-section form inside `<InlineForm action={saveLifestyleAssessmentAction.bind(null, patientId)}>` with each field using `defaultValue={existing?.fieldName ?? ''}` (or `defaultChecked` for checkboxes)
 - Add `{tab === 'assessment' && <Assessment patientId={id} />}` in tab content
 
 ## Tests
 
-`tests/data/lifestyle.test.ts` — PGlite integration tests:
+`tests/data/lifestyle.test.ts` — PGlite integration tests (new file, follows `clinical.test.ts` pattern):
 - `getLifestyleAssessment` returns `undefined` for new patient
-- `upsertLifestyleAssessment` inserts on first call, returns the row
-- Second call with different values updates the same row (upsert semantics — only one row per patient)
-- Partial fields: only filled fields are stored; unfilled remain null
+- `upsertLifestyleAssessment` inserts on first call (row exists after)
+- Second call with different values updates the same row — confirm only one row per patient
+- Partial fields: only filled fields are stored; unfilled remain `null`
 
-`tests/actions/lifestyle.test.ts` — using action-mocks pattern:
-- Happy path: valid formData → calls upsert → returns `{ ok: true }`
-- Auth guard: `requireUser` throws → returns `{ ok: false, error: ... }` (via existing mock pattern)
+`tests/actions/actions.test.ts` — add lifestyle cases to the **existing** file (do not create `tests/actions/lifestyle.test.ts`):
+- Happy path: valid formData → `saveLifestyleAssessmentAction` returns `{ ok: true }`
+- Auth guard: `requireUser` throws → returns `{ ok: false, error: ... }`
 
 ## Out of Scope
 
