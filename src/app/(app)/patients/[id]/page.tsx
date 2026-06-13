@@ -6,7 +6,8 @@ import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
 import { listDocuments } from '@/data/documents';
 import { getTreatmentPlan } from '@/data/treatment';
-import { listVisits } from '@/data/visits';
+import { listVisits, listVisitsWithData } from '@/data/visits';
+import { VisitLineChart } from '@/components/VisitLineChart';
 import { getStorage } from '@/lib/storage';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
 import { PRESET_PROBLEMS, DOC_TYPES } from '@/lib/presets';
@@ -29,6 +30,7 @@ const TABS = [
   ['problems', 'Problems / आजार'],
   ['documents', 'Documents / रिपोर्ट्स'],
   ['treatment', 'Treatment & Visits / उपचार'],
+  ['progress', 'Progress / प्रगती'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
@@ -75,7 +77,7 @@ export default async function PatientPage({
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">{patient.fullName}</h1>
-            <Badge variant="outline" className="border-[var(--brand-accent)] text-[var(--brand-accent)]">
+            <Badge variant="outline" className="border-brand-accent text-brand-accent">
               {patient.patientCode}
             </Badge>
           </div>
@@ -119,6 +121,7 @@ export default async function PatientPage({
       {tab === 'problems' && <Problems patientId={id} />}
       {tab === 'documents' && <Documents patientId={id} />}
       {tab === 'treatment' && <Treatment patientId={id} />}
+      {tab === 'progress' && <Progress patientId={id} />}
     </div>
   );
 }
@@ -456,6 +459,115 @@ async function Treatment({ patientId }: { patientId: string }) {
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
+
+async function Progress({ patientId }: { patientId: string }) {
+  const db = getDb();
+  const rows = await listVisitsWithData(db, patientId);
+
+  const weightData = rows
+    .filter((r): r is typeof r & { weightKg: number } => r.weightKg !== null)
+    .map((r) => ({ visitDate: r.visitDate, value: r.weightKg }));
+
+  const painData = rows
+    .filter((r): r is typeof r & { painScale: number } => r.painScale !== null)
+    .map((r) => ({ visitDate: r.visitDate, value: r.painScale }));
+
+  const firstDate = rows[0]?.visitDate ?? null;
+  const latestDate = rows[rows.length - 1]?.visitDate ?? null;
+
+  const weightChange =
+    weightData.length >= 2
+      ? weightData[weightData.length - 1].value - weightData[0].value
+      : null;
+
+  const painChange =
+    painData.length >= 2
+      ? painData[painData.length - 1].value - painData[0].value
+      : null;
+
+  if (rows.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">
+            Not enough data / पुरेशी माहिती नाही
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Weight Trend / वजन (kg)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {weightData.length >= 2 ? (
+            <VisitLineChart data={weightData} color="var(--primary)" unit="kg" />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Not enough data / पुरेशी माहिती नाही
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Pain Trend / वेदना पातळी
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {painData.length >= 2 ? (
+            <VisitLineChart data={painData} color="var(--destructive)" unit="" />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Not enough data / पुरेशी माहिती नाही
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="grid grid-cols-2 gap-4 pt-6 text-sm sm:grid-cols-4">
+          <div>
+            <p className="text-muted-foreground">First visit / पहिली भेट</p>
+            <p className="font-medium">{firstDate ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Latest / शेवटची</p>
+            <p className="font-medium">{latestDate ?? '—'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Visits with data / माहिती</p>
+            <p className="font-medium">{rows.length}</p>
+          </div>
+          {weightChange !== null && (
+            <div>
+              <p className="text-muted-foreground">Weight change / बदल</p>
+              <p className="font-medium text-foreground">
+                {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
+              </p>
+            </div>
+          )}
+          {painChange !== null && (
+            <div>
+              <p className="text-muted-foreground">Pain change / वेदना बदल</p>
+              <p className={`font-medium ${painChange <= 0 ? 'text-primary' : 'text-destructive'}`}>
+                {painChange < 0 ? '↓' : '↑'} {Math.abs(painChange)}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

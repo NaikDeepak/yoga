@@ -10,7 +10,7 @@ export async function signInAction(formData: FormData) {
     password: String(formData.get('password') ?? ''),
   });
   if (error) redirect('/login?error=1');
-  redirect('/patients');
+  redirect('/dashboard');
 }
 
 export async function signOutAction() {

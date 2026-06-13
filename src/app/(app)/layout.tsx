@@ -10,10 +10,26 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 border-b border-border bg-card shadow-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link href="/patients" className="flex items-center gap-2 text-foreground hover:opacity-80">
-            <Leaf className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Pawar Yoga Therapy</span>
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link href="/dashboard" className="flex items-center gap-2 text-foreground hover:opacity-80">
+              <Leaf className="h-5 w-5 text-primary" />
+              <span className="font-semibold">Pawar Yoga Therapy</span>
+            </Link>
+            <nav className="flex items-center gap-4">
+              <Link
+                href="/dashboard"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Dashboard / डॅशबोर्ड
+              </Link>
+              <Link
+                href="/patients"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                Patients / रुग्ण
+              </Link>
+            </nav>
+          </div>
           <div className="flex items-center gap-3">
             {user.email && (
               <span className="hidden text-sm text-muted-foreground sm:block">{user.email}</span>
