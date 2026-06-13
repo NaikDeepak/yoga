@@ -72,3 +72,40 @@ export type PatientProblem = typeof patientProblems.$inferSelect;
 export type DocumentRow = typeof documents.$inferSelect;
 export type TreatmentPlan = typeof treatmentPlans.$inferSelect;
 export type Visit = typeof visits.$inferSelect;
+
+export const lifestyleAssessments = pgTable('lifestyle_assessments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull().unique()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  // Section 1: Primary Concern
+  chiefComplaint: text('chief_complaint'),
+  duration: text('duration'),
+  aggravatingFactors: text('aggravating_factors'),
+  relievingFactors: text('relieving_factors'),
+  previousTreatment: text('previous_treatment'),
+  // Section 2: Medications & Restrictions
+  currentMedications: text('current_medications'),
+  doctorDiagnosis: text('doctor_diagnosis'),
+  doctorRestrictions: text('doctor_restrictions'),
+  // Section 3: Lifestyle
+  workType: text('work_type'),
+  dailySitting: text('daily_sitting'),
+  activityLevel: text('activity_level'),
+  sleepHours: text('sleep_hours'),
+  sleepQuality: integer('sleep_quality'),
+  stressLevel: integer('stress_level'),
+  screenTime: text('screen_time'),
+  // Section 4: Exercise History
+  previousExercise: text('previous_exercise'),
+  fitnessLevel: text('fitness_level'),
+  fearOfMovement: boolean('fear_of_movement'),
+  // Section 5: Goals & Safety
+  primaryGoal: text('primary_goal'),
+  activityStruggle: text('activity_struggle'),
+  hasContraindications: boolean('has_contraindications'),
+  contraindicationDetails: text('contraindication_details'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}).enableRLS();
+
+export type LifestyleAssessment = typeof lifestyleAssessments.$inferSelect;
