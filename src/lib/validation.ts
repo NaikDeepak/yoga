@@ -50,3 +50,34 @@ export const docTypeSchema = z.enum(DOC_TYPES);
 export function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input / चुकीची माहिती';
 }
+
+export const lifestyleSchema = z.object({
+  // Section 1: Primary Concern
+  chiefComplaint: opt(z.string().trim().max(1000)),
+  duration: opt(z.string().trim().max(500)),
+  aggravatingFactors: opt(z.string().trim().max(1000)),
+  relievingFactors: opt(z.string().trim().max(1000)),
+  previousTreatment: opt(z.string().trim().max(1000)),
+  // Section 2: Medications & Restrictions
+  currentMedications: opt(z.string().trim().max(500)),
+  doctorDiagnosis: opt(z.string().trim().max(500)),
+  doctorRestrictions: opt(z.string().trim().max(500)),
+  // Section 3: Lifestyle
+  workType: opt(z.enum(['desk', 'standing', 'physical'])),
+  dailySitting: opt(z.enum(['<2h', '2-4h', '4-8h', '8+h'])),
+  activityLevel: opt(z.enum(['sedentary', 'light', 'active'])),
+  sleepHours: opt(z.string().trim().max(500)),
+  sleepQuality: opt(z.coerce.number().int().min(1).max(10)),
+  stressLevel: opt(z.coerce.number().int().min(1).max(10)),
+  screenTime: opt(z.string().trim().max(500)),
+  // Section 4: Exercise History
+  previousExercise: opt(z.string().trim().max(500)),
+  fitnessLevel: opt(z.enum(['beginner', 'intermediate', 'active'])),
+  fearOfMovement: z.preprocess((v) => v === 'true' || v === true, z.boolean()).optional(),
+  // Section 5: Goals & Safety
+  primaryGoal: opt(z.string().trim().max(1000)),
+  activityStruggle: opt(z.string().trim().max(500)),
+  hasContraindications: z.preprocess((v) => v === 'true' || v === true, z.boolean()).optional(),
+  contraindicationDetails: opt(z.string().trim().max(1000)),
+});
+export type LifestyleInput = z.infer<typeof lifestyleSchema>;
