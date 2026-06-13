@@ -4,12 +4,24 @@ import { useState, useTransition } from 'react';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
 import type { Patient } from '@/db/schema';
 import type { ActionResult } from '@/actions/patients';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
-const field = 'mt-1 w-full rounded border border-stone-300 p-2';
-const label = 'block text-sm font-medium';
+function bmiVariant(bmi: number): string {
+  if (bmi < 18.5) return 'bg-blue-100 text-blue-800';
+  if (bmi < 25) return 'bg-primary/10 text-primary';
+  if (bmi < 30) return 'bg-yellow-100 text-yellow-800';
+  return 'bg-destructive/10 text-destructive';
+}
 
 export function PatientForm({
-  action, defaultValues, submitLabel,
+  action,
+  defaultValues,
+  submitLabel,
 }: {
   action: (formData: FormData) => Promise<ActionResult>;
   defaultValues?: Patient;
@@ -24,65 +36,186 @@ export function PatientForm({
 
   function onSubmit(formData: FormData) {
     startTransition(async () => {
+      setError(null);
+      if (formData.get('gender') === '__none__') formData.set('gender', '');
       const result = await action(formData);
       if (result && !result.ok) setError(result.error);
     });
   }
 
   return (
-    <form action={onSubmit} className="max-w-2xl space-y-4">
-      {error && <p className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</p>}
-      <label className={label}>Full Name / पूर्ण नाव *
-        <input name="fullName" required defaultValue={defaultValues?.fullName} className={field} />
-      </label>
-      <label className={label}>Photo / फोटो
-        <input name="photo" type="file" accept="image/jpeg,image/png" className={field} />
-      </label>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <label className={label}>Age / वय
-          <input name="age" type="number" defaultValue={defaultValues?.age ?? ''} className={field} />
-        </label>
-        <label className={label}>Gender / लिंग
-          <select name="gender" defaultValue={defaultValues?.gender ?? ''} className={field}>
-            <option value="">—</option>
-            <option value="male">Male / पुरुष</option>
-            <option value="female">Female / स्त्री</option>
-            <option value="other">Other / इतर</option>
-          </select>
-        </label>
-        <label className={label}>Weight (kg) / वजन
-          <input name="weightKg" type="number" step="0.1" value={weight}
-            onChange={(e) => setWeight(e.target.value)} className={field} />
-        </label>
-        <label className={label}>Height (cm) / उंची
-          <input name="heightCm" type="number" step="0.1" value={height}
-            onChange={(e) => setHeight(e.target.value)} className={field} />
-        </label>
+    <form action={onSubmit} className="max-w-2xl space-y-6">
+      {error && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      )}
+
+      {/* Personal Info */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Personal Info / वैयक्तिक माहिती
+          </span>
+          <Separator className="flex-1" />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="fullName">Full Name / पूर्ण नाव *</Label>
+          <Input
+            id="fullName"
+            name="fullName"
+            required
+            defaultValue={defaultValues?.fullName}
+            placeholder="Patient full name"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="photo">Photo / फोटो</Label>
+          <Input id="photo" name="photo" type="file" accept="image/jpeg,image/png" />
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div className="space-y-2">
+            <Label htmlFor="age">Age / वय</Label>
+            <Input
+              id="age"
+              name="age"
+              type="number"
+              min="1"
+              max="120"
+              defaultValue={defaultValues?.age ?? ''}
+              placeholder="—"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="gender">Gender / लिंग</Label>
+            <Select name="gender" defaultValue={defaultValues?.gender ?? '__none__'}>
+              <SelectTrigger id="gender">
+                <SelectValue placeholder="Select / निवडा" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">— Select / निवडा —</SelectItem>
+                <SelectItem value="male">Male / पुरुष</SelectItem>
+                <SelectItem value="female">Female / स्त्री</SelectItem>
+                <SelectItem value="other">Other / इतर</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
-      <p data-testid="bmi" className="rounded bg-emerald-50 p-2 text-sm">
-        BMI: {bmi !== null ? `${bmi} — ${bmiCategory(bmi)}` : '—'}
-      </p>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className={label}>Mobile / मोबाईल *
-          <input name="mobile" required defaultValue={defaultValues?.mobile} className={field} />
-        </label>
-        <label className={label}>Email / ईमेल
-          <input name="email" type="email" defaultValue={defaultValues?.email ?? ''} className={field} />
-        </label>
-        <label className={label}>Occupation / व्यवसाय
-          <input name="occupation" defaultValue={defaultValues?.occupation ?? ''} className={field} />
-        </label>
-        <label className={label}>Emergency Contact / आपत्कालीन संपर्क
-          <input name="emergencyContact" defaultValue={defaultValues?.emergencyContact ?? ''} className={field} />
-        </label>
+
+      {/* Body Metrics */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Body Metrics / शरीर मोजमाप
+          </span>
+          <Separator className="flex-1" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="weightKg">Weight (kg) / वजन</Label>
+            <Input
+              id="weightKg"
+              name="weightKg"
+              type="number"
+              step="0.1"
+              min="0.1"
+              max="300"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="—"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="heightCm">Height (cm) / उंची</Label>
+            <Input
+              id="heightCm"
+              name="heightCm"
+              type="number"
+              step="0.1"
+              min="0.1"
+              max="250"
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
+              placeholder="—"
+            />
+          </div>
+        </div>
+        <div
+          data-testid="bmi"
+          className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm ${
+            bmi !== null ? bmiVariant(bmi) : 'bg-muted text-muted-foreground'
+          }`}
+        >
+          <span className="font-medium">BMI:</span>
+          <span>{bmi !== null ? `${bmi} — ${bmiCategory(bmi)}` : '—'}</span>
+        </div>
       </div>
-      <label className={label}>Address / पत्ता
-        <textarea name="address" defaultValue={defaultValues?.address ?? ''} className={field} rows={2} />
-      </label>
-      <button disabled={pending}
-        className="rounded bg-emerald-700 px-6 py-2 font-medium text-white hover:bg-emerald-800 disabled:opacity-50">
+
+      {/* Contact */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Contact / संपर्क
+          </span>
+          <Separator className="flex-1" />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="mobile">Mobile / मोबाईल *</Label>
+            <Input
+              id="mobile"
+              name="mobile"
+              required
+              defaultValue={defaultValues?.mobile}
+              placeholder="10-digit mobile"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email / ईमेल</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              defaultValue={defaultValues?.email ?? ''}
+              placeholder="—"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="occupation">Occupation / व्यवसाय</Label>
+            <Input
+              id="occupation"
+              name="occupation"
+              defaultValue={defaultValues?.occupation ?? ''}
+              placeholder="—"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="emergencyContact">Emergency Contact / आपत्कालीन संपर्क</Label>
+            <Input
+              id="emergencyContact"
+              name="emergencyContact"
+              defaultValue={defaultValues?.emergencyContact ?? ''}
+              placeholder="—"
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="address">Address / पत्ता</Label>
+          <Textarea
+            id="address"
+            name="address"
+            defaultValue={defaultValues?.address ?? ''}
+            rows={2}
+            placeholder="—"
+          />
+        </div>
+      </div>
+
+      <Button type="submit" disabled={pending} className="w-full sm:w-auto">
         {pending ? 'Saving… / जतन होत आहे…' : submitLabel}
-      </button>
+      </Button>
     </form>
   );
 }

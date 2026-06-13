@@ -1,40 +1,50 @@
 import { signUpAction } from '@/actions/auth';
 import Link from 'next/link';
+import { Leaf } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 export default async function RegisterPage({
   searchParams,
 }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
   return (
-    <main className="mx-auto mt-24 max-w-sm rounded-xl border border-stone-200 bg-white p-8 shadow-sm">
-      <h1 className="mb-1 text-xl font-semibold">Pawar Yoga Therapy</h1>
-      <p className="mb-6 text-sm text-stone-500">Admin Register / नवीन नोंदणी</p>
-      {error && (
-        <p className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-      <form action={signUpAction} className="space-y-4">
-        <label className="block text-sm">
-          Email / ईमेल
-          <input name="email" type="email" required
-            className="mt-1 w-full rounded border border-stone-300 p-2" />
-        </label>
-        <label className="block text-sm">
-          Password / पासवर्ड
-          <input name="password" type="password" required
-            className="mt-1 w-full rounded border border-stone-300 p-2" />
-        </label>
-        <button className="w-full rounded bg-emerald-700 p-2 font-medium text-white hover:bg-emerald-800">
-          Register / नोंदणी करा
-        </button>
-      </form>
-      <div className="mt-4 text-center text-sm text-stone-500">
-        Already have an account?{' '}
-        <Link href="/login" className="text-emerald-700 hover:underline">
-          Sign in / लॉगिन
-        </Link>
-      </div>
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Leaf className="h-6 w-6 text-primary" aria-hidden="true" />
+          </div>
+          <CardTitle>Pawar Yoga Therapy</CardTitle>
+          <CardDescription>Admin Register / नवीन नोंदणी</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              Registration failed. Please try again. / नोंदणी अयशस्वी. कृपया पुन्हा प्रयत्न करा.
+            </p>
+          )}
+          <form action={signUpAction} className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="email">Email / ईमेल</Label>
+              <Input id="email" name="email" type="email" required autoComplete="email" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="password">Password / पासवर्ड</Label>
+              <Input id="password" name="password" type="password" required autoComplete="new-password" />
+            </div>
+            <Button type="submit" className="w-full">Register / नोंदणी करा</Button>
+          </form>
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link href="/login" className="font-medium text-primary hover:underline">
+              Sign in / लॉगिन
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -8,3 +8,4 @@ next-env.d.ts
 .agents/
 .vscode/
 skills-lock.json
+.vercel
