@@ -1,4 +1,4 @@
-import { count, avg, desc, gte, eq } from 'drizzle-orm';
+import { count, countDistinct, avg, desc, gte, eq, and } from 'drizzle-orm';
 import { patients, patientProblems, visits } from '@/db/schema';
 import type { Db } from '@/db/types';
 
@@ -13,7 +13,7 @@ export async function getDashboardStats(db: Db): Promise<DashboardStats> {
   const now = new Date();
   const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
-  const cntExpr = count(patientProblems.id);
+  const cntExpr = countDistinct(patientProblems.patientId);
 
   const [
     [{ totalPatients }],
@@ -43,7 +43,7 @@ export async function getDashboardStats(db: Db): Promise<DashboardStats> {
 export async function getAilmentBreakdown(
   db: Db,
 ): Promise<{ problem: string; count: number }[]> {
-  const cntExpr = count(patientProblems.id);
+  const cntExpr = countDistinct(patientProblems.patientId);
   return db
     .select({ problem: patientProblems.problem, count: cntExpr })
     .from(patientProblems)
