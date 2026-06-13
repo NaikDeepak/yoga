@@ -26,9 +26,12 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:p-0">
       <div className="mb-4 flex justify-end print:hidden"><PrintButton /></div>
-      <header className="mb-6 border-b-2 border-emerald-700 pb-3 text-center">
-        <h1 className="text-2xl font-bold text-emerald-800">Pawar Yoga Therapy Center</h1>
-        <p className="text-sm text-stone-500">Patient Summary / रुग्ण सारांश — {patient.patientCode}</p>
+      <header className="mb-6 border-b-2 pb-3 text-center" style={{ borderColor: '#4A7548' }}>
+        <div className="mb-1 flex items-center justify-center gap-2">
+          <span className="text-2xl" aria-hidden="true">🌿</span>
+          <h1 className="text-2xl font-bold" style={{ color: '#2C2418' }}>Pawar Yoga Therapy Center</h1>
+        </div>
+        <p className="text-sm" style={{ color: '#7A6E62' }}>Patient Summary / रुग्ण सारांश — {patient.patientCode}</p>
       </header>
 
       <section className="mb-6">
