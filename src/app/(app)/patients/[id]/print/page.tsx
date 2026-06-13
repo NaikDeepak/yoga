@@ -73,19 +73,19 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
           ['Aggravating Factors / काय त्रास वाढवते', assessment.aggravatingFactors],
           ['Relieving Factors / काय आराम देते', assessment.relievingFactors],
           ['Previous Treatment / आधीचे उपचार', assessment.previousTreatment],
-        ] as const).filter(([, v]) => v);
+        ] as const).filter(([, v]) => v !== null && v !== undefined);
         const meds = ([
           ['Current Medications / सध्याची औषधे', assessment.currentMedications],
           ["Doctor's Diagnosis / डॉक्टरांचे निदान", assessment.doctorDiagnosis],
           ["Doctor's Restrictions / डॉक्टरांचे निर्बंध", assessment.doctorRestrictions],
-        ] as const).filter(([, v]) => v);
-        const goalRows: [string, string][] = (([
-          ['Primary Goal / मुख्य उद्दिष्ट', assessment.primaryGoal],
+        ] as const).filter(([, v]) => v !== null && v !== undefined);
+        const goalRows: [string, { text: string; warning: boolean }][] = (([
+          ['Primary Goal / मुख्य उद्दिष्ट', assessment.primaryGoal != null ? { text: assessment.primaryGoal, warning: false } : null],
           assessment.hasContraindications != null
-            ? ['Contraindications / विरोधाभास', assessment.hasContraindications ? 'Yes / होय ⚠' : 'No / नाही']
+            ? ['Contraindications / विरोधाभास', { text: assessment.hasContraindications ? 'Yes / होय ⚠' : 'No / नाही', warning: assessment.hasContraindications }]
             : null,
-          ['Details / तपशील', assessment.contraindicationDetails],
-        ]) as ([string, string | null] | null)[]).filter((r): r is [string, string] => r != null && r[1] != null);
+          ['Details / तपशील', assessment.contraindicationDetails != null ? { text: assessment.contraindicationDetails, warning: false } : null],
+        ]) as ([string, { text: string; warning: boolean } | null] | null)[]).filter((r): r is [string, { text: string; warning: boolean }] => r != null && r[1] != null);
         return (
           <>
             {concern.length > 0 && (
@@ -121,7 +121,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                   {goalRows.map(([k, v]) => (
                     <tr key={k} className="border-b border-stone-100 align-top">
                       <td className="w-48 py-1 text-stone-500">{k}</td>
-                      <td className={`py-1 whitespace-pre-wrap${v.includes('⚠') ? ' font-medium text-red-600' : ''}`}>{v}</td>
+                      <td className={`py-1 whitespace-pre-wrap${v.warning ? ' font-medium text-red-600' : ''}`}>{v.text}</td>
                     </tr>
                   ))}
                 </tbody></table>

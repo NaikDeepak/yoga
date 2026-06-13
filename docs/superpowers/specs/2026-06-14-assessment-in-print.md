@@ -19,16 +19,19 @@ The print page currently shows registration, problems, treatment plan, and visit
 ## Three sections to add (in order)
 
 ### Primary Concern / मुख्य तक्रार
+
 Fields: `chiefComplaint`, `duration`, `aggravatingFactors`, `relievingFactors`, `previousTreatment`
 Render as the same `<table>` / key-value pattern used for Registration.
 Only render rows where the value is non-null.
 Skip the whole section if all five fields are null.
 
 ### Medications & Restrictions / औषधे आणि निर्बंध
+
 Fields: `currentMedications`, `doctorDiagnosis`, `doctorRestrictions`
 Same pattern. Skip section if all three are null.
 
 ### Goals & Safety / उद्दिष्टे आणि सुरक्षितता
+
 Fields: `primaryGoal`, `hasContraindications`, `contraindicationDetails`
 For `hasContraindications`: render as "Yes / होय ⚠" (red) or "No / नाही". Only show if non-null.
 Skip section if all three are null.
@@ -48,7 +51,7 @@ No new tests required. The data layer is already covered by `tests/data/lifestyl
 
 ## Placement in print layout
 
-```
+```text
 Registration / नोंदणी
 Health Problems / आजार
 ── NEW ─────────────────────────────────
