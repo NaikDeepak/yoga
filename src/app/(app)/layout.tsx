@@ -15,7 +15,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="font-semibold">Pawar Yoga Therapy</span>
           </Link>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:block">{user.email}</span>
+            {user.email && (
+              <span className="hidden text-sm text-muted-foreground sm:block">{user.email}</span>
+            )}
             <form action={signOutAction}>
               <Button variant="ghost" size="sm" type="submit">
                 Sign out / बाहेर पडा
