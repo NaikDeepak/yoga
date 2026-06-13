@@ -135,7 +135,8 @@ async function Overview({
 }: {
   patient: NonNullable<Awaited<ReturnType<typeof getPatient>>>;
 }) {
-  const [bmi, assessment] = [computeBmi(patient.weightKg, patient.heightCm), await getLifestyleAssessment(getDb(), patient.id)];
+  const bmi = computeBmi(patient.weightKg, patient.heightCm);
+  const assessment = await getLifestyleAssessment(getDb(), patient.id);
 
   function bmiClass() {
     if (bmi === null) return 'bg-muted text-muted-foreground';
@@ -209,34 +210,42 @@ async function Overview({
       </Card>
 
       <Card className="sm:col-span-2">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium text-muted-foreground">Assessment Snapshot / मूल्यांकन सारांश</CardTitle>
+          <Link href={`/patients/${patient.id}?tab=assessment`} className="text-xs text-primary hover:underline">
+            {assessment ? 'Edit →' : 'Fill in →'}
+          </Link>
         </CardHeader>
         <CardContent className="text-sm">
           {!assessment ? (
-            <p className="text-muted-foreground">
-              No assessment yet / मूल्यांकन नाही —{' '}
-              <Link href={`/patients/${patient.id}?tab=assessment`} className="text-primary underline underline-offset-2">
-                go to Assessment tab
-              </Link>
-            </p>
+            <p className="text-muted-foreground">No assessment filled yet / मूल्यांकन नाही</p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
-              {[
-                ['Stress / ताण', assessment.stressLevel != null ? `${assessment.stressLevel}/10` : null],
-                ['Sleep Quality / झोप', assessment.sleepQuality != null ? `${assessment.sleepQuality}/10` : null],
-                ['Activity / सक्रियता', assessment.activityLevel],
-                ['Goal / उद्दिष्ट', assessment.primaryGoal],
-              ].map(([k, v]) => (
-                <div key={String(k)} className="flex justify-between gap-4 border-b border-border pb-1.5">
-                  <span className="text-muted-foreground">{k}</span>
-                  <span className="text-right">{v ?? '—'}</span>
-                </div>
-              ))}
+              {(() => {
+                const activityLabels: Record<string, string> = {
+                  sedentary: 'Sedentary / बैठी', light: 'Light / सौम्य', active: 'Active / सक्रिय',
+                };
+                const stressColor = assessment.stressLevel == null ? '' : assessment.stressLevel >= 8 ? 'text-destructive font-medium' : assessment.stressLevel >= 5 ? 'text-yellow-700 font-medium' : 'text-primary font-medium';
+                const sleepColor = assessment.sleepQuality == null ? '' : assessment.sleepQuality <= 3 ? 'text-destructive font-medium' : assessment.sleepQuality <= 6 ? 'text-yellow-700 font-medium' : 'text-primary font-medium';
+                return [
+                  { label: 'Stress / ताण', value: assessment.stressLevel != null ? `${assessment.stressLevel}/10` : null, cls: stressColor },
+                  { label: 'Sleep Quality / झोप', value: assessment.sleepQuality != null ? `${assessment.sleepQuality}/10` : null, cls: sleepColor },
+                  { label: 'Activity / सक्रियता', value: assessment.activityLevel ? (activityLabels[assessment.activityLevel] ?? assessment.activityLevel) : null, cls: '' },
+                  { label: 'Goal / उद्दिष्ट', value: assessment.primaryGoal, cls: '' },
+                ].map(({ label, value, cls }) => (
+                  <div key={label} className="flex justify-between gap-4 border-b border-border pb-1.5">
+                    <span className="text-muted-foreground shrink-0">{label}</span>
+                    <span className={`text-right line-clamp-2 ${cls || 'text-foreground'}`}>{value ?? '—'}</span>
+                  </div>
+                ));
+              })()}
               {assessment.hasContraindications && (
-                <div className="sm:col-span-2 mt-1 rounded-md bg-destructive/10 px-3 py-2 text-destructive text-xs font-medium">
-                  ⚠ Contraindications noted / धोके नोंदवले
-                  {assessment.contraindicationDetails && ` — ${assessment.contraindicationDetails}`}
+                <div className="sm:col-span-2 mt-1 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive text-xs font-medium">
+                  <span className="shrink-0">⚠</span>
+                  <span>
+                    Contraindications noted / धोके नोंदवले
+                    {assessment.contraindicationDetails && ` — ${assessment.contraindicationDetails}`}
+                  </span>
                 </div>
               )}
             </div>
@@ -624,8 +633,8 @@ async function Assessment({ patientId }: { patientId: string }) {
         className="space-y-6"
       >
         {/* Section 1: Primary Concern */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-primary/40">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Primary Concern / मुख्य तक्रार</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -678,8 +687,8 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 2: Medications & Restrictions */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-primary/40">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Medications & Restrictions / औषधे</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -716,8 +725,8 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 3: Lifestyle */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-primary/40">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Lifestyle / जीवनशैली</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -775,24 +784,26 @@ async function Assessment({ patientId }: { patientId: string }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-sleepQuality">Sleep quality 1–10 / झोपेचा दर्जा</Label>
+                <Label htmlFor="a-sleepQuality">Sleep quality / झोपेचा दर्जा <span className="text-xs text-muted-foreground">(1 = poor, 10 = excellent)</span></Label>
                 <Input
                   id="a-sleepQuality"
                   name="sleepQuality"
                   type="number"
                   min="1"
                   max="10"
+                  placeholder="1–10"
                   defaultValue={existing?.sleepQuality?.toString() ?? ''}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-stressLevel">Stress level 1–10 / ताण पातळी</Label>
+                <Label htmlFor="a-stressLevel">Stress level / ताण पातळी <span className="text-xs text-muted-foreground">(1 = calm, 10 = very stressed)</span></Label>
                 <Input
                   id="a-stressLevel"
                   name="stressLevel"
                   type="number"
                   min="1"
                   max="10"
+                  placeholder="1–10"
                   defaultValue={existing?.stressLevel?.toString() ?? ''}
                 />
               </div>
@@ -810,8 +821,8 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 4: Exercise History */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-primary/40">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Exercise History / व्यायामाचा इतिहास</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -838,13 +849,13 @@ async function Assessment({ patientId }: { patientId: string }) {
                 <option value="active">Active / सक्रिय</option>
               </select>
             </div>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2.5 text-sm cursor-pointer rounded-md border border-border px-3 py-2.5 hover:bg-muted/50">
               <input
                 type="checkbox"
                 name="fearOfMovement"
                 value="true"
                 defaultChecked={existing?.fearOfMovement ?? false}
-                className="h-4 w-4 rounded border-input"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               Afraid movement worsens pain? / हालचालीची भीती
             </label>
@@ -852,8 +863,8 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 5: Goals & Safety */}
-        <Card>
-          <CardHeader>
+        <Card className="border-l-4 border-l-destructive/40">
+          <CardHeader className="pb-3">
             <CardTitle className="text-base">Goals & Safety / उद्दिष्टे आणि सुरक्षितता</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -875,13 +886,13 @@ async function Assessment({ patientId }: { patientId: string }) {
                 defaultValue={existing?.activityStruggle ?? ''}
               />
             </div>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2.5 text-sm cursor-pointer rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5 hover:bg-destructive/10">
               <input
                 type="checkbox"
                 name="hasContraindications"
                 value="true"
                 defaultChecked={existing?.hasContraindications ?? false}
-                className="h-4 w-4 rounded border-input"
+                className="h-4 w-4 rounded border-input accent-primary"
               />
               Any contraindications? / काही धोके?
             </label>

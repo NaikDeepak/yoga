@@ -59,23 +59,20 @@ export default async function PatientsPage({
           const visible = pts.slice(0, 3);
           const overflow = pts.length - visible.length;
           const filled = completions[p.id] ?? 0;
-          const completionLabel = filled === 0
-            ? { text: 'Assessment: 0/5', cls: 'bg-muted text-muted-foreground' }
-            : filled < 5
-              ? { text: `Assessment: ${filled}/5`, cls: 'bg-yellow-100 text-yellow-800' }
-              : { text: 'Assessment: ✓', cls: 'bg-primary/10 text-primary' };
+          const completion = filled === 5
+            ? { text: 'Assessment ✓', cls: 'bg-primary/10 text-primary' }
+            : filled > 0
+              ? { text: `Assessment ${filled}/5`, cls: 'bg-yellow-100 text-yellow-800' }
+              : { text: 'Assessment —', cls: 'bg-muted text-muted-foreground' };
           return (
             <Link key={p.id} href={`/patients/${p.id}`}>
               <Card className="flex items-center gap-4 p-4 transition-shadow hover:shadow-md">
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{p.fullName}</span>
                     <Badge variant="outline" className="border-brand-accent text-brand-accent">
                       {p.patientCode}
                     </Badge>
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${completionLabel.cls}`}>
-                      {completionLabel.text}
-                    </span>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-sm text-muted-foreground">{p.mobile}</span>
@@ -91,6 +88,9 @@ export default async function PatientsPage({
                     {overflow > 0 && (
                       <span className="text-xs text-muted-foreground">+{overflow} more</span>
                     )}
+                    <span className={`ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${completion.cls}`}>
+                      {completion.text}
+                    </span>
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
