@@ -53,6 +53,7 @@ export async function getAilmentBreakdown(
 }
 
 export type RecentVisit = {
+  visitId: string;
   visitDate: string;
   patientId: string;
   patientName: string;
@@ -67,6 +68,7 @@ export async function getRecentVisits(
 ): Promise<RecentVisit[]> {
   return db
     .select({
+      visitId: visits.id,
       visitDate: visits.visitDate,
       patientId: visits.patientId,
       patientName: patients.fullName,

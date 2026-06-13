@@ -63,7 +63,7 @@ export default async function DashboardPage() {
               <ul className="space-y-3">
                 {recentVisits.map((v) => (
                   <li
-                    key={`${v.patientId}-${v.visitDate}`}
+                    key={v.visitId}
                     className="flex items-start justify-between gap-2 border-b border-border pb-3 text-sm last:border-0 last:pb-0"
                   >
                     <div className="flex flex-col gap-0.5">
