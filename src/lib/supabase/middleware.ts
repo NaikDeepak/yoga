@@ -34,10 +34,10 @@ export async function updateSession(request: NextRequest) {
     return redirectResponse;
   }
 
-  // If user is logged in and visits login or register, redirect to patients
+  // If user is logged in and visits login or register, redirect to dashboard
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/patients';
+    url.pathname = '/dashboard';
     const redirectResponse = NextResponse.redirect(url);
     // Copy cookies to ensure the logged-in session cookie is passed along
     response.cookies.getAll().forEach((cookie) => {

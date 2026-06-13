@@ -23,10 +23,10 @@ const fd = (entries: Record<string, string>) => {
 beforeEach(() => vi.clearAllMocks());
 
 describe('signInAction', () => {
-  it('signs in and redirects to /patients', async () => {
+  it('signs in and redirects to /dashboard', async () => {
     auth.signInWithPassword.mockResolvedValue({ error: null });
     await expect(signInAction(fd({ email: 'a@b.c', password: 'secret' })))
-      .rejects.toThrow('REDIRECT:/patients');
+      .rejects.toThrow('REDIRECT:/dashboard');
     expect(auth.signInWithPassword).toHaveBeenCalledWith({ email: 'a@b.c', password: 'secret' });
   });
   it('redirects back to /login with error flag on failure', async () => {
