@@ -21,10 +21,19 @@ export function InlineForm({
       action={async (formData) => {
         setPending(true);
         setSaved(false);
-        const result = await action(formData);
-        setPending(false);
-        if (result && !result.ok) setError(result.error);
-        else { setError(null); setSaved(true); ref.current?.reset(); }
+        try {
+          const result = await action(formData);
+          if (result && !result.ok) setError(result.error);
+          else { setError(null); setSaved(true); ref.current?.reset(); }
+        } catch (err) {
+          // Re-throw Next.js redirect/notFound errors so the framework handles them
+          if (err instanceof Error && (err.message === 'NEXT_REDIRECT' || err.message === 'NEXT_NOT_FOUND')) {
+            throw err;
+          }
+          setError('Something went wrong. Please try again.');
+        } finally {
+          setPending(false);
+        }
       }}
     >
       {error && <p className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
