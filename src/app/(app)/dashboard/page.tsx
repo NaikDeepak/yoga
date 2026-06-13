@@ -88,7 +88,7 @@ export default async function DashboardPage() {
                       {v.painScale !== null && (
                         <span
                           className={`h-3 w-3 rounded-full ${painDotColor(v.painScale)}`}
-                          title={`Pain: ${v.painScale}`}
+                          title={`Pain: ${v.painScale} / वेदना: ${v.painScale}`}
                         />
                       )}
                     </div>
