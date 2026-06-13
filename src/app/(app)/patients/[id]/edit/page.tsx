@@ -12,8 +12,11 @@ export default async function EditPatientPage({
   if (!patient) notFound();
   const update = updatePatientAction.bind(null, id);
   return (
-    <div>
-      <h1 className="mb-4 text-xl font-semibold">Edit Patient / माहिती बदला — {patient.fullName}</h1>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">Edit Patient / माहिती बदला</h1>
+        <p className="text-sm text-muted-foreground">{patient.fullName} — {patient.patientCode}</p>
+      </div>
       <PatientForm action={update} defaultValues={patient} submitLabel="Save / जतन करा" />
     </div>
   );

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Pencil, Printer } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
@@ -15,6 +16,13 @@ import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { addVisitAction } from '@/actions/visits';
 import { DeleteButton } from '@/components/DeleteButton';
 import { InlineForm } from '@/components/InlineForm';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const TABS = [
   ['overview', 'Overview / माहिती'],
@@ -24,11 +32,19 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
-const field = 'mt-1 w-full rounded border border-stone-300 p-2';
-const btn = 'rounded bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-800';
+function initials(name: string) {
+  return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function painColor(scale: number) {
+  if (scale <= 3) return 'bg-primary';
+  if (scale <= 6) return 'bg-yellow-500';
+  return 'bg-destructive';
+}
 
 export default async function PatientPage({
-  params, searchParams,
+  params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
@@ -39,30 +55,61 @@ export default async function PatientPage({
   const patient = await getPatient(db, id);
   if (!patient) notFound();
 
+  const photoUrl = patient.photoPath ? await getStorage().createSignedUrl(patient.photoPath) : null;
+
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">
-          {patient.fullName} <span className="text-sm font-normal text-stone-500">{patient.patientCode}</span>
-        </h1>
-        <div className="flex gap-3">
-          <Link href={`/patients/${id}/edit`} className="text-sm text-emerald-700 hover:underline">Edit / बदला</Link>
-          <Link href={`/patients/${id}/print`} className="text-sm text-emerald-700 hover:underline">
-            Download PDF / प्रिंट
-          </Link>
+    <div className="space-y-6">
+      {/* Patient header */}
+      <div className="flex flex-wrap items-center gap-4">
+        <Avatar className="h-16 w-16">
+          {photoUrl && <AvatarImage src={photoUrl} alt={patient.fullName} />}
+          <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+            {initials(patient.fullName)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold">{patient.fullName}</h1>
+            <Badge variant="outline" className="border-[var(--brand-accent)] text-[var(--brand-accent)]">
+              {patient.patientCode}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">{patient.mobile}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/patients/${id}/edit`}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Edit / बदला
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/patients/${id}/print`}>
+              <Printer className="mr-1.5 h-3.5 w-3.5" />
+              PDF / प्रिंट
+            </Link>
+          </Button>
         </div>
       </div>
-      <nav className="mb-4 flex gap-1 border-b border-stone-200">
+
+      {/* Tab navigation — URL-based for server rendering, styled like shadcn Tabs */}
+      <div className="inline-flex h-9 w-full items-center justify-start overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground">
         {TABS.map(([key, title]) => (
-          <Link key={key} href={`/patients/${id}?tab=${key}`}
-            className={`rounded-t px-3 py-2 text-sm ${tab === key
-              ? 'border border-b-0 border-stone-200 bg-white font-medium'
-              : 'text-stone-500 hover:text-stone-800'}`}>
+          <Link
+            key={key}
+            href={`/patients/${id}?tab=${key}`}
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium transition-all ${
+              tab === key
+                ? 'bg-card text-foreground shadow-sm'
+                : 'hover:bg-card/50 hover:text-foreground'
+            }`}
+          >
             {title}
           </Link>
         ))}
-      </nav>
+      </div>
 
+      {/* Tab content */}
       {tab === 'overview' && <Overview patient={patient} />}
       {tab === 'problems' && <Problems patientId={id} />}
       {tab === 'documents' && <Documents patientId={id} />}
@@ -71,32 +118,83 @@ export default async function PatientPage({
   );
 }
 
-async function Overview({ patient }: { patient: NonNullable<Awaited<ReturnType<typeof getPatient>>> }) {
+async function Overview({
+  patient,
+}: {
+  patient: NonNullable<Awaited<ReturnType<typeof getPatient>>>;
+}) {
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
-  const photoUrl = patient.photoPath ? await getStorage().createSignedUrl(patient.photoPath) : null;
-  const rows: [string, string | number | null][] = [
-    ['Age / वय', patient.age], ['Gender / लिंग', patient.gender],
-    ['Weight / वजन (kg)', patient.weightKg], ['Height / उंची (cm)', patient.heightCm],
-    ['BMI', bmi !== null ? `${bmi} — ${bmiCategory(bmi)}` : null],
-    ['Mobile / मोबाईल', patient.mobile], ['Email / ईमेल', patient.email],
-    ['Occupation / व्यवसाय', patient.occupation],
-    ['Emergency / आपत्कालीन', patient.emergencyContact],
-    ['Address / पत्ता', patient.address],
-  ];
+
+  function bmiClass() {
+    if (bmi === null) return 'bg-muted text-muted-foreground';
+    if (bmi < 18.5) return 'bg-blue-100 text-blue-800';
+    if (bmi < 25) return 'bg-primary/10 text-primary';
+    if (bmi < 30) return 'bg-yellow-100 text-yellow-800';
+    return 'bg-destructive/10 text-destructive';
+  }
+
   return (
-    <div className="flex flex-wrap gap-6">
-      {photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={photoUrl} alt={patient.fullName} className="h-32 w-32 rounded-lg object-cover" />
-      )}
-      <dl className="grid flex-1 grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
-        {rows.map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-4 border-b border-stone-100 py-1 text-sm">
-            <dt className="text-stone-500">{k}</dt>
-            <dd className="text-right">{v ?? '—'}</dd>
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Personal / वैयक्तिक</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {[
+            ['Age / वय', patient.age],
+            ['Gender / लिंग', patient.gender],
+            ['Occupation / व्यवसाय', patient.occupation],
+          ].map(([k, v]) => (
+            <div key={String(k)} className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground">{k}</span>
+              <span className="text-right">{v ?? '—'}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Body Metrics / शरीर</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          {[
+            ['Weight / वजन', patient.weightKg ? `${patient.weightKg} kg` : null],
+            ['Height / उंची', patient.heightCm ? `${patient.heightCm} cm` : null],
+          ].map(([k, v]) => (
+            <div key={String(k)} className="flex justify-between border-b border-border pb-1.5">
+              <span className="text-muted-foreground">{k}</span>
+              <span>{v ?? '—'}</span>
+            </div>
+          ))}
+          <div className="pt-1">
+            <span
+              className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${bmiClass()}`}
+            >
+              BMI: {bmi !== null ? `${bmi} — ${bmiCategory(bmi)}` : '—'}
+            </span>
           </div>
-        ))}
-      </dl>
+        </CardContent>
+      </Card>
+
+      <Card className="sm:col-span-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Contact / संपर्क</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
+          {[
+            ['Mobile / मोबाईल', patient.mobile],
+            ['Email / ईमेल', patient.email],
+            ['Emergency / आपत्कालीन', patient.emergencyContact],
+            ['Address / पत्ता', patient.address],
+          ].map(([k, v]) => (
+            <div key={String(k)} className="flex justify-between gap-4 border-b border-border pb-1.5">
+              <span className="text-muted-foreground">{k}</span>
+              <span className="text-right">{v ?? '—'}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -107,37 +205,69 @@ async function Problems({ patientId }: { patientId: string }) {
   return (
     <div className="max-w-xl space-y-4">
       <ul className="space-y-2">
+        {problems.length === 0 && (
+          <li className="text-sm text-muted-foreground">No problems recorded / नोंद नाही</li>
+        )}
         {problems.map((p) => (
-          <li key={p.id} className="flex items-center justify-between rounded border border-stone-200 bg-white p-3">
-            <span>
+          <li
+            key={p.id}
+            className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
+          >
+            <span className="text-sm">
               {p.problem}
-              {p.note && <span className="ml-2 text-sm text-stone-500">({p.note})</span>}
+              {p.note && <span className="ml-2 text-muted-foreground">({p.note})</span>}
             </span>
             <DeleteButton
               action={removeProblemAction.bind(null, patientId, p.id)}
-              confirmText={`Remove ${p.problem}?`} label="Remove / काढा" />
+              confirmText={`Remove ${p.problem}?`}
+              label="Remove / काढा"
+            />
           </li>
         ))}
-        {problems.length === 0 && <li className="text-sm text-stone-500">No problems recorded / नोंद नाही</li>}
       </ul>
-      <InlineForm action={add} className="space-y-2 rounded border border-stone-200 bg-white p-3">
-        <label className="block text-sm">Preset / आजार निवडा
-          <select name="problem" className={field}>
-            {PRESET_PROBLEMS.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </label>
-        <label className="block text-sm">Note / टीप
-          <input name="note" className={field} />
-        </label>
-        <button className={btn}>Add / जोडा</button>
-      </InlineForm>
-      <InlineForm action={add} className="space-y-2 rounded border border-stone-200 bg-white p-3">
-        <input type="hidden" name="isCustom" value="true" />
-        <label className="block text-sm">Other problem / इतर आजार
-          <input name="problem" className={field} placeholder="Type custom problem / आजार लिहा" />
-        </label>
-        <button className={btn}>Add custom / इतर जोडा</button>
-      </InlineForm>
+
+      <Card>
+        <CardContent className="pt-4">
+          <InlineForm action={add} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="problem-preset">Preset / आजार निवडा</Label>
+              <select
+                id="problem-preset"
+                name="problem"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {PRESET_PROBLEMS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="problem-note">Note / टीप</Label>
+              <Input id="problem-note" name="note" placeholder="Optional note" />
+            </div>
+            <Button type="submit" size="sm">Add / जोडा</Button>
+          </InlineForm>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-4">
+          <InlineForm action={add} className="space-y-3">
+            <input type="hidden" name="isCustom" value="true" />
+            <div className="space-y-1.5">
+              <Label htmlFor="custom-problem">Other problem / इतर आजार</Label>
+              <Input
+                id="custom-problem"
+                name="problem"
+                placeholder="Type custom problem / आजार लिहा"
+              />
+            </div>
+            <Button type="submit" size="sm">Add custom / इतर जोडा</Button>
+          </InlineForm>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -150,34 +280,67 @@ async function Documents({ patientId }: { patientId: string }) {
   );
   return (
     <div className="max-w-2xl space-y-4">
-      <InlineForm action={uploadDocumentAction.bind(null, patientId)}
-        className="flex flex-wrap items-end gap-3 rounded border border-stone-200 bg-white p-3">
-        <label className="block text-sm">Type / प्रकार
-          <select name="docType" className={field}>
-            {DOC_TYPES.map((t) => <option key={t}>{t}</option>)}
-          </select>
-        </label>
-        <label className="block text-sm">File (PDF/JPG/PNG, max 10MB)
-          <input name="file" type="file" accept="application/pdf,image/jpeg,image/png" className={field} />
-        </label>
-        <button className={btn}>Upload / अपलोड</button>
-      </InlineForm>
-      <ul className="divide-y divide-stone-100 rounded border border-stone-200 bg-white">
-        {withUrls.map((d) => (
-          <li key={d.id} className="flex items-center justify-between gap-2 p-3 text-sm">
-            <div>
-              <span className="mr-2 rounded-full bg-sky-50 px-2 py-0.5 text-xs text-sky-800">{d.docType}</span>
-              <a href={d.url} target="_blank" rel="noreferrer" className="text-emerald-700 hover:underline">
-                {d.originalName}
-              </a>
-              <span className="ml-2 text-stone-400">{new Date(d.createdAt).toLocaleDateString('en-IN')}</span>
+      <Card>
+        <CardContent className="pt-4">
+          <InlineForm
+            action={uploadDocumentAction.bind(null, patientId)}
+            className="flex flex-wrap items-end gap-3"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="doc-type">Type / प्रकार</Label>
+              <select
+                id="doc-type"
+                name="docType"
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {DOC_TYPES.map((t) => (
+                  <option key={t}>{t}</option>
+                ))}
+              </select>
             </div>
-            <DeleteButton action={deleteDocumentAction.bind(null, patientId, d.id)}
-              confirmText={`Delete ${d.originalName}?`} />
-          </li>
-        ))}
-        {docs.length === 0 && <li className="p-3 text-sm text-stone-500">No documents / कागदपत्रे नाहीत</li>}
-      </ul>
+            <div className="space-y-1.5">
+              <Label htmlFor="doc-file">File (PDF/JPG/PNG, max 10MB)</Label>
+              <Input
+                id="doc-file"
+                name="file"
+                type="file"
+                accept="application/pdf,image/jpeg,image/png"
+              />
+            </div>
+            <Button type="submit" size="sm">Upload / अपलोड</Button>
+          </InlineForm>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <ul className="divide-y divide-border">
+          {docs.length === 0 && (
+            <li className="p-4 text-sm text-muted-foreground">No documents / कागदपत्रे नाहीत</li>
+          )}
+          {withUrls.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-2 px-4 py-3">
+              <div className="flex min-w-0 items-center gap-2 text-sm">
+                <Badge variant="secondary" className="shrink-0">{d.docType}</Badge>
+                <a
+                  href={d.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="truncate font-medium text-primary hover:underline"
+                >
+                  {d.originalName}
+                </a>
+                <span className="shrink-0 text-muted-foreground">
+                  {new Date(d.createdAt).toLocaleDateString('en-IN')}
+                </span>
+              </div>
+              <DeleteButton
+                action={deleteDocumentAction.bind(null, patientId, d.id)}
+                confirmText={`Delete ${d.originalName}?`}
+              />
+            </li>
+          ))}
+        </ul>
+      </Card>
     </div>
   );
 }
@@ -187,58 +350,105 @@ async function Treatment({ patientId }: { patientId: string }) {
   const plan = await getTreatmentPlan(db, patientId);
   const visits = await listVisits(db, patientId);
   const planFields: [keyof NonNullable<typeof plan> & string, string][] = [
-    ['yogaProgram', 'Yoga Program / योग कार्यक्रम'], ['pranayam', 'Pranayam / प्राणायाम'],
-    ['massage', 'Massage / मसाज'], ['yogaTherapy', 'Yoga Therapy / योग थेरपी'],
-    ['dietPlan', 'Diet Plan / आहार योजना'], ['medicines', 'Medicines / औषधे'],
+    ['yogaProgram', 'Yoga Program / योग कार्यक्रम'],
+    ['pranayam', 'Pranayam / प्राणायाम'],
+    ['massage', 'Massage / मसाज'],
+    ['yogaTherapy', 'Yoga Therapy / योग थेरपी'],
+    ['dietPlan', 'Diet Plan / आहार योजना'],
+    ['medicines', 'Medicines / औषधे'],
     ['panchkarma', 'Panchkarma / पंचकर्म'],
   ];
   const today = new Date().toISOString().slice(0, 10);
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <InlineForm action={saveTreatmentPlanAction.bind(null, patientId)}
-        className="space-y-3 rounded border border-stone-200 bg-white p-4">
-        <h2 className="font-medium">Treatment Plan / उपचार योजना</h2>
-        {planFields.map(([name, title]) => (
-          <label key={name} className="block text-sm">{title}
-            <textarea name={name} rows={2} defaultValue={(plan?.[name] as string | null) ?? ''} className={field} />
-          </label>
-        ))}
-        <button className={btn}>Save plan / योजना जतन करा</button>
-      </InlineForm>
-      <div className="space-y-4">
-        <InlineForm action={addVisitAction.bind(null, patientId)}
-          className="space-y-3 rounded border border-stone-200 bg-white p-4">
-          <h2 className="font-medium">Add Visit / नवीन भेट</h2>
-          <div className="grid grid-cols-3 gap-3">
-            <label className="block text-sm">Date / तारीख
-              <input name="visitDate" type="date" defaultValue={today} className={field} />
-            </label>
-            <label className="block text-sm">Weight (kg)
-              <input name="weightKg" type="number" step="0.1" className={field} />
-            </label>
-            <label className="block text-sm">Pain (1–10)
-              <input name="painScale" type="number" min="1" max="10" className={field} />
-            </label>
-          </div>
-          <label className="block text-sm">Progress note / प्रगती नोंद
-            <textarea name="progressNote" rows={2} className={field} />
-          </label>
-          <button className={btn}>Add visit / भेट जोडा</button>
-        </InlineForm>
-        <ul className="space-y-2">
-          {visits.map((v) => (
-            <li key={v.id} className="rounded border border-stone-200 bg-white p-3 text-sm">
-              <div className="flex justify-between text-stone-500">
-                <span>{v.visitDate}</span>
-                <span>
-                  {v.weightKg != null && `${v.weightKg} kg `}
-                  {v.painScale != null && `· pain ${v.painScale}/10`}
-                </span>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Treatment Plan / उपचार योजना</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InlineForm
+            action={saveTreatmentPlanAction.bind(null, patientId)}
+            className="space-y-3"
+          >
+            {planFields.map(([name, title]) => (
+              <div key={name} className="space-y-1.5">
+                <Label htmlFor={`plan-${name}`}>{title}</Label>
+                <Textarea
+                  id={`plan-${name}`}
+                  name={name}
+                  rows={2}
+                  defaultValue={(plan?.[name] as string | null) ?? ''}
+                />
               </div>
-              <p className="mt-1">{v.progressNote}</p>
+            ))}
+            <Button type="submit" size="sm">Save plan / योजना जतन करा</Button>
+          </InlineForm>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Add Visit / नवीन भेट</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InlineForm
+              action={addVisitAction.bind(null, patientId)}
+              className="space-y-3"
+            >
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="visitDate">Date / तारीख</Label>
+                  <Input id="visitDate" name="visitDate" type="date" defaultValue={today} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="visitWeight">Weight (kg)</Label>
+                  <Input id="visitWeight" name="weightKg" type="number" step="0.1" placeholder="—" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="visitPain">Pain (1–10)</Label>
+                  <Input id="visitPain" name="painScale" type="number" min="1" max="10" placeholder="—" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="progressNote">Progress note / प्रगती नोंद</Label>
+                <Textarea id="progressNote" name="progressNote" rows={2} />
+              </div>
+              <Button type="submit" size="sm">Add visit / भेट जोडा</Button>
+            </InlineForm>
+          </CardContent>
+        </Card>
+
+        <ul className="space-y-2">
+          {visits.length === 0 && (
+            <li className="text-sm text-muted-foreground">No visits yet / भेटी नाहीत</li>
+          )}
+          {visits.map((v) => (
+            <li key={v.id}>
+              <Card>
+                <CardContent className="pb-3 pt-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{v.visitDate}</span>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      {v.weightKg != null && <span>{v.weightKg} kg</span>}
+                      {v.painScale != null && (
+                        <span className="flex items-center gap-1">
+                          <span
+                            className={`inline-block h-2.5 w-2.5 rounded-full ${painColor(v.painScale)}`}
+                          />
+                          {v.painScale}/10
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {v.progressNote && (
+                    <p className="mt-1 text-sm text-muted-foreground">{v.progressNote}</p>
+                  )}
+                </CardContent>
+              </Card>
             </li>
           ))}
-          {visits.length === 0 && <li className="text-sm text-stone-500">No visits yet / भेटी नाहीत</li>}
         </ul>
       </div>
     </div>
