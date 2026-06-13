@@ -78,7 +78,7 @@ export default async function DashboardPage() {
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
-                        className="border-[var(--brand-accent)] text-[var(--brand-accent)] text-xs"
+                        className="border-brand-accent text-brand-accent text-xs"
                       >
                         {v.patientCode}
                       </Badge>

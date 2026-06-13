@@ -62,7 +62,7 @@ export default async function PatientsPage({
                     <span className="font-semibold">{p.fullName}</span>
                     <Badge
                       variant="outline"
-                      className="border-[var(--brand-accent)] text-[var(--brand-accent)]"
+                      className="border-brand-accent text-brand-accent"
                     >
                       {p.patientCode}
                     </Badge>
