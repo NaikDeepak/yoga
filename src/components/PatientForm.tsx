@@ -79,6 +79,8 @@ export function PatientForm({
               id="age"
               name="age"
               type="number"
+              min="1"
+              max="120"
               defaultValue={defaultValues?.age ?? ''}
               placeholder="—"
             />
@@ -117,6 +119,8 @@ export function PatientForm({
               name="weightKg"
               type="number"
               step="0.1"
+              min="0.1"
+              max="300"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
               placeholder="—"
@@ -129,6 +133,8 @@ export function PatientForm({
               name="heightCm"
               type="number"
               step="0.1"
+              min="0.1"
+              max="250"
               value={height}
               onChange={(e) => setHeight(e.target.value)}
               placeholder="—"

@@ -77,7 +77,8 @@ Grouped sections with muted divider + label headers:
 
 **Header:** circular avatar (initials fallback) + name + code badge + mobile. **Edit** and **Print** buttons (outline variant) right-aligned.
 
-**Tabs** (shadcn `Tabs`):
+**Tabs:** The UI will render shadcn-styled tab links (using `Link` anchors for URL-based navigation) rather than client-side Tabs state. Each tab (Overview, Problems, Documents, Treatment & Visits) maps to a distinct route (`?tab=...`) so tabs are deep-linkable and bookmarkable.
+- *Acceptance Criterion:* Tab links are real anchors and direct navigation to a tab URL renders the correct content.
 
 **Overview:** 2-column info grid cards — Personal, Contact, Body Metrics. BMI as colored badge. Read-only.
 

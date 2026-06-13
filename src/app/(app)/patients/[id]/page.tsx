@@ -42,6 +42,10 @@ function painColor(scale: number) {
   return 'bg-destructive';
 }
 
+function isValidTab(value: unknown): value is Tab {
+  return typeof value === 'string' && TABS.some(([key]) => key === value);
+}
+
 export default async function PatientPage({
   params,
   searchParams,
@@ -50,7 +54,8 @@ export default async function PatientPage({
   searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
-  const tab = ((await searchParams).tab ?? 'overview') as Tab;
+  const rawTab = (await searchParams).tab;
+  const tab: Tab = isValidTab(rawTab) ? rawTab : 'overview';
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();

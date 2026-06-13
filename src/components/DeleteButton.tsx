@@ -19,7 +19,7 @@ export function DeleteButton({
   confirmText,
   label = 'Delete / काढा',
 }: {
-  action: () => Promise<unknown>;
+  action: () => Promise<{ ok: boolean; error?: string }>;
   confirmText: string;
   label?: string;
 }) {
@@ -28,8 +28,16 @@ export function DeleteButton({
 
   function handleConfirm() {
     startTransition(async () => {
-      await action();
-      setOpen(false);
+      try {
+        const result = await action();
+        if (result && result.ok) {
+          setOpen(false);
+        } else {
+          console.error(result?.error || 'Action failed');
+        }
+      } catch (err) {
+        console.error(err);
+      }
     });
   }
 

@@ -1424,7 +1424,7 @@ Add the new shadcn component entries to the Module Map table (after the existing
 
 Also update the `src/components/*` row description to:
 
-```
+```text
 Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm), PrintButton
 ```
 

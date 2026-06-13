@@ -30,9 +30,10 @@ export default async function PatientsPage({
 
       <form method="get">
         <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             name="q"
+            aria-label="Search patients"
             defaultValue={q ?? ''}
             placeholder="Search name or mobile / नाव किंवा मोबाईल"
             className="pl-9"
