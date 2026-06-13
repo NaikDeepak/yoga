@@ -4,6 +4,7 @@ import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
 import { getTreatmentPlan } from '@/data/treatment';
 import { listVisits } from '@/data/visits';
+import { getLifestyleAssessment } from '@/data/lifestyle';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
 import { PrintButton } from '@/components/PrintButton';
 
@@ -12,8 +13,8 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();
-  const [problems, plan, visits] = await Promise.all([
-    listProblems(db, id), getTreatmentPlan(db, id), listVisits(db, id),
+  const [problems, plan, visits, assessment] = await Promise.all([
+    listProblems(db, id), getTreatmentPlan(db, id), listVisits(db, id), getLifestyleAssessment(db, id),
   ]);
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const planRows = plan ? ([
@@ -64,6 +65,71 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
               {problems.map((p) => <li key={p.id}>{p.problem}{p.note && ` — ${p.note}`}</li>)}
             </ul>}
       </section>
+
+      {assessment && (() => {
+        const concern = ([
+          ['Chief Complaint / मुख्य तक्रार', assessment.chiefComplaint],
+          ['Since / केव्हापासून', assessment.duration],
+          ['Aggravating Factors / काय त्रास वाढवते', assessment.aggravatingFactors],
+          ['Relieving Factors / काय आराम देते', assessment.relievingFactors],
+          ['Previous Treatment / आधीचे उपचार', assessment.previousTreatment],
+        ] as const).filter(([, v]) => v);
+        const meds = ([
+          ['Current Medications / सध्याची औषधे', assessment.currentMedications],
+          ["Doctor's Diagnosis / डॉक्टरांचे निदान", assessment.doctorDiagnosis],
+          ["Doctor's Restrictions / डॉक्टरांचे निर्बंध", assessment.doctorRestrictions],
+        ] as const).filter(([, v]) => v);
+        const goalRows: [string, string][] = (([
+          ['Primary Goal / मुख्य उद्दिष्ट', assessment.primaryGoal],
+          assessment.hasContraindications != null
+            ? ['Contraindications / विरोधाभास', assessment.hasContraindications ? 'Yes / होय ⚠' : 'No / नाही']
+            : null,
+          ['Details / तपशील', assessment.contraindicationDetails],
+        ]) as ([string, string | null] | null)[]).filter((r): r is [string, string] => r != null && r[1] != null);
+        return (
+          <>
+            {concern.length > 0 && (
+              <section className="mb-6">
+                <h2 className="mb-2 border-b border-stone-300 font-semibold">Primary Concern / मुख्य तक्रार</h2>
+                <table className="w-full text-sm"><tbody>
+                  {concern.map(([k, v]) => (
+                    <tr key={k} className="border-b border-stone-100 align-top">
+                      <td className="w-48 py-1 text-stone-500">{k}</td>
+                      <td className="py-1 whitespace-pre-wrap">{v}</td>
+                    </tr>
+                  ))}
+                </tbody></table>
+              </section>
+            )}
+            {meds.length > 0 && (
+              <section className="mb-6">
+                <h2 className="mb-2 border-b border-stone-300 font-semibold">Medications & Restrictions / औषधे आणि निर्बंध</h2>
+                <table className="w-full text-sm"><tbody>
+                  {meds.map(([k, v]) => (
+                    <tr key={k} className="border-b border-stone-100 align-top">
+                      <td className="w-48 py-1 text-stone-500">{k}</td>
+                      <td className="py-1 whitespace-pre-wrap">{v}</td>
+                    </tr>
+                  ))}
+                </tbody></table>
+              </section>
+            )}
+            {goalRows.length > 0 && (
+              <section className="mb-6">
+                <h2 className="mb-2 border-b border-stone-300 font-semibold">Goals & Safety / उद्दिष्टे आणि सुरक्षितता</h2>
+                <table className="w-full text-sm"><tbody>
+                  {goalRows.map(([k, v]) => (
+                    <tr key={k} className="border-b border-stone-100 align-top">
+                      <td className="w-48 py-1 text-stone-500">{k}</td>
+                      <td className={`py-1 whitespace-pre-wrap${v.includes('⚠') ? ' font-medium text-red-600' : ''}`}>{v}</td>
+                    </tr>
+                  ))}
+                </tbody></table>
+              </section>
+            )}
+          </>
+        );
+      })()}
 
       {planRows.length > 0 && (
         <section className="mb-6">
