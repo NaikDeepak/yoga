@@ -135,7 +135,7 @@ async function Overview({
 }: {
   patient: NonNullable<Awaited<ReturnType<typeof getPatient>>>;
 }) {
-  const bmi = computeBmi(patient.weightKg, patient.heightCm);
+  const [bmi, assessment] = [computeBmi(patient.weightKg, patient.heightCm), await getLifestyleAssessment(getDb(), patient.id)];
 
   function bmiClass() {
     if (bmi === null) return 'bg-muted text-muted-foreground';
@@ -205,6 +205,42 @@ async function Overview({
               <span className="text-right">{v ?? '—'}</span>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="sm:col-span-2">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">Assessment Snapshot / मूल्यांकन सारांश</CardTitle>
+        </CardHeader>
+        <CardContent className="text-sm">
+          {!assessment ? (
+            <p className="text-muted-foreground">
+              No assessment yet / मूल्यांकन नाही —{' '}
+              <Link href={`/patients/${patient.id}?tab=assessment`} className="text-primary underline underline-offset-2">
+                go to Assessment tab
+              </Link>
+            </p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                ['Stress / ताण', assessment.stressLevel != null ? `${assessment.stressLevel}/10` : null],
+                ['Sleep Quality / झोप', assessment.sleepQuality != null ? `${assessment.sleepQuality}/10` : null],
+                ['Activity / सक्रियता', assessment.activityLevel],
+                ['Goal / उद्दिष्ट', assessment.primaryGoal],
+              ].map(([k, v]) => (
+                <div key={String(k)} className="flex justify-between gap-4 border-b border-border pb-1.5">
+                  <span className="text-muted-foreground">{k}</span>
+                  <span className="text-right">{v ?? '—'}</span>
+                </div>
+              ))}
+              {assessment.hasContraindications && (
+                <div className="sm:col-span-2 mt-1 rounded-md bg-destructive/10 px-3 py-2 text-destructive text-xs font-medium">
+                  ⚠ Contraindications noted / धोके नोंदवले
+                  {assessment.contraindicationDetails && ` — ${assessment.contraindicationDetails}`}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

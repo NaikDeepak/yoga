@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { getLifestyleAssessment, upsertLifestyleAssessment } from '@/data/lifestyle';
+import { getLifestyleAssessment, upsertLifestyleAssessment, assessmentCompletionForPatients } from '@/data/lifestyle';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
 
@@ -42,5 +42,55 @@ describe('upsertLifestyleAssessment', () => {
     expect(result!.sleepQuality).toBe(7);
     expect(result!.chiefComplaint).toBeNull();
     expect(result!.primaryGoal).toBeNull();
+  });
+});
+
+describe('assessmentCompletionForPatients', () => {
+  it('returns empty object for empty input', async () => {
+    expect(await assessmentCompletionForPatients(db, [])).toEqual({});
+  });
+
+  it('returns 0 for a patient with no assessment', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    const result = await assessmentCompletionForPatients(db, [p.id]);
+    expect(result[p.id]).toBeUndefined(); // not in result means 0 via ?? 0 in UI
+  });
+
+  it('counts filled anchor fields (0–5)', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    // Fill 3 of 5 anchor fields: chiefComplaint, currentMedications, workType
+    await upsertLifestyleAssessment(db, p.id, {
+      chiefComplaint: 'Back pain',
+      currentMedications: 'None',
+      workType: 'desk',
+    });
+    const result = await assessmentCompletionForPatients(db, [p.id]);
+    expect(result[p.id]).toBe(3);
+  });
+
+  it('returns 5 when all anchor fields are filled', async () => {
+    const p = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001' });
+    await upsertLifestyleAssessment(db, p.id, {
+      chiefComplaint: 'Knee pain',
+      currentMedications: 'Ibuprofen',
+      workType: 'standing',
+      previousExercise: 'Walking',
+      primaryGoal: 'Pain-free walking',
+    });
+    const result = await assessmentCompletionForPatients(db, [p.id]);
+    expect(result[p.id]).toBe(5);
+  });
+
+  it('handles multiple patients in one query', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001' });
+    await upsertLifestyleAssessment(db, p1.id, { chiefComplaint: 'Back pain', workType: 'desk' });
+    await upsertLifestyleAssessment(db, p2.id, {
+      chiefComplaint: 'Knee pain', currentMedications: 'None',
+      workType: 'physical', previousExercise: 'Yoga', primaryGoal: 'Flexibility',
+    });
+    const result = await assessmentCompletionForPatients(db, [p1.id, p2.id]);
+    expect(result[p1.id]).toBe(2);
+    expect(result[p2.id]).toBe(5);
   });
 });
