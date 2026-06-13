@@ -6,11 +6,13 @@ import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
 import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { addVisitAction } from '@/actions/visits';
+import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { createPatient, searchPatients, getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
 import { listDocuments } from '@/data/documents';
 import { getTreatmentPlan } from '@/data/treatment';
 import { listVisits } from '@/data/visits';
+import { getLifestyleAssessment } from '@/data/lifestyle';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -112,5 +114,30 @@ describe('documents actions', () => {
     const bad = new File([new Uint8Array([1])], 'x.zip', { type: 'application/zip' });
     expect(await uploadDocumentAction(p.id, fd({ docType: 'MRI', file: bad }))).toMatchObject({ ok: false });
     expect(await uploadDocumentAction(p.id, fd({ docType: 'MRI' }))).toMatchObject({ ok: false });
+  });
+});
+
+describe('saveLifestyleAssessmentAction', () => {
+  it('upserts assessment data and returns ok:true', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    const result = await saveLifestyleAssessmentAction(
+      p.id,
+      fd({ chiefComplaint: 'Knee pain', workType: 'desk', sleepQuality: '7' }),
+    );
+    expect(result).toEqual({ ok: true });
+    const saved = await getLifestyleAssessment(db, p.id);
+    expect(saved!.chiefComplaint).toBe('Knee pain');
+    expect(saved!.workType).toBe('desk');
+    expect(saved!.sleepQuality).toBe(7);
+  });
+
+  it('returns ok:false for invalid enum value', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    const result = await saveLifestyleAssessmentAction(
+      p.id,
+      fd({ workType: 'couch-surfing' }),
+    );
+    expect(result).toMatchObject({ ok: false });
+    expect(await getLifestyleAssessment(db, p.id)).toBeUndefined();
   });
 });
