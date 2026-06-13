@@ -1,7 +1,12 @@
 import Link from 'next/link';
+import { Search, ChevronRight } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { searchPatients } from '@/data/patients';
 import { problemsForPatients } from '@/data/problems';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
 export default async function PatientsPage({
   searchParams,
@@ -10,39 +15,79 @@ export default async function PatientsPage({
   const db = getDb();
   const list = await searchPatients(db, q);
   const problems = await problemsForPatients(db, list.map((p) => p.id));
+
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <form className="flex-1">
-          <input name="q" defaultValue={q ?? ''} placeholder="Search name or mobile / नाव किंवा मोबाईल शोधा"
-            className="w-full max-w-md rounded border border-stone-300 p-2" />
-        </form>
-        <Link href="/patients/new"
-          className="rounded bg-emerald-700 px-4 py-2 font-medium text-white hover:bg-emerald-800">
-          + New Patient / नवीन रुग्ण
-        </Link>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Patients / रुग्ण</h1>
+          <p className="text-sm text-muted-foreground">{list.length} registered</p>
+        </div>
+        <Button asChild>
+          <Link href="/patients/new">+ New Patient / नवीन रुग्ण</Link>
+        </Button>
       </div>
-      <ul className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
-        {list.length === 0 && <li className="p-4 text-stone-500">No patients found / रुग्ण सापडले नाहीत</li>}
-        {list.map((p) => (
-          <li key={p.id}>
-            <Link href={`/patients/${p.id}`} className="block p-4 hover:bg-stone-50">
-              <div className="flex items-baseline justify-between">
-                <span className="font-medium">{p.fullName}</span>
-                <span className="text-sm text-stone-500">{p.patientCode}</span>
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
-                <span>{p.mobile}</span>
-                {(problems[p.id] ?? []).map((pr) => (
-                  <span key={pr.id} className="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">
-                    {pr.problem}
-                  </span>
-                ))}
-              </div>
+
+      <form>
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            name="q"
+            defaultValue={q ?? ''}
+            placeholder="Search name or mobile / नाव किंवा मोबाईल"
+            className="pl-9"
+          />
+        </div>
+      </form>
+
+      <div className="space-y-2">
+        {list.length === 0 && (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">No patients found / रुग्ण सापडले नाहीत</p>
+            <Button asChild className="mt-4">
+              <Link href="/patients/new">Register first patient / पहिला रुग्ण नोंदवा</Link>
+            </Button>
+          </Card>
+        )}
+        {list.map((p) => {
+          const pts = problems[p.id] ?? [];
+          const visible = pts.slice(0, 3);
+          const overflow = pts.length - visible.length;
+          return (
+            <Link key={p.id} href={`/patients/${p.id}`}>
+              <Card className="flex items-center gap-4 p-4 transition-shadow hover:shadow-md">
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{p.fullName}</span>
+                    <Badge
+                      variant="outline"
+                      className="border-[--brand-accent] text-[--brand-accent]"
+                    >
+                      {p.patientCode}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm text-muted-foreground">{p.mobile}</span>
+                    {visible.map((pr) => (
+                      <Badge
+                        key={pr.id}
+                        variant="secondary"
+                        className="bg-primary/10 text-primary hover:bg-primary/20"
+                      >
+                        {pr.problem}
+                      </Badge>
+                    ))}
+                    {overflow > 0 && (
+                      <span className="text-xs text-muted-foreground">+{overflow} more</span>
+                    )}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Card>
             </Link>
-          </li>
-        ))}
-      </ul>
+          );
+        })}
+      </div>
     </div>
   );
 }
