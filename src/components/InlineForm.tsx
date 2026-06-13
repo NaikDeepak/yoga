@@ -22,7 +22,7 @@ export function InlineForm({
         else { setError(null); ref.current?.reset(); }
       }}
     >
-      {error && <p className="mb-2 rounded bg-red-50 p-2 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
       {children}
     </form>
   );
