@@ -20,6 +20,12 @@ function lastMonthDate() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-15`;
 }
 
+function nextMonthDate() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-15`;
+}
+
 describe('getDashboardStats', () => {
   it('returns zeros/nulls when empty', async () => {
     const stats = await getDashboardStats(db);
@@ -36,6 +42,7 @@ describe('getDashboardStats', () => {
     await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok', weightKg: 68, painScale: 4 });
     await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok', weightKg: 67, painScale: 6 });
     await addVisit(db, p2.id, { visitDate: lastMonthDate(), progressNote: 'old', painScale: 8 });
+    await addVisit(db, p2.id, { visitDate: nextMonthDate(), progressNote: 'future', painScale: 9 });
 
     await addProblem(db, p1.id, { problem: 'Back Pain', isCustom: false });
     await addProblem(db, p1.id, { problem: 'Arthritis', isCustom: false });

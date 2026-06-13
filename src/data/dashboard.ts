@@ -1,4 +1,4 @@
-import { count, countDistinct, avg, desc, gte, eq, and } from 'drizzle-orm';
+import { count, countDistinct, avg, desc, gte, lt, eq, and } from 'drizzle-orm';
 import { patients, patientProblems, visits } from '@/db/schema';
 import type { Db } from '@/db/types';
 
@@ -12,6 +12,8 @@ export type DashboardStats = {
 export async function getDashboardStats(db: Db): Promise<DashboardStats> {
   const now = new Date();
   const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const firstOfNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
 
   const cntExpr = countDistinct(patientProblems.patientId);
 
@@ -22,14 +24,30 @@ export async function getDashboardStats(db: Db): Promise<DashboardStats> {
     [{ avgPain }],
   ] = await Promise.all([
     db.select({ totalPatients: count() }).from(patients),
-    db.select({ visitsThisMonth: count() }).from(visits).where(gte(visits.visitDate, firstOfMonth)),
+    db
+      .select({ visitsThisMonth: count() })
+      .from(visits)
+      .where(
+        and(
+          gte(visits.visitDate, firstOfMonth),
+          lt(visits.visitDate, firstOfNextMonth)
+        )
+      ),
     db
       .select({ problem: patientProblems.problem, cnt: cntExpr })
       .from(patientProblems)
       .groupBy(patientProblems.problem)
       .orderBy(desc(cntExpr))
       .limit(1),
-    db.select({ avgPain: avg(visits.painScale) }).from(visits).where(gte(visits.visitDate, firstOfMonth)),
+    db
+      .select({ avgPain: avg(visits.painScale) })
+      .from(visits)
+      .where(
+        and(
+          gte(visits.visitDate, firstOfMonth),
+          lt(visits.visitDate, firstOfNextMonth)
+        )
+      ),
   ]);
 
   return {
