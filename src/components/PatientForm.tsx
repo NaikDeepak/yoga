@@ -36,6 +36,8 @@ export function PatientForm({
 
   function onSubmit(formData: FormData) {
     startTransition(async () => {
+      setError(null);
+      if (formData.get('gender') === '__none__') formData.set('gender', '');
       const result = await action(formData);
       if (result && !result.ok) setError(result.error);
     });
@@ -83,11 +85,12 @@ export function PatientForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="gender">Gender / लिंग</Label>
-            <Select name="gender" defaultValue={defaultValues?.gender ?? ''}>
+            <Select name="gender" defaultValue={defaultValues?.gender ?? '__none__'}>
               <SelectTrigger id="gender">
                 <SelectValue placeholder="Select / निवडा" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="__none__">— Select / निवडा —</SelectItem>
                 <SelectItem value="male">Male / पुरुष</SelectItem>
                 <SelectItem value="female">Female / स्त्री</SelectItem>
                 <SelectItem value="other">Other / इतर</SelectItem>
