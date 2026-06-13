@@ -15,6 +15,8 @@ import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
 import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { addVisitAction } from '@/actions/visits';
+import { getLifestyleAssessment } from '@/data/lifestyle';
+import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
 import { InlineForm } from '@/components/InlineForm';
 import { Button } from '@/components/ui/button';
@@ -31,6 +33,7 @@ const TABS = [
   ['documents', 'Documents / रिपोर्ट्स'],
   ['treatment', 'Treatment & Visits / उपचार'],
   ['progress', 'Progress / प्रगती'],
+  ['assessment', 'Assessment / मूल्यांकन'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
@@ -122,6 +125,7 @@ export default async function PatientPage({
       {tab === 'documents' && <Documents patientId={id} />}
       {tab === 'treatment' && <Treatment patientId={id} />}
       {tab === 'progress' && <Progress patientId={id} />}
+      {tab === 'assessment' && <Assessment patientId={id} />}
     </div>
   );
 }
@@ -568,6 +572,299 @@ async function Progress({ patientId }: { patientId: string }) {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+async function Assessment({ patientId }: { patientId: string }) {
+  const existing = await getLifestyleAssessment(getDb(), patientId);
+  const selectClass =
+    'w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring';
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <InlineForm
+        action={saveLifestyleAssessmentAction.bind(null, patientId)}
+        className="space-y-6"
+      >
+        {/* Section 1: Primary Concern */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Primary Concern / मुख्य तक्रार</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="a-chiefComplaint">What brings you here / कशासाठी आलात</Label>
+              <Textarea
+                id="a-chiefComplaint"
+                name="chiefComplaint"
+                rows={3}
+                defaultValue={existing?.chiefComplaint ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-duration">Since when / केव्हापासून</Label>
+              <Input
+                id="a-duration"
+                name="duration"
+                placeholder="e.g. 2 months / २ महिने"
+                defaultValue={existing?.duration ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-aggravatingFactors">What makes it worse / काय त्रास वाढवते</Label>
+              <Textarea
+                id="a-aggravatingFactors"
+                name="aggravatingFactors"
+                rows={2}
+                defaultValue={existing?.aggravatingFactors ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-relievingFactors">What makes it better / काय आराम देते</Label>
+              <Textarea
+                id="a-relievingFactors"
+                name="relievingFactors"
+                rows={2}
+                defaultValue={existing?.relievingFactors ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-previousTreatment">Previous treatments tried / आधी कोणते उपचार केले</Label>
+              <Textarea
+                id="a-previousTreatment"
+                name="previousTreatment"
+                rows={2}
+                defaultValue={existing?.previousTreatment ?? ''}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section 2: Medications & Restrictions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Medications & Restrictions / औषधे</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="a-currentMedications">Current medications / सध्याची औषधे</Label>
+              <Textarea
+                id="a-currentMedications"
+                name="currentMedications"
+                rows={2}
+                defaultValue={existing?.currentMedications ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-doctorDiagnosis">Doctor&apos;s diagnosis / डॉक्टरांचे निदान</Label>
+              <Textarea
+                id="a-doctorDiagnosis"
+                name="doctorDiagnosis"
+                rows={2}
+                defaultValue={existing?.doctorDiagnosis ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-doctorRestrictions">
+                Doctor&apos;s restrictions / डॉक्टरांनी काय टाळायला सांगितले
+              </Label>
+              <Textarea
+                id="a-doctorRestrictions"
+                name="doctorRestrictions"
+                rows={2}
+                defaultValue={existing?.doctorRestrictions ?? ''}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section 3: Lifestyle */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Lifestyle / जीवनशैली</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="a-workType">Work type / कामाचा प्रकार</Label>
+                <select
+                  id="a-workType"
+                  name="workType"
+                  defaultValue={existing?.workType ?? ''}
+                  className={selectClass}
+                >
+                  <option value="">—</option>
+                  <option value="desk">Desk job / बैठे काम</option>
+                  <option value="standing">Standing / उभे राहणे</option>
+                  <option value="physical">Physical labour / शारीरिक श्रम</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="a-dailySitting">Daily sitting / दररोज बसणे</Label>
+                <select
+                  id="a-dailySitting"
+                  name="dailySitting"
+                  defaultValue={existing?.dailySitting ?? ''}
+                  className={selectClass}
+                >
+                  <option value="">—</option>
+                  <option value="<2h">&lt;2 hrs</option>
+                  <option value="2-4h">2–4 hrs</option>
+                  <option value="4-8h">4–8 hrs</option>
+                  <option value="8+h">8+ hrs</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="a-activityLevel">Activity level / सक्रियता</Label>
+                <select
+                  id="a-activityLevel"
+                  name="activityLevel"
+                  defaultValue={existing?.activityLevel ?? ''}
+                  className={selectClass}
+                >
+                  <option value="">—</option>
+                  <option value="sedentary">Sedentary / बैठी जीवनशैली</option>
+                  <option value="light">Light / सौम्य</option>
+                  <option value="active">Active / सक्रिय</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="a-sleepHours">Sleep hours / झोपेचे तास</Label>
+                <Input
+                  id="a-sleepHours"
+                  name="sleepHours"
+                  placeholder="e.g. 7"
+                  defaultValue={existing?.sleepHours ?? ''}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="a-sleepQuality">Sleep quality 1–10 / झोपेचा दर्जा</Label>
+                <Input
+                  id="a-sleepQuality"
+                  name="sleepQuality"
+                  type="number"
+                  min="1"
+                  max="10"
+                  defaultValue={existing?.sleepQuality?.toString() ?? ''}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="a-stressLevel">Stress level 1–10 / ताण पातळी</Label>
+                <Input
+                  id="a-stressLevel"
+                  name="stressLevel"
+                  type="number"
+                  min="1"
+                  max="10"
+                  defaultValue={existing?.stressLevel?.toString() ?? ''}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="a-screenTime">Screen time / स्क्रीन वेळ</Label>
+                <Input
+                  id="a-screenTime"
+                  name="screenTime"
+                  placeholder="e.g. 6 hrs"
+                  defaultValue={existing?.screenTime ?? ''}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section 4: Exercise History */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Exercise History / व्यायामाचा इतिहास</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="a-previousExercise">Previous exercise / आधीचा व्यायाम</Label>
+              <Input
+                id="a-previousExercise"
+                name="previousExercise"
+                placeholder="e.g. yoga, walking / योग, चालणे"
+                defaultValue={existing?.previousExercise ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-fitnessLevel">Fitness level / तंदुरुस्ती पातळी</Label>
+              <select
+                id="a-fitnessLevel"
+                name="fitnessLevel"
+                defaultValue={existing?.fitnessLevel ?? ''}
+                className={selectClass}
+              >
+                <option value="">—</option>
+                <option value="beginner">Beginner / नवीन</option>
+                <option value="intermediate">Intermediate / मध्यम</option>
+                <option value="active">Active / सक्रिय</option>
+              </select>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="fearOfMovement"
+                value="true"
+                defaultChecked={existing?.fearOfMovement ?? false}
+                className="h-4 w-4 rounded border-input"
+              />
+              Afraid movement worsens pain? / हालचालीची भीती
+            </label>
+          </CardContent>
+        </Card>
+
+        {/* Section 5: Goals & Safety */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Goals & Safety / उद्दिष्टे आणि सुरक्षितता</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="a-primaryGoal">Primary goal / मुख्य उद्दिष्ट</Label>
+              <Textarea
+                id="a-primaryGoal"
+                name="primaryGoal"
+                rows={2}
+                defaultValue={existing?.primaryGoal ?? ''}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-activityStruggle">Activity currently struggling with / अडचणीचे काम</Label>
+              <Input
+                id="a-activityStruggle"
+                name="activityStruggle"
+                placeholder="e.g. climbing stairs / जिने चढणे"
+                defaultValue={existing?.activityStruggle ?? ''}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="hasContraindications"
+                value="true"
+                defaultChecked={existing?.hasContraindications ?? false}
+                className="h-4 w-4 rounded border-input"
+              />
+              Any contraindications? / काही धोके?
+            </label>
+            <div className="space-y-1.5">
+              <Label htmlFor="a-contraindicationDetails">Contraindication details / तपशील</Label>
+              <Textarea
+                id="a-contraindicationDetails"
+                name="contraindicationDetails"
+                rows={2}
+                defaultValue={existing?.contraindicationDetails ?? ''}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end">
+          <Button type="submit">Save Assessment / सेव्ह करा</Button>
+        </div>
+      </InlineForm>
     </div>
   );
 }
