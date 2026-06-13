@@ -28,7 +28,7 @@ export default async function PatientsPage({
         </Button>
       </div>
 
-      <form>
+      <form method="get">
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -61,7 +61,7 @@ export default async function PatientsPage({
                     <span className="font-semibold">{p.fullName}</span>
                     <Badge
                       variant="outline"
-                      className="border-[--brand-accent] text-[--brand-accent]"
+                      className="border-[var(--brand-accent)] text-[var(--brand-accent)]"
                     >
                       {p.patientCode}
                     </Badge>
