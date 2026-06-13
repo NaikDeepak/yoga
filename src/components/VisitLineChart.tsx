@@ -29,7 +29,9 @@ export function VisitLineChart({
           dataKey="value"
           stroke={color}
           strokeWidth={2}
-          dot={{ fill: color, r: 4 }}
+          dot={(props: { cx?: number; cy?: number }) => (
+            <circle cx={props.cx} cy={props.cy} r={4} fill={color} />
+          )}
           activeDot={{ r: 6 }}
         />
       </LineChart>
