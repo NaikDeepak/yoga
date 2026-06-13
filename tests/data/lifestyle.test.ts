@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { getLifestyleAssessment, upsertLifestyleAssessment, assessmentCompletionForPatients } from '@/data/lifestyle';
+import { getLifestyleAssessment, upsertLifestyleAssessment, assessmentCompletionForPatients, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
 
@@ -12,6 +12,38 @@ describe('getLifestyleAssessment', () => {
     const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
     const result = await getLifestyleAssessment(db, p.id);
     expect(result).toBeUndefined();
+  });
+});
+
+describe('getLifestyleAssessmentSnapshot', () => {
+  it('returns undefined for a patient with no assessment', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    const result = await getLifestyleAssessmentSnapshot(db, p.id);
+    expect(result).toBeUndefined();
+  });
+
+  it('returns only the snapshot fields', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    await upsertLifestyleAssessment(db, p.id, {
+      chiefComplaint: 'Back pain',
+      stressLevel: 5,
+      sleepQuality: 8,
+      activityLevel: 'active',
+      primaryGoal: 'Pain relief',
+      hasContraindications: true,
+      contraindicationDetails: 'High BP',
+    });
+    const result = await getLifestyleAssessmentSnapshot(db, p.id);
+    expect(result).toBeDefined();
+    expect(result).toEqual({
+      stressLevel: 5,
+      sleepQuality: 8,
+      activityLevel: 'active',
+      primaryGoal: 'Pain relief',
+      hasContraindications: true,
+      contraindicationDetails: 'High BP',
+    });
+    expect((result as any).chiefComplaint).toBeUndefined();
   });
 });
 
@@ -53,7 +85,7 @@ describe('assessmentCompletionForPatients', () => {
   it('returns 0 for a patient with no assessment', async () => {
     const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
     const result = await assessmentCompletionForPatients(db, [p.id]);
-    expect(result[p.id]).toBeUndefined(); // not in result means 0 via ?? 0 in UI
+    expect(result[p.id]).toBe(0);
   });
 
   it('counts filled anchor fields (0–5)', async () => {

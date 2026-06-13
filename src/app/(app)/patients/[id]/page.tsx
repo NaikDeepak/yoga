@@ -15,7 +15,7 @@ import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
 import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { addVisitAction } from '@/actions/visits';
-import { getLifestyleAssessment } from '@/data/lifestyle';
+import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
 import { InlineForm } from '@/components/InlineForm';
@@ -136,7 +136,7 @@ async function Overview({
   patient: NonNullable<Awaited<ReturnType<typeof getPatient>>>;
 }) {
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
-  const assessment = await getLifestyleAssessment(getDb(), patient.id);
+  const assessment = await getLifestyleAssessmentSnapshot(getDb(), patient.id);
 
   function bmiClass() {
     if (bmi === null) return 'bg-muted text-muted-foreground';
@@ -239,15 +239,20 @@ async function Overview({
                   </div>
                 ));
               })()}
-              {assessment.hasContraindications && (
-                <div className="sm:col-span-2 mt-1 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive text-xs font-medium">
-                  <span className="shrink-0">⚠</span>
-                  <span>
-                    Contraindications noted / धोके नोंदवले
-                    {assessment.contraindicationDetails && ` — ${assessment.contraindicationDetails}`}
-                  </span>
-                </div>
-              )}
+              {(() => {
+                const details = assessment.contraindicationDetails?.trim();
+                const showWarning = assessment.hasContraindications || !!details;
+                if (!showWarning) return null;
+                return (
+                  <div className="sm:col-span-2 mt-1 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive text-xs font-medium">
+                    <span className="shrink-0">⚠</span>
+                    <span>
+                      Contraindications noted / धोके नोंदवले
+                      {details && ` — ${details}`}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </CardContent>

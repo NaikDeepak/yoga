@@ -60,10 +60,10 @@ export default async function PatientsPage({
           const overflow = pts.length - visible.length;
           const filled = completions[p.id] ?? 0;
           const completion = filled === 5
-            ? { text: 'Assessment ✓', cls: 'bg-primary/10 text-primary' }
+            ? { text: 'Assessment ✓ / मूल्यांकन ✓', cls: 'bg-primary/10 text-primary' }
             : filled > 0
-              ? { text: `Assessment ${filled}/5`, cls: 'bg-yellow-100 text-yellow-800' }
-              : { text: 'Assessment —', cls: 'bg-muted text-muted-foreground' };
+              ? { text: `Assessment ${filled}/5 / मूल्यांकन ${filled}/5`, cls: 'bg-yellow-100 text-yellow-800' }
+              : { text: 'Assessment — / मूल्यांकन —', cls: 'bg-muted text-muted-foreground' };
           return (
             <Link key={p.id} href={`/patients/${p.id}`}>
               <Card className="flex items-center gap-4 p-4 transition-shadow hover:shadow-md">
