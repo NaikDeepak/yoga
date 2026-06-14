@@ -474,6 +474,10 @@ async function Treatment({ patientId }: { patientId: string }) {
                 </div>
               </div>
               <div className="space-y-1.5">
+                <Label htmlFor="nextVisitDate">Next visit / पुढील भेट <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                <Input id="nextVisitDate" name="nextVisitDate" type="date" min={today} />
+              </div>
+              <div className="space-y-1.5">
                 <Label htmlFor="progressNote">Progress note / प्रगती नोंद</Label>
                 <Textarea id="progressNote" name="progressNote" rows={2} />
               </div>
