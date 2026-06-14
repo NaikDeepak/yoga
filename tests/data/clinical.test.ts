@@ -3,8 +3,15 @@ import { createTestDb } from '../helpers/db';
 import { createPatient } from '@/data/patients';
 import { addProblem, listProblems, removeProblem, problemsForPatients } from '@/data/problems';
 import { getTreatmentPlan, upsertTreatmentPlan } from '@/data/treatment';
-import { addVisit, listVisits } from '@/data/visits';
+import { addVisit, listVisits, getFollowUpsThisWeek } from '@/data/visits';
 import type { Db } from '@/db/types';
+
+function istDateStr(offsetDays = 0): string {
+  const now = new Date();
+  const ms = now.getTime() + (330 + now.getTimezoneOffset()) * 60_000 + offsetDays * 86_400_000;
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
 
 let db: Db;
 let patientId: string;
@@ -48,5 +55,27 @@ describe('visits', () => {
     expect(all).toHaveLength(2);
     expect(all[0].visitDate).toBe('2026-06-10');
     expect(all[1].weightKg).toBe(72);
+  });
+});
+
+describe('getFollowUpsThisWeek', () => {
+  it('returns patient whose latest visit has nextVisitDate within 7 days', async () => {
+    const tomorrow = istDateStr(1);
+    await addVisit(db, patientId, { visitDate: istDateStr(), progressNote: 'ok', nextVisitDate: tomorrow });
+    const results = await getFollowUpsThisWeek(db);
+    expect(results).toHaveLength(1);
+    expect(results[0].nextVisitDate).toBe(tomorrow);
+    expect(results[0].mobile).toBe('9876543210');
+  });
+
+  it('excludes patient whose nextVisitDate is beyond 7 days', async () => {
+    await addVisit(db, patientId, { visitDate: istDateStr(), progressNote: 'ok', nextVisitDate: istDateStr(10) });
+    expect(await getFollowUpsThisWeek(db)).toHaveLength(0);
+  });
+
+  it('uses most recent visit — new visit without nextVisitDate clears the follow-up', async () => {
+    await addVisit(db, patientId, { visitDate: '2026-06-01', progressNote: 'first', nextVisitDate: istDateStr(1) });
+    await addVisit(db, patientId, { visitDate: '2026-06-14', progressNote: 'attended' });
+    expect(await getFollowUpsThisWeek(db)).toHaveLength(0);
   });
 });
