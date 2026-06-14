@@ -27,6 +27,7 @@ nextVisitDate: date('next_visit_date'),   // nullable, no default
 
 - One Drizzle migration, no new table.
 - The most recent visit's `nextVisitDate` is authoritative per patient. Older values are silently superseded when a new visit is logged.
+- If a new visit is logged without a `nextVisitDate`, the patient disappears from the dashboard — logging a visit with no follow-up date effectively clears the pending follow-up. This is intentional: attending the session resolves the pending call.
 - No constraint forcing a value — therapist leaves it blank when no follow-up is needed.
 
 ---
