@@ -102,14 +102,15 @@ describe('problems / treatment / visits actions', () => {
 
 describe('addVisitAction with nextVisitDate', () => {
   it('saves nextVisitDate when provided', async () => {
+    const futureDate = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
     const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
     const r = await addVisitAction(
       p.id,
-      fd({ visitDate: '2026-06-14', progressNote: 'ok', nextVisitDate: '2026-06-21' }),
+      fd({ visitDate: '2026-06-14', progressNote: 'ok', nextVisitDate: futureDate }),
     );
     expect(r).toEqual({ ok: true });
     const [v] = await listVisits(db, p.id);
-    expect(v.nextVisitDate).toBe('2026-06-21');
+    expect(v.nextVisitDate).toBe(futureDate);
   });
 
   it('saves null nextVisitDate when field is empty string', async () => {
@@ -128,6 +129,16 @@ describe('addVisitAction with nextVisitDate', () => {
     const r = await addVisitAction(
       p.id,
       fd({ visitDate: '2026-06-14', progressNote: 'ok', nextVisitDate: 'not-a-date' }),
+    );
+    expect(r).toMatchObject({ ok: false });
+    expect(await listVisits(db, p.id)).toHaveLength(0);
+  });
+
+  it('returns ok:false for a past nextVisitDate', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const r = await addVisitAction(
+      p.id,
+      fd({ visitDate: '2026-06-14', progressNote: 'ok', nextVisitDate: '2020-01-01' }),
     );
     expect(r).toMatchObject({ ok: false });
     expect(await listVisits(db, p.id)).toHaveLength(0);

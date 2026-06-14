@@ -42,7 +42,13 @@ export const visitSchema = z.object({
   progressNote: z.string().trim().min(1, 'Note required / नोंद आवश्यक').max(5000),
   weightKg: opt(z.coerce.number().positive().max(300)),
   painScale: opt(z.coerce.number().int().min(1).max(10)),
-  nextVisitDate: opt(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')),
+  nextVisitDate: opt(
+    z.string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')
+      .refine((val) => val >= new Date().toISOString().slice(0, 10), {
+        message: 'Must be today or later / आज किंवा नंतरची तारीख असावी',
+      })
+  ),
 });
 export type VisitInput = z.infer<typeof visitSchema>;
 

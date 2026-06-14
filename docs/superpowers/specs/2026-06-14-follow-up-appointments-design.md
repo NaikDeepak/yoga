@@ -59,7 +59,7 @@ New card inserted above the existing stats/charts:
 **Window:** today through today + 6 days inclusive (7-day rolling window). The date range is computed using `getISTDateString(offsetDays)` — a helper that extracts year/month/day from the IST offset (`UTC+5:30`) directly, avoiding timezone shift bugs from `new Date().toLocaleDateString()` when the server runs in a non-IST timezone.
 
 **Data query:** `getFollowUpsThisWeek(db)` in `src/data/visits.ts`
-- For each patient, use a subquery grouping by `patientId` to select the maximum `createdAt`, ensuring only the latest visit per patient determines follow-up status.
+- For each patient, use a subquery ordering by `visitDate DESC` first, then `createdAt DESC` as the tie-breaker (using `selectDistinctOn([visits.patientId])`), ensuring the latest visit per patient determines follow-up status. This ensures backfilled visits are not incorrectly treated as the authoritative visit.
 - Filter where that visit's `nextVisitDate` falls within [today, today+6] (IST date strings).
 - Join `patients` to get `fullName`, `patientCode`, `mobile`
 - Order by `nextVisitDate` ascending

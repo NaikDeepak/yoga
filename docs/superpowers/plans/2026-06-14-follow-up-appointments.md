@@ -168,8 +168,7 @@ import { addVisit, listVisits, getFollowUpsThisWeek } from '@/data/visits';
 Add helper function before the `describe` blocks (after the imports and before `let db`):
 ```ts
 function istDateStr(offsetDays = 0): string {
-  const now = new Date();
-  const ms = now.getTime() + (330 + now.getTimezoneOffset()) * 60_000 + offsetDays * 86_400_000;
+  const ms = Date.now() + 330 * 60_000 + offsetDays * 86_400_000;
   const d = new Date(ms);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
@@ -247,8 +246,7 @@ export async function listVisitsWithData(db: Db, patientId: string): Promise<Vis
 }
 
 function getISTDateString(offsetDays = 0): string {
-  const now = new Date();
-  const ms = now.getTime() + (330 + now.getTimezoneOffset()) * 60_000 + offsetDays * 86_400_000;
+  const ms = Date.now() + 330 * 60_000 + offsetDays * 86_400_000;
   const d = new Date(ms);
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }

@@ -49,7 +49,7 @@ export default async function DashboardPage() {
                       {f.patientCode}
                     </Badge>
                     <span className="text-xs font-medium text-muted-foreground">
-                      Due: {formatDueDate(f.nextVisitDate)}
+                      Due / देय: {formatDueDate(f.nextVisitDate)}
                     </span>
                   </div>
                 </li>

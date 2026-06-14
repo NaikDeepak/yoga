@@ -474,7 +474,7 @@ async function Treatment({ patientId }: { patientId: string }) {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="nextVisitDate">Next visit / पुढील भेट <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                <Label htmlFor="nextVisitDate">Next visit / पुढील भेट <span className="text-xs text-muted-foreground">(optional / ऐच्छिक)</span></Label>
                 <Input id="nextVisitDate" name="nextVisitDate" type="date" min={today} />
               </div>
               <div className="space-y-1.5">

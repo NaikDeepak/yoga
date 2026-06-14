@@ -42,8 +42,9 @@ describe('visitSchema', () => {
     expect(visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'x', painScale: '11' }).success).toBe(false);
   });
   it('accepts a valid nextVisitDate', () => {
-    const r = visitSchema.parse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '2026-06-21' });
-    expect(r.nextVisitDate).toBe('2026-06-21');
+    const futureDate = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    const r = visitSchema.parse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: futureDate });
+    expect(r.nextVisitDate).toBe(futureDate);
   });
   it('maps empty nextVisitDate to undefined', () => {
     const r = visitSchema.parse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '' });
@@ -52,6 +53,11 @@ describe('visitSchema', () => {
   it('rejects a badly-formatted nextVisitDate', () => {
     expect(
       visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: 'June 21' }).success,
+    ).toBe(false);
+  });
+  it('rejects a nextVisitDate in the past', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '2020-01-01' }).success,
     ).toBe(false);
   });
 });
