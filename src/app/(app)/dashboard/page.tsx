@@ -40,7 +40,9 @@ export default async function DashboardPage() {
                     <Link href={`/patients/${f.patientId}`} className="font-medium hover:text-primary">
                       {f.fullName}
                     </Link>
-                    <span className="text-xs text-muted-foreground">{f.mobile}</span>
+                    <a href={`tel:${f.mobile}`} className="text-xs text-muted-foreground hover:text-primary">
+                      {f.mobile}
+                    </a>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="border-brand-accent text-brand-accent text-xs">
@@ -165,5 +167,5 @@ function painDotColor(scale: number) {
 function formatDueDate(dateStr: string): string {
   const [, month, day] = dateStr.split('-').map(Number);
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${day} ${months[month - 1]}`;
+  return `${String(day).padStart(2, '0')} ${months[month - 1]}`;
 }
