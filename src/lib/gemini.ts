@@ -166,5 +166,14 @@ export async function generateTreatmentDraft(context: TreatmentContext): Promise
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Gemini returned empty response');
 
-  return JSON.parse(text) as TreatmentDraftFields;
+  const parsed = JSON.parse(text) as Record<string, unknown>;
+  const EXPECTED_KEYS: Array<keyof TreatmentDraftFields> = [
+    'yogaProgram', 'pranayam', 'massage', 'yogaTherapy', 'dietPlan', 'medicines', 'panchkarma',
+  ];
+  for (const key of EXPECTED_KEYS) {
+    if (typeof parsed[key] !== 'string') {
+      throw new Error(`Gemini response missing required field: ${key}`);
+    }
+  }
+  return parsed as TreatmentDraftFields;
 }

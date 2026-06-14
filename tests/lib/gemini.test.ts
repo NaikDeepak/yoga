@@ -160,14 +160,24 @@ describe('generateTreatmentDraft', () => {
     expect(prompt).toContain('BMI unknown');
   });
 
-  it('throws if Gemini response has malformed JSON', async () => {
+  it('throws SyntaxError when Gemini response text is not valid JSON', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
         candidates: [{ content: { parts: [{ text: 'not valid json' }] } }],
       }),
     });
-    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow();
+    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow(SyntaxError);
+  });
+
+  it('throws if Gemini returns structurally invalid JSON (missing fields)', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: '{}' }] } }],
+      }),
+    });
+    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('Gemini response missing required field: yogaProgram');
   });
 
   it('uses POST method and correct URL with API key', async () => {
