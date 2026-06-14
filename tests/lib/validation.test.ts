@@ -60,6 +60,21 @@ describe('visitSchema', () => {
       visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '2020-01-01' }).success,
     ).toBe(false);
   });
+  it('rejects calendar-invalid visitDate (Feb 30)', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-02-30', progressNote: 'ok' }).success,
+    ).toBe(false);
+  });
+  it('rejects calendar-invalid visitDate (month 13)', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-13-01', progressNote: 'ok' }).success,
+    ).toBe(false);
+  });
+  it('rejects calendar-invalid nextVisitDate (Apr 31)', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '2099-04-31' }).success,
+    ).toBe(false);
+  });
 });
 
 describe('treatmentSchema', () => {

@@ -11,7 +11,11 @@ export async function addVisitAction(patientId: string, formData: FormData): Pro
   await requireUser();
   const parsed = visitSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
-  await addVisit(getDb(), patientId, parsed.data);
+  try {
+    await addVisit(getDb(), patientId, parsed.data);
+  } catch {
+    return { ok: false, error: 'Could not save visit / भेट जतन झाली नाही' };
+  }
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }
