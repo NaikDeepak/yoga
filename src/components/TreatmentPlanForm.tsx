@@ -40,12 +40,12 @@ export function TreatmentPlanForm({
 }) {
   const [fields, setFields] = useState<TreatmentDraftFields>({
     yogaProgram: initialPlan?.yogaProgram ?? '',
-    pranayam:    initialPlan?.pranayam    ?? '',
-    massage:     initialPlan?.massage     ?? '',
+    pranayam: initialPlan?.pranayam ?? '',
+    massage: initialPlan?.massage ?? '',
     yogaTherapy: initialPlan?.yogaTherapy ?? '',
-    dietPlan:    initialPlan?.dietPlan    ?? '',
-    medicines:   initialPlan?.medicines   ?? '',
-    panchkarma:  initialPlan?.panchkarma  ?? '',
+    dietPlan: initialPlan?.dietPlan ?? '',
+    medicines: initialPlan?.medicines ?? '',
+    panchkarma: initialPlan?.panchkarma ?? '',
   });
   const [generating, setGenerating] = useState(false);
   const [genFailed, setGenFailed] = useState(false);
