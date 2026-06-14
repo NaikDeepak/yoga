@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { createPatient } from '@/data/patients';
 import { addProblem, listProblems, removeProblem, problemsForPatients } from '@/data/problems';
@@ -52,6 +52,12 @@ describe('visits', () => {
 });
 
 describe('getFollowUpsThisWeek', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-14T00:00:00.000Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
   it('returns patient whose latest visit has nextVisitDate within 7 days', async () => {
     const tomorrow = getISTDateString(1);
     await addVisit(db, patientId, { visitDate: getISTDateString(), progressNote: 'ok', nextVisitDate: tomorrow });
