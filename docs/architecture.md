@@ -62,5 +62,5 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 
 ## Phase roadmap
 Spec: `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md`.
-Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups (upcoming).
+Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups ✅.
 Phase 3: WhatsApp/SMS (Twilio), fees, CSV export, audit logs.
