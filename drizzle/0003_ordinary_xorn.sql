@@ -1,0 +1,1 @@
+ALTER TABLE "visits" ADD COLUMN "next_visit_date" date;

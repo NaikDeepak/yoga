@@ -1,21 +1,63 @@
 import Link from 'next/link';
 import { getDb } from '@/db/client';
 import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/dashboard';
+import { getFollowUpsThisWeek } from '@/data/visits';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 export default async function DashboardPage() {
   const db = getDb();
-  const [stats, ailments, recentVisits] = await Promise.all([
+  const [stats, ailments, recentVisits, followUps] = await Promise.all([
     getDashboardStats(db),
     getAilmentBreakdown(db),
     getRecentVisits(db),
+    getFollowUpsThisWeek(db),
   ]);
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Dashboard / डॅशबोर्ड</h1>
+
+      {/* Follow-ups card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Follow-ups This Week / या आठवड्यातील पाठपुरावा</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {followUps.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No follow-ups in the next 7 days / या आठवड्यात कोणी नाही
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {followUps.map((f) => (
+                <li
+                  key={f.patientId}
+                  className="flex items-center justify-between gap-2 border-b border-border pb-3 text-sm last:border-0 last:pb-0"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <Link href={`/patients/${f.patientId}`} className="font-medium hover:text-primary">
+                      {f.fullName}
+                    </Link>
+                    <a href={`tel:${f.mobile}`} className="text-xs text-muted-foreground hover:text-primary">
+                      {f.mobile}
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="border-brand-accent text-brand-accent text-xs">
+                      {f.patientCode}
+                    </Badge>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Due / देय: {formatDueDate(f.nextVisitDate)}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stat cards — 2-col on mobile, 4-col on md+ */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -120,4 +162,10 @@ function painDotColor(scale: number) {
   if (scale <= 3) return 'bg-primary';
   if (scale <= 6) return 'bg-yellow-500';
   return 'bg-destructive';
+}
+
+function formatDueDate(dateStr: string): string {
+  const [, month, day] = dateStr.split('-').map(Number);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${String(day).padStart(2, '0')} ${months[month - 1]}`;
 }

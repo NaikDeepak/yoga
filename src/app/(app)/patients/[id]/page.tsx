@@ -10,6 +10,7 @@ import { listVisits, listVisitsWithData } from '@/data/visits';
 import { VisitLineChart } from '@/components/VisitLineChart';
 import { getStorage } from '@/lib/storage';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
+import { getISTDateString } from '@/lib/dates';
 import { PRESET_PROBLEMS, DOC_TYPES } from '@/lib/presets';
 import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
@@ -420,7 +421,7 @@ async function Treatment({ patientId }: { patientId: string }) {
     ['medicines', 'Medicines / औषधे'],
     ['panchkarma', 'Panchkarma / पंचकर्म'],
   ];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getISTDateString();
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -472,6 +473,10 @@ async function Treatment({ patientId }: { patientId: string }) {
                   <Label htmlFor="visitPain">Pain (1–10)</Label>
                   <Input id="visitPain" name="painScale" type="number" min="1" max="10" placeholder="—" />
                 </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="nextVisitDate">Next visit / पुढील भेट <span className="text-xs text-muted-foreground">(optional / ऐच्छिक)</span></Label>
+                <Input id="nextVisitDate" name="nextVisitDate" type="date" min={today} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="progressNote">Progress note / प्रगती नोंद</Label>

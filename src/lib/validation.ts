@@ -5,6 +5,13 @@ const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
 const opt = <T extends z.ZodTypeAny>(s: T) => z.preprocess(blankToUndef, s.optional());
 
+function isCalendarValid(val: string): boolean {
+  const [y, m, d] = val.split('-').map(Number);
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+}
+
 export const patientSchema = z.object({
   fullName: z.string().trim().min(1, 'Name required / नाव आवश्यक'),
   mobile: z.string().trim().regex(/^\d{10}$/, '10-digit mobile required / १० अंकी मोबाईल आवश्यक'),
@@ -38,10 +45,24 @@ export const treatmentSchema = z.object({
 export type TreatmentInput = z.infer<typeof treatmentSchema>;
 
 export const visitSchema = z.object({
-  visitDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date required / तारीख आवश्यक'),
+  visitDate: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date required / तारीख आवश्यक')
+    .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
   progressNote: z.string().trim().min(1, 'Note required / नोंद आवश्यक').max(5000),
   weightKg: opt(z.coerce.number().positive().max(300)),
   painScale: opt(z.coerce.number().int().min(1).max(10)),
+  nextVisitDate: opt(
+    z.string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')
+      .refine(isCalendarValid, 'Invalid date / चुकीची तारीख')
+      .refine((val) => {
+        const d = new Date(Date.now() + 330 * 60_000);
+        const todayIST = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+        return val >= todayIST;
+      }, {
+        message: 'Must be today or later / आज किंवा नंतरची तारीख असावी',
+      })
+  ),
 });
 export type VisitInput = z.infer<typeof visitSchema>;
 

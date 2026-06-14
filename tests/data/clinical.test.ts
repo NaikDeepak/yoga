@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { createPatient } from '@/data/patients';
 import { addProblem, listProblems, removeProblem, problemsForPatients } from '@/data/problems';
 import { getTreatmentPlan, upsertTreatmentPlan } from '@/data/treatment';
-import { addVisit, listVisits } from '@/data/visits';
+import { addVisit, listVisits, getFollowUpsThisWeek, getISTDateString } from '@/data/visits';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -48,5 +48,33 @@ describe('visits', () => {
     expect(all).toHaveLength(2);
     expect(all[0].visitDate).toBe('2026-06-10');
     expect(all[1].weightKg).toBe(72);
+  });
+});
+
+describe('getFollowUpsThisWeek', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-06-14T00:00:00.000Z'));
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('returns patient whose latest visit has nextVisitDate within 7 days', async () => {
+    const tomorrow = getISTDateString(1);
+    await addVisit(db, patientId, { visitDate: getISTDateString(), progressNote: 'ok', nextVisitDate: tomorrow });
+    const results = await getFollowUpsThisWeek(db);
+    expect(results).toHaveLength(1);
+    expect(results[0].nextVisitDate).toBe(tomorrow);
+    expect(results[0].mobile).toBe('9876543210');
+  });
+
+  it('excludes patient whose nextVisitDate is beyond 7 days', async () => {
+    await addVisit(db, patientId, { visitDate: getISTDateString(), progressNote: 'ok', nextVisitDate: getISTDateString(10) });
+    expect(await getFollowUpsThisWeek(db)).toHaveLength(0);
+  });
+
+  it('uses most recent visit — new visit without nextVisitDate clears the follow-up', async () => {
+    await addVisit(db, patientId, { visitDate: '2026-06-01', progressNote: 'first', nextVisitDate: getISTDateString(1) });
+    await addVisit(db, patientId, { visitDate: '2026-06-14', progressNote: 'attended' });
+    expect(await getFollowUpsThisWeek(db)).toHaveLength(0);
   });
 });

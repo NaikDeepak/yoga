@@ -41,6 +41,40 @@ describe('visitSchema', () => {
     expect(visitSchema.safeParse({ visitDate: 'June 11', progressNote: 'x' }).success).toBe(false);
     expect(visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'x', painScale: '11' }).success).toBe(false);
   });
+  it('accepts a valid nextVisitDate', () => {
+    const futureDate = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+    const r = visitSchema.parse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: futureDate });
+    expect(r.nextVisitDate).toBe(futureDate);
+  });
+  it('maps empty nextVisitDate to undefined', () => {
+    const r = visitSchema.parse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '' });
+    expect(r.nextVisitDate).toBeUndefined();
+  });
+  it('rejects a badly-formatted nextVisitDate', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: 'June 21' }).success,
+    ).toBe(false);
+  });
+  it('rejects a nextVisitDate in the past', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '2020-01-01' }).success,
+    ).toBe(false);
+  });
+  it('rejects calendar-invalid visitDate (Feb 30)', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-02-30', progressNote: 'ok' }).success,
+    ).toBe(false);
+  });
+  it('rejects calendar-invalid visitDate (month 13)', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-13-01', progressNote: 'ok' }).success,
+    ).toBe(false);
+  });
+  it('rejects calendar-invalid nextVisitDate (Apr 31)', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '2099-04-31' }).success,
+    ).toBe(false);
+  });
 });
 
 describe('treatmentSchema', () => {
