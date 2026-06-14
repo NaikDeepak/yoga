@@ -41,6 +41,19 @@ describe('visitSchema', () => {
     expect(visitSchema.safeParse({ visitDate: 'June 11', progressNote: 'x' }).success).toBe(false);
     expect(visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'x', painScale: '11' }).success).toBe(false);
   });
+  it('accepts a valid nextVisitDate', () => {
+    const r = visitSchema.parse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '2026-06-21' });
+    expect(r.nextVisitDate).toBe('2026-06-21');
+  });
+  it('maps empty nextVisitDate to undefined', () => {
+    const r = visitSchema.parse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: '' });
+    expect(r.nextVisitDate).toBeUndefined();
+  });
+  it('rejects a badly-formatted nextVisitDate', () => {
+    expect(
+      visitSchema.safeParse({ visitDate: '2026-06-11', progressNote: 'ok', nextVisitDate: 'June 21' }).success,
+    ).toBe(false);
+  });
 });
 
 describe('treatmentSchema', () => {
