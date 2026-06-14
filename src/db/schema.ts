@@ -64,6 +64,7 @@ export const visits = pgTable('visits', {
   progressNote: text('progress_note').notNull(),
   weightKg: real('weight_kg'),
   painScale: integer('pain_scale'),
+  nextVisitDate: date('next_visit_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }).enableRLS();
 
