@@ -94,19 +94,34 @@ describe('r2Storage (via mocked module boundary)', () => {
 });
 
 describe('getStorage', () => {
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
 
-  it('uses Supabase when R2_ACCOUNT_ID is not set', () => {
+  it('uses Supabase when R2 config is absent', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co');
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-key');
-    const a = getStorage();
-    expect(a).toBe(getStorage());
+    const { getStorage: gs } = await import('@/lib/storage');
+    const a = gs();
+    expect(a).toBe(gs());
     expect(typeof a.upload).toBe('function');
   });
 
-  it('uses R2 when R2_ACCOUNT_ID is set', () => {
+  it('uses Supabase when R2 config is incomplete', async () => {
+    vi.stubEnv('R2_ACCOUNT_ID', 'acct'); // missing the other three
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co');
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-key');
+    const { getStorage: gs } = await import('@/lib/storage');
+    expect(typeof gs().upload).toBe('function');
+  });
+
+  it('uses R2 when all four R2 env vars are set', async () => {
     vi.stubEnv('R2_ACCOUNT_ID', 'acct');
-    const a = getStorage();
-    expect(typeof a.upload).toBe('function');
+    vi.stubEnv('R2_ACCESS_KEY_ID', 'key');
+    vi.stubEnv('R2_SECRET_ACCESS_KEY', 'secret');
+    vi.stubEnv('R2_BUCKET', 'bucket');
+    const { getStorage: gs } = await import('@/lib/storage');
+    expect(typeof gs().upload).toBe('function');
   });
 });

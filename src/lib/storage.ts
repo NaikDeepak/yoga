@@ -32,7 +32,9 @@ export function supabaseStorage(client: SupabaseClient): FileStorage {
 let _storage: FileStorage | undefined;
 export function getStorage(): FileStorage {
   if (!_storage) {
-    _storage = process.env.R2_ACCOUNT_ID
+    const r2Ready = process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID &&
+      process.env.R2_SECRET_ACCESS_KEY && process.env.R2_BUCKET;
+    _storage = r2Ready
       ? r2Storage()
       : supabaseStorage(createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
