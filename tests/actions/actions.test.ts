@@ -100,6 +100,40 @@ describe('problems / treatment / visits actions', () => {
   });
 });
 
+describe('addVisitAction with nextVisitDate', () => {
+  it('saves nextVisitDate when provided', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const r = await addVisitAction(
+      p.id,
+      fd({ visitDate: '2026-06-14', progressNote: 'ok', nextVisitDate: '2026-06-21' }),
+    );
+    expect(r).toEqual({ ok: true });
+    const [v] = await listVisits(db, p.id);
+    expect(v.nextVisitDate).toBe('2026-06-21');
+  });
+
+  it('saves null nextVisitDate when field is empty string', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const r = await addVisitAction(
+      p.id,
+      fd({ visitDate: '2026-06-14', progressNote: 'ok', nextVisitDate: '' }),
+    );
+    expect(r).toEqual({ ok: true });
+    const [v] = await listVisits(db, p.id);
+    expect(v.nextVisitDate).toBeNull();
+  });
+
+  it('returns ok:false for invalid nextVisitDate format', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const r = await addVisitAction(
+      p.id,
+      fd({ visitDate: '2026-06-14', progressNote: 'ok', nextVisitDate: 'not-a-date' }),
+    );
+    expect(r).toMatchObject({ ok: false });
+    expect(await listVisits(db, p.id)).toHaveLength(0);
+  });
+});
+
 describe('documents actions', () => {
   it('uploads and deletes', async () => {
     const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
