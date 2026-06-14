@@ -14,8 +14,8 @@ import { getISTDateString } from '@/lib/dates';
 import { PRESET_PROBLEMS, DOC_TYPES } from '@/lib/presets';
 import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
-import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { addVisitAction } from '@/actions/visits';
+import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -412,43 +412,11 @@ async function Treatment({ patientId }: { patientId: string }) {
   const db = getDb();
   const plan = await getTreatmentPlan(db, patientId);
   const visits = await listVisits(db, patientId);
-  const planFields: [keyof NonNullable<typeof plan> & string, string][] = [
-    ['yogaProgram', 'Yoga Program / योग कार्यक्रम'],
-    ['pranayam', 'Pranayam / प्राणायाम'],
-    ['massage', 'Massage / मसाज'],
-    ['yogaTherapy', 'Yoga Therapy / योग थेरपी'],
-    ['dietPlan', 'Diet Plan / आहार योजना'],
-    ['medicines', 'Medicines / औषधे'],
-    ['panchkarma', 'Panchkarma / पंचकर्म'],
-  ];
   const today = getISTDateString();
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Treatment Plan / उपचार योजना</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InlineForm
-            action={saveTreatmentPlanAction.bind(null, patientId)}
-            className="space-y-3"
-          >
-            {planFields.map(([name, title]) => (
-              <div key={name} className="space-y-1.5">
-                <Label htmlFor={`plan-${name}`}>{title}</Label>
-                <Textarea
-                  id={`plan-${name}`}
-                  name={name}
-                  rows={2}
-                  defaultValue={(plan?.[name] as string | null) ?? ''}
-                />
-              </div>
-            ))}
-            <Button type="submit" size="sm">Save plan / योजना जतन करा</Button>
-          </InlineForm>
-        </CardContent>
-      </Card>
+      <TreatmentPlanForm patientId={patientId} initialPlan={plan} />
 
       <div className="space-y-4">
         <Card>
@@ -475,7 +443,10 @@ async function Treatment({ patientId }: { patientId: string }) {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="nextVisitDate">Next visit / पुढील भेट <span className="text-xs text-muted-foreground">(optional / ऐच्छिक)</span></Label>
+                <Label htmlFor="nextVisitDate">
+                  Next visit / पुढील भेट{' '}
+                  <span className="text-xs text-muted-foreground">(optional / ऐच्छिक)</span>
+                </Label>
                 <Input id="nextVisitDate" name="nextVisitDate" type="date" min={today} />
               </div>
               <div className="space-y-1.5">
