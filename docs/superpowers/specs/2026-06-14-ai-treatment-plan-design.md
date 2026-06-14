@@ -12,7 +12,7 @@ Add a "Generate with AI" button to the Treatment Plan card that calls Gemini to 
 | Path | Responsibility |
 |---|---|
 | `src/app/api/ai/treatment-plan/[patientId]/route.ts` | GET route handler: auth-guard (Supabase direct) → fetch all patient data → call Gemini → return 7-field JSON |
-| `src/lib/gemini.ts` | Thin Gemini wrapper: `generateTreatmentDraft(context)` → calls `gemini-2.0-flash` via REST with structured output config, returns typed `TreatmentDraftFields` |
+| `src/lib/gemini.ts` | Thin Gemini wrapper: `generateTreatmentDraft(context)` → calls `gemini-2.5-flash` via REST with structured output config, returns typed `TreatmentDraftFields` |
 | `src/components/TreatmentPlanForm.tsx` | Client component extracted from `Treatment()` in `page.tsx`; owns textarea state + generate button |
 
 ### Modified files
@@ -59,7 +59,7 @@ This returns a clean JSON 401, which the client can handle explicitly.
 
 ## Gemini Integration (`src/lib/gemini.ts`)
 
-- Model: `gemini-2.0-flash` via REST (`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=...`)
+- Model: `gemini-2.5-flash` via REST (`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=...`)
 - No external SDK dependency — plain `fetch`
 - Auth: `GEMINI_API_KEY` env var; throws clear error if missing (never exposed to client)
 - Timeout: 15 seconds

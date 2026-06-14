@@ -184,7 +184,7 @@ describe('generateTreatmentDraft', () => {
     mockGeminiOk(MOCK_DRAFT);
     await generateTreatmentDraft(MOCK_CONTEXT);
     const [url, options] = fetchMock.mock.calls[0];
-    expect(url).toContain('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent');
+    expect(url).toContain('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
     expect(url).toContain('key=test-key');
     expect(options?.method).toBe('POST');
     expect((options as RequestInit).headers).toEqual({ 'Content-Type': 'application/json' });

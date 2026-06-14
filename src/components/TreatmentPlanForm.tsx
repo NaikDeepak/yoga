@@ -48,14 +48,14 @@ export function TreatmentPlanForm({
     panchkarma: initialPlan?.panchkarma ?? '',
   });
   const [generating, setGenerating] = useState(false);
-  const [genFailed, setGenFailed] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
 
   async function doGenerate() {
     setGenerating(true);
-    setGenFailed(false);
+    setGenError(null);
     try {
       const res = await fetch(`/api/ai/treatment-plan/${patientId}`);
       if (!res.ok) {
@@ -64,8 +64,10 @@ export function TreatmentPlanForm({
       }
       const draft = await res.json() as TreatmentDraftFields;
       setFields(draft);
-    } catch {
-      setGenFailed(true);
+    } catch (err) {
+      console.error('AI generation failed:', err);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setGenError(msg);
     } finally {
       setGenerating(false);
     }
@@ -128,9 +130,9 @@ export function TreatmentPlanForm({
           </Button>
         </CardHeader>
         <CardContent>
-          {genFailed && (
-            <p className="mb-3 text-sm text-destructive">
-              AI generation failed — please try again / पुन्हा प्रयत्न करा
+          {genError && (
+            <p className="mb-3 text-sm text-destructive font-medium">
+              AI generation failed: {genError} — please try again / पुन्हा प्रयत्न करा
             </p>
           )}
           <InlineForm

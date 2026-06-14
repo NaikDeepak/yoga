@@ -84,7 +84,9 @@ export async function GET(
     const draft = await generateTreatmentDraft(context);
     return NextResponse.json(draft);
   } catch (err) {
+    console.error('AI treatment plan generation failed:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
