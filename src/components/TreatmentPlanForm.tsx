@@ -86,7 +86,7 @@ export function TreatmentPlanForm({
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Replace current plan?</AlertDialogTitle>
+            <AlertDialogTitle>Replace current plan? / योजना बदलायची?</AlertDialogTitle>
             <AlertDialogDescription>
               This will replace your current plan with an AI draft. Unsaved edits will be lost.
               Continue? / यामुळे तुमचे न जतन केलेले बदल मिटवले जातील. पुढे जायचे?
