@@ -10,6 +10,7 @@ import { listVisits, listVisitsWithData } from '@/data/visits';
 import { VisitLineChart } from '@/components/VisitLineChart';
 import { getStorage } from '@/lib/storage';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
+import { getISTDateString } from '@/lib/dates';
 import { PRESET_PROBLEMS, DOC_TYPES } from '@/lib/presets';
 import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
@@ -420,7 +421,7 @@ async function Treatment({ patientId }: { patientId: string }) {
     ['medicines', 'Medicines / औषधे'],
     ['panchkarma', 'Panchkarma / पंचकर्म'],
   ];
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getISTDateString();
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">

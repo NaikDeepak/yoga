@@ -2,6 +2,7 @@ import { desc, eq, or, isNotNull, and, gte, lte } from 'drizzle-orm';
 import { visits, patients, type Visit } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { VisitInput } from '@/lib/validation';
+import { getISTDateString } from '@/lib/dates';
 
 export type FollowUp = {
   patientId: string;
@@ -31,11 +32,7 @@ export async function listVisitsWithData(db: Db, patientId: string): Promise<Vis
     .orderBy(visits.visitDate, visits.createdAt);
 }
 
-export function getISTDateString(offsetDays = 0): string {
-  const ms = Date.now() + 330 * 60_000 + offsetDays * 86_400_000;
-  const d = new Date(ms);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
-}
+export { getISTDateString };
 
 export async function getFollowUpsThisWeek(db: Db): Promise<FollowUp[]> {
   const today = getISTDateString(0);
