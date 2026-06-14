@@ -11,7 +11,28 @@
 6. **After the admin account exists, disable public signups** (Auth → Sign In / Up →
    turn off "Allow new users to sign up"). The `/register` page stays reachable but Supabase
    will reject further signups — this app has no roles, so any signed-up user gets full access.
-7. Deploy: push to GitHub → import in Vercel → set the same 4 env vars → deploy.
+7. Deploy: push to GitHub → import in Vercel → set env vars → deploy.
+
+## Switching to Neon (free Postgres, never pauses)
+
+1. Create a free project at [neon.tech](https://neon.tech).
+2. Copy the **pooled connection string** (Neon dashboard → Connection Details → Pooled).
+3. Run migrations once against Neon: `DATABASE_URL=<neon-pooled-url> npm run db:migrate`
+4. Set `DATABASE_URL` to the Neon pooled URL in Vercel (and locally in `.env`).
+5. Migrate existing data manually via pg_dump/pg_restore if needed.
+6. Keep the three Supabase env vars — Auth still runs on Supabase.
+
+## Switching to Cloudflare R2 (10 GB free storage, zero egress)
+
+1. Cloudflare dashboard → R2 → Create bucket named `patient-files` (or any name).
+2. R2 → Manage API Tokens → Create token with Read/Write on the bucket.
+3. Add four env vars (Vercel + `.env`):
+   - `R2_ACCOUNT_ID` — your Cloudflare account ID
+   - `R2_ACCESS_KEY_ID` — token key
+   - `R2_SECRET_ACCESS_KEY` — token secret
+   - `R2_BUCKET` — bucket name
+4. When `R2_ACCOUNT_ID` is set, the app automatically uses R2; Supabase Storage is ignored.
+5. Migrate existing files: `rclone copy supabase-remote:patient-files r2-remote:patient-files`
 
 ## Manual pre-handover checklist
 - [ ] Register patient with photo on a phone-sized viewport

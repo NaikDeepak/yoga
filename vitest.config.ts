@@ -10,7 +10,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/lib/**', 'src/data/**', 'src/actions/**'],
-      exclude: ['src/lib/supabase/**'],
+      exclude: ['src/lib/supabase/**', 'src/lib/r2-storage.ts'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },
   },

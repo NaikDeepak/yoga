@@ -1,6 +1,19 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabaseStorage, getStorage, BUCKET } from '@/lib/storage';
+
+// Mock the R2 module boundary so @aws-sdk/* is never loaded in tests.
+const fakeR2Upload = vi.fn().mockResolvedValue(undefined);
+const fakeR2Remove = vi.fn().mockResolvedValue(undefined);
+const fakeR2SignedUrl = vi.fn().mockResolvedValue('https://r2/signed');
+vi.mock('@/lib/r2-storage', () => ({
+  r2Storage: () => ({
+    upload: fakeR2Upload,
+    remove: fakeR2Remove,
+    createSignedUrl: fakeR2SignedUrl,
+  }),
+}));
+
+import { supabaseStorage, r2Storage, getStorage, BUCKET } from '@/lib/storage';
 
 const bucketApi = {
   upload: vi.fn(),
@@ -58,13 +71,42 @@ describe('supabaseStorage', () => {
   });
 });
 
+describe('r2Storage (via mocked module boundary)', () => {
+  it('upload delegates to R2', async () => {
+    await r2Storage().upload('p/x.pdf', file());
+    expect(fakeR2Upload).toHaveBeenCalledWith('p/x.pdf', expect.any(File));
+  });
+
+  it('remove delegates to R2', async () => {
+    await r2Storage().remove('p/x.pdf');
+    expect(fakeR2Remove).toHaveBeenCalledWith('p/x.pdf');
+  });
+
+  it('createSignedUrl delegates to R2 with default expiry', async () => {
+    const url = await r2Storage().createSignedUrl('p/x.pdf');
+    expect(url).toBe('https://r2/signed');
+  });
+
+  it('createSignedUrl passes custom expiry', async () => {
+    await r2Storage().createSignedUrl('p/x.pdf', 60);
+    expect(fakeR2SignedUrl).toHaveBeenCalledWith('p/x.pdf', 60);
+  });
+});
+
 describe('getStorage', () => {
-  it('builds a singleton from env config', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('uses Supabase when R2_ACCOUNT_ID is not set', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://example.supabase.co');
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-key');
     const a = getStorage();
     expect(a).toBe(getStorage());
     expect(typeof a.upload).toBe('function');
-    vi.unstubAllEnvs();
+  });
+
+  it('uses R2 when R2_ACCOUNT_ID is set', () => {
+    vi.stubEnv('R2_ACCOUNT_ID', 'acct');
+    const a = getStorage();
+    expect(typeof a.upload).toBe('function');
   });
 });

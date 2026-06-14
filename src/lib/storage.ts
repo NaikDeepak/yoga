@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { r2Storage } from './r2-storage';
 
 export const BUCKET = 'patient-files';
 
@@ -7,6 +8,8 @@ export interface FileStorage {
   remove(path: string): Promise<void>;
   createSignedUrl(path: string, expiresInSeconds?: number): Promise<string>;
 }
+
+export { r2Storage };
 
 export function supabaseStorage(client: SupabaseClient): FileStorage {
   return {
@@ -29,11 +32,12 @@ export function supabaseStorage(client: SupabaseClient): FileStorage {
 let _storage: FileStorage | undefined;
 export function getStorage(): FileStorage {
   if (!_storage) {
-    const client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-    _storage = supabaseStorage(client);
+    _storage = process.env.R2_ACCOUNT_ID
+      ? r2Storage()
+      : supabaseStorage(createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        ));
   }
   return _storage;
 }
