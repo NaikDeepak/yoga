@@ -24,7 +24,7 @@ export async function GET(
 
     const patient = await getPatient(db, patientId);
     if (!patient) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Patient not found / रुग्ण सापडला नाही' }, { status: 404 });
     }
 
     const [problems, lifestyle, allVisits] = await Promise.all([

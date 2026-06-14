@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Patient } from '@/db/schema';
 
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }));
 vi.mock('@/db/client', () => ({ getDb: vi.fn(() => ({})) }));
@@ -31,7 +32,7 @@ const MOCK_PATIENT = {
   emergencyContact: null,
   photoPath: null,
   createdAt: new Date(),
-};
+} satisfies Patient;
 
 const MOCK_DRAFT = {
   yogaProgram: 'Gentle yoga.',
@@ -57,7 +58,7 @@ beforeEach(() => {
   vi.mocked(createSupabaseServerClient).mockResolvedValue(
     { auth: { getUser: mockGetUser } } as any,
   );
-  vi.mocked(getPatient).mockResolvedValue(MOCK_PATIENT as any);
+  vi.mocked(getPatient).mockResolvedValue(MOCK_PATIENT);
   vi.mocked(listProblems).mockResolvedValue([]);
   vi.mocked(getLifestyleAssessment).mockResolvedValue(undefined);
   vi.mocked(listVisits).mockResolvedValue([]);
@@ -82,7 +83,7 @@ describe('GET /api/ai/treatment-plan/[patientId]', () => {
     vi.mocked(getPatient).mockResolvedValue(undefined);
     const res = await GET(makeRequest(), makeParams());
     expect(res.status).toBe(404);
-    expect(await res.json()).toMatchObject({ error: 'Patient not found' });
+    expect(await res.json()).toMatchObject({ error: 'Patient not found / रुग्ण सापडला नाही' });
   });
 
   it('returns 500 JSON when Gemini throws', async () => {
