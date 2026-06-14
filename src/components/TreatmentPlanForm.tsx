@@ -21,9 +21,7 @@ import {
 import type { TreatmentPlan } from '@/db/schema';
 import type { TreatmentDraftFields } from '@/lib/gemini';
 
-type Fields = TreatmentDraftFields;
-
-const PLAN_FIELDS: [keyof Fields, string][] = [
+const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
   ['yogaProgram', 'Yoga Program / योग कार्यक्रम'],
   ['pranayam', 'Pranayam / प्राणायाम'],
   ['massage', 'Massage / मसाज'],
@@ -40,7 +38,7 @@ export function TreatmentPlanForm({
   patientId: string;
   initialPlan: TreatmentPlan | undefined;
 }) {
-  const [fields, setFields] = useState<Fields>({
+  const [fields, setFields] = useState<TreatmentDraftFields>({
     yogaProgram: initialPlan?.yogaProgram ?? '',
     pranayam:    initialPlan?.pranayam    ?? '',
     massage:     initialPlan?.massage     ?? '',
@@ -50,24 +48,24 @@ export function TreatmentPlanForm({
     panchkarma:  initialPlan?.panchkarma  ?? '',
   });
   const [generating, setGenerating] = useState(false);
-  const [genError, setGenError] = useState<string | null>(null);
+  const [genFailed, setGenFailed] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
 
   async function doGenerate() {
     setGenerating(true);
-    setGenError(null);
+    setGenFailed(false);
     try {
       const res = await fetch(`/api/ai/treatment-plan/${patientId}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
-      const draft = await res.json() as Fields;
+      const draft = await res.json() as TreatmentDraftFields;
       setFields(draft);
-    } catch (err) {
-      setGenError(err instanceof Error ? err.message : 'Unknown error');
+    } catch {
+      setGenFailed(true);
     } finally {
       setGenerating(false);
     }
@@ -130,7 +128,7 @@ export function TreatmentPlanForm({
           </Button>
         </CardHeader>
         <CardContent>
-          {genError && (
+          {genFailed && (
             <p className="mb-3 text-sm text-destructive">
               AI generation failed — please try again / पुन्हा प्रयत्न करा
             </p>
