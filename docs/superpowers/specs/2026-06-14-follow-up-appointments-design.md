@@ -43,7 +43,7 @@ Next visit / पुढील भेट   [date input, min=today, optional]
 ```
 
 - Field name: `nextVisitDate`
-- Zod: `visitSchema` gets `nextVisitDate: z.string().date().optional()` (same format as `visitDate`, `YYYY-MM-DD`)
+- Zod: `visitSchema` gets `nextVisitDate: opt(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख'))` using the project's existing `opt` helper, which maps empty strings (`""`) submitted by HTML forms to `undefined`. Plain `z.string().date().optional()` would fail on empty form submission.
 - Saved through the existing `addVisitAction` → `addVisit` data function — both receive the new optional field.
 
 ---
@@ -56,11 +56,11 @@ New card inserted above the existing stats/charts:
 
 **Title:** Follow-ups This Week / या आठवड्यातील पाठपुरावा
 
-**Window:** today through today + 6 days inclusive (7-day rolling window, computed server-side from `new Date()` in UTC+5:30 / IST).
+**Window:** today through today + 6 days inclusive (7-day rolling window). The date range is computed using `getISTDateString(offsetDays)` — a helper that extracts year/month/day from the IST offset (`UTC+5:30`) directly, avoiding timezone shift bugs from `new Date().toLocaleDateString()` when the server runs in a non-IST timezone.
 
 **Data query:** `getFollowUpsThisWeek(db)` in `src/data/visits.ts`
-- For each patient, take only their most recent visit's `nextVisitDate` (latest `createdAt` per `patientId`)
-- Filter where `nextVisitDate` falls within [today, today+6]
+- For each patient, use a subquery grouping by `patientId` to select the maximum `createdAt`, ensuring only the latest visit per patient determines follow-up status.
+- Filter where that visit's `nextVisitDate` falls within [today, today+6] (IST date strings).
 - Join `patients` to get `fullName`, `patientCode`, `mobile`
 - Order by `nextVisitDate` ascending
 
@@ -70,7 +70,15 @@ Jane Doe · PYT-0002    9876543210    Due: 16 Jun
 ```
 - Patient name is a link to `/patients/:id`
 - Mobile number shown as plain text (tap-to-call on mobile)
-- Date formatted as `DD MMM` (e.g. "16 Jun")
+- Date formatted as `DD MMM` (e.g. "16 Jun") using a timezone-safe `formatDueDate` helper that splits the `YYYY-MM-DD` string directly rather than parsing through `new Date()`:
+
+```ts
+function formatDueDate(dateStr: string): string {
+  const [, month, day] = dateStr.split('-').map(Number);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${day} ${months[month - 1]}`;
+}
+```
 
 **Empty state:** "No follow-ups in the next 7 days / या आठवड्यात कोणी नाही"
 
@@ -90,9 +98,11 @@ Follow the project's TDD pattern: failing test → minimal code → commit.
 
 | Layer | Test file | What to test |
 |---|---|---|
-| `src/data/visits.ts` | `tests/data/visits.test.ts` | `getFollowUpsThisWeek` returns correct patients within window; excludes patients outside window; uses most recent visit per patient |
-| `src/actions/visits.ts` | `tests/actions/visits.test.ts` | `addVisitAction` with `nextVisitDate` saves correctly; omitting field still works |
+| `src/data/visits.ts` | `tests/data/clinical.test.ts` | `getFollowUpsThisWeek` returns correct patients within window; excludes patients outside window; uses most recent visit per patient (clears when new visit has no `nextVisitDate`) |
+| `src/actions/visits.ts` | `tests/actions/actions.test.ts` | `addVisitAction` with `nextVisitDate` saves correctly; omitting field still works |
 | UI | manual / `next build` | Field appears in form; dashboard card shows/hides correctly |
+
+New test cases are added directly to the existing files to keep the suite cohesive — no new test files created.
 
 ---
 
@@ -107,8 +117,8 @@ Follow the project's TDD pattern: failing test → minimal code → commit.
 | `src/actions/visits.ts` | Pass `nextVisitDate` through to `addVisit` |
 | `src/app/(app)/patients/[id]/page.tsx` | Add field to Add Visit form |
 | `src/app/(app)/dashboard/page.tsx` | Add follow-ups card |
-| `tests/data/visits.test.ts` | New tests for `getFollowUpsThisWeek` |
-| `tests/actions/visits.test.ts` | Extend with `nextVisitDate` cases |
+| `tests/data/clinical.test.ts` | Add tests for `getFollowUpsThisWeek` |
+| `tests/actions/actions.test.ts` | Extend with `nextVisitDate` cases |
 | `docs/architecture.md` | Update phase roadmap line |
 
 ---
