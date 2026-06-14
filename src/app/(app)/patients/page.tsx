@@ -3,6 +3,7 @@ import { Search, ChevronRight } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { searchPatients } from '@/data/patients';
 import { problemsForPatients } from '@/data/problems';
+import { assessmentCompletionForPatients } from '@/data/lifestyle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,10 @@ export default async function PatientsPage({
   const { q } = await searchParams;
   const db = getDb();
   const list = await searchPatients(db, q);
-  const problems = await problemsForPatients(db, list.map((p) => p.id));
+  const [problems, completions] = await Promise.all([
+    problemsForPatients(db, list.map((p) => p.id)),
+    assessmentCompletionForPatients(db, list.map((p) => p.id)),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -54,16 +58,19 @@ export default async function PatientsPage({
           const pts = problems[p.id] ?? [];
           const visible = pts.slice(0, 3);
           const overflow = pts.length - visible.length;
+          const filled = completions[p.id] ?? 0;
+          const completion = filled === 5
+            ? { text: 'Assessment ✓ / मूल्यांकन ✓', cls: 'bg-primary/10 text-primary' }
+            : filled > 0
+              ? { text: `Assessment ${filled}/5 / मूल्यांकन ${filled}/5`, cls: 'bg-yellow-100 text-yellow-800' }
+              : { text: 'Assessment — / मूल्यांकन —', cls: 'bg-muted text-muted-foreground' };
           return (
             <Link key={p.id} href={`/patients/${p.id}`}>
               <Card className="flex items-center gap-4 p-4 transition-shadow hover:shadow-md">
-                <div className="flex-1 space-y-1">
+                <div className="flex-1 space-y-1.5">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{p.fullName}</span>
-                    <Badge
-                      variant="outline"
-                      className="border-brand-accent text-brand-accent"
-                    >
+                    <Badge variant="outline" className="border-brand-accent text-brand-accent">
                       {p.patientCode}
                     </Badge>
                   </div>
@@ -81,6 +88,9 @@ export default async function PatientsPage({
                     {overflow > 0 && (
                       <span className="text-xs text-muted-foreground">+{overflow} more</span>
                     )}
+                    <span className={`ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${completion.cls}`}>
+                      {completion.text}
+                    </span>
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
