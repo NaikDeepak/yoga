@@ -45,7 +45,11 @@ export const visitSchema = z.object({
   nextVisitDate: opt(
     z.string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')
-      .refine((val) => val >= new Date().toISOString().slice(0, 10), {
+      .refine((val) => {
+        const d = new Date(Date.now() + 330 * 60_000);
+        const todayIST = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+        return val >= todayIST;
+      }, {
         message: 'Must be today or later / आज किंवा नंतरची तारीख असावी',
       })
   ),
