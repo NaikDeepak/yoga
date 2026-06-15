@@ -8,8 +8,8 @@ import { getPatientFees, type PatientFees } from '@/data/fees';
 import { computeBmi } from '@/lib/bmi';
 import { BRANCHES } from '@/lib/presets';
 import { PrintButton } from '@/components/PrintButton';
+import { ReportLetterhead } from '@/components/ReportLetterhead';
 
-const CLINIC = { phone: '+91 85509 21037', email: 'pawarsyog@gmail.com', location: 'Pune, Maharashtra' };
 const GREEN = '#1B3A2E';
 
 const GENDER_MARATHI: Record<string, string> = { male: 'पुरुष', female: 'स्त्री', other: 'इतर' };
@@ -60,32 +60,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* ── LETTERHEAD ── */}
-      <header className="mb-6 flex overflow-hidden rounded border border-gray-200">
-        <div className="flex flex-1 items-center gap-4 p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/pytc-logo.png" alt="PYTC" className="h-16 w-auto object-contain" />
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: GREEN }}>Pawar&apos;s Yog Therapy Center</h1>
-            <p className="text-xs font-semibold tracking-widest" style={{ color: '#2D6A4F' }}>
-              HEALING THROUGH NATURE &amp; TRADITION
-            </p>
-            <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500">
-              <span>📍 {CLINIC.location}</span>
-              <span>📞 {CLINIC.phone}</span>
-              <span>✉ {CLINIC.email}</span>
-            </p>
-          </div>
-        </div>
-        <div
-          className="flex w-44 shrink-0 flex-col items-center justify-center p-4 text-white"
-          style={{ backgroundColor: GREEN }}
-        >
-          <p className="text-xs tracking-widest opacity-75">DOCUMENT</p>
-          <p className="text-lg font-bold leading-tight">Patient Report</p>
-          <p className="mt-1 text-xs opacity-75">{today}</p>
-          <p className="text-xs opacity-75">Ref: {patient.patientCode}</p>
-        </div>
-      </header>
+      <ReportLetterhead badgeLabel="Patient Report" patientCode={patient.patientCode} branch={branch} today={today} />
 
       {/* ── PATIENT IDENTIFICATION ── */}
       <SectionHeader>PATIENT IDENTIFICATION</SectionHeader>
@@ -239,9 +214,9 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       <hr className="border-gray-200" />
       <div className="mt-8 flex justify-end">
         <div className="w-52 border-t-2 border-gray-400 pt-2 text-right">
-          <p className="text-sm font-bold">Aaracharya Narayan Pawar</p>
-          <p className="text-xs text-gray-600">Founder of PYTC &amp; Lead Instructor</p>
-          <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center, Pune</p>
+          <p className="text-sm font-bold">Aachary Narayan Pawar</p>
+          <p className="text-xs text-gray-600">Founder &amp; Director of PYTC | Chief Medical Yoga Expert</p>
+          <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center</p>
         </div>
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
