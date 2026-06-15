@@ -16,7 +16,11 @@ export async function setCourseFeeAction(
   const result = courseFeeSchema.safeParse(Object.fromEntries(formData));
   if (!result.success) return { ok: false, error: firstError(result.error) };
   const db = getDb();
-  await setCourseFee(db, patientId, result.data.courseFee);
+  try {
+    await setCourseFee(db, patientId, result.data.courseFee);
+  } catch {
+    return { ok: false, error: 'Could not save fee / शुल्क जतन झाले नाही' };
+  }
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }
@@ -31,7 +35,11 @@ export async function addPaymentAction(
   if (!result.success) return { ok: false, error: firstError(result.error) };
   const { amount, paymentDate, description } = result.data;
   const db = getDb();
-  await addPayment(db, patientId, amount, paymentDate, description ?? null);
+  try {
+    await addPayment(db, patientId, amount, paymentDate, description ?? null);
+  } catch {
+    return { ok: false, error: 'Could not record payment / पेमेंट नोंदवता आले नाही' };
+  }
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }
@@ -39,7 +47,11 @@ export async function addPaymentAction(
 export async function deletePaymentAction(patientId: string, paymentId: string): Promise<ActionResult> {
   await requireUser();
   const db = getDb();
-  await deletePayment(db, paymentId);
+  try {
+    await deletePayment(db, paymentId);
+  } catch {
+    return { ok: false, error: 'Could not delete payment / पेमेंट हटवता आले नाही' };
+  }
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }

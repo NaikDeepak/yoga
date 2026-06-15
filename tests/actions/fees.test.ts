@@ -78,4 +78,10 @@ describe('deletePaymentAction', () => {
     expect(r).toEqual({ ok: true });
     expect((await getPatientFees(db, p.id)).totalPaid).toBe(0);
   });
+
+  it('returns ok when payment id does not exist (idempotent delete)', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const r = await deletePaymentAction(p.id, '00000000-0000-0000-0000-000000000000');
+    expect(r.ok).toBe(true);
+  });
 });
