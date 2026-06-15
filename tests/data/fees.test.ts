@@ -56,6 +56,28 @@ describe('addPayment + getPatientFees', () => {
     expect(result.payments[0].description).toBeNull();
     expect(result.balance).toBe(0);
   });
+
+  it('handles overpayment (totalPaid > courseFee)', async () => {
+    const p = await createPatient(db, PATIENT);
+    await setCourseFee(db, p.id, 1000);
+    await addPayment(db, p.id, 600, '2026-06-01', null);
+    await addPayment(db, p.id, 600, '2026-06-02', null);
+    const result = await getPatientFees(db, p.id);
+    expect(result.totalPaid).toBe(1200);
+    expect(result.balance).toBe(-200);
+  });
+
+  it('returns payments ordered by paymentDate', async () => {
+    const p = await createPatient(db, PATIENT);
+    await setCourseFee(db, p.id, 3000);
+    await addPayment(db, p.id, 500, '2026-06-05', 'Third');
+    await addPayment(db, p.id, 500, '2026-06-01', 'First');
+    await addPayment(db, p.id, 500, '2026-06-03', 'Second');
+    const result = await getPatientFees(db, p.id);
+    expect(result.payments[0].description).toBe('First');
+    expect(result.payments[1].description).toBe('Second');
+    expect(result.payments[2].description).toBe('Third');
+  });
 });
 
 describe('deletePayment', () => {

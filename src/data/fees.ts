@@ -15,7 +15,7 @@ export async function getPatientFees(db: Db, patientId: string): Promise<Patient
     .select()
     .from(feePayments)
     .where(eq(feePayments.patientId, patientId))
-    .orderBy(feePayments.paymentDate);
+    .orderBy(feePayments.paymentDate, feePayments.createdAt);
   const courseFee = feeRow?.courseFee ?? null;
   const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
   return {
