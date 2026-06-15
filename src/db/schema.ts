@@ -16,6 +16,7 @@ export const patients = pgTable('patients', {
   address: text('address'),
   occupation: text('occupation'),
   emergencyContact: text('emergency_contact'),
+  branch: text('branch'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }).enableRLS();
 
@@ -110,3 +111,25 @@ export const lifestyleAssessments = pgTable('lifestyle_assessments', {
 }).enableRLS();
 
 export type LifestyleAssessment = typeof lifestyleAssessments.$inferSelect;
+
+export const fees = pgTable('fees', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull().unique()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  courseFee: real('course_fee').notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}).enableRLS();
+
+export const feePayments = pgTable('fee_payments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  amount: real('amount').notNull(),
+  paymentDate: date('payment_date').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}).enableRLS();
+
+export type FeeRow = typeof fees.$inferSelect;
+export type FeePayment = typeof feePayments.$inferSelect;
