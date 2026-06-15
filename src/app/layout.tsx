@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Pawar Yoga Therapy' };
+export const metadata: Metadata = { title: "Pawar's Yog Therapy" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -183,7 +183,7 @@ function formatDueDate(dateStr: string): string {
 
 function whatsappUrl(mobile: string, fullName: string, nextVisitDate: string): string {
   const date = formatDueDate(nextVisitDate);
-  const text = `Hello ${fullName}, a reminder from Pawar Yoga Therapy — your next session is on ${date}. / नमस्कार ${fullName}, आपल्या पुढील योग थेरपी भेटीची आठवण — ${date} रोजी आहे.`;
+  const text = `Hello ${fullName}, a reminder from Pawar's Yog Therapy — your next session is on ${date}. / नमस्कार ${fullName}, आपल्या पुढील योग थेरपी भेटीची आठवण — ${date} रोजी आहे.`;
   return `https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`;
 }
 

@@ -69,7 +69,7 @@ Brand color: `#1B3A2E` (dark green). Accent: `#2D6A4F`. Light tint: `#E8F5E9`.
 
 Three-column layout:
 - **Left:** PYTC logo — `<img src="/pytc-logo.png" alt="PYTC" />` (downloaded to `public/pytc-logo.png`; ~60px height, no extra border needed)
-- **Centre:** "Pawar Yoga Therapy Center" (bold, large) + "HEALING THROUGH NATURE & TRADITION" (small caps, green) + address line (Pune, Maharashtra | phone | email)
+- **Centre:** "Pawar's Yog Therapy Center" (bold, large) + "HEALING THROUGH NATURE & TRADITION" (small caps, green) + address line (Pune, Maharashtra | phone | email)
 - **Right:** Dark green badge box — "DOCUMENT" label (small caps) / "**Patient Report**" (bold) / date / "Ref: [patientCode]"
 
 Clinic contact constants (hardcoded in print page):

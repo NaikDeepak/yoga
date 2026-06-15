@@ -30,7 +30,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       <header className="mb-6 border-b-2 pb-3 text-center" style={{ borderColor: '#4A7548' }}>
         <div className="mb-1 flex items-center justify-center gap-2">
           <span className="text-2xl" aria-hidden="true">🌿</span>
-          <h1 className="text-2xl font-bold" style={{ color: '#2C2418' }}>Pawar Yoga Therapy Center</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#2C2418' }}>Pawar&apos;s Yog Therapy Center</h1>
         </div>
         <p className="text-sm" style={{ color: '#7A6E62' }}>Patient Summary / रुग्ण सारांश — {patient.patientCode}</p>
       </header>
@@ -170,7 +170,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
             </table>}
       </section>
       <footer className="mt-8 border-t border-stone-200 pt-2 text-center text-xs text-stone-400 print:fixed print:bottom-0 print:left-0 print:right-0">
-        Generated on {new Date().toLocaleDateString('en-IN')} — Pawar Yoga Therapy Center
+        Generated on {new Date().toLocaleDateString('en-IN')} — Pawar&apos;s Yog Therapy Center
       </footer>
     </div>
   );

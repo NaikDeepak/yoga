@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2 text-foreground hover:opacity-80">
               <Leaf className="h-5 w-5 text-primary" />
-              <span className="font-semibold">Pawar Yoga Therapy</span>
+              <span className="font-semibold">Pawar&apos;s Yog Therapy</span>
             </Link>
             <nav className="flex items-center gap-4">
               <Link
