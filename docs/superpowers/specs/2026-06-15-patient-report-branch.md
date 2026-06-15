@@ -68,13 +68,13 @@ Brand color: `#1B3A2E` (dark green). Accent: `#2D6A4F`. Light tint: `#E8F5E9`.
 ### Section 1: Letterhead Header
 
 Three-column layout:
-- **Left:** PYTC circular SVG logo (initials "PYTC" + "EST. PUNE" around edge, leaf motif inside)
+- **Left:** PYTC logo — `<img src="/pytc-logo.png" alt="PYTC" />` (downloaded to `public/pytc-logo.png`; ~60px height, no extra border needed)
 - **Centre:** "Pawar Yoga Therapy Center" (bold, large) + "HEALING THROUGH NATURE & TRADITION" (small caps, green) + address line (Pune, Maharashtra | phone | email)
 - **Right:** Dark green badge box — "DOCUMENT" label (small caps) / "**Patient Report**" (bold) / date / "Ref: [patientCode]"
 
-Clinic contact constants (hardcoded in print page — confirm actual phone number before shipping):
+Clinic contact constants (hardcoded in print page):
 ```typescript
-const CLINIC = { phone: '+91 XXXXX XXXXX', email: 'info@pytc.in', location: 'Pune, Maharashtra' };
+const CLINIC = { phone: '+91 85509 21037', email: 'pawarsyog@gmail.com', location: 'Pune, Maharashtra' };
 ```
 
 ### Section 2: Patient Identification
