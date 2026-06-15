@@ -30,6 +30,7 @@ const MOCK_PATIENT = {
   address: null,
   occupation: null,
   emergencyContact: null,
+  branch: null,
   photoPath: null,
   createdAt: new Date(),
 } satisfies Patient;
