@@ -11,6 +11,8 @@ import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
 
 const GREEN = '#1B3A2E';
+const SAFFRON = '#C8962E';
+const CREAM = '#FDF8F0';
 
 const GENDER_MARATHI: Record<string, string> = { male: 'पुरुष', female: 'स्त्री', other: 'इतर' };
 
@@ -64,10 +66,10 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
 
       {/* ── PATIENT IDENTIFICATION ── */}
       <SectionHeader>PATIENT IDENTIFICATION</SectionHeader>
-      <div className="mb-6 flex items-center gap-4 rounded border border-gray-100 bg-gray-50 p-4">
+      <div className="mb-6 flex items-center gap-4 rounded border border-amber-100 p-4" style={{ backgroundColor: CREAM }}>
         <div
           className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
-          style={{ backgroundColor: GREEN }}
+          style={{ backgroundColor: SAFFRON }}
         >
           {nameInitials(patient.fullName)}
         </div>
@@ -189,9 +191,9 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ backgroundColor: GREEN, color: 'white' }}>
+              <tr style={{ backgroundColor: CREAM, borderBottom: `2px solid ${SAFFRON}` }}>
                 {['NO.', 'VISIT DATE', 'WEIGHT', 'PAIN LEVEL', 'SESSION NOTES'].map((h) => (
-                  <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide">{h}</th>
+                  <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-600">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -231,11 +233,8 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="mb-3 inline-block rounded px-3 py-1 text-xs font-bold tracking-widest text-white"
-      style={{ backgroundColor: '#1B3A2E' }}
-    >
-      {children}
+    <div className="mb-3 border-l-4 pl-3" style={{ borderColor: SAFFRON }}>
+      <span className="text-xs font-bold uppercase tracking-widest text-gray-600">{children}</span>
     </div>
   );
 }
@@ -243,8 +242,8 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 function Chip({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium"
-      style={{ borderColor: '#1B3A2E', color: '#1B3A2E', backgroundColor: '#E8F5E9' }}
+      className="inline-flex items-center rounded px-2.5 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #D97706' }}
     >
       {children}
     </span>
@@ -289,10 +288,11 @@ function PlanRow({ label, value }: { label: string; value: string }) {
 function FeeBox({
   label, amount, variant,
 }: { label: string; amount: number; variant: 'neutral' | 'green' | 'orange' }) {
-  const bg = { neutral: '#F9FAFB', green: '#E8F5E9', orange: '#FFF3E0' }[variant];
+  const bg = { neutral: CREAM, green: '#DCFCE7', orange: '#FFF3E0' }[variant];
   const color = { neutral: '#374151', green: '#1B3A2E', orange: '#C2410C' }[variant];
+  const borderColor = { neutral: '#E5D5B5', green: '#86EFAC', orange: '#FED7AA' }[variant];
   return (
-    <div className="rounded p-4 text-center" style={{ backgroundColor: bg }}>
+    <div className="rounded border p-4 text-center" style={{ backgroundColor: bg, borderColor }}>
       <p className="text-2xl font-bold" style={{ color }}>
         ₹{amount.toLocaleString('en-IN')}
       </p>

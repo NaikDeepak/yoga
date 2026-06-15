@@ -7,6 +7,8 @@ import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
 
 const GREEN = '#1B3A2E';
+const SAFFRON = '#C8962E';
+const CREAM = '#FDF8F0';
 
 function formatDate(d: Date = new Date()): string {
   return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -75,9 +77,9 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       <div className="mb-8">
         <table className="w-full text-sm">
           <thead>
-            <tr style={{ backgroundColor: GREEN, color: 'white' }}>
+            <tr style={{ backgroundColor: CREAM, borderBottom: `2px solid ${SAFFRON}` }}>
               {['NO.', 'DATE', 'DESCRIPTION', 'AMOUNT (₹)'].map((h) => (
-                <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide">{h}</th>
+                <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-600">{h}</th>
               ))}
             </tr>
           </thead>
@@ -116,11 +118,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="mb-3 inline-block rounded px-3 py-1 text-xs font-bold tracking-widest text-white"
-      style={{ backgroundColor: '#1B3A2E' }}
-    >
-      {children}
+    <div className="mb-3 border-l-4 pl-3" style={{ borderColor: SAFFRON }}>
+      <span className="text-xs font-bold uppercase tracking-widest text-gray-600">{children}</span>
     </div>
   );
 }
@@ -128,10 +127,11 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 function FeeBox({
   label, amount, variant,
 }: { label: string; amount: number; variant: 'neutral' | 'green' | 'orange' }) {
-  const bg = { neutral: '#F9FAFB', green: '#E8F5E9', orange: '#FFF3E0' }[variant];
+  const bg = { neutral: CREAM, green: '#DCFCE7', orange: '#FFF3E0' }[variant];
   const color = { neutral: '#374151', green: '#1B3A2E', orange: '#C2410C' }[variant];
+  const borderColor = { neutral: '#E5D5B5', green: '#86EFAC', orange: '#FED7AA' }[variant];
   return (
-    <div className="rounded p-4 text-center" style={{ backgroundColor: bg }}>
+    <div className="rounded border p-4 text-center" style={{ backgroundColor: bg, borderColor }}>
       <p className="text-2xl font-bold" style={{ color }}>
         ₹{amount.toLocaleString('en-IN')}
       </p>
