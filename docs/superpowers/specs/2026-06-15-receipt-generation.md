@@ -92,7 +92,7 @@ Amount formatted with two decimal places and commas (e.g. `1,500.00`).
 **5. Footer** — same signature block as patient report
 
 ```
-Aaracharya Narayan Pawar
+Aacharya Narayan Pawar
 Founder of PYTC & Lead Instructor
 Pawar Yoga Therapy Center, Pune
 ```

@@ -169,7 +169,7 @@ If no visits: "No visit records found / भेटींची नोंद न�
 ### Footer
 
 Thin horizontal rule, then:
-- Right-aligned signature block: "**Aaracharya Narayan Pawar**" / "Founder of PYTC & Lead Instructor" / "*Pawar Yoga Therapy Center, Pune*"
+- Right-aligned signature block: "**Aacharya Narayan Pawar**" / "Founder of PYTC & Lead Instructor" / "*Pawar Yoga Therapy Center, Pune*"
 - Centred confidentiality line: "This is an official patient record issued by Pawar Yoga Therapy Center. Confidential — intended solely for the patient and treating practitioner. | Generated on [date]"
 
 ## Data Fetching
