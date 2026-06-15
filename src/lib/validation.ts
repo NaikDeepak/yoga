@@ -23,7 +23,7 @@ export const patientSchema = z.object({
   address: opt(z.string().trim().max(500)),
   occupation: opt(z.string().trim().max(100)),
   emergencyContact: opt(z.string().trim().max(100)),
-  branch: z.enum(BRANCHES.map(b => b.key) as [string, ...string[]]).optional(),
+  branch: opt(z.enum(BRANCHES.map(b => b.key) as [string, ...string[]])),
 });
 export type PatientInput = z.infer<typeof patientSchema>;
 
