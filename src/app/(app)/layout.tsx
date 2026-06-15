@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-card shadow-sm">
+      <header className="sticky top-0 z-10 border-b border-border bg-card shadow-sm print:hidden">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="flex items-center gap-2 text-foreground hover:opacity-80">

@@ -101,7 +101,7 @@ export default async function PatientPage({
           <Button variant="outline" size="sm" asChild>
             <Link href={`/patients/${id}/print`}>
               <Printer className="mr-1.5 h-3.5 w-3.5" />
-              PDF / प्रिंट
+              Report / अहवाल
             </Link>
           </Button>
           {patientFees.courseFee !== null && (
