@@ -1,23 +1,72 @@
 import Link from 'next/link';
 import { getDb } from '@/db/client';
 import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/dashboard';
-import { getFollowUpsThisWeek } from '@/data/visits';
+import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
+import { BranchFilter } from '@/components/BranchFilter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { BRANCHES, type BranchKey } from '@/lib/presets';
 
-export default async function DashboardPage() {
+function parseBranch(value?: string): BranchKey | undefined {
+  return BRANCHES.some((b) => b.key === value) ? (value as BranchKey) : undefined;
+}
+
+type AgendaRow =
+  | { kind: 'header'; label: string }
+  | { kind: 'item'; followUp: FollowUp };
+
+function groupFollowUps(followUps: FollowUp[]): AgendaRow[] {
+  const today = getISTDateString(0);
+  const tomorrow = getISTDateString(1);
+  const rows: AgendaRow[] = [];
+  let lastDate: string | null = null;
+  for (const f of followUps) {
+    if (f.nextVisitDate !== lastDate) {
+      rows.push({ kind: 'header', label: dateHeaderLabel(f.nextVisitDate, today, tomorrow) });
+      lastDate = f.nextVisitDate;
+    }
+    rows.push({ kind: 'item', followUp: f });
+  }
+  return rows;
+}
+
+function dateHeaderLabel(date: string, today: string, tomorrow: string): string {
+  if (date === today) return 'Today / आज';
+  if (date === tomorrow) return 'Tomorrow / उद्या';
+  const [year, month, day] = date.split('-').map(Number);
+  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${weekday}, ${formatDueDate(date)}`;
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ branch?: string }>;
+}) {
+  const { branch: branchParam } = await searchParams;
+  const branch = parseBranch(branchParam);
+
   const db = getDb();
   const [stats, ailments, recentVisits, followUps] = await Promise.all([
-    getDashboardStats(db),
-    getAilmentBreakdown(db),
-    getRecentVisits(db),
-    getFollowUpsThisWeek(db),
+    getDashboardStats(db, branch),
+    getAilmentBreakdown(db, branch),
+    getRecentVisits(db, 10, branch),
+    getFollowUpsThisWeek(db, branch),
   ]);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard / डॅशबोर्ड</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-semibold">Dashboard / डॅशबोर्ड</h1>
+        <div className="flex items-center gap-3">
+          <BranchFilter />
+          <Button asChild size="sm">
+            <Link href="/patients/new">+ New Patient / नवीन रुग्ण</Link>
+          </Button>
+        </div>
+      </div>
 
       {/* Follow-ups card */}
       <Card>
@@ -31,40 +80,49 @@ export default async function DashboardPage() {
             </p>
           ) : (
             <ul className="space-y-3">
-              {followUps.map((f) => (
-                <li
-                  key={f.patientId}
-                  className="flex items-center justify-between gap-2 border-b border-border pb-3 text-sm last:border-0 last:pb-0"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <Link href={`/patients/${f.patientId}`} className="font-medium hover:text-primary">
-                      {f.fullName}
-                    </Link>
-                    <div className="flex items-center gap-2">
-                      <a href={`tel:${f.mobile}`} className="text-xs text-muted-foreground hover:text-primary">
-                        {f.mobile}
-                      </a>
-                      <a
-                        href={whatsappUrl(f.mobile, f.fullName, f.nextVisitDate)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Send WhatsApp reminder / WhatsApp आठवण पाठवा"
-                        className="text-green-600 hover:text-green-700"
-                      >
-                        <WhatsAppIcon className="h-3.5 w-3.5" />
-                      </a>
+              {groupFollowUps(followUps).map((row, i) =>
+                row.kind === 'header' ? (
+                  <li
+                    key={`header-${row.label}-${i}`}
+                    className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground first:pt-0"
+                  >
+                    {row.label}
+                  </li>
+                ) : (
+                  <li
+                    key={row.followUp.patientId}
+                    className="flex items-center justify-between gap-2 border-b border-border pb-3 text-sm last:border-0 last:pb-0"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <Link href={`/patients/${row.followUp.patientId}`} className="font-medium hover:text-primary">
+                        {row.followUp.fullName}
+                      </Link>
+                      <div className="flex items-center gap-2">
+                        <a href={`tel:${row.followUp.mobile}`} className="text-xs text-muted-foreground hover:text-primary">
+                          {row.followUp.mobile}
+                        </a>
+                        <a
+                          href={whatsappUrl(row.followUp.mobile, row.followUp.fullName, row.followUp.nextVisitDate)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Send WhatsApp reminder / WhatsApp आठवण पाठवा"
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <WhatsAppIcon className="h-3.5 w-3.5" />
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="border-brand-accent text-brand-accent text-xs">
-                      {f.patientCode}
-                    </Badge>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Due / देय: {formatDueDate(f.nextVisitDate)}
-                    </span>
-                  </div>
-                </li>
-              ))}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="border-brand-accent text-brand-accent text-xs">
+                        {row.followUp.patientCode}
+                      </Badge>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Due / देय: {formatDueDate(row.followUp.nextVisitDate)}
+                      </span>
+                    </div>
+                  </li>
+                ),
+              )}
             </ul>
           )}
         </CardContent>
