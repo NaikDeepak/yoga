@@ -1231,3 +1231,20 @@ No commit for this task — it's verification of work already committed in Tasks
 - **Spec coverage:** All 4 spec sections map to tasks — Today's Agenda → Task 8; Global Search → Tasks 3–6; Branch Filter → Tasks 2, 7, 8; Quick Actions → Task 8. Testing section → Tasks 1–5 plus Task 10. Files Changed table → every file is touched by exactly one task above.
 - **Weekday header format:** the spec's example header text ("Wed, 18 Jun") implied a weekday prefix that the existing `formatDueDate` helper doesn't produce. Task 8 resolves this by computing the weekday separately via `Date.UTC` (timezone-safe, consistent with how `formatDueDate` already avoids local-timezone parsing) rather than modifying the shared `formatDueDate` helper, which is also used for the unchanged per-row "Due" text.
 - **Type consistency:** `FollowUp` (Task 1) gains `branch`; `AgendaRow`/`groupFollowUps`/`dateHeaderLabel` (Task 8) consume that exact shape. `getRecentVisits(db, limit, branch)` signature from Task 2 matches the `getRecentVisits(db, 10, branch)` call site in Task 8.
+
+---
+
+### Task 11: Replace "Avg Pain" with "Monthly Revenue" metric
+
+**Files:**
+- Modify: `src/data/dashboard.ts`
+- Modify: `tests/data/dashboard.test.ts`
+- Create: `src/components/RevenueStatCard.tsx`
+- Modify: `src/app/(app)/dashboard/page.tsx`
+
+- [x] **Step 1: Update `getDashboardStats` and tests**
+Replaced `avgPainThisMonth` aggregation with `revenueThisMonth` aggregating from `feePayments`. Updated unit tests to insert payments via `addPayment`.
+- [x] **Step 2: Create `RevenueStatCard` component**
+Created a new component to display the revenue, which hides the numeric value behind a toggle ("Eye" icon) by default and automatically re-hides after 5 seconds using an `AbortController`/`setTimeout`.
+- [x] **Step 3: Update `DashboardPage`**
+Swapped the `StatCard` for Avg Pain with `<RevenueStatCard value={stats.revenueThisMonth} />`.
