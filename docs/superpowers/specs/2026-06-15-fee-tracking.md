@@ -14,7 +14,7 @@ export const fees = pgTable('fees', {
   id: uuid('id').primaryKey().defaultRandom(),
   patientId: uuid('patient_id').notNull().unique()
     .references(() => patients.id, { onDelete: 'cascade' }),
-  courseFee: real('course_fee').notNull(),
+  courseFee: numeric('course_fee', { precision: 12, scale: 2 }).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }).enableRLS();
@@ -23,7 +23,7 @@ export const feePayments = pgTable('fee_payments', {
   id: uuid('id').primaryKey().defaultRandom(),
   patientId: uuid('patient_id').notNull()
     .references(() => patients.id, { onDelete: 'cascade' }),
-  amount: real('amount').notNull(),
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
   paymentDate: date('payment_date').notNull(),
   description: text('description'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -62,7 +62,7 @@ export type PatientFees = {
 };
 
 export async function getPatientFees(db: Db, patientId: string): Promise<PatientFees> { ... }
-// Returns fee row + all payments ordered by paymentDate DESC, computes totalPaid + balance
+// Returns fee row + all payments in descending order by paymentDate (newest-first), computes totalPaid + balance
 
 export async function setCourseFee(db: Db, patientId: string, courseFee: number): Promise<void> { ... }
 // Upsert: insert if no fee row exists, update courseFee if it does
