@@ -4,6 +4,7 @@ import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/
 import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { BranchFilter } from '@/components/BranchFilter';
+import { RevenueStatCard } from '@/components/RevenueStatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -142,10 +143,7 @@ export default async function DashboardPage({
           title="Most Common / सामान्य आजार"
           value={stats.mostCommonProblem ?? '—'}
         />
-        <StatCard
-          title="Avg Pain / वेदना"
-          value={stats.avgPainThisMonth !== null ? String(stats.avgPainThisMonth) : '—'}
-        />
+        <RevenueStatCard value={stats.revenueThisMonth} />
       </div>
 
       {/* Ailment chart + Recent activity side-by-side on md+ */}

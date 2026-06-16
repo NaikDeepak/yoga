@@ -1,12 +1,12 @@
-import { count, countDistinct, avg, desc, gte, lt, eq, and } from 'drizzle-orm';
-import { patients, patientProblems, visits } from '@/db/schema';
+import { count, countDistinct, sum, desc, gte, lt, eq, and } from 'drizzle-orm';
+import { patients, patientProblems, visits, feePayments } from '@/db/schema';
 import type { Db } from '@/db/types';
 
 export type DashboardStats = {
   totalPatients: number;
   visitsThisMonth: number;
   mostCommonProblem: string | null;
-  avgPainThisMonth: number | null;
+  revenueThisMonth: number;
 };
 
 export async function getDashboardStats(db: Db, branch?: string): Promise<DashboardStats> {
@@ -22,7 +22,7 @@ export async function getDashboardStats(db: Db, branch?: string): Promise<Dashbo
     [{ totalPatients }],
     [{ visitsThisMonth }],
     [top],
-    [{ avgPain }],
+    [{ revenue }],
   ] = await Promise.all([
     db.select({ totalPatients: count() }).from(patients).where(branchFilter),
     db
@@ -45,13 +45,13 @@ export async function getDashboardStats(db: Db, branch?: string): Promise<Dashbo
       .orderBy(desc(cntExpr))
       .limit(1),
     db
-      .select({ avgPain: avg(visits.painScale) })
-      .from(visits)
-      .innerJoin(patients, eq(visits.patientId, patients.id))
+      .select({ revenue: sum(feePayments.amount) })
+      .from(feePayments)
+      .innerJoin(patients, eq(feePayments.patientId, patients.id))
       .where(
         and(
-          gte(visits.visitDate, firstOfMonth),
-          lt(visits.visitDate, firstOfNextMonth),
+          gte(feePayments.paymentDate, firstOfMonth),
+          lt(feePayments.paymentDate, firstOfNextMonth),
           branchFilter,
         )
       ),
@@ -61,7 +61,7 @@ export async function getDashboardStats(db: Db, branch?: string): Promise<Dashbo
     totalPatients,
     visitsThisMonth,
     mostCommonProblem: top?.problem ?? null,
-    avgPainThisMonth: avgPain !== null ? Math.round(Number(avgPain) * 10) / 10 : null,
+    revenueThisMonth: revenue !== null ? Number(revenue) : 0,
   };
 }
 
