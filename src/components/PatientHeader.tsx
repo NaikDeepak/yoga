@@ -36,7 +36,7 @@ export function PatientHeader({
   }, []);
 
   return (
-    <>
+    <div>
       <div className="flex flex-wrap items-center gap-4">
         <Avatar className="h-16 w-16">
           {photoUrl && <AvatarImage src={photoUrl} alt={patient.fullName} />}
@@ -101,6 +101,6 @@ export function PatientHeader({
           </Badge>
         </div>
       </div>
-    </>
+    </div>
   );
 }
