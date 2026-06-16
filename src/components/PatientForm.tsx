@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
+import { BRANCHES } from '@/lib/presets';
 import type { Patient } from '@/db/schema';
 import type { ActionResult } from '@/actions/patients';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ export function PatientForm({
     startTransition(async () => {
       setError(null);
       if (formData.get('gender') === '__none__') formData.set('gender', '');
+      if (formData.get('branch') === '__none__') formData.set('branch', '');
       const result = await action(formData);
       if (result && !result.ok) setError(result.error);
     });
@@ -210,6 +212,20 @@ export function PatientForm({
             rows={2}
             placeholder="—"
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="branch">Branch / शाखा</Label>
+          <Select name="branch" defaultValue={defaultValues?.branch || '__none__'}>
+            <SelectTrigger id="branch">
+              <SelectValue placeholder="Select branch / शाखा निवडा" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">— Select / निवडा —</SelectItem>
+              {BRANCHES.map((b) => (
+                <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 

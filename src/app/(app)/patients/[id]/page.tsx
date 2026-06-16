@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pencil, Printer } from 'lucide-react';
+import { Pencil, Printer, Receipt } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
 import { listDocuments } from '@/data/documents';
 import { getTreatmentPlan } from '@/data/treatment';
+import { getPatientFees, type PatientFees } from '@/data/fees';
+import { setCourseFeeAction, addPaymentAction, deletePaymentAction } from '@/actions/fees';
 import { listVisits, listVisitsWithData } from '@/data/visits';
 import { VisitLineChart } from '@/components/VisitLineChart';
 import { getStorage } from '@/lib/storage';
@@ -14,8 +16,8 @@ import { getISTDateString } from '@/lib/dates';
 import { PRESET_PROBLEMS, DOC_TYPES } from '@/lib/presets';
 import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
-import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { addVisitAction } from '@/actions/visits';
+import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -34,6 +36,7 @@ const TABS = [
   ['documents', 'Documents / रिपोर्ट्स'],
   ['treatment', 'Treatment & Visits / उपचार'],
   ['progress', 'Progress / प्रगती'],
+  ['fees', 'Fees / शुल्क'],
   ['assessment', 'Assessment / मूल्यांकन'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
@@ -67,6 +70,7 @@ export default async function PatientPage({
   if (!patient) notFound();
 
   const photoUrl = patient.photoPath ? await getStorage().createSignedUrl(patient.photoPath) : null;
+  const patientFees = await getPatientFees(db, id);
 
   return (
     <div className="space-y-6">
@@ -97,9 +101,17 @@ export default async function PatientPage({
           <Button variant="outline" size="sm" asChild>
             <Link href={`/patients/${id}/print`}>
               <Printer className="mr-1.5 h-3.5 w-3.5" />
-              PDF / प्रिंट
+              Report / अहवाल
             </Link>
           </Button>
+          {patientFees.courseFee !== null && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/patients/${id}/receipt`}>
+                <Receipt className="mr-1.5 h-3.5 w-3.5" />
+                Receipt / पावती
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -126,6 +138,7 @@ export default async function PatientPage({
       {tab === 'documents' && <Documents patientId={id} />}
       {tab === 'treatment' && <Treatment patientId={id} />}
       {tab === 'progress' && <Progress patientId={id} />}
+      {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} />}
       {tab === 'assessment' && <Assessment patientId={id} />}
     </div>
   );
@@ -393,7 +406,7 @@ async function Documents({ patientId }: { patientId: string }) {
                   {d.originalName}
                 </a>
                 <span className="shrink-0 text-muted-foreground">
-                  {new Date(d.createdAt).toLocaleDateString('en-IN')}
+                  {getISTDateString(0, d.createdAt)}
                 </span>
               </div>
               <DeleteButton
@@ -412,43 +425,11 @@ async function Treatment({ patientId }: { patientId: string }) {
   const db = getDb();
   const plan = await getTreatmentPlan(db, patientId);
   const visits = await listVisits(db, patientId);
-  const planFields: [keyof NonNullable<typeof plan> & string, string][] = [
-    ['yogaProgram', 'Yoga Program / योग कार्यक्रम'],
-    ['pranayam', 'Pranayam / प्राणायाम'],
-    ['massage', 'Massage / मसाज'],
-    ['yogaTherapy', 'Yoga Therapy / योग थेरपी'],
-    ['dietPlan', 'Diet Plan / आहार योजना'],
-    ['medicines', 'Medicines / औषधे'],
-    ['panchkarma', 'Panchkarma / पंचकर्म'],
-  ];
   const today = getISTDateString();
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Treatment Plan / उपचार योजना</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InlineForm
-            action={saveTreatmentPlanAction.bind(null, patientId)}
-            className="space-y-3"
-          >
-            {planFields.map(([name, title]) => (
-              <div key={name} className="space-y-1.5">
-                <Label htmlFor={`plan-${name}`}>{title}</Label>
-                <Textarea
-                  id={`plan-${name}`}
-                  name={name}
-                  rows={2}
-                  defaultValue={(plan?.[name] as string | null) ?? ''}
-                />
-              </div>
-            ))}
-            <Button type="submit" size="sm">Save plan / योजना जतन करा</Button>
-          </InlineForm>
-        </CardContent>
-      </Card>
+      <TreatmentPlanForm patientId={patientId} initialPlan={plan} />
 
       <div className="space-y-4">
         <Card>
@@ -475,7 +456,10 @@ async function Treatment({ patientId }: { patientId: string }) {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="nextVisitDate">Next visit / पुढील भेट <span className="text-xs text-muted-foreground">(optional / ऐच्छिक)</span></Label>
+                <Label htmlFor="nextVisitDate">
+                  Next visit / पुढील भेट{' '}
+                  <span className="text-xs text-muted-foreground">(optional / ऐच्छिक)</span>
+                </Label>
                 <Input id="nextVisitDate" name="nextVisitDate" type="date" min={today} />
               </div>
               <div className="space-y-1.5">
@@ -922,6 +906,122 @@ async function Assessment({ patientId }: { patientId: string }) {
           <Button type="submit">Save Assessment / सेव्ह करा</Button>
         </div>
       </InlineForm>
+    </div>
+  );
+}
+
+function Fees({ patientId, patientFees }: { patientId: string; patientFees: PatientFees }) {
+  const boundSetFee = setCourseFeeAction.bind(null, patientId, { ok: false, error: '' });
+  const boundAddPayment = addPaymentAction.bind(null, patientId, { ok: false, error: '' });
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold">
+              {patientFees.courseFee !== null ? `₹${patientFees.courseFee.toLocaleString('en-IN')}` : '—'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Course Fee / कोर्स शुल्क</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className="text-2xl font-bold text-primary">₹{patientFees.totalPaid.toLocaleString('en-IN')}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Total Paid / भरलेले</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 text-center">
+            <p className={`text-2xl font-bold ${(patientFees.balance ?? 0) > 0 ? 'text-destructive' : 'text-primary'}`}>
+              {patientFees.balance !== null ? `₹${patientFees.balance.toLocaleString('en-IN')}` : '—'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Balance Due / बाकी</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Set course fee */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Course Fee / कोर्स शुल्क</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InlineForm action={boundSetFee}>
+            <div className="flex items-end gap-3">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="courseFee">Total Course Fee (₹) / एकूण शुल्क</Label>
+                <Input
+                  id="courseFee"
+                  name="courseFee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  defaultValue={patientFees.courseFee ?? ''}
+                  placeholder="e.g. 2000 / उदा. 2000"
+                />
+              </div>
+              <Button type="submit" size="sm">Set / सेट करा</Button>
+            </div>
+          </InlineForm>
+        </CardContent>
+      </Card>
+
+      {/* Add payment */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Record Payment / पेमेंट नोंदवा</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <InlineForm action={boundAddPayment}>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label htmlFor="amount">Amount (₹) / रक्कम</Label>
+                <Input id="amount" name="amount" type="number" step="0.01" min="0.01" placeholder="—" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="paymentDate">Date / तारीख</Label>
+                <Input id="paymentDate" name="paymentDate" type="date" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="description">Note / टीप</Label>
+                <Input id="description" name="description" placeholder="e.g. First instalment / उदा. पहिला हप्ता" />
+              </div>
+            </div>
+            <Button type="submit" size="sm" className="mt-3">Add / जोडा</Button>
+          </InlineForm>
+        </CardContent>
+      </Card>
+
+      {/* Payment history */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Payment History / देयके इतिहास</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {patientFees.payments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No payments recorded / पेमेंट नोंद नाही</p>
+          ) : (
+            <ul className="space-y-2">
+              {patientFees.payments.map((p) => (
+                <li key={p.id} className="flex items-center justify-between border-b border-border pb-2 text-sm last:border-0">
+                  <div>
+                    <span className="font-medium">₹{p.amount.toLocaleString('en-IN')}</span>
+                    <span className="ml-3 text-muted-foreground">{p.paymentDate}</span>
+                    {p.description && <span className="ml-2 text-muted-foreground">— {p.description}</span>}
+                  </div>
+                  <DeleteButton
+                    action={deletePaymentAction.bind(null, patientId, p.id)}
+                    confirmText={`Delete payment of ₹${p.amount}? / ₹${p.amount} पेमेंट हटवायचे?`}
+                    label="×"
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -5,6 +5,7 @@ node_modules/
 coverage/
 *.tsbuildinfo
 next-env.d.ts
+scratch/
 .agents/
 .vscode/
 skills-lock.json

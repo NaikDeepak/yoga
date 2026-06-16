@@ -19,15 +19,17 @@ Single-clinic patient management app for **Pawar Yoga Therapy** (a yoga therapis
 | Testing | Vitest + PGlite (in-memory Postgres) + Testing Library. 80% coverage gate on `src/lib`, `src/data`, `src/actions` |
 | Deploy | Vercel |
 
-## Database schema (6 tables, all RLS-enabled)
+## Database schema (8 tables, all RLS-enabled)
 
 ```
-patients          — id, patient_code (PYT-0001), full_name, photo_path, age, gender, weight_kg, height_cm, mobile, email, address, occupation, emergency_contact, created_at
+patients          — id, patient_code (PYT-0001), branch, full_name, photo_path, age, gender, weight_kg, height_cm, mobile, email, address, occupation, emergency_contact, created_at
 patient_problems  — id, patient_id FK, problem, is_custom, note, created_at
 documents         — id, patient_id FK, doc_type, file_path, original_name, mime_type, size_bytes, created_at
 treatment_plans   — id, patient_id FK (unique), yoga_program, pranayam, massage, yoga_therapy, diet_plan, medicines, panchkarma, updated_at, created_at
 visits            — id, patient_id FK, visit_date, progress_note, weight_kg, pain_scale (1-10), next_visit_date, created_at
 lifestyle_assessments — id, patient_id FK (unique), chief_complaint, duration, aggravating_factors, relieving_factors, previous_treatment, current_medications, doctor_diagnosis, doctor_restrictions, work_type, daily_sitting, activity_level, sleep_hours, sleep_quality (1-10), stress_level (1-10), screen_time, previous_exercise, fitness_level, fear_of_movement, primary_goal, activity_struggle, has_contraindications, contraindication_details, updated_at, created_at
+fees              — id, patient_id FK (unique), course_fee, updated_at, created_at
+fee_payments      — id, patient_id FK, amount, payment_date, description, created_at
 ```
 
 Key constraints: `treatment_plans` and `lifestyle_assessments` are 1:1 with patient (upsert pattern). BMI is never stored — computed from weight/height. Patient codes are assigned only inside `createPatient`'s transaction.
@@ -37,20 +39,21 @@ Key constraints: `treatment_plans` and `lifestyle_assessments` are 1:1 with pati
 ```
 src/
 ├── db/
-│   ├── schema.ts         — all 6 table definitions + types
+│   ├── schema.ts         — all 8 table definitions + types
 │   ├── client.ts         — getDb() singleton (prod), prepare:false for pooler compat
 │   └── types.ts          — Db type (shared prod/test)
 ├── lib/
-│   ├── validation.ts     — zod schemas: patientSchema, problemSchema, treatmentSchema, visitSchema, lifestyleSchema, docTypeSchema, firstError()
+│   ├── validation.ts     — zod schemas: patientSchema, courseFeeSchema, paymentSchema, etc.
 │   ├── bmi.ts            — computeBmi(), bmiCategory()
 │   ├── patient-code.ts   — nextPatientCode(), formatPatientCode()
-│   ├── presets.ts        — PRESET_PROBLEMS (18 Marathi ailments), DOC_TYPES
+│   ├── presets.ts        — PRESET_PROBLEMS, DOC_TYPES, BRANCHES
 │   ├── files.ts          — validateUpload(), validatePhoto() (10MB, pdf/jpg/png)
-│   ├── storage.ts        — FileStorage interface, getStorage() (auto-selects Supabase or R2), BUCKET, re-exports r2Storage
-│   ├── r2-storage.ts     — Cloudflare R2 FileStorage impl via @aws-sdk/client-s3 (coverage-exempt)
+│   ├── storage.ts        — FileStorage interface, getStorage() (auto-selects Supabase or R2)
+│   ├── r2-storage.ts     — Cloudflare R2 FileStorage impl via @aws-sdk/client-s3
 │   ├── auth.ts           — requireUser()
 │   ├── auth-paths.ts     — isPublicPath() (/login, /register)
 │   ├── dates.ts          — getISTDateString(offsetDays) — IST via UTC+5:30
+│   ├── gemini.ts         — generateTreatmentDraft() (Google Gemini API wrapper)
 │   ├── utils.ts          — cn() (clsx + tailwind-merge)
 │   └── supabase/         — cookie-based Supabase client glue (coverage-exempt)
 ├── data/                 — pure DB functions (all take `db` as first arg)
@@ -59,7 +62,8 @@ src/
 │   ├── documents.ts      — addDocument, listDocuments, deleteDocument
 │   ├── treatment.ts      — getTreatmentPlan, upsertTreatmentPlan
 │   ├── visits.ts         — addVisit, listVisits, listVisitsWithData, getFollowUpsThisWeek
-│   ├── lifestyle.ts      — getLifestyleAssessment, upsertLifestyleAssessment, getLifestyleAssessmentSnapshot, assessmentCompletionForPatients
+│   ├── lifestyle.ts      — getLifestyleAssessment, upsertLifestyleAssessment...
+│   ├── fees.ts           — getPatientFees, setCourseFee, addPayment, deletePayment
 │   └── dashboard.ts      — getDashboardStats, getAilmentBreakdown, getRecentVisits
 ├── actions/              — server actions ('use server'): auth → zod → repo → revalidatePath
 │   ├── auth.ts           — signInAction, signOutAction, signUpAction
@@ -68,17 +72,21 @@ src/
 │   ├── documents.ts      — uploadDocumentAction, deleteDocumentAction
 │   ├── treatment.ts      — saveTreatmentPlanAction
 │   ├── visits.ts         — addVisitAction
-│   └── lifestyle.ts      — saveLifestyleAssessmentAction
+│   ├── lifestyle.ts      — saveLifestyleAssessmentAction
+│   └── fees.ts           — setCourseFeeAction, addPaymentAction, deletePaymentAction
 ├── components/
-│   ├── PatientForm.tsx   — client component: live BMI calc, grouped sections, photo upload
+│   ├── PatientForm.tsx   — client component: live BMI calc, grouped sections, branch select
+│   ├── TreatmentPlanForm.tsx — client component: form with AI generate draft button
+│   ├── ReportLetterhead.tsx — UI component for branded print reports and receipts
 │   ├── InlineForm.tsx    — client component: form with error display (useActionState)
 │   ├── DeleteButton.tsx  — client component: AlertDialog confirm → delete
 │   ├── PrintButton.tsx   — client component: window.print() trigger
 │   ├── AilmentBarChart.tsx — Recharts horizontal bar chart
 │   ├── VisitLineChart.tsx  — Recharts line chart (weight/pain trends)
-│   └── ui/               — shadcn/ui: alert-dialog, avatar, badge, button, card, dialog, input, label, select, separator, tabs, textarea
+│   └── ui/               — shadcn/ui: alert-dialog, avatar, badge, button, card...
 ├── app/
 │   ├── api/ping/route.ts — Supabase Auth keepalive (daily Vercel cron, unauthenticated)
+│   ├── api/ai/treatment-plan/[patientId]/route.ts — API endpoint for Gemini draft generation
 │   ├── login/page.tsx    — public login form
 │   ├── register/page.tsx — public registration form
 │   └── (app)/            — authenticated routes (layout has nav header + sign out)
@@ -88,9 +96,10 @@ src/
 │           ├── page.tsx          — patient list with search, problem badges, assessment completion
 │           ├── new/page.tsx      — create patient form
 │           └── [id]/
-│               ├── page.tsx      — tabbed detail: overview, problems, documents, treatment & visits, progress, assessment (URL-based tabs)
+│               ├── page.tsx      — tabbed detail: overview, problems, documents, fees, treatment & visits, progress, assessment
 │               ├── edit/page.tsx  — edit patient form
-│               └── print/page.tsx — printable patient report
+│               ├── print/page.tsx — fully branded printable patient report
+│               └── receipt/page.tsx — printable fee receipt page
 └── middleware.ts         — session refresh, redirect unauthenticated → /login
 ```
 
@@ -115,7 +124,7 @@ The dashboard at `/dashboard` currently shows:
 
 ## Patient detail page (tabbed)
 
-6 tabs (URL-based via `?tab=`): overview (personal/body metrics/contact/assessment snapshot), problems (preset + custom), documents (upload/download), treatment & visits (plan form + visit log), progress (weight + pain line charts), assessment (5-section lifestyle form).
+7 tabs (URL-based via `?tab=`): overview (personal/body metrics/contact/assessment snapshot), problems (preset + custom), documents (upload/download), fees (course fee and payments), treatment & visits (plan form with AI assist + visit log), progress (weight + pain line charts), assessment (5-section lifestyle form).
 
 ## Conventions
 
@@ -142,8 +151,8 @@ npm run db:migrate       # drizzle-kit migrate
 ## Phase roadmap
 
 - **Phase 1** ✅: Core CRUD (patients, problems, documents, treatment plans, visits)
-- **Phase 2** ✅: Dashboard + charts, lifestyle assessment form, follow-up tracking
-- **Phase 3** (upcoming): WhatsApp/SMS (Twilio), fees, CSV export, audit logs, dashboard enhancements
+- **Phase 2** ✅: Dashboard + charts, lifestyle assessment form, follow-up tracking, AI Treatment Plans, Fee Tracking & Receipts, Branded Patient Reports
+- **Phase 3** (upcoming): WhatsApp/SMS (Twilio), CSV export, audit logs, dashboard enhancements
 
 ## Infra architecture (zero-cost path)
 
@@ -173,6 +182,9 @@ NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_K
 
 # Database (Supabase default, or Neon pooled URL)
 DATABASE_URL
+
+# AI Features
+GEMINI_API_KEY
 
 # Optional — set all 4 to use Cloudflare R2 instead of Supabase Storage
 R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET

@@ -4,174 +4,296 @@ import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
 import { getTreatmentPlan } from '@/data/treatment';
 import { listVisits } from '@/data/visits';
-import { getLifestyleAssessment } from '@/data/lifestyle';
-import { computeBmi, bmiCategory } from '@/lib/bmi';
+import { getPatientFees, type PatientFees } from '@/data/fees';
+import { computeBmi } from '@/lib/bmi';
+import { getISTDateString } from '@/lib/dates';
+import { BRANCHES } from '@/lib/presets';
 import { PrintButton } from '@/components/PrintButton';
+import { ReportLetterhead } from '@/components/ReportLetterhead';
+
+const GREEN = '#1B3A2E';
+const SAFFRON = '#C8962E';
+const CREAM = '#FDF8F0';
+
+const GENDER_MARATHI: Record<string, string> = { male: 'पुरुष', female: 'स्त्री', other: 'इतर' };
+
+const MODALITY_KEYS = [
+  ['yogaProgram', 'Yoga Program'],
+  ['pranayam', 'Pranayam'],
+  ['massage', 'Massage'],
+  ['yogaTherapy', 'Yoga Therapy'],
+  ['panchkarma', 'Panchkarma'],
+] as const;
+
+function nameInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return name.slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 export default async function PrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();
-  const [problems, plan, visits, assessment] = await Promise.all([
-    listProblems(db, id), getTreatmentPlan(db, id), listVisits(db, id), getLifestyleAssessment(db, id),
+
+  const [problems, plan, visits, patientFees] = await Promise.all([
+    listProblems(db, id),
+    getTreatmentPlan(db, id),
+    listVisits(db, id),
+    getPatientFees(db, id),
   ]);
+
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
-  const planRows = plan ? ([
-    ['Yoga Program / योग कार्यक्रम', plan.yogaProgram], ['Pranayam / प्राणायाम', plan.pranayam],
-    ['Massage / मसाज', plan.massage], ['Yoga Therapy / योग थेरपी', plan.yogaTherapy],
-    ['Diet Plan / आहार योजना', plan.dietPlan], ['Medicines / औषधे', plan.medicines],
-    ['Panchkarma / पंचकर्म', plan.panchkarma],
-  ] as const).filter(([, v]) => v) : [];
+  const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
+  const today = getISTDateString();
+  const latestNote = visits[0]?.progressNote ?? null;
+  const modalities = plan
+    ? MODALITY_KEYS.filter(([key]) => Boolean(plan[key as keyof typeof plan])).map(([, label]) => label)
+    : [];
 
   return (
-    <div className="mx-auto max-w-3xl bg-white p-8 print:p-0">
-      <div className="mb-4 flex justify-end print:hidden"><PrintButton /></div>
-      <header className="mb-6 border-b-2 pb-3 text-center" style={{ borderColor: '#4A7548' }}>
-        <div className="mb-1 flex items-center justify-center gap-2">
-          <span className="text-2xl" aria-hidden="true">🌿</span>
-          <h1 className="text-2xl font-bold" style={{ color: '#2C2418' }}>Pawar Yoga Therapy Center</h1>
+    <div className="mx-auto max-w-3xl bg-white p-8 print:max-w-none print:p-0">
+      <div className="mb-4 flex justify-end print:hidden">
+        <PrintButton />
+      </div>
+
+      {/* ── LETTERHEAD ── */}
+      <ReportLetterhead badgeLabel="Patient Report" patientCode={patient.patientCode} branch={branch} today={today} />
+
+      {/* ── PATIENT IDENTIFICATION ── */}
+      <SectionHeader>PATIENT IDENTIFICATION / रुग्णाची ओळख</SectionHeader>
+      <div className="mb-6 flex items-center gap-4 rounded border border-amber-100 p-4" style={{ backgroundColor: CREAM }}>
+        <div
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
+          style={{ backgroundColor: SAFFRON }}
+        >
+          {nameInitials(patient.fullName)}
         </div>
-        <p className="text-sm" style={{ color: '#7A6E62' }}>Patient Summary / रुग्ण सारांश — {patient.patientCode}</p>
-      </header>
+        <div>
+          <p className="text-xl font-bold text-gray-900">{patient.fullName}</p>
+          <p className="text-sm text-gray-600">
+            {patient.gender ? GENDER_MARATHI[patient.gender] : ''}
+            {patient.age ? ` | Age: ${patient.age} yrs` : ''}
+            {` | ${patient.mobile}`}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Chip>{patient.patientCode}</Chip>
+            {branch && <Chip>{branch.label}</Chip>}
+          </div>
+        </div>
+      </div>
 
-      <section className="mb-6">
-        <h2 className="mb-2 border-b border-stone-300 font-semibold">Registration / नोंदणी</h2>
-        <table className="w-full text-sm">
-          <tbody>
-            {([
-              ['Name / नाव', patient.fullName], ['Age / वय', patient.age], ['Gender / लिंग', patient.gender],
-              ['Weight / वजन', patient.weightKg && `${patient.weightKg} kg`],
-              ['Height / उंची', patient.heightCm && `${patient.heightCm} cm`],
-              ['BMI', bmi !== null ? `${bmi} — ${bmiCategory(bmi)}` : null],
-              ['Mobile / मोबाईल', patient.mobile], ['Email / ईमेल', patient.email],
-              ['Address / पत्ता', patient.address], ['Occupation / व्यवसाय', patient.occupation],
-              ['Emergency / आपत्कालीन', patient.emergencyContact],
-            ] as const).filter(([, v]) => v != null).map(([k, v]) => (
-              <tr key={k} className="border-b border-stone-100">
-                <td className="w-48 py-1 text-stone-500">{k}</td>
-                <td className="py-1">{v}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {/* ── PERSONAL INFORMATION ── */}
+      <SectionHeader>PERSONAL INFORMATION / वैयक्तिक माहिती</SectionHeader>
+      <div className="mb-6">
+        <InfoTable>
+          <InfoRow2
+            label1="Full Name / पूर्ण नाव" value1={patient.fullName}
+            label2="Gender / लिंग" value2={patient.gender ? GENDER_MARATHI[patient.gender] : '—'}
+          />
+          <InfoRow2
+            label1="Age / वय" value1={patient.age ? `${patient.age} years` : '—'}
+            label2="Mobile / मोबाईल" value2={patient.mobile}
+          />
+          <InfoRow2
+            label1="Email / ईमेल" value1={patient.email ?? '—'}
+            label2="Occupation / व्यवसाय" value2={patient.occupation ?? '—'}
+          />
+          <InfoRow1 label="Address / पत्ता" value={patient.address ?? '—'} />
+          {branch && <InfoRow1 label="Branch / शाखा" value={branch.label} />}
+        </InfoTable>
+      </div>
 
-      <section className="mb-6">
-        <h2 className="mb-2 border-b border-stone-300 font-semibold">Health Problems / आजार</h2>
-        {problems.length === 0
-          ? <p className="text-sm text-stone-500">None recorded / नोंद नाही</p>
-          : <ul className="list-inside list-disc text-sm">
-              {problems.map((p) => <li key={p.id}>{p.problem}{p.note && ` — ${p.note}`}</li>)}
-            </ul>}
-      </section>
+      {/* ── PHYSICAL MEASUREMENTS ── */}
+      {(patient.weightKg !== null || patient.heightCm !== null) && (
+        <>
+          <SectionHeader>PHYSICAL MEASUREMENTS / शारीरिक मोजमाप</SectionHeader>
+          <div className="mb-6">
+            <InfoTable>
+              <InfoRow2
+                label1="Weight / वजन" value1={patient.weightKg !== null ? `${patient.weightKg.toFixed(2)} kg` : '—'}
+                label2="Height / उंची" value2={patient.heightCm !== null ? `${patient.heightCm.toFixed(2)} cm` : '—'}
+              />
+              {bmi !== null && <InfoRow1 label="BMI" value={bmi.toFixed(1)} />}
+            </InfoTable>
+          </div>
+        </>
+      )}
 
-      {assessment && (() => {
-        const concern = ([
-          ['Chief Complaint / मुख्य तक्रार', assessment.chiefComplaint],
-          ['Since / केव्हापासून', assessment.duration],
-          ['Aggravating Factors / काय त्रास वाढवते', assessment.aggravatingFactors],
-          ['Relieving Factors / काय आराम देते', assessment.relievingFactors],
-          ['Previous Treatment / आधीचे उपचार', assessment.previousTreatment],
-        ] as const).filter(([, v]) => v !== null && v !== undefined);
-        const meds = ([
-          ['Current Medications / सध्याची औषधे', assessment.currentMedications],
-          ["Doctor's Diagnosis / डॉक्टरांचे निदान", assessment.doctorDiagnosis],
-          ["Doctor's Restrictions / डॉक्टरांचे निर्बंध", assessment.doctorRestrictions],
-        ] as const).filter(([, v]) => v !== null && v !== undefined);
-        const goalRows: [string, { text: string; warning: boolean }][] = (([
-          ['Primary Goal / मुख्य उद्दिष्ट', assessment.primaryGoal != null ? { text: assessment.primaryGoal, warning: false } : null],
-          assessment.hasContraindications != null
-            ? ['Contraindications / विरोधाभास', { text: assessment.hasContraindications ? 'Yes / होय ⚠' : 'No / नाही', warning: assessment.hasContraindications }]
-            : null,
-          ['Details / तपशील', assessment.contraindicationDetails != null ? { text: assessment.contraindicationDetails, warning: false } : null],
-        ]) as ([string, { text: string; warning: boolean } | null] | null)[]).filter((r): r is [string, { text: string; warning: boolean }] => r != null && r[1] != null);
-        return (
-          <>
-            {concern.length > 0 && (
-              <section className="mb-6">
-                <h2 className="mb-2 border-b border-stone-300 font-semibold">Primary Concern / मुख्य तक्रार</h2>
-                <table className="w-full text-sm"><tbody>
-                  {concern.map(([k, v]) => (
-                    <tr key={k} className="border-b border-stone-100 align-top">
-                      <td className="w-48 py-1 text-stone-500">{k}</td>
-                      <td className="py-1 whitespace-pre-wrap">{v}</td>
-                    </tr>
-                  ))}
-                </tbody></table>
-              </section>
-            )}
-            {meds.length > 0 && (
-              <section className="mb-6">
-                <h2 className="mb-2 border-b border-stone-300 font-semibold">Medications & Restrictions / औषधे आणि निर्बंध</h2>
-                <table className="w-full text-sm"><tbody>
-                  {meds.map(([k, v]) => (
-                    <tr key={k} className="border-b border-stone-100 align-top">
-                      <td className="w-48 py-1 text-stone-500">{k}</td>
-                      <td className="py-1 whitespace-pre-wrap">{v}</td>
-                    </tr>
-                  ))}
-                </tbody></table>
-              </section>
-            )}
-            {goalRows.length > 0 && (
-              <section className="mb-6">
-                <h2 className="mb-2 border-b border-stone-300 font-semibold">Goals & Safety / उद्दिष्टे आणि सुरक्षितता</h2>
-                <table className="w-full text-sm"><tbody>
-                  {goalRows.map(([k, v]) => (
-                    <tr key={k} className="border-b border-stone-100 align-top">
-                      <td className="w-48 py-1 text-stone-500">{k}</td>
-                      <td className={`py-1 whitespace-pre-wrap${v.warning ? ' font-medium text-red-600' : ''}`}>{v.text}</td>
-                    </tr>
-                  ))}
-                </tbody></table>
-              </section>
-            )}
-          </>
-        );
-      })()}
+      {/* ── HEALTH CONDITIONS ── */}
+      {problems.length > 0 && (
+        <>
+          <SectionHeader>HEALTH CONDITIONS / आजार</SectionHeader>
+          <div className="mb-6 flex flex-wrap gap-2 py-2">
+            {problems.map((p) => <Chip key={p.id}>{p.problem}</Chip>)}
+          </div>
+        </>
+      )}
 
-      {planRows.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-2 border-b border-stone-300 font-semibold">Treatment Plan / उपचार योजना</h2>
+      {/* ── TREATMENT PLAN ── */}
+      {(plan || latestNote) && (
+        <>
+          <SectionHeader>TREATMENT PLAN / उपचार योजना</SectionHeader>
+          <div className="mb-6">
+            <table className="w-full text-sm">
+              <tbody>
+                {modalities.length > 0 && (
+                  <tr className="border-b border-gray-100 align-top">
+                    <td className="w-36 py-2 font-medium text-gray-700">Modalities / उपचार पद्धती</td>
+                    <td className="py-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {modalities.map((m) => <Chip key={m}>{m}</Chip>)}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {plan?.yogaProgram && <PlanRow label="Yoga Program / योग कार्यक्रम" value={plan.yogaProgram} />}
+                {plan?.pranayam && <PlanRow label="Pranayam / प्राणायाम" value={plan.pranayam} />}
+                {plan?.massage && <PlanRow label="Massage / मसाज" value={plan.massage} />}
+                {plan?.yogaTherapy && <PlanRow label="Yoga Therapy / योग थेरपी" value={plan.yogaTherapy} />}
+                {plan?.dietPlan && <PlanRow label="Diet Plan / आहार योजना" value={plan.dietPlan} />}
+                {plan?.medicines && <PlanRow label="Medicines / औषधे" value={plan.medicines} />}
+                {plan?.panchkarma && <PlanRow label="Panchkarma / पंचकर्म" value={plan.panchkarma} />}
+                {latestNote && <PlanRow label="Progress Notes / प्रगती नोंद" value={latestNote} />}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* ── FEE SUMMARY ── */}
+      {patientFees.courseFee !== null && (
+        <>
+          <SectionHeader>FEE SUMMARY / शुल्क सारांश</SectionHeader>
+          <div className="mb-6 grid grid-cols-3 gap-4">
+            <FeeBox label="TOTAL FEE / एकूण शुल्क" amount={patientFees.courseFee} variant="neutral" />
+            <FeeBox label="AMOUNT PAID / एकूण जमा" amount={patientFees.totalPaid} variant="green" />
+            <FeeBox
+              label="BALANCE DUE / बाकी"
+              amount={patientFees.balance ?? 0}
+              variant={(patientFees.balance ?? 0) > 0 ? 'orange' : 'green'}
+            />
+          </div>
+        </>
+      )}
+
+      {/* ── VISIT HISTORY ── */}
+      <SectionHeader>VISIT HISTORY / भेटीचा इतिहास</SectionHeader>
+      <div className="mb-8">
+        {visits.length === 0 ? (
+          <p className="py-4 text-center text-sm text-gray-400">
+            No visit records found / भेटींची नोंद नाही
+          </p>
+        ) : (
           <table className="w-full text-sm">
+            <thead>
+              <tr style={{ backgroundColor: CREAM, borderBottom: `2px solid ${SAFFRON}` }}>
+                {['NO. / क्र.', 'VISIT DATE / तारीख', 'WEIGHT / वजन', 'PAIN LEVEL / वेदना', 'SESSION NOTES / टिप्पण्या'].map((h) => (
+                  <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-600">{h}</th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
-              {planRows.map(([k, v]) => (
-                <tr key={k} className="border-b border-stone-100 align-top">
-                  <td className="w-48 py-1 text-stone-500">{k}</td>
-                  <td className="py-1 whitespace-pre-wrap">{v}</td>
+              {visits.map((v, i) => (
+                <tr key={v.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="border-b border-gray-100 px-3 py-2">{i + 1}</td>
+                  <td className="border-b border-gray-100 px-3 py-2 whitespace-nowrap">{v.visitDate}</td>
+                  <td className="border-b border-gray-100 px-3 py-2">{v.weightKg != null ? `${v.weightKg} kg` : '—'}</td>
+                  <td className="border-b border-gray-100 px-3 py-2">{v.painScale != null ? `${v.painScale}/10` : '—'}</td>
+                  <td className="border-b border-gray-100 px-3 py-2 whitespace-pre-wrap">{v.progressNote}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </section>
-      )}
+        )}
+      </div>
 
-      <section>
-        <h2 className="mb-2 border-b border-stone-300 font-semibold">Visit History / भेटींचा इतिहास</h2>
-        {visits.length === 0
-          ? <p className="text-sm text-stone-500">No visits / भेटी नाहीत</p>
-          : <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stone-300 text-left text-stone-500">
-                  <th className="py-1">Date</th><th>Weight</th><th>Pain</th><th>Note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visits.map((v) => (
-                  <tr key={v.id} className="border-b border-stone-100 align-top">
-                    <td className="py-1 whitespace-nowrap">{v.visitDate}</td>
-                    <td>{v.weightKg ?? '—'}</td>
-                    <td>{v.painScale ? `${v.painScale}/10` : '—'}</td>
-                    <td className="whitespace-pre-wrap">{v.progressNote}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>}
-      </section>
-      <footer className="mt-8 border-t border-stone-200 pt-2 text-center text-xs text-stone-400 print:fixed print:bottom-0 print:left-0 print:right-0">
-        Generated on {new Date().toLocaleDateString('en-IN')} — Pawar Yoga Therapy Center
-      </footer>
+      {/* ── FOOTER ── */}
+      <hr className="border-gray-200" />
+      <div className="mt-8 flex justify-end">
+        <div className="w-52 border-t-2 border-gray-400 pt-2 text-right">
+          <p className="text-sm font-bold">Aacharya Narayan Pawar</p>
+          <p className="text-xs text-gray-600">Founder &amp; Director of PYTC | Chief Medical Yoga Expert</p>
+          <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center</p>
+        </div>
+      </div>
+      <p className="mt-4 text-center text-xs text-gray-400">
+        This is an official patient record issued by Pawar&apos;s Yog Therapy Center.
+        Confidential — intended solely for the patient and treating practitioner. | Generated on {today} / ही अधिकृत रुग्ण नोंद आहे. | {today} रोजी तयार केली
+      </p>
+    </div>
+  );
+}
+
+// ── Sub-components ──────────────────────────────────────────────────
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-3 border-l-4 pl-3" style={{ borderColor: SAFFRON }}>
+      <span className="text-xs font-bold uppercase tracking-widest text-gray-600">{children}</span>
+    </div>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center rounded px-2.5 py-0.5 text-xs font-medium"
+      style={{ backgroundColor: '#FEF3C7', color: '#92400E', border: '1px solid #D97706' }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function InfoTable({ children }: { children: React.ReactNode }) {
+  return <table className="w-full border-collapse text-sm"><tbody>{children}</tbody></table>;
+}
+
+function InfoRow2({
+  label1, value1, label2, value2,
+}: { label1: string; value1: string; label2: string; value2: string }) {
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="w-28 py-2 font-medium text-gray-700">{label1}</td>
+      <td className="py-2 pr-6">{value1}</td>
+      <td className="w-28 py-2 font-medium text-gray-700">{label2}</td>
+      <td className="py-2">{value2}</td>
+    </tr>
+  );
+}
+
+function InfoRow1({ label, value }: { label: string; value: string }) {
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="w-28 py-2 font-medium text-gray-700">{label}</td>
+      <td className="py-2" colSpan={3}>{value}</td>
+    </tr>
+  );
+}
+
+function PlanRow({ label, value }: { label: string; value: string }) {
+  return (
+    <tr className="border-b border-gray-100 align-top">
+      <td className="w-36 py-2 font-medium text-gray-700">{label}</td>
+      <td className="py-2 whitespace-pre-wrap">{value}</td>
+    </tr>
+  );
+}
+
+function FeeBox({
+  label, amount, variant,
+}: { label: string; amount: number; variant: 'neutral' | 'green' | 'orange' }) {
+  const bg = { neutral: CREAM, green: '#DCFCE7', orange: '#FFF3E0' }[variant];
+  const color = { neutral: '#374151', green: '#1B3A2E', orange: '#C2410C' }[variant];
+  const borderColor = { neutral: '#E5D5B5', green: '#86EFAC', orange: '#FED7AA' }[variant];
+  return (
+    <div className="rounded border p-4 text-center" style={{ backgroundColor: bg, borderColor }}>
+      <p className="text-2xl font-bold" style={{ color }}>
+        ₹{amount.toLocaleString('en-IN')}
+      </p>
+      <p className="mt-1 text-xs tracking-widest text-gray-500">{label}</p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DOC_TYPES } from './presets';
+import { BRANCHES, DOC_TYPES } from './presets';
 
 const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
@@ -23,6 +23,7 @@ export const patientSchema = z.object({
   address: opt(z.string().trim().max(500)),
   occupation: opt(z.string().trim().max(100)),
   emergencyContact: opt(z.string().trim().max(100)),
+  branch: opt(z.enum(BRANCHES.map(b => b.key) as [string, ...string[]], { message: 'Invalid branch / चुकीची शाखा' })),
 });
 export type PatientInput = z.infer<typeof patientSchema>;
 
@@ -102,3 +103,17 @@ export const lifestyleSchema = z.object({
   contraindicationDetails: opt(z.string().trim().max(1000)),
 });
 export type LifestyleInput = z.infer<typeof lifestyleSchema>;
+
+export const courseFeeSchema = z.object({
+  courseFee: z.coerce.number().positive('Fee must be positive / शुल्क सकारात्मक असणे आवश्यक आहे'),
+});
+export type CourseFeeInput = z.infer<typeof courseFeeSchema>;
+
+export const paymentSchema = z.object({
+  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे'),
+  paymentDate: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / अवैध तारीख')
+    .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
+  description: opt(z.string().trim().max(200, 'Description too long / तपशील खूप मोठा आहे')),
+});
+export type PaymentInput = z.infer<typeof paymentSchema>;

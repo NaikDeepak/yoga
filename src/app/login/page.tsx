@@ -17,7 +17,7 @@ export default async function LoginPage({
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Leaf className="h-6 w-6 text-primary" aria-hidden="true" />
           </div>
-          <CardTitle>Pawar Yoga Therapy</CardTitle>
+          <CardTitle>Pawar&apos;s Yog Therapy</CardTitle>
           <CardDescription>Admin Login / प्रवेश</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
