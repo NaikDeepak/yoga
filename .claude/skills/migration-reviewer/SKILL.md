@@ -1,6 +1,6 @@
 ---
 name: migration-reviewer
-description: Use when reviewing database schema changes, Drizzle ORM migrations, or SQL files. Ensure migrations are generated safely and don't introduce data loss or breaking changes.
+description: Use when reviewing database schema changes, Drizzle ORM migrations, or SQL files.
 ---
 
 # Migration Reviewer

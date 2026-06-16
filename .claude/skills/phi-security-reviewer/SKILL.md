@@ -1,6 +1,6 @@
 ---
 name: phi-security-reviewer
-description: Use when reviewing code that handles Protected Health Information (PHI) such as patient names, contact details, and medical conditions. Ensure the app maintains strict privacy and security for all patient data.
+description: Use when reviewing code that handles Protected Health Information (PHI) such as patient names, contact details, and medical conditions.
 ---
 
 # PHI Security Reviewer
@@ -31,8 +31,8 @@ In this application, PHI includes:
    - Error messages returned to the client should be generic (e.g., "Failed to load patient") rather than leaking database internals or raw PHI.
 
 4. **File Storage**
-   - Patient documents must be stored in private buckets (`patient-files`).
-   - Access to these files must be granted via short-lived signed URLs, NOT public unauthenticated URLs.
+   - Patient documents are stored in Cloudflare R2 (`src/lib/r2-storage.ts`), selected at runtime via `getStorage()` in `src/lib/storage.ts`. A Supabase Storage backend (bucket `patient-files`) also exists behind the same interface as a fallback when R2 env vars are unset — check whichever backend is actually active.
+   - Storage must never be a public bucket; access to files in either backend must be granted via short-lived signed URLs (`createSignedUrl`), NOT public unauthenticated URLs.
    - When fetching documents, verify the patient ID belongs to the system and is accessed in an authenticated context.
 
 ## Common Misses
