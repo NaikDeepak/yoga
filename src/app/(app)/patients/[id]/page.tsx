@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Pencil, Printer, Receipt } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
@@ -22,10 +21,11 @@ import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/l
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
 import { InlineForm } from '@/components/InlineForm';
+import { PatientHeader } from '@/components/PatientHeader';
+import { TabDropdown } from '@/components/TabDropdown';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -40,10 +40,6 @@ const TABS = [
   ['assessment', 'Assessment / मूल्यांकन'],
 ] as const;
 type Tab = (typeof TABS)[number][0];
-
-function initials(name: string) {
-  return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
-}
 
 function painColor(scale: number) {
   if (scale <= 3) return 'bg-primary';
@@ -74,49 +70,12 @@ export default async function PatientPage({
 
   return (
     <div className="space-y-6">
-      {/* Patient header */}
-      <div className="flex flex-wrap items-center gap-4">
-        <Avatar className="h-16 w-16">
-          {photoUrl && <AvatarImage src={photoUrl} alt={patient.fullName} />}
-          <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-            {initials(patient.fullName)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold">{patient.fullName}</h1>
-            <Badge variant="outline" className="border-brand-accent text-brand-accent">
-              {patient.patientCode}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">{patient.mobile}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/patients/${id}/edit`}>
-              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-              Edit / बदला
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/patients/${id}/print`}>
-              <Printer className="mr-1.5 h-3.5 w-3.5" />
-              Report / अहवाल
-            </Link>
-          </Button>
-          {patientFees.courseFee !== null && (
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/patients/${id}/receipt`}>
-                <Receipt className="mr-1.5 h-3.5 w-3.5" />
-                Receipt / पावती
-              </Link>
-            </Button>
-          )}
-        </div>
-      </div>
+      <PatientHeader patient={patient} photoUrl={photoUrl} hasCourseFee={patientFees.courseFee !== null} />
 
-      {/* Tab navigation — URL-based for server rendering, styled like shadcn Tabs */}
-      <div className="inline-flex h-9 w-full items-center justify-start overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground">
+      <TabDropdown patientId={id} activeTab={tab} tabs={TABS} />
+
+      {/* Tab navigation — URL-based for server rendering, styled like shadcn Tabs. Hidden on mobile in favor of TabDropdown. */}
+      <div className="hidden h-9 w-full items-center justify-start overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground sm:inline-flex">
         {TABS.map(([key, title]) => (
           <Link
             key={key}
@@ -132,14 +91,16 @@ export default async function PatientPage({
         ))}
       </div>
 
-      {/* Tab content */}
-      {tab === 'overview' && <Overview patient={patient} />}
-      {tab === 'problems' && <Problems patientId={id} />}
-      {tab === 'documents' && <Documents patientId={id} />}
-      {tab === 'treatment' && <Treatment patientId={id} />}
-      {tab === 'progress' && <Progress patientId={id} />}
-      {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} />}
-      {tab === 'assessment' && <Assessment patientId={id} />}
+      {/* Tab content — keyed by tab so it remounts and fades in on every switch */}
+      <div key={tab} className="animate-in fade-in duration-200">
+        {tab === 'overview' && <Overview patient={patient} />}
+        {tab === 'problems' && <Problems patientId={id} />}
+        {tab === 'documents' && <Documents patientId={id} />}
+        {tab === 'treatment' && <Treatment patientId={id} />}
+        {tab === 'progress' && <Progress patientId={id} />}
+        {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} />}
+        {tab === 'assessment' && <Assessment patientId={id} />}
+      </div>
     </div>
   );
 }
