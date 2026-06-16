@@ -47,13 +47,14 @@ The dashboard (`src/app/(app)/dashboard/page.tsx`) is a flat list of stats and a
 
 **New file:** `src/app/api/patients/search/route.ts`
 
-- `GET` handler. Calls `requireUser()` first (consistent with the "every mutation/data access goes through auth" pattern), reads `?q=`, calls `searchPatients(db, q, 8)`.
+- `GET` handler. **Does not call `requireUser()`** — that helper calls `redirect('/login')` on `next/navigation`, which is meant for page components. In a `route.ts` handler invoked via `fetch` from a client component, a redirect sends the browser a 307 to `/login`; the client's `response.json()` then tries to parse the login page's HTML and throws. Instead, mirror the existing `src/app/api/ai/treatment-plan/[patientId]/route.ts` pattern: call `createSupabaseServerClient()` + `supabase.auth.getUser()` directly, and return `NextResponse.json({ error: 'Unauthorized / अनधिकृत' }, { status: 401 })` when there's no user.
+- Reads `?q=`, calls `searchPatients(db, q, 8)`.
 - Returns `{ results: { id, fullName, patientCode, mobile }[] }`. Empty/missing `q` → `{ results: [] }` without querying.
 
 **New file:** `src/components/GlobalSearch.tsx` (client component)
 
 - Text input with bilingual placeholder: "Search patient / रुग्ण शोधा".
-- 300ms debounce on keystroke; fetches `/api/patients/search?q=...`.
+- 300ms debounce on keystroke; fetches `/api/patients/search?q=...`. Each fetch is issued with an `AbortController`; starting a new fetch aborts the previous in-flight one, so a slow earlier response can't land after a faster later one and overwrite the dropdown with stale results.
 - Renders a dropdown under the input listing matches: `Full Name · PYT-0042 · 98765xxxxx`. The first result is highlighted by default; arrow up/down moves the highlight, Enter navigates to the highlighted result, click navigates to the clicked result.
 - Escape or click-outside closes the dropdown without navigating. Clearing the input (empty `q`) also closes the dropdown without firing a fetch.
 - No results and query non-empty → "No matches / जुळणारे नाही" row in the dropdown.
@@ -74,8 +75,9 @@ The dashboard (`src/app/(app)/dashboard/page.tsx`) is a flat list of stats and a
 
 **New file:** `src/components/BranchFilter.tsx` (client component)
 
-- A `<select>` with options: "All branches / सर्व शाखा" + each `BRANCHES` entry's `label`.
-- `onChange` calls `router.push` / `router.replace` with the updated `?branch=` query param (or removes it for "all").
+- Uses the existing `src/components/ui/select.tsx` (shadcn `Select`/`SelectTrigger`/`SelectContent`/`SelectItem`) rather than a plain HTML `<select>`, to match the rest of the app's UI — `PatientForm` already uses this component for `branch`/`gender` fields.
+- Options: "All branches / सर्व शाखा" + each `BRANCHES` entry's `label`.
+- `onValueChange` calls `router.push` / `router.replace` with the updated `?branch=` query param (or removes it for "all").
 - Placed at the top of the dashboard, next to the `Dashboard / डॅशबोर्ड` heading.
 
 **File:** `src/data/dashboard.ts`
@@ -99,8 +101,8 @@ The dashboard (`src/app/(app)/dashboard/page.tsx`) is a flat list of stats and a
 | `src/data/visits.ts` | `tests/data/clinical.test.ts` | `getFollowUpsThisWeek` returns `branch`; optional `branch` param filters correctly |
 | `src/data/dashboard.ts` | `tests/data/dashboard.test.ts` | Each of the three functions filters by `branch` when provided; unfiltered behavior unchanged when omitted |
 | `src/data/patients.ts` | `tests/data/patients.test.ts` | `searchPatients` matches on `patientCode`; `limit` param caps results |
-| `src/app/api/patients/search` | `tests/app/api/patients/search.test.ts` (new) | Requires auth (401/redirect when unauthenticated); returns matches; empty `q` returns `{ results: [] }` without querying; mirrors `tests/app/api/ai/treatment-plan.test.ts` |
-| `src/components/GlobalSearch.tsx` | `tests/components/global-search.test.tsx` (new) | Debounced fetch fires once per pause in typing; renders dropdown results; clicking a result navigates; Escape closes dropdown; mirrors `tests/components/patient-form.test.tsx` |
+| `src/app/api/patients/search` | `tests/app/api/patients/search.test.ts` (new) | Returns `401` JSON (not a redirect) when unauthenticated; returns matches; empty `q` returns `{ results: [] }` without querying; mirrors `tests/app/api/ai/treatment-plan.test.ts` |
+| `src/components/GlobalSearch.tsx` | `tests/components/global-search.test.tsx` (new) | Debounced fetch fires once per pause in typing; aborts a stale in-flight fetch when a new one starts; renders dropdown results; clicking a result navigates; Escape closes dropdown; mirrors `tests/components/patient-form.test.tsx` |
 | UI (day-grouping, `BranchFilter`, quick action button) | manual / `next build` | Covered by the manual QA checklist in `docs/setup.md`, consistent with how `AilmentBarChart`/`VisitLineChart` are currently handled (no dedicated component test) |
 
 ---
@@ -114,7 +116,7 @@ The dashboard (`src/app/(app)/dashboard/page.tsx`) is a flat list of stats and a
 | `src/data/patients.ts` | `searchPatients` matches `patientCode`; gains optional `limit` param |
 | `src/app/api/patients/search/route.ts` | New — backs the global search dropdown |
 | `src/components/GlobalSearch.tsx` | New — debounced search input + dropdown |
-| `src/components/BranchFilter.tsx` | New — branch `<select>` driving the `?branch=` query param |
+| `src/components/BranchFilter.tsx` | New — shadcn `Select` driving the `?branch=` query param |
 | `src/app/(app)/layout.tsx` | Mount `GlobalSearch` in the top nav |
 | `src/app/(app)/dashboard/page.tsx` | Day-grouped agenda rendering, `BranchFilter` + "+ New Patient" near the heading, thread `branch` through all four data calls |
 | `tests/data/clinical.test.ts` | Extend for `branch` field/filter |
