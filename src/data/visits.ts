@@ -9,6 +9,7 @@ export type FollowUp = {
   fullName: string;
   patientCode: string;
   mobile: string;
+  branch: string | null;
   nextVisitDate: string;
 };
 
@@ -34,7 +35,7 @@ export async function listVisitsWithData(db: Db, patientId: string): Promise<Vis
 
 export { getISTDateString };
 
-export async function getFollowUpsThisWeek(db: Db): Promise<FollowUp[]> {
+export async function getFollowUpsThisWeek(db: Db, branch?: string): Promise<FollowUp[]> {
   const today = getISTDateString(0);
   const end = getISTDateString(6);
 
@@ -53,6 +54,7 @@ export async function getFollowUpsThisWeek(db: Db): Promise<FollowUp[]> {
       fullName: patients.fullName,
       patientCode: patients.patientCode,
       mobile: patients.mobile,
+      branch: patients.branch,
       nextVisitDate: latestPerPatient.nextVisitDate,
     })
     .from(latestPerPatient)
@@ -62,6 +64,7 @@ export async function getFollowUpsThisWeek(db: Db): Promise<FollowUp[]> {
         isNotNull(latestPerPatient.nextVisitDate),
         gte(latestPerPatient.nextVisitDate, today),
         lte(latestPerPatient.nextVisitDate, end),
+        branch ? eq(patients.branch, branch) : undefined,
       ),
     )
     .orderBy(latestPerPatient.nextVisitDate);
