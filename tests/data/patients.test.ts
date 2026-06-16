@@ -46,4 +46,15 @@ describe('searchPatients', () => {
     expect(await searchPatients(db, '')).toHaveLength(2);
     expect((await searchPatients(db)).map((p) => p.fullName)).toContain('Asha Pawar');
   });
+
+  it('matches patient code', async () => {
+    const p = await createPatient(db, asha);
+    expect(await searchPatients(db, p.patientCode)).toHaveLength(1);
+  });
+
+  it('respects limit', async () => {
+    await createPatient(db, asha);
+    await createPatient(db, { fullName: 'Asha Two', mobile: '9876543211' });
+    expect(await searchPatients(db, 'asha', 1)).toHaveLength(1);
+  });
 });
