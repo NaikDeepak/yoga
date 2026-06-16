@@ -3,7 +3,6 @@ import { Leaf } from 'lucide-react';
 import { signOutAction } from '@/actions/auth';
 import { requireUser } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { GlobalSearch } from '@/components/GlobalSearch';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -31,8 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </Link>
             </nav>
           </div>
-          <GlobalSearch />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
             {user.email && (
               <span className="hidden text-sm text-muted-foreground sm:block">{user.email}</span>
             )}

@@ -4,6 +4,7 @@ import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/
 import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { BranchFilter } from '@/components/BranchFilter';
+import { GlobalSearch } from '@/components/GlobalSearch';
 import { RevenueStatCard } from '@/components/RevenueStatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,10 @@ export default async function DashboardPage({
             <Link href="/patients/new">+ New Patient / नवीन रुग्ण</Link>
           </Button>
         </div>
+      </div>
+
+      <div className="mx-auto max-w-2xl px-2 py-4 sm:py-6">
+        <GlobalSearch size="lg" className="w-full" />
       </div>
 
       {/* Follow-ups card */}
