@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *src/lib/*|*src/data/*|*src/actions/*) npx vitest related \"$f\" --run 2>&1;; *) exit 0;; esac; }",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *src/lib/*|*src/data/*|*src/actions/*|*tests/*) npx vitest related \"$f\" --run 2>&1;; *) exit 0;; esac; }",
             "timeout": 90,
             "statusMessage": "Running related tests…"
           }
@@ -37,7 +37,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
