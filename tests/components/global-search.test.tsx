@@ -26,7 +26,7 @@ describe('GlobalSearch', () => {
   it('debounces and renders dropdown results', async () => {
     mockFetchOnce([{ id: 'p1', fullName: 'Asha Pawar', patientCode: 'PYT-0001', mobile: '9876543210' }]);
     render(<GlobalSearch />);
-    fireEvent.change(screen.getByPlaceholderText(/Search patient/), { target: { value: 'asha' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search.*patient/), { target: { value: 'asha' } });
 
     await act(async () => { await vi.advanceTimersByTimeAsync(300); });
     expect(screen.getByText('Asha Pawar')).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe('GlobalSearch', () => {
   it('navigates to the patient on click', async () => {
     mockFetchOnce([{ id: 'p1', fullName: 'Asha Pawar', patientCode: 'PYT-0001', mobile: '9876543210' }]);
     render(<GlobalSearch />);
-    fireEvent.change(screen.getByPlaceholderText(/Search patient/), { target: { value: 'asha' } });
+    fireEvent.change(screen.getByPlaceholderText(/Search.*patient/), { target: { value: 'asha' } });
     await act(async () => { await vi.advanceTimersByTimeAsync(300); });
     screen.getByText('Asha Pawar');
 
@@ -50,7 +50,7 @@ describe('GlobalSearch', () => {
   it('closes the dropdown on Escape without navigating', async () => {
     mockFetchOnce([{ id: 'p1', fullName: 'Asha Pawar', patientCode: 'PYT-0001', mobile: '9876543210' }]);
     render(<GlobalSearch />);
-    const input = screen.getByPlaceholderText(/Search patient/);
+    const input = screen.getByPlaceholderText(/Search.*patient/);
     fireEvent.change(input, { target: { value: 'asha' } });
     await act(async () => { await vi.advanceTimersByTimeAsync(300); });
     screen.getByText('Asha Pawar');
@@ -70,7 +70,7 @@ describe('GlobalSearch', () => {
       .mockResolvedValueOnce({ json: async () => ({ results: [] }) });
 
     render(<GlobalSearch />);
-    const input = screen.getByPlaceholderText(/Search patient/);
+    const input = screen.getByPlaceholderText(/Search.*patient/);
     fireEvent.change(input, { target: { value: 'a' } });
     await act(async () => { await vi.advanceTimersByTimeAsync(300); });
     fireEvent.change(input, { target: { value: 'as' } });

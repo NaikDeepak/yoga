@@ -17,5 +17,6 @@ export async function addVisitAction(patientId: string, formData: FormData): Pro
     return { ok: false, error: 'Could not save visit / भेट जतन झाली नाही' };
   }
   revalidatePath(`/patients/${patientId}`);
+  revalidatePath('/dashboard');
   return { ok: true };
 }
