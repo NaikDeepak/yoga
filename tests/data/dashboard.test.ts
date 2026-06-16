@@ -54,6 +54,22 @@ describe('getDashboardStats', () => {
     expect(stats.mostCommonProblem).toBe('Back Pain');
     expect(stats.avgPainThisMonth).toBe(5); // (4+6)/2 = 5.0
   });
+
+  it('filters all stats by branch when provided', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210', branch: 'Manjari BK' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001', branch: 'Kharadi' });
+
+    await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok', painScale: 4 });
+    await addVisit(db, p2.id, { visitDate: thisMonthDate(), progressNote: 'ok', painScale: 8 });
+    await addProblem(db, p1.id, { problem: 'Back Pain', isCustom: false });
+    await addProblem(db, p2.id, { problem: 'Arthritis', isCustom: false });
+
+    const stats = await getDashboardStats(db, 'Manjari BK');
+    expect(stats.totalPatients).toBe(1);
+    expect(stats.visitsThisMonth).toBe(1);
+    expect(stats.mostCommonProblem).toBe('Back Pain');
+    expect(stats.avgPainThisMonth).toBe(4);
+  });
 });
 
 describe('getAilmentBreakdown', () => {
@@ -68,6 +84,16 @@ describe('getAilmentBreakdown', () => {
     const result = await getAilmentBreakdown(db);
     expect(result[0]).toEqual({ problem: 'Back Pain', count: 2 });
     expect(result[1]).toEqual({ problem: 'Arthritis', count: 1 });
+  });
+
+  it('filters by branch when provided', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210', branch: 'Manjari BK' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001', branch: 'Kharadi' });
+    await addProblem(db, p1.id, { problem: 'Back Pain', isCustom: false });
+    await addProblem(db, p2.id, { problem: 'Arthritis', isCustom: false });
+
+    const result = await getAilmentBreakdown(db, 'Manjari BK');
+    expect(result).toEqual([{ problem: 'Back Pain', count: 1 }]);
   });
 });
 
@@ -95,6 +121,17 @@ describe('getRecentVisits', () => {
 
     const result = await getRecentVisits(db, 2);
     expect(result).toHaveLength(2);
+  });
+
+  it('filters by branch when provided', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210', branch: 'Manjari BK' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001', branch: 'Kharadi' });
+    await addVisit(db, p1.id, { visitDate: '2026-06-10', progressNote: 'a' });
+    await addVisit(db, p2.id, { visitDate: '2026-06-11', progressNote: 'b' });
+
+    const result = await getRecentVisits(db, 10, 'Manjari BK');
+    expect(result).toHaveLength(1);
+    expect(result[0].patientName).toBe('Asha Pawar');
   });
 });
 
