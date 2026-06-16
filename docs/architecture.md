@@ -34,12 +34,13 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/data/lifestyle.ts` | one assessment per patient (upsert) | `getLifestyleAssessment`, `upsertLifestyleAssessment` |
 | `src/actions/auth.ts` | sign in / sign out / sign up (Supabase Auth) | `signInAction`, `signOutAction`, `signUpAction` |
 | `src/actions/*` (rest) | server actions per domain; all return `ActionResult` | `*Action` functions |
-| `src/components/*` | Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm), PrintButton, AilmentBarChart (Recharts horizontal bar), VisitLineChart (Recharts line), TreatmentPlanForm (AI treatment builder) | — |
+| `src/components/*` | Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm), PrintButton, AilmentBarChart (Recharts horizontal bar), VisitLineChart (Recharts line), TreatmentPlanForm (AI treatment builder), GlobalSearch (debounced live patient search dropdown in top nav), BranchFilter (branch-scoped dashboard filter) | — |
 | `src/components/ui/*` | shadcn/ui generated components (Button, Input, Label, Card, Badge, AlertDialog, Dialog, Avatar, Separator, Tabs, Textarea, Select) | — |
 | `src/lib/utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge) | `cn` |
 | `src/app/login` / `src/app/register` | public auth pages (forms post to auth actions) | — |
 | `src/app/api/ai/treatment-plan/[patientId]` | API GET route handler to draft treatment plan using Gemini | — |
-| `src/app/(app)/dashboard` | clinic-wide stats, ailment bar chart, recent visits | — |
+| `src/app/api/patients/search` | API GET route handler backing the global search dropdown | — |
+| `src/app/(app)/dashboard` | clinic-wide stats, ailment bar chart, recent visits, day-grouped follow-up agenda, branch filter, quick-add patient | — |
 | `src/app/(app)/patients/*` | list/new/detail(tabs+progress+assessment)/edit/print pages | — |
 | `src/middleware.ts` | session refresh; redirects unauthenticated → /login | — |
 
@@ -65,5 +66,5 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 
 ## Phase roadmap
 Spec: `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md`.
-Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups ✅.
+Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups ✅; global search ✅; branch filter ✅.
 Phase 3: WhatsApp/SMS (Twilio), fees, CSV export, audit logs.
