@@ -33,12 +33,18 @@ function groupFollowUps(followUps: FollowUp[]): AgendaRow[] {
   return rows;
 }
 
+const WEEKDAYS: [string, string][] = [
+  ['Sun', 'रवि'], ['Mon', 'सोम'], ['Tue', 'मंगळ'], ['Wed', 'बुध'],
+  ['Thu', 'गुरु'], ['Fri', 'शुक्र'], ['Sat', 'शनि'],
+];
+
 function dateHeaderLabel(date: string, today: string, tomorrow: string): string {
   if (date === today) return 'Today / आज';
   if (date === tomorrow) return 'Tomorrow / उद्या';
   const [year, month, day] = date.split('-').map(Number);
-  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
-  return `${weekday}, ${formatDueDate(date)}`;
+  const [enWeekday, mrWeekday] = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  const dateStr = formatDueDate(date);
+  return `${enWeekday}, ${dateStr} / ${mrWeekday}, ${dateStr}`;
 }
 
 export default async function DashboardPage({

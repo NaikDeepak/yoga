@@ -24,6 +24,7 @@ export function GlobalSearch() {
   useEffect(() => {
     const trimmed = query.trim();
     if (!trimmed) {
+      abortRef.current?.abort();
       setResults([]);
       setOpen(false);
       return;

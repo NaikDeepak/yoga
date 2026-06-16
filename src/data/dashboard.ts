@@ -1,5 +1,6 @@
 import { count, countDistinct, sum, desc, gte, lt, eq, and } from 'drizzle-orm';
 import { patients, patientProblems, visits, feePayments } from '@/db/schema';
+import { getISTDateString } from '@/lib/dates';
 import type { Db } from '@/db/types';
 
 export type DashboardStats = {
@@ -10,10 +11,11 @@ export type DashboardStats = {
 };
 
 export async function getDashboardStats(db: Db, branch?: string): Promise<DashboardStats> {
-  const now = new Date();
-  const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const firstOfNextMonth = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
+  const [istYear, istMonth] = getISTDateString(0).split('-').map(Number);
+  const firstOfMonth = `${istYear}-${String(istMonth).padStart(2, '0')}-01`;
+  const nextMonthYear = istMonth === 12 ? istYear + 1 : istYear;
+  const nextMonth = istMonth === 12 ? 1 : istMonth + 1;
+  const firstOfNextMonth = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`;
 
   const cntExpr = countDistinct(patientProblems.patientId);
   const branchFilter = branch ? eq(patients.branch, branch) : undefined;
