@@ -79,7 +79,7 @@ export const fees = pgTable('fees', {
   id: uuid('id').primaryKey().defaultRandom(),
   patientId: uuid('patient_id').notNull().unique()
     .references(() => patients.id, { onDelete: 'cascade' }),
-  courseFee: real('course_fee').notNull(),
+  courseFee: numeric('course_fee', { precision: 12, scale: 2 }).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }).enableRLS();
@@ -88,7 +88,7 @@ export const feePayments = pgTable('fee_payments', {
   id: uuid('id').primaryKey().defaultRandom(),
   patientId: uuid('patient_id').notNull()
     .references(() => patients.id, { onDelete: 'cascade' }),
-  amount: real('amount').notNull(),
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
   paymentDate: date('payment_date').notNull(),
   description: text('description'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -399,6 +399,7 @@ import { getPatientFees, type PatientFees } from '@/data/fees';
 import { computeBmi } from '@/lib/bmi';
 import { BRANCHES } from '@/lib/presets';
 import { PrintButton } from '@/components/PrintButton';
+import { getISTDateString } from '@/lib/dates';
 
 const CLINIC = { phone: '+91 85509 21037', email: 'pawarsyog@gmail.com', location: 'Pune, Maharashtra' };
 const GREEN = '#1B3A2E';
@@ -419,10 +420,6 @@ function nameInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function formatDate(d: Date = new Date()): string {
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-}
-
 export default async function PrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const db = getDb();
@@ -438,7 +435,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
 
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
-  const today = formatDate();
+  const today = getISTDateString();
   const latestNote = visits[0]?.progressNote ?? null;
   const modalities = plan
     ? MODALITY_KEYS.filter(([key]) => Boolean(plan[key as keyof typeof plan])).map(([, label]) => label)
@@ -1161,13 +1158,10 @@ import { getPatient } from '@/data/patients';
 import { getPatientFees } from '@/data/fees';
 import { BRANCHES } from '@/lib/presets';
 import { PrintButton } from '@/components/PrintButton';
+import { getISTDateString } from '@/lib/dates';
 
 const CLINIC = { phone: '+91 85509 21037', email: 'pawarsyog@gmail.com', location: 'Pune, Maharashtra' };
 const GREEN = '#1B3A2E';
-
-function formatDate(d: Date = new Date()): string {
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-}
 
 function formatCurrency(n: number): string {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -1183,7 +1177,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   if (patientFees.courseFee === null) redirect(`/patients/${id}`);
 
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
-  const today = formatDate();
+  const today = getISTDateString();
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:max-w-none print:p-0">
@@ -1264,7 +1258,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
             </tr>
           </thead>
           <tbody>
-            {patientFees.payments.map((p, i) => (
+            {/* Reverse the array to display oldest-first (receipt convention) since getPatientFees returns newest-first */}
+            {[...patientFees.payments].reverse().map((p, i) => (
               <tr key={p.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border-b border-gray-100 px-3 py-2">{i + 1}</td>
                 <td className="border-b border-gray-100 px-3 py-2 whitespace-nowrap">{p.paymentDate}</td>
