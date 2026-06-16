@@ -1,4 +1,4 @@
-Use my name everytime you are thinking ou tload and discussing with me
+start every response with my name - "Deepak". everytime you are thinking ou tload and discussing with me.
 
 # Pawar Yoga Therapy — Patient Management
 
