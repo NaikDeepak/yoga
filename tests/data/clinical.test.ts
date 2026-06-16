@@ -77,4 +77,17 @@ describe('getFollowUpsThisWeek', () => {
     await addVisit(db, patientId, { visitDate: '2026-06-14', progressNote: 'attended' });
     expect(await getFollowUpsThisWeek(db)).toHaveLength(0);
   });
+
+  it('filters by branch when provided', async () => {
+    const p1 = (await createPatient(db, { fullName: 'Asha', mobile: '9876543210', branch: 'Manjari BK' })).id;
+    const p2 = (await createPatient(db, { fullName: 'Ravi', mobile: '9000000001', branch: 'Kharadi' })).id;
+    const tomorrow = getISTDateString(1);
+    await addVisit(db, p1, { visitDate: getISTDateString(), progressNote: 'ok', nextVisitDate: tomorrow });
+    await addVisit(db, p2, { visitDate: getISTDateString(), progressNote: 'ok', nextVisitDate: tomorrow });
+
+    const filtered = await getFollowUpsThisWeek(db, 'Manjari BK');
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].patientId).toBe(p1);
+    expect(filtered[0].branch).toBe('Manjari BK');
+  });
 });

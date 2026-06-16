@@ -38,6 +38,9 @@
 - [ ] Register patient with photo on a phone-sized viewport
 - [ ] Each tab works: add/remove problem, upload/view/delete document, save plan, add visit
 - [ ] Search by name and by mobile
+- [ ] Global search box in the top nav finds a patient by name, patient code, or mobile and jumps to their profile
+- [ ] Branch filter on the dashboard scopes stats, agenda, and recent activity to the selected branch
+- [ ] Dashboard follow-ups are grouped under Today/Tomorrow/weekday headers
 - [ ] Print view → Save as PDF produces clean A4
 - [ ] Logged-out user hitting /patients is redirected to /login
 - [ ] With signups disabled, /register shows an error instead of creating a user

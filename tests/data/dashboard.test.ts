@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/dashboard';
 import { addVisit, listVisitsWithData } from '@/data/visits';
+import { addPayment, setCourseFee } from '@/data/fees';
 import { createPatient } from '@/data/patients';
 import { addProblem } from '@/data/problems';
 import type { Db } from '@/db/types';
@@ -32,27 +33,54 @@ describe('getDashboardStats', () => {
     expect(stats.totalPatients).toBe(0);
     expect(stats.visitsThisMonth).toBe(0);
     expect(stats.mostCommonProblem).toBeNull();
-    expect(stats.avgPainThisMonth).toBeNull();
+    expect(stats.revenueThisMonth).toBe(0);
   });
 
-  it('counts patients, this-month visits, most common problem, avg pain', async () => {
+  it('counts patients, this-month visits, most common problem, and revenue', async () => {
     const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
     const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001' });
 
-    await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok', weightKg: 68, painScale: 4 });
-    await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok', weightKg: 67, painScale: 6 });
-    await addVisit(db, p2.id, { visitDate: lastMonthDate(), progressNote: 'old', painScale: 8 });
-    await addVisit(db, p2.id, { visitDate: nextMonthDate(), progressNote: 'future', painScale: 9 });
+    await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok', weightKg: 68 });
+    await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok', weightKg: 67 });
+    await addVisit(db, p2.id, { visitDate: lastMonthDate(), progressNote: 'old' });
+    await addVisit(db, p2.id, { visitDate: nextMonthDate(), progressNote: 'future' });
 
     await addProblem(db, p1.id, { problem: 'Back Pain', isCustom: false });
     await addProblem(db, p1.id, { problem: 'Arthritis', isCustom: false });
     await addProblem(db, p2.id, { problem: 'Back Pain', isCustom: false });
 
+    await setCourseFee(db, p1.id, 5000);
+    await setCourseFee(db, p2.id, 5000);
+    await addPayment(db, p1.id, 1000, thisMonthDate(), null);
+    await addPayment(db, p1.id, 500, thisMonthDate(), null);
+    await addPayment(db, p2.id, 2000, lastMonthDate(), null);
+
     const stats = await getDashboardStats(db);
     expect(stats.totalPatients).toBe(2);
     expect(stats.visitsThisMonth).toBe(2);
     expect(stats.mostCommonProblem).toBe('Back Pain');
-    expect(stats.avgPainThisMonth).toBe(5); // (4+6)/2 = 5.0
+    expect(stats.revenueThisMonth).toBe(1500); // 1000 + 500
+  });
+
+  it('filters all stats by branch when provided', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210', branch: 'Manjari BK' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001', branch: 'Kharadi' });
+
+    await addVisit(db, p1.id, { visitDate: thisMonthDate(), progressNote: 'ok' });
+    await addVisit(db, p2.id, { visitDate: thisMonthDate(), progressNote: 'ok' });
+    await addProblem(db, p1.id, { problem: 'Back Pain', isCustom: false });
+    await addProblem(db, p2.id, { problem: 'Arthritis', isCustom: false });
+
+    await setCourseFee(db, p1.id, 5000);
+    await setCourseFee(db, p2.id, 5000);
+    await addPayment(db, p1.id, 1000, thisMonthDate(), null);
+    await addPayment(db, p2.id, 2000, thisMonthDate(), null);
+
+    const stats = await getDashboardStats(db, 'Manjari BK');
+    expect(stats.totalPatients).toBe(1);
+    expect(stats.visitsThisMonth).toBe(1);
+    expect(stats.mostCommonProblem).toBe('Back Pain');
+    expect(stats.revenueThisMonth).toBe(1000);
   });
 });
 
@@ -68,6 +96,16 @@ describe('getAilmentBreakdown', () => {
     const result = await getAilmentBreakdown(db);
     expect(result[0]).toEqual({ problem: 'Back Pain', count: 2 });
     expect(result[1]).toEqual({ problem: 'Arthritis', count: 1 });
+  });
+
+  it('filters by branch when provided', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210', branch: 'Manjari BK' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001', branch: 'Kharadi' });
+    await addProblem(db, p1.id, { problem: 'Back Pain', isCustom: false });
+    await addProblem(db, p2.id, { problem: 'Arthritis', isCustom: false });
+
+    const result = await getAilmentBreakdown(db, 'Manjari BK');
+    expect(result).toEqual([{ problem: 'Back Pain', count: 1 }]);
   });
 });
 
@@ -95,6 +133,17 @@ describe('getRecentVisits', () => {
 
     const result = await getRecentVisits(db, 2);
     expect(result).toHaveLength(2);
+  });
+
+  it('filters by branch when provided', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210', branch: 'Manjari BK' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001', branch: 'Kharadi' });
+    await addVisit(db, p1.id, { visitDate: '2026-06-10', progressNote: 'a' });
+    await addVisit(db, p2.id, { visitDate: '2026-06-11', progressNote: 'b' });
+
+    const result = await getRecentVisits(db, 10, 'Manjari BK');
+    expect(result).toHaveLength(1);
+    expect(result[0].patientName).toBe('Asha Pawar');
   });
 });
 

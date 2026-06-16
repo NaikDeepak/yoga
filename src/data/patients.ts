@@ -32,10 +32,15 @@ export async function setPhotoPath(db: Db, id: string, photoPath: string): Promi
   await db.update(patients).set({ photoPath }).where(eq(patients.id, id));
 }
 
-export async function searchPatients(db: Db, q?: string): Promise<Patient[]> {
+export async function searchPatients(db: Db, q?: string, limit?: number): Promise<Patient[]> {
   const query = q?.trim();
   const where = query
-    ? or(ilike(patients.fullName, `%${query}%`), ilike(patients.mobile, `%${query}%`))
+    ? or(
+        ilike(patients.fullName, `%${query}%`),
+        ilike(patients.mobile, `%${query}%`),
+        ilike(patients.patientCode, `%${query}%`),
+      )
     : undefined;
-  return db.select().from(patients).where(where).orderBy(desc(patients.createdAt));
+  const base = db.select().from(patients).where(where).orderBy(desc(patients.createdAt));
+  return limit !== undefined ? base.limit(limit) : base;
 }

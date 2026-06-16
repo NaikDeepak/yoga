@@ -1,0 +1,52 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *src/*.ts|*src/*.tsx) npm run typecheck;; *) exit 0;; esac; }",
+            "timeout": 90,
+            "statusMessage": "Type-checking…"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *src/lib/*|*src/data/*|*src/actions/*|*tests/*) npx vitest related \"$f\" --run 2>&1;; *) exit 0;; esac; }",
+            "timeout": 90,
+            "statusMessage": "Running related tests…"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // .tool_response.filePath // empty' | { read -r f; case \"$f\" in *src/components/ui/*) exit 0;; *src/components/*|*src/app/*) :;; *) exit 0;; esac; [ -f \"$f\" ] || exit 0; total=$(grep -cE '>[A-Za-z][^<]{2,}<' \"$f\" 2>/dev/null); deva=$(perl -CSD -ne 'print if /[\\x{0900}-\\x{097F}]/' \"$f\" 2>/dev/null | wc -l); if [ \"${total:-0}\" -gt 0 ] && [ \"${deva:-0}\" -eq 0 ]; then jq -n --arg f \"$f\" '{systemMessage: (\"Bilingual check: \" + $f + \" has user-facing text but no Marathi (मराठी) detected — CLAUDE.md requires every label/error as English / Marathi.\")}'; fi; }",
+            "timeout": 15,
+            "statusMessage": "Checking bilingual labels…"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path // empty' | { read -r f; base=\"$(basename \"$f\")\"; case \"$base\" in .env.example) exit 0;; .env|.env.*) jq -n --arg b \"$base\" '{hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:($b+\" holds secrets (Supabase/AWS/R2/Gemini) — edit it manually outside Claude Code, not via Edit/Write.\")}}';; *) exit 0;; esac; }",
+            "timeout": 10,
+            "statusMessage": "Checking env file protection…"
+          }
+        ]
+      }
+    ]
+  }
+}
