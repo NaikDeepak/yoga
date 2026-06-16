@@ -10,9 +10,7 @@ const GREEN = '#1B3A2E';
 const SAFFRON = '#C8962E';
 const CREAM = '#FDF8F0';
 
-function formatDate(d: Date = new Date()): string {
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-}
+import { getISTDateString } from '@/lib/dates';
 
 function formatCurrency(n: number): string {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -28,7 +26,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   if (patientFees.courseFee === null) redirect(`/patients/${id}`);
 
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
-  const today = formatDate();
+  const today = getISTDateString();
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:max-w-none print:p-0">
@@ -40,20 +38,20 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       <ReportLetterhead badgeLabel="Receipt" patientCode={patient.patientCode} branch={branch} today={today} />
 
       {/* ── PATIENT ── */}
-      <SectionHeader>PATIENT</SectionHeader>
+      <SectionHeader>PATIENT / रुग्ण</SectionHeader>
       <div className="mb-6">
         <table className="w-full border-collapse text-sm">
           <tbody>
             <tr className="border-b border-gray-100">
-              <td className="w-28 py-2 font-medium text-gray-700">Full Name</td>
+              <td className="w-28 py-2 font-medium text-gray-700">Full Name / पूर्ण नाव</td>
               <td className="py-2 pr-6">{patient.fullName}</td>
-              <td className="w-28 py-2 font-medium text-gray-700">Patient Code</td>
+              <td className="w-28 py-2 font-medium text-gray-700">Patient Code / रुग्ण क्रमांक</td>
               <td className="py-2">{patient.patientCode}</td>
             </tr>
             <tr className="border-b border-gray-100">
-              <td className="w-28 py-2 font-medium text-gray-700">Branch</td>
+              <td className="w-28 py-2 font-medium text-gray-700">Branch / शाखा</td>
               <td className="py-2 pr-6">{branch?.label ?? '—'}</td>
-              <td className="w-28 py-2 font-medium text-gray-700">Mobile</td>
+              <td className="w-28 py-2 font-medium text-gray-700">Mobile / मोबाईल</td>
               <td className="py-2">{patient.mobile}</td>
             </tr>
           </tbody>
@@ -61,30 +59,30 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* ── FEE SUMMARY ── */}
-      <SectionHeader>FEE SUMMARY</SectionHeader>
+      <SectionHeader>FEE SUMMARY / शुल्क सारांश</SectionHeader>
       <div className="mb-6 grid grid-cols-3 gap-4">
-        <FeeBox label="TOTAL FEE" amount={patientFees.courseFee} variant="neutral" />
-        <FeeBox label="TOTAL PAID" amount={patientFees.totalPaid} variant="green" />
+        <FeeBox label="TOTAL FEE / एकूण शुल्क" amount={patientFees.courseFee} variant="neutral" />
+        <FeeBox label="TOTAL PAID / एकूण जमा" amount={patientFees.totalPaid} variant="green" />
         <FeeBox
-          label="BALANCE DUE"
+          label="BALANCE DUE / बाकी"
           amount={patientFees.balance ?? 0}
           variant={(patientFees.balance ?? 0) > 0 ? 'orange' : 'green'}
         />
       </div>
 
       {/* ── PAYMENT HISTORY ── */}
-      <SectionHeader>PAYMENT HISTORY</SectionHeader>
+      <SectionHeader>PAYMENT HISTORY / पेमेंट इतिहास</SectionHeader>
       <div className="mb-8">
         <table className="w-full text-sm">
           <thead>
             <tr style={{ backgroundColor: CREAM, borderBottom: `2px solid ${SAFFRON}` }}>
-              {['NO.', 'DATE', 'DESCRIPTION', 'AMOUNT (₹)'].map((h) => (
+              {['NO. / क्र.', 'DATE / तारीख', 'DESCRIPTION / तपशील', 'AMOUNT (₹) / रक्कम'].map((h) => (
                 <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-600">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {patientFees.payments.map((p, i) => (
+            {[...patientFees.payments].reverse().map((p, i) => (
               <tr key={p.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border-b border-gray-100 px-3 py-2">{i + 1}</td>
                 <td className="border-b border-gray-100 px-3 py-2 whitespace-nowrap">{p.paymentDate}</td>
@@ -93,7 +91,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               </tr>
             ))}
             <tr className="border-t-2 border-gray-300 font-semibold">
-              <td colSpan={3} className="px-3 py-2 text-right">TOTAL PAID</td>
+              <td colSpan={3} className="px-3 py-2 text-right">TOTAL PAID / एकूण जमा</td>
               <td className="px-3 py-2" style={{ color: GREEN }}>{formatCurrency(patientFees.totalPaid)}</td>
             </tr>
           </tbody>
@@ -110,7 +108,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
-        This is an official receipt issued by Pawar&apos;s Yog Therapy Center. | Generated on {today}
+        This is an official receipt issued by Pawar&apos;s Yog Therapy Center. | Generated on {today} / ही अधिकृत पावती आहे. | {today} रोजी तयार केली
       </p>
     </div>
   );

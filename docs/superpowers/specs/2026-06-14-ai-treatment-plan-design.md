@@ -146,7 +146,7 @@ System prompt instructs Gemini to: act as a yoga therapy clinical assistant; gen
 ### `tests/app/api/ai/treatment-plan.test.ts`
 - Mocks Supabase auth, all data fetchers (`getPatient`, `listProblems`, `getLifestyleAssessment`, `listVisits`), `generateTreatmentDraft`
 - Happy path: returns 200 with 7-field JSON
-- Unauthenticated (no Supabase user): returns 200 JSON `{ error: 'Unauthorized' }` with status 401
+- Unauthenticated (no Supabase user): returns 401 JSON `{ error: 'Unauthorized' }`
 - Patient not found: returns 404
 - Gemini fails: returns 500 with `{ error: "..." }`
 

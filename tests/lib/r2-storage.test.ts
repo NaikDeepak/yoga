@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ── Mock the AWS SDK at the package boundary ────────────────────────
 const { mockSend, mockGetSignedUrl } = vi.hoisted(() => {
@@ -29,10 +29,15 @@ vi.mock('@aws-sdk/s3-request-presigner', () => ({
 }));
 
 // ── Stub env vars needed by r2Storage() ──────────────────────────────
-vi.stubEnv('R2_ACCOUNT_ID', 'test-account');
-vi.stubEnv('R2_ACCESS_KEY_ID', 'test-key');
-vi.stubEnv('R2_SECRET_ACCESS_KEY', 'test-secret');
-vi.stubEnv('R2_BUCKET', 'patient-files');
+beforeEach(() => {
+  vi.stubEnv('R2_ACCOUNT_ID', 'test-account');
+  vi.stubEnv('R2_ACCESS_KEY_ID', 'test-key');
+  vi.stubEnv('R2_SECRET_ACCESS_KEY', 'test-secret');
+  vi.stubEnv('R2_BUCKET', 'patient-files');
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 // Import the real module — SDK calls go to our mocks above
 import { r2Storage } from '@/lib/r2-storage';

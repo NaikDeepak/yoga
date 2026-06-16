@@ -406,7 +406,7 @@ async function Documents({ patientId }: { patientId: string }) {
                   {d.originalName}
                 </a>
                 <span className="shrink-0 text-muted-foreground">
-                  {new Date(d.createdAt).toLocaleDateString('en-IN')}
+                  {getISTDateString(0, d.createdAt)}
                 </span>
               </div>
               <DeleteButton
@@ -951,7 +951,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
           <InlineForm action={boundSetFee}>
             <div className="flex items-end gap-3">
               <div className="flex-1 space-y-1">
-                <Label htmlFor="courseFee">Total Course Fee (₹)</Label>
+                <Label htmlFor="courseFee">Total Course Fee (₹) / एकूण शुल्क</Label>
                 <Input
                   id="courseFee"
                   name="courseFee"
@@ -959,7 +959,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
                   step="0.01"
                   min="0"
                   defaultValue={patientFees.courseFee ?? ''}
-                  placeholder="e.g. 2000"
+                  placeholder="e.g. 2000 / उदा. 2000"
                 />
               </div>
               <Button type="submit" size="sm">Set / सेट करा</Button>
@@ -986,7 +986,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
               </div>
               <div className="space-y-1">
                 <Label htmlFor="description">Note / टीप</Label>
-                <Input id="description" name="description" placeholder="e.g. First instalment" />
+                <Input id="description" name="description" placeholder="e.g. First instalment / उदा. पहिला हप्ता" />
               </div>
             </div>
             <Button type="submit" size="sm" className="mt-3">Add / जोडा</Button>

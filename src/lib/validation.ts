@@ -23,7 +23,7 @@ export const patientSchema = z.object({
   address: opt(z.string().trim().max(500)),
   occupation: opt(z.string().trim().max(100)),
   emergencyContact: opt(z.string().trim().max(100)),
-  branch: opt(z.enum(BRANCHES.map(b => b.key) as [string, ...string[]])),
+  branch: opt(z.enum(BRANCHES.map(b => b.key) as [string, ...string[]], { message: 'Invalid branch / चुकीची शाखा' })),
 });
 export type PatientInput = z.infer<typeof patientSchema>;
 
@@ -114,6 +114,6 @@ export const paymentSchema = z.object({
   paymentDate: z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / अवैध तारीख')
     .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
-  description: opt(z.string().trim().max(200)),
+  description: opt(z.string().trim().max(200, 'Description too long / तपशील खूप मोठा आहे')),
 });
 export type PaymentInput = z.infer<typeof paymentSchema>;

@@ -143,7 +143,7 @@ async function run() {
     return;
   }
   
-  console.log("Calling Gemini API with key starting with:", apiKey.slice(0, 10));
+  console.log("Calling Gemini API...");
   
   try {
     const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {

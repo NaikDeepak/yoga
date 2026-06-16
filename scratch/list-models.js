@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const envContent = fs.readFileSync(path.join(__dirname, '../.env'), 'utf8');
+let envContent;
+try {
+  envContent = fs.readFileSync(path.join(__dirname, '../.env'), 'utf8');
+} catch (err) {
+  console.error("Could not read .env file. Please ensure it exists.");
+  process.exit(1);
+}
 const match = envContent.match(/^GEMINI_API_KEY\s*=\s*(.+)$/m);
 if (!match) {
   console.error("No API key found in .env");

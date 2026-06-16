@@ -118,7 +118,7 @@ function buildPrompt(ctx: TreatmentContext): string {
 
     if (lifestyle.primaryGoal)     lines.push(`Goal: ${lifestyle.primaryGoal}`);
     if (lifestyle.activityStruggle) lines.push(`Struggles with: ${lifestyle.activityStruggle}`);
-    if (lifestyle.hasContraindications) {
+    if (lifestyle.hasContraindications || lifestyle.contraindicationDetails) {
       lines.push(
         `Contraindications: YES${lifestyle.contraindicationDetails ? ` — ${lifestyle.contraindicationDetails}` : ''}`,
       );

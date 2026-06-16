@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, text, integer, real, boolean, date, timestamp,
+  pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index,
 } from 'drizzle-orm/pg-core';
 
 export const patients = pgTable('patients', {
@@ -116,7 +116,7 @@ export const fees = pgTable('fees', {
   id: uuid('id').primaryKey().defaultRandom(),
   patientId: uuid('patient_id').notNull().unique()
     .references(() => patients.id, { onDelete: 'cascade' }),
-  courseFee: real('course_fee').notNull(),
+  courseFee: numeric('course_fee', { precision: 12, scale: 2 }).notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }).enableRLS();
@@ -125,11 +125,13 @@ export const feePayments = pgTable('fee_payments', {
   id: uuid('id').primaryKey().defaultRandom(),
   patientId: uuid('patient_id').notNull()
     .references(() => patients.id, { onDelete: 'cascade' }),
-  amount: real('amount').notNull(),
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
   paymentDate: date('payment_date').notNull(),
   description: text('description'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-}).enableRLS();
+}, (table) => [
+  index('fee_payments_patient_history_idx').on(table.patientId, table.paymentDate, table.createdAt)
+]).enableRLS();
 
 export type FeeRow = typeof fees.$inferSelect;
 export type FeePayment = typeof feePayments.$inferSelect;

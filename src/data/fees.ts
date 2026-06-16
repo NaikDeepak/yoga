@@ -1,10 +1,12 @@
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import type { Db } from '@/db/types';
 import { fees, feePayments, type FeePayment } from '@/db/schema';
 
+export type PaymentRecord = Omit<FeePayment, 'amount'> & { amount: number };
+
 export type PatientFees = {
   courseFee: number | null;
-  payments: FeePayment[];
+  payments: PaymentRecord[];
   totalPaid: number;
   balance: number | null;
 };
@@ -16,11 +18,13 @@ export async function getPatientFees(db: Db, patientId: string): Promise<Patient
     .from(feePayments)
     .where(eq(feePayments.patientId, patientId))
     .orderBy(feePayments.paymentDate, feePayments.createdAt);
-  const courseFee = feeRow?.courseFee ?? null;
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+  const courseFeeStr = feeRow?.courseFee ?? null;
+  const courseFee = courseFeeStr !== null ? Number(courseFeeStr) : null;
+  const mappedPayments = payments.map(p => ({ ...p, amount: Number(p.amount) }));
+  const totalPaid = mappedPayments.reduce((sum, p) => sum + p.amount, 0);
   return {
     courseFee,
-    payments,
+    payments: mappedPayments,
     totalPaid,
     balance: courseFee !== null ? courseFee - totalPaid : null,
   };
@@ -29,10 +33,10 @@ export async function getPatientFees(db: Db, patientId: string): Promise<Patient
 export async function setCourseFee(db: Db, patientId: string, courseFee: number): Promise<void> {
   await db
     .insert(fees)
-    .values({ patientId, courseFee })
+    .values({ patientId, courseFee: courseFee.toString() })
     .onConflictDoUpdate({
       target: fees.patientId,
-      set: { courseFee, updatedAt: new Date() },
+      set: { courseFee: courseFee.toString(), updatedAt: new Date() },
     });
 }
 
@@ -43,9 +47,9 @@ export async function addPayment(
   paymentDate: string,
   description: string | null,
 ): Promise<void> {
-  await db.insert(feePayments).values({ patientId, amount, paymentDate, description });
+  await db.insert(feePayments).values({ patientId, amount: amount.toString(), paymentDate, description });
 }
 
-export async function deletePayment(db: Db, id: string): Promise<void> {
-  await db.delete(feePayments).where(eq(feePayments.id, id));
+export async function deletePayment(db: Db, patientId: string, id: string): Promise<void> {
+  await db.delete(feePayments).where(and(eq(feePayments.id, id), eq(feePayments.patientId, patientId)));
 }

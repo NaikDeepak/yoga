@@ -85,8 +85,7 @@ export async function GET(
     return NextResponse.json(draft);
   } catch (err) {
     console.error('AI treatment plan generation failed:', err);
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'AI generation failed. Please try again. / AI योजना तयार करण्यात त्रुटी आली. कृपया पुन्हा प्रयत्न करा.' }, { status: 500 });
   }
 }
 

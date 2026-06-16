@@ -78,6 +78,15 @@ describe('addPayment + getPatientFees', () => {
     expect(result.payments[1].description).toBe('Second');
     expect(result.payments[2].description).toBe('Third');
   });
+
+  it('handles decimal amounts correctly without rounding errors', async () => {
+    const p = await createPatient(db, PATIENT);
+    await setCourseFee(db, p.id, 1500.50);
+    await addPayment(db, p.id, 999.99, '2026-06-03', 'First');
+    const result = await getPatientFees(db, p.id);
+    expect(result.totalPaid).toBe(999.99);
+    expect(result.balance).toBe(500.51);
+  });
 });
 
 describe('deletePayment', () => {
@@ -86,7 +95,7 @@ describe('deletePayment', () => {
     await setCourseFee(db, p.id, 2000);
     await addPayment(db, p.id, 1500, '2026-06-03', null);
     let result = await getPatientFees(db, p.id);
-    await deletePayment(db, result.payments[0].id);
+    await deletePayment(db, p.id, result.payments[0].id);
     result = await getPatientFees(db, p.id);
     expect(result.totalPaid).toBe(0);
     expect(result.balance).toBe(2000);

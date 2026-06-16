@@ -88,8 +88,7 @@ export function TreatmentPlanForm({
           <AlertDialogHeader>
             <AlertDialogTitle>Replace current plan? / योजना बदलायची?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace your current plan with an AI draft. Unsaved edits will be lost.
-              Continue? / यामुळे तुमचे न जतन केलेले बदल मिटवले जातील. पुढे जायचे?
+              This will replace your current plan with an AI draft. Unsaved edits will be lost. Continue? / यामुळे तुमची सध्याची योजना AI मसुद्याने बदलली जाईल. न जतन केलेले बदल मिटवले जातील. पुढे जायचे?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -91,6 +91,6 @@ describe('GET /api/ai/treatment-plan/[patientId]', () => {
     vi.mocked(generateTreatmentDraft).mockRejectedValue(new Error('Rate limited by Gemini'));
     const res = await GET(makeRequest(), makeParams());
     expect(res.status).toBe(500);
-    expect(await res.json()).toMatchObject({ error: 'Rate limited by Gemini' });
+    expect(await res.json()).toMatchObject({ error: 'AI generation failed. Please try again. / AI योजना तयार करण्यात त्रुटी आली. कृपया पुन्हा प्रयत्न करा.' });
   });
 });

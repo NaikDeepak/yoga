@@ -46,9 +46,12 @@ export async function addPaymentAction(
 
 export async function deletePaymentAction(patientId: string, paymentId: string): Promise<ActionResult> {
   await requireUser();
+  if (typeof patientId !== 'string' || typeof paymentId !== 'string' || !patientId || !paymentId) {
+    return { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
+  }
   const db = getDb();
   try {
-    await deletePayment(db, paymentId);
+    await deletePayment(db, patientId, paymentId);
   } catch {
     return { ok: false, error: 'Could not delete payment / पेमेंट हटवता आले नाही' };
   }

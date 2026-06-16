@@ -215,7 +215,7 @@ export function PatientForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="branch">Branch / शाखा</Label>
-          <Select name="branch" defaultValue={defaultValues?.branch ?? '__none__'}>
+          <Select name="branch" defaultValue={defaultValues?.branch || '__none__'}>
             <SelectTrigger id="branch">
               <SelectValue placeholder="Select branch / शाखा निवडा" />
             </SelectTrigger>
