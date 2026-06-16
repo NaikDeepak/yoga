@@ -1,3 +1,5 @@
+Use my name everytime you are thinking ou tload and discussing with me
+
 # Pawar Yoga Therapy — Patient Management
 
 Single-clinic patient management app (Phase 1 MVP). Next.js 15 + Supabase + Drizzle.

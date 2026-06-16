@@ -79,7 +79,7 @@ Table with dark green header row:
 | 1 | 03 Jun 2026 | First instalment | 1,500.00 |
 | 2 | 10 Jun 2026 | Second instalment | 500.00 |
 
-Rows in ascending payment date order (oldest first — receipt convention).
+*Note: `getPatientFees` returns payments descending (newest-first). The receipt page must reverse the array before rendering to ensure rows appear in ascending payment date order (oldest first — receipt convention).*
 Amount formatted with two decimal places and commas (e.g. `1,500.00`).
 
 **Total row** at bottom of table:
