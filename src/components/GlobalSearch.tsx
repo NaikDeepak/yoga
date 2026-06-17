@@ -55,7 +55,10 @@ export function GlobalSearch({ className, size = 'default' }: GlobalSearchProps)
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      abortRef.current?.abort();
+    };
   }, [query]);
 
   useEffect(() => {
