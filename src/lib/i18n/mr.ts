@@ -72,6 +72,7 @@ export const mr: Translations = {
       lifestyle: 'जीवनशैली कमी',
       treatment: 'उपचार योजना कमी',
     },
+    patientsLabel: 'रुग्ण',
   },
   patients: {
     title: 'रुग्ण',
@@ -349,6 +350,7 @@ export const mr: Translations = {
     visitColNotes: 'टिप्पण्या',
     noVisitRecords: 'भेटींची नोंद नाही',
     footerText: 'ही अधिकृत अहवाल पावर योग थेरपी केंद्राने जारी केली आहे.',
+    downloadPdf: 'PDF डाउनलोड करा',
   },
   receipt: {
     title: 'देयक पावती',

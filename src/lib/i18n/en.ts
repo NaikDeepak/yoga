@@ -70,6 +70,7 @@ export const en = {
       lifestyle: 'Lifestyle missing',
       treatment: 'Treatment plan missing',
     },
+    patientsLabel: 'Patients',
   },
   patients: {
     title: 'Patients',
@@ -347,6 +348,7 @@ export const en = {
     visitColNotes: 'SESSION NOTES',
     noVisitRecords: 'No visit records found',
     footerText: 'This is an official report issued by Pawar\'s Yog Therapy Center.',
+    downloadPdf: 'Download PDF',
   },
   receipt: {
     title: 'Payment Receipt',
