@@ -266,7 +266,7 @@ export default async function DashboardPage({
                         {pendingReason(p.missingLifestyle, p.missingTreatment, t)}
                       </span>
                     </div>
-                    <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none shrink-0">Pending</Badge>
+                    <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none shrink-0">{t.common.pending}</Badge>
                   </li>
                 ))}
               </ul>
@@ -277,7 +277,7 @@ export default async function DashboardPage({
         {/* Ailment Breakdown (Replacing Donut Chart Placeholder) */}
         <Card className="rounded-2xl shadow-sm border-border flex flex-col justify-between">
           <CardHeader className="pb-0">
-            <CardTitle className="text-base font-semibold">Ailment Breakdown</CardTitle>
+            <CardTitle className="text-base font-semibold">{t.dashboard.ailmentBreakdown}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col justify-center pb-6 mt-4">
             {ailments.length > 0 ? (
@@ -286,7 +286,7 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="flex h-[220px] w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/50">
-                <p className="text-sm text-muted-foreground">No ailment data yet</p>
+                <p className="text-sm text-muted-foreground">{t.dashboard.noAilmentData}</p>
               </div>
             )}
           </CardContent>
@@ -295,10 +295,10 @@ export default async function DashboardPage({
         {/* Monthly Visit Goal */}
         <Card className="rounded-2xl shadow-sm border-border flex flex-col items-center justify-center">
           <CardHeader className="pb-0 w-full">
-            <CardTitle className="text-base font-semibold">Monthly Visit Goal</CardTitle>
+            <CardTitle className="text-base font-semibold">{t.dashboard.monthlyVisitGoal}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center pt-2 pb-4">
-            <VisitGoalGauge current={stats.visitsThisMonth} target={MONTHLY_TARGET} />
+            <VisitGoalGauge current={stats.visitsThisMonth} target={MONTHLY_TARGET} ofGoal={t.dashboard.ofGoal} />
             <p className="text-xs text-muted-foreground mt-1">
               {stats.visitsThisMonth} of {MONTHLY_TARGET} visits this month
             </p>
@@ -309,21 +309,21 @@ export default async function DashboardPage({
       {/* Recent Activity Full Width */}
       <Card className="rounded-2xl shadow-sm border-border">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Recent Visits</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t.dashboard.recentVisits}</CardTitle>
         </CardHeader>
         <CardContent>
           {recentVisits.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No visits yet / भेटी नाहीत</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noVisitsYet}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 rounded-tl-lg">Patient Name</th>
-                    <th className="px-4 py-3">Patient ID</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3">Weight</th>
-                    <th className="px-4 py-3 rounded-tr-lg">Pain Scale</th>
+                    <th className="px-4 py-3 rounded-tl-lg">{t.dashboard.patientName}</th>
+                    <th className="px-4 py-3">{t.dashboard.patientId}</th>
+                    <th className="px-4 py-3">{t.dashboard.date}</th>
+                    <th className="px-4 py-3">{t.dashboard.weight}</th>
+                    <th className="px-4 py-3 rounded-tr-lg">{t.dashboard.painScale}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -401,7 +401,7 @@ function formatDueDate(dateStr: string): string {
 
 const ARC_LENGTH = Math.PI * 80; // semicircle r=80
 
-function VisitGoalGauge({ current, target }: { current: number; target: number }) {
+function VisitGoalGauge({ current, target, ofGoal }: { current: number; target: number; ofGoal: string }) {
   const pct = Math.min(current / target, 1);
   const filled = ARC_LENGTH * pct;
   const gaugeColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#16a34a' : '#ca8a04';
@@ -420,7 +420,7 @@ function VisitGoalGauge({ current, target }: { current: number; target: number }
       />
       {/* Count */}
       <text x="100" y="82" textAnchor="middle" fontSize="30" fontWeight="700" fill="currentColor">{current}</text>
-      <text x="100" y="100" textAnchor="middle" fontSize="11" fill="currentColor" opacity="0.5">{Math.round(pct * 100)}% of goal</text>
+      <text x="100" y="100" textAnchor="middle" fontSize="11" fill="currentColor" opacity="0.5">{Math.round(pct * 100)}{ofGoal}</text>
     </svg>
   );
 }
