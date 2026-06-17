@@ -34,7 +34,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
   ];
 
   const generalItems = [
-    { name: 'Settings', href: '#', icon: Settings, disabled: true },
+    { name: 'Settings', href: '/settings', icon: Settings },
     { name: 'Help', href: '#', icon: HelpCircle, disabled: true },
   ];
 
