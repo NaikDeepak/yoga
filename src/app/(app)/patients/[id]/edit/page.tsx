@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { updatePatientAction } from '@/actions/patients';
+import { PageHeader } from '@/components/PageHeader';
 import { PatientForm } from '@/components/PatientForm';
 
 export default async function EditPatientPage({
@@ -12,11 +13,11 @@ export default async function EditPatientPage({
   if (!patient) notFound();
   const update = updatePatientAction.bind(null, id);
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Edit Patient / माहिती बदला</h1>
-        <p className="text-sm text-muted-foreground">{patient.fullName} — {patient.patientCode}</p>
-      </div>
+    <div className="space-y-8 pb-10">
+      <PageHeader
+        title="Edit Patient / माहिती बदला"
+        subtitle={`${patient.fullName} — ${patient.patientCode}`}
+      />
       <PatientForm action={update} defaultValues={patient} submitLabel="Save / जतन करा" />
     </div>
   );
