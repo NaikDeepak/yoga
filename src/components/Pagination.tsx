@@ -19,7 +19,7 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center gap-1">
+    <nav aria-label="Page navigation" className="flex items-center justify-center gap-1">
       {page === 1 ? (
         <Button variant="outline" size="sm" className="rounded-full" disabled>
           <ChevronLeft className="h-4 w-4" />
@@ -38,7 +38,7 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
             …
           </span>
         ) : n === page ? (
-          <Button key={n} size="sm" className="rounded-full h-8 w-8 p-0">
+          <Button key={n} size="sm" className="rounded-full h-8 w-8 p-0" aria-current="page">
             {n}
           </Button>
         ) : (
@@ -59,6 +59,6 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
           </Link>
         </Button>
       )}
-    </div>
+    </nav>
   );
 }

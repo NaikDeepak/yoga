@@ -7,7 +7,7 @@ export default function NewPatientPage() {
     <div className="space-y-8 pb-10">
       <PageHeader
         title="New Patient / नवीन रुग्ण"
-        subtitle="Fill in the details below to register a new patient."
+        subtitle="Register a new patient / नवीन रुग्ण नोंदवा"
       />
       <PatientForm action={createPatientAction} submitLabel="Register / नोंदणी करा" />
     </div>
