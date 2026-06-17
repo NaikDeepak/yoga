@@ -140,6 +140,6 @@ export const userPreferences = pgTable('user_preferences', {
   userId: text('user_id').primaryKey(),
   language: text('language').notNull().default('en'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}).enableRLS();
 
 export type UserPreference = typeof userPreferences.$inferSelect;
