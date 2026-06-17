@@ -1,104 +1,110 @@
 import Link from 'next/link';
-import { Search, ChevronRight } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { getDb } from '@/db/client';
-import { searchPatients } from '@/data/patients';
+import { searchPatients, countPatients } from '@/data/patients';
 import { problemsForPatients } from '@/data/problems';
 import { assessmentCompletionForPatients } from '@/data/lifestyle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { PageHeader } from '@/components/PageHeader';
+import { PatientCard } from '@/components/PatientCard';
+import { EmptyState } from '@/components/EmptyState';
+import { Pagination } from '@/components/Pagination';
+
+const PAGE_SIZE = 12;
+
+function parsePage(raw: string | undefined): number {
+  const n = parseInt(raw ?? '1', 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
 
 export default async function PatientsPage({
   searchParams,
-}: { searchParams: Promise<{ q?: string }> }) {
-  const { q } = await searchParams;
+}: { searchParams: Promise<{ q?: string; page?: string }> }) {
+  const { q, page: rawPage } = await searchParams;
+  const page = parsePage(rawPage);
+  const offset = (page - 1) * PAGE_SIZE;
   const db = getDb();
-  const list = await searchPatients(db, q);
+
+  const [list, totalCount] = await Promise.all([
+    searchPatients(db, q, PAGE_SIZE, offset),
+    countPatients(db, undefined, q),
+  ]);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
   const [problems, completions] = await Promise.all([
     problemsForPatients(db, list.map((p) => p.id)),
     assessmentCompletionForPatients(db, list.map((p) => p.id)),
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Patients / रुग्ण</h1>
-          <p className="text-sm text-muted-foreground">{list.length} registered</p>
-        </div>
-        <Button asChild>
-          <Link href="/patients/new">+ New Patient / नवीन रुग्ण</Link>
-        </Button>
-      </div>
+    <div className="space-y-8 pb-10">
+      <PageHeader
+        title="Patients / रुग्ण"
+        subtitle={`${totalCount} registered`}
+        actions={
+          <Button asChild className="rounded-full gap-2 px-5 h-10 shadow-md">
+            <Link href="/patients/new">
+              <Plus className="h-4 w-4" />
+              New Patient / नवीन रुग्ण
+            </Link>
+          </Button>
+        }
+      />
 
       <form method="get">
         <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Search
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
           <Input
             name="q"
             aria-label="Search patients"
             defaultValue={q ?? ''}
             placeholder="Search name or mobile / नाव किंवा मोबाईल"
-            className="pl-9"
+            className="pl-9 rounded-full"
           />
         </div>
       </form>
 
-      <div className="space-y-2">
-        {list.length === 0 && (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">No patients found / रुग्ण सापडले नाहीत</p>
-            <Button asChild className="mt-4">
-              <Link href="/patients/new">Register first patient / पहिला रुग्ण नोंदवा</Link>
-            </Button>
-          </Card>
-        )}
-        {list.map((p) => {
-          const pts = problems[p.id] ?? [];
-          const visible = pts.slice(0, 3);
-          const overflow = pts.length - visible.length;
-          const filled = completions[p.id] ?? 0;
-          const completion = filled === 5
-            ? { text: 'Assessment ✓ / मूल्यांकन ✓', cls: 'bg-primary/10 text-primary' }
-            : filled > 0
-              ? { text: `Assessment ${filled}/5 / मूल्यांकन ${filled}/5`, cls: 'bg-yellow-100 text-yellow-800' }
-              : { text: 'Assessment — / मूल्यांकन —', cls: 'bg-muted text-muted-foreground' };
-          return (
-            <Link key={p.id} href={`/patients/${p.id}`}>
-              <Card className="flex items-center gap-4 p-4 transition-shadow hover:shadow-md">
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{p.fullName}</span>
-                    <Badge variant="outline" className="border-brand-accent text-brand-accent">
-                      {p.patientCode}
-                    </Badge>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-sm text-muted-foreground">{p.mobile}</span>
-                    {visible.map((pr) => (
-                      <Badge
-                        key={pr.id}
-                        variant="secondary"
-                        className="bg-primary/10 text-primary hover:bg-primary/20"
-                      >
-                        {pr.problem}
-                      </Badge>
-                    ))}
-                    {overflow > 0 && (
-                      <span className="text-xs text-muted-foreground">+{overflow} more</span>
-                    )}
-                    <span className={`ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${completion.cls}`}>
-                      {completion.text}
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Card>
-            </Link>
-          );
-        })}
-      </div>
+      {list.length === 0 ? (
+        <EmptyState
+          message="No patients found / रुग्ण सापडले नाहीत"
+          action={
+            !q
+              ? { label: 'Register first patient / पहिला रुग्ण नोंदवा', href: '/patients/new' }
+              : undefined
+          }
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((p) => {
+              const pts = (problems[p.id] ?? []).map((pr) => pr.problem);
+              const filled = completions[p.id] ?? 0;
+              return (
+                <PatientCard
+                  key={p.id}
+                  id={p.id}
+                  fullName={p.fullName}
+                  patientCode={p.patientCode}
+                  mobile={p.mobile}
+                  problems={pts}
+                  completionStatus={{ filled, total: 5 }}
+                />
+              );
+            })}
+          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            buildHref={(p) =>
+              `/patients?q=${encodeURIComponent(q ?? '')}&page=${p}`
+            }
+          />
+        </>
+      )}
     </div>
   );
 }
