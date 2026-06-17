@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from '@/lib/i18n/context';
 
 type Mode = 'session' | 'pulse';
 type SessionStatus = 'idle' | 'running' | 'paused';
@@ -11,6 +12,7 @@ type PulseStep = 'ready' | 'countdown' | 'enter' | 'result';
 type PulseDuration = 15 | 30;
 
 export function StopwatchWidget() {
+  const t = useTranslations();
   const [expanded, setExpanded] = useState(false);
   const [mode, setMode] = useState<Mode>('session');
 
@@ -166,18 +168,18 @@ export function StopwatchWidget() {
             </span>
             <div className="flex gap-2">
               {sessionStatus === 'idle' && (
-                <Button size="sm" onClick={startSession} className="rounded-full w-24">Start</Button>
+                <Button size="sm" onClick={startSession} className="rounded-full w-24">{t.stopwatch.start}</Button>
               )}
               {sessionStatus === 'running' && (
                 <>
-                  <Button size="sm" onClick={pauseSession} className="rounded-full w-20">Pause</Button>
-                  <Button size="sm" variant="outline" onClick={resetSession} className="rounded-full">Reset</Button>
+                  <Button size="sm" onClick={pauseSession} className="rounded-full w-20">{t.stopwatch.pause}</Button>
+                  <Button size="sm" variant="outline" onClick={resetSession} className="rounded-full">{t.stopwatch.reset}</Button>
                 </>
               )}
               {sessionStatus === 'paused' && (
                 <>
                   <Button size="sm" onClick={startSession} className="rounded-full w-20">Resume</Button>
-                  <Button size="sm" variant="outline" onClick={resetSession} className="rounded-full">Reset</Button>
+                  <Button size="sm" variant="outline" onClick={resetSession} className="rounded-full">{t.stopwatch.reset}</Button>
                 </>
               )}
             </div>
@@ -234,7 +236,7 @@ export function StopwatchWidget() {
               <>
                 <div className="text-center">
                   <div className="text-5xl font-bold tabular-nums text-primary">{bpm}</div>
-                  <div className="mt-1 text-sm text-muted-foreground">BPM</div>
+                  <div className="mt-1 text-sm text-muted-foreground">{t.stopwatch.bpm}</div>
                 </div>
                 <Button size="sm" variant="outline" onClick={resetPulse} className="rounded-full w-24">Redo</Button>
               </>

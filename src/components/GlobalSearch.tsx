@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { useTranslations } from '@/lib/i18n/context';
 
 type SearchResult = {
   id: string;
@@ -20,6 +21,7 @@ interface GlobalSearchProps {
 
 export function GlobalSearch({ className, size = 'default' }: GlobalSearchProps) {
   const router = useRouter();
+  const t = useTranslations();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [open, setOpen] = useState(false);
@@ -109,7 +111,7 @@ export function GlobalSearch({ className, size = 'default' }: GlobalSearchProps)
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         onFocus={() => results.length > 0 && setOpen(true)}
-        placeholder="Search for a patient / रुग्णाचा शोध घ्या..."
+        placeholder={t.globalSearch.placeholder}
         className={cn(
           isLg 
             ? 'h-14 rounded-full pl-12 pr-6 text-base shadow-sm border border-border bg-background focus-visible:shadow-md focus-visible:ring-0 hover:shadow-md transition-shadow md:text-lg' 
@@ -125,7 +127,7 @@ export function GlobalSearch({ className, size = 'default' }: GlobalSearchProps)
         >
           {results.length === 0 ? (
             <div className={cn('text-muted-foreground', isLg ? 'px-5 py-4 text-base' : 'px-3 py-2 text-sm')}>
-              No matches / जुळणारे नाही
+              {t.globalSearch.noResults}
             </div>
           ) : (
             <ul className={cn('py-2', !isLg && 'py-1')}>

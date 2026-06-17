@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { useTranslations } from '@/lib/i18n/context';
 
 function bmiVariant(bmi: number): string {
   if (bmi < 18.5) return 'bg-blue-100 text-blue-800';
@@ -28,6 +29,7 @@ export function PatientForm({
   defaultValues?: Patient;
   submitLabel: string;
 }) {
+  const t = useTranslations();
   const [weight, setWeight] = useState(defaultValues?.weightKg?.toString() ?? '');
   const [height, setHeight] = useState(defaultValues?.heightCm?.toString() ?? '');
   const [error, setError] = useState<string | null>(null);
@@ -56,12 +58,12 @@ export function PatientForm({
         <div className="flex items-center gap-3">
           <Separator className="flex-1" />
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Personal Info / वैयक्तिक माहिती
+            {t.form.personalInfo}
           </span>
           <Separator className="flex-1" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="fullName">Full Name / पूर्ण नाव *</Label>
+          <Label htmlFor="fullName">{t.form.fullName} *</Label>
           <Input
             id="fullName"
             name="fullName"
@@ -71,12 +73,12 @@ export function PatientForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="photo">Photo / फोटो</Label>
+          <Label htmlFor="photo">{t.form.photoLabel}</Label>
           <Input id="photo" name="photo" type="file" accept="image/jpeg,image/png" />
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label htmlFor="age">Age / वय</Label>
+            <Label htmlFor="age">{t.form.age}</Label>
             <Input
               id="age"
               name="age"
@@ -88,16 +90,16 @@ export function PatientForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="gender">Gender / लिंग</Label>
+            <Label htmlFor="gender">{t.form.gender}</Label>
             <Select name="gender" defaultValue={defaultValues?.gender ?? '__none__'}>
               <SelectTrigger id="gender">
-                <SelectValue placeholder="Select / निवडा" />
+                <SelectValue placeholder={t.form.selectGender} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="__none__">— Select / निवडा —</SelectItem>
-                <SelectItem value="male">Male / पुरुष</SelectItem>
-                <SelectItem value="female">Female / स्त्री</SelectItem>
-                <SelectItem value="other">Other / इतर</SelectItem>
+                <SelectItem value="__none__">— {t.form.selectGender} —</SelectItem>
+                <SelectItem value="male">{t.form.genderMale}</SelectItem>
+                <SelectItem value="female">{t.form.genderFemale}</SelectItem>
+                <SelectItem value="other">{t.form.genderOther}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -109,13 +111,13 @@ export function PatientForm({
         <div className="flex items-center gap-3">
           <Separator className="flex-1" />
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Body Metrics / शरीर मोजमाप
+            {t.form.bodyMetrics}
           </span>
           <Separator className="flex-1" />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="weightKg">Weight (kg) / वजन</Label>
+            <Label htmlFor="weightKg">{t.form.weightKg}</Label>
             <Input
               id="weightKg"
               name="weightKg"
@@ -129,7 +131,7 @@ export function PatientForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="heightCm">Height (cm) / उंची</Label>
+            <Label htmlFor="heightCm">{t.form.heightCm}</Label>
             <Input
               id="heightCm"
               name="heightCm"
@@ -159,13 +161,13 @@ export function PatientForm({
         <div className="flex items-center gap-3">
           <Separator className="flex-1" />
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Contact / संपर्क
+            {t.form.contactInfo}
           </span>
           <Separator className="flex-1" />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="mobile">Mobile / मोबाईल *</Label>
+            <Label htmlFor="mobile">{t.form.mobile} *</Label>
             <Input
               id="mobile"
               name="mobile"
@@ -175,7 +177,7 @@ export function PatientForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email / ईमेल</Label>
+            <Label htmlFor="email">{t.form.email}</Label>
             <Input
               id="email"
               name="email"
@@ -185,7 +187,7 @@ export function PatientForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="occupation">Occupation / व्यवसाय</Label>
+            <Label htmlFor="occupation">{t.form.occupation}</Label>
             <Input
               id="occupation"
               name="occupation"
@@ -194,7 +196,7 @@ export function PatientForm({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="emergencyContact">Emergency Contact / आपत्कालीन संपर्क</Label>
+            <Label htmlFor="emergencyContact">{t.form.emergencyContact}</Label>
             <Input
               id="emergencyContact"
               name="emergencyContact"
@@ -204,7 +206,7 @@ export function PatientForm({
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="address">Address / पत्ता</Label>
+          <Label htmlFor="address">{t.form.address}</Label>
           <Textarea
             id="address"
             name="address"
@@ -214,13 +216,13 @@ export function PatientForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="branch">Branch / शाखा</Label>
+          <Label htmlFor="branch">{t.form.branch}</Label>
           <Select name="branch" defaultValue={defaultValues?.branch || '__none__'}>
             <SelectTrigger id="branch">
-              <SelectValue placeholder="Select branch / शाखा निवडा" />
+              <SelectValue placeholder={t.form.selectBranch} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">— Select / निवडा —</SelectItem>
+              <SelectItem value="__none__">— {t.form.selectBranch} —</SelectItem>
               {BRANCHES.map((b) => (
                 <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>
               ))}
@@ -230,7 +232,7 @@ export function PatientForm({
       </div>
 
       <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-        {pending ? 'Saving… / जतन होत आहे…' : submitLabel}
+        {pending ? t.common.saving : submitLabel}
       </Button>
     </form>
   );

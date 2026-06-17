@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import type { ActionResult } from '@/actions/patients';
+import { useTranslations } from '@/lib/i18n/context';
 
 export function InlineForm({
   action, children, className,
@@ -10,6 +11,8 @@ export function InlineForm({
   children: React.ReactNode;
   className?: string;
 }) {
+  const t = useTranslations();
+  const genericError = t.inlineForm.genericError;
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
@@ -30,15 +33,15 @@ export function InlineForm({
           if (err instanceof Error && (err.message === 'NEXT_REDIRECT' || err.message === 'NEXT_NOT_FOUND')) {
             throw err;
           }
-          setError('Something went wrong. Please try again.');
+          setError(genericError);
         } finally {
           setPending(false);
         }
       }}
     >
       {error && <p className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-      {pending && <p className="mb-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">Saving… / सेव्ह होत आहे…</p>}
-      {saved && !pending && <p className="mb-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">Saved / जतन झाले ✓</p>}
+      {pending && <p className="mb-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{t.inlineForm.submitting}</p>}
+      {saved && !pending && <p className="mb-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{t.inlineForm.saved}</p>}
       <fieldset disabled={pending} className="contents">
         {children}
       </fieldset>

@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { signOutAction } from '@/actions/auth';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from '@/lib/i18n/context';
 
 interface SidebarProps {
   className?: string;
@@ -24,18 +25,19 @@ interface SidebarProps {
 
 export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
   const pathname = usePathname();
+  const t = useTranslations();
 
   type MenuItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; badge?: number };
   const menuItems: MenuItem[] = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Patients', href: '/patients', icon: Users, badge: patientCount },
-    { name: 'Calendar', href: '#', icon: Calendar, disabled: true },
-    { name: 'Analytics', href: '#', icon: BarChart, disabled: true },
+    { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
+    { name: t.nav.patients, href: '/patients', icon: Users, badge: patientCount },
+    { name: t.nav.calendar, href: '#', icon: Calendar, disabled: true },
+    { name: t.nav.analytics, href: '#', icon: BarChart, disabled: true },
   ];
 
   const generalItems = [
-    { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'Help', href: '#', icon: HelpCircle, disabled: true },
+    { name: t.nav.settings, href: '/settings', icon: Settings },
+    { name: t.nav.help, href: '#', icon: HelpCircle, disabled: true },
   ];
 
   return (
@@ -84,7 +86,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   )}
-                  {item.disabled && <span className="ml-auto text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">Soon</span>}
+                  {item.disabled && <span className="ml-auto text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.common.soon}</span>}
                 </Link>
               );
             })}
@@ -110,7 +112,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
                 >
                   <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
                   {item.name}
-                  {item.disabled && <span className="ml-auto text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">Soon</span>}
+                  {item.disabled && <span className="ml-auto text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.common.soon}</span>}
                 </Link>
               );
             })}
@@ -122,7 +124,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
                 className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
               >
                 <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive" />
-                Logout
+                {t.nav.logout}
               </button>
             </form>
           </nav>
@@ -133,12 +135,12 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
       <div className="p-4 shrink-0">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-4 text-primary-foreground shadow-sm">
           <div className="relative z-10">
-            <h4 className="font-semibold text-sm">Need Help?</h4>
+            <h4 className="font-semibold text-sm">{t.nav.needHelp}</h4>
             <p className="mt-1 text-xs text-primary-foreground/80 leading-relaxed">
-              Contact support if you experience any issues with patient records.
+              {t.nav.needHelpBody}
             </p>
             <Button variant="secondary" size="sm" className="mt-4 w-full text-xs font-medium bg-white text-primary hover:bg-white/90">
-              Contact Support
+              {t.nav.contactSupport}
             </Button>
           </div>
           {/* Decorative circles */}

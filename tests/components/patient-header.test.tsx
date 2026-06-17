@@ -54,11 +54,11 @@ describe('PatientHeader', () => {
 
   it('only renders the Receipt link when hasCourseFee is true', () => {
     render(<PatientHeader patient={patient} photoUrl={null} hasCourseFee={true} />);
-    expect(screen.getByText('Receipt / पावती')).toBeInTheDocument();
+    expect(screen.getByText('Receipt')).toBeInTheDocument();
   });
 
   it('does not render the Receipt link when hasCourseFee is false', () => {
     render(<PatientHeader patient={patient} photoUrl={null} hasCourseFee={false} />);
-    expect(screen.queryByText('Receipt / पावती')).not.toBeInTheDocument();
+    expect(screen.queryByText('Receipt')).not.toBeInTheDocument();
   });
 });

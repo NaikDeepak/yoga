@@ -1,6 +1,9 @@
+'use client';
+
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { useTranslations } from '@/lib/i18n/context';
 
 interface PatientCardProps {
   id: string;
@@ -17,15 +20,15 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function assessmentChip(filled: number): { text: string; cls: string } {
+function assessmentChip(filled: number, t: ReturnType<typeof useTranslations>): { text: string; cls: string } {
   if (filled === 5)
-    return { text: 'Assessment ✓ / मूल्यांकन ✓', cls: 'bg-primary/10 text-primary' };
+    return { text: t.assessment.chip.complete, cls: 'bg-primary/10 text-primary' };
   if (filled > 0)
     return {
-      text: `Assessment ${filled}/5 / मूल्यांकन ${filled}/5`,
+      text: t.assessment.chip.partial.replace('{filled}', String(filled)),
       cls: 'bg-yellow-100 text-yellow-800',
     };
-  return { text: 'Assessment — / मूल्यांकन —', cls: 'bg-muted text-muted-foreground' };
+  return { text: t.assessment.chip.missing, cls: 'bg-muted text-muted-foreground' };
 }
 
 export function PatientCard({
@@ -36,9 +39,10 @@ export function PatientCard({
   problems,
   completionStatus,
 }: PatientCardProps) {
+  const t = useTranslations();
   const visible = problems.slice(0, 3);
   const overflow = problems.length - visible.length;
-  const chip = assessmentChip(completionStatus.filled);
+  const chip = assessmentChip(completionStatus.filled, t);
 
   return (
     <Link href={`/patients/${id}`} className="block h-full">
@@ -70,7 +74,9 @@ export function PatientCard({
             </Badge>
           ))}
           {overflow > 0 && (
-            <span className="text-xs text-muted-foreground">+{overflow} more</span>
+            <span className="text-xs text-muted-foreground">
+              {t.patients.moreProblems.replace('{count}', String(overflow))}
+            </span>
           )}
           <span
             className={cn(

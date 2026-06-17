@@ -20,16 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { TreatmentPlan } from '@/db/schema';
 import type { TreatmentDraftFields } from '@/lib/gemini';
-
-const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
-  ['yogaProgram', 'Yoga Program / योग कार्यक्रम'],
-  ['pranayam', 'Pranayam / प्राणायाम'],
-  ['massage', 'Massage / मसाज'],
-  ['yogaTherapy', 'Yoga Therapy / योग थेरपी'],
-  ['dietPlan', 'Diet Plan / आहार योजना'],
-  ['medicines', 'Medicines / औषधे'],
-  ['panchkarma', 'Panchkarma / पंचकर्म'],
-];
+import { useTranslations } from '@/lib/i18n/context';
 
 export function TreatmentPlanForm({
   patientId,
@@ -38,6 +29,18 @@ export function TreatmentPlanForm({
   patientId: string;
   initialPlan: TreatmentPlan | undefined;
 }) {
+  const t = useTranslations();
+
+  const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
+    ['yogaProgram', t.treatmentPlan.yoga],
+    ['pranayam', t.treatmentPlan.pranayam],
+    ['massage', t.treatmentPlan.massage],
+    ['yogaTherapy', t.treatmentPlan.yogaTherapy],
+    ['dietPlan', t.treatmentPlan.diet],
+    ['medicines', t.treatmentPlan.medicines],
+    ['panchkarma', t.treatmentPlan.panchkarma],
+  ];
+
   const [fields, setFields] = useState<TreatmentDraftFields>({
     yogaProgram: initialPlan?.yogaProgram ?? '',
     pranayam: initialPlan?.pranayam ?? '',
@@ -107,7 +110,7 @@ export function TreatmentPlanForm({
 
       <Card className="rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">Treatment Plan / उपचार योजना</CardTitle>
+          <CardTitle className="text-base">{t.treatmentPlan.title}</CardTitle>
           <Button
             type="button"
             variant="outline"
@@ -152,7 +155,7 @@ export function TreatmentPlanForm({
               </div>
             ))}
             <Button type="submit" size="sm" disabled={generating}>
-              Save plan / योजना जतन करा
+              {t.treatmentPlan.saveBtn}
             </Button>
           </InlineForm>
         </CardContent>
