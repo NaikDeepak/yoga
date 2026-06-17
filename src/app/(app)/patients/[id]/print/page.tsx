@@ -19,12 +19,12 @@ const CREAM = '#FDF8F0';
 
 const GENDER_MARATHI: Record<string, string> = { male: 'पुरुष', female: 'स्त्री', other: 'इतर' };
 
-const MODALITY_KEYS = [
-  ['yogaProgram', 'Yoga Program'],
-  ['pranayam', 'Pranayam'],
-  ['massage', 'Massage'],
-  ['yogaTherapy', 'Yoga Therapy'],
-  ['panchkarma', 'Panchkarma'],
+const MODALITY_DB_KEYS = [
+  'yogaProgram',
+  'pranayam',
+  'massage',
+  'yogaTherapy',
+  'panchkarma',
 ] as const;
 
 function nameInitials(name: string): string {
@@ -51,8 +51,8 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
   const today = getISTDateString();
   const latestNote = visits[0]?.progressNote ?? null;
-  const modalities = plan
-    ? MODALITY_KEYS.filter(([key]) => Boolean(plan[key as keyof typeof plan])).map(([, label]) => label)
+  const modalityDbKeys = plan
+    ? MODALITY_DB_KEYS.filter((key) => Boolean(plan[key as keyof typeof plan]))
     : [];
 
   return (
@@ -65,7 +65,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       <ReportLetterhead badgeLabel={t.print.patientReport} patientCode={patient.patientCode} branch={branch} today={today} />
 
       {/* ── PATIENT IDENTIFICATION ── */}
-      <SectionHeader>PATIENT IDENTIFICATION / रुग्णाची ओळख</SectionHeader>
+      <SectionHeader>{t.print.patientIdentification}</SectionHeader>
       <div className="mb-6 flex items-center gap-4 rounded border border-amber-100 p-4" style={{ backgroundColor: CREAM }}>
         <div
           className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
@@ -88,37 +88,37 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* ── PERSONAL INFORMATION ── */}
-      <SectionHeader>PERSONAL INFORMATION / वैयक्तिक माहिती</SectionHeader>
+      <SectionHeader>{t.print.personalInfo}</SectionHeader>
       <div className="mb-6">
         <InfoTable>
           <InfoRow2
-            label1="Full Name / पूर्ण नाव" value1={patient.fullName}
-            label2="Gender / लिंग" value2={patient.gender ? GENDER_MARATHI[patient.gender] : '—'}
+            label1={t.form.fullName} value1={patient.fullName}
+            label2={t.form.gender} value2={patient.gender ? GENDER_MARATHI[patient.gender] : '—'}
           />
           <InfoRow2
-            label1="Age / वय" value1={patient.age ? `${patient.age} years` : '—'}
-            label2="Mobile / मोबाईल" value2={patient.mobile}
+            label1={t.form.age} value1={patient.age ? `${patient.age} years` : '—'}
+            label2={t.form.mobile} value2={patient.mobile}
           />
           <InfoRow2
-            label1="Email / ईमेल" value1={patient.email ?? '—'}
-            label2="Occupation / व्यवसाय" value2={patient.occupation ?? '—'}
+            label1={t.form.email} value1={patient.email ?? '—'}
+            label2={t.form.occupation} value2={patient.occupation ?? '—'}
           />
-          <InfoRow1 label="Address / पत्ता" value={patient.address ?? '—'} />
-          {branch && <InfoRow1 label="Branch / शाखा" value={branch.label} />}
+          <InfoRow1 label={t.form.address} value={patient.address ?? '—'} />
+          {branch && <InfoRow1 label={t.form.branch} value={branch.label} />}
         </InfoTable>
       </div>
 
       {/* ── PHYSICAL MEASUREMENTS ── */}
       {(patient.weightKg !== null || patient.heightCm !== null) && (
         <>
-          <SectionHeader>PHYSICAL MEASUREMENTS / शारीरिक मोजमाप</SectionHeader>
+          <SectionHeader>{t.print.physicalMeasurements}</SectionHeader>
           <div className="mb-6">
             <InfoTable>
               <InfoRow2
-                label1="Weight / वजन" value1={patient.weightKg !== null ? `${patient.weightKg.toFixed(2)} kg` : '—'}
-                label2="Height / उंची" value2={patient.heightCm !== null ? `${patient.heightCm.toFixed(2)} cm` : '—'}
+                label1={t.patientDetail.weightKg} value1={patient.weightKg !== null ? `${patient.weightKg.toFixed(2)} kg` : '—'}
+                label2={t.patientDetail.heightCm} value2={patient.heightCm !== null ? `${patient.heightCm.toFixed(2)} cm` : '—'}
               />
-              {bmi !== null && <InfoRow1 label="BMI" value={bmi.toFixed(1)} />}
+              {bmi !== null && <InfoRow1 label={t.form.bmi} value={bmi.toFixed(1)} />}
             </InfoTable>
           </div>
         </>
@@ -127,7 +127,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── HEALTH CONDITIONS ── */}
       {problems.length > 0 && (
         <>
-          <SectionHeader>HEALTH CONDITIONS / आजार</SectionHeader>
+          <SectionHeader>{t.print.healthConditions}</SectionHeader>
           <div className="mb-6 flex flex-wrap gap-2 py-2">
             {problems.map((p) => <Chip key={p.id}>{p.problem}</Chip>)}
           </div>
@@ -137,28 +137,31 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── TREATMENT PLAN ── */}
       {(plan || latestNote) && (
         <>
-          <SectionHeader>TREATMENT PLAN / उपचार योजना</SectionHeader>
+          <SectionHeader>{t.print.treatmentPlanSection}</SectionHeader>
           <div className="mb-6">
             <table className="w-full text-sm">
               <tbody>
-                {modalities.length > 0 && (
+                {modalityDbKeys.length > 0 && (
                   <tr className="border-b border-gray-100 align-top">
-                    <td className="w-36 py-2 font-medium text-gray-700">Modalities / उपचार पद्धती</td>
+                    <td className="w-36 py-2 font-medium text-gray-700">{t.print.modalities}</td>
                     <td className="py-2">
                       <div className="flex flex-wrap gap-1.5">
-                        {modalities.map((m) => <Chip key={m}>{m}</Chip>)}
+                        {modalityDbKeys.map((key) => {
+                          const label = t.print[key as keyof typeof t.print] as string;
+                          return <Chip key={key}>{label}</Chip>;
+                        })}
                       </div>
                     </td>
                   </tr>
                 )}
-                {plan?.yogaProgram && <PlanRow label="Yoga Program / योग कार्यक्रम" value={plan.yogaProgram} />}
-                {plan?.pranayam && <PlanRow label="Pranayam / प्राणायाम" value={plan.pranayam} />}
-                {plan?.massage && <PlanRow label="Massage / मसाज" value={plan.massage} />}
-                {plan?.yogaTherapy && <PlanRow label="Yoga Therapy / योग थेरपी" value={plan.yogaTherapy} />}
-                {plan?.dietPlan && <PlanRow label="Diet Plan / आहार योजना" value={plan.dietPlan} />}
-                {plan?.medicines && <PlanRow label="Medicines / औषधे" value={plan.medicines} />}
-                {plan?.panchkarma && <PlanRow label="Panchkarma / पंचकर्म" value={plan.panchkarma} />}
-                {latestNote && <PlanRow label="Progress Notes / प्रगती नोंद" value={latestNote} />}
+                {plan?.yogaProgram && <PlanRow label={t.print.yogaProgram} value={plan.yogaProgram} />}
+                {plan?.pranayam && <PlanRow label={t.print.pranayam} value={plan.pranayam} />}
+                {plan?.massage && <PlanRow label={t.print.massage} value={plan.massage} />}
+                {plan?.yogaTherapy && <PlanRow label={t.print.yogaTherapy} value={plan.yogaTherapy} />}
+                {plan?.dietPlan && <PlanRow label={t.print.dietPlan} value={plan.dietPlan} />}
+                {plan?.medicines && <PlanRow label={t.print.medicines} value={plan.medicines} />}
+                {plan?.panchkarma && <PlanRow label={t.print.panchkarma} value={plan.panchkarma} />}
+                {latestNote && <PlanRow label={t.print.progressNotes} value={latestNote} />}
               </tbody>
             </table>
           </div>
@@ -168,12 +171,12 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── FEE SUMMARY ── */}
       {patientFees.courseFee !== null && (
         <>
-          <SectionHeader>FEE SUMMARY / शुल्क सारांश</SectionHeader>
+          <SectionHeader>{t.print.feeSummary}</SectionHeader>
           <div className="mb-6 grid grid-cols-3 gap-4">
-            <FeeBox label="TOTAL FEE / एकूण शुल्क" amount={patientFees.courseFee} variant="neutral" />
-            <FeeBox label="AMOUNT PAID / एकूण जमा" amount={patientFees.totalPaid} variant="green" />
+            <FeeBox label={t.print.totalFee} amount={patientFees.courseFee} variant="neutral" />
+            <FeeBox label={t.print.amountPaid} amount={patientFees.totalPaid} variant="green" />
             <FeeBox
-              label="BALANCE DUE / बाकी"
+              label={t.print.balanceDue}
               amount={patientFees.balance ?? 0}
               variant={(patientFees.balance ?? 0) > 0 ? 'orange' : 'green'}
             />
@@ -182,17 +185,17 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* ── VISIT HISTORY ── */}
-      <SectionHeader>VISIT HISTORY / भेटीचा इतिहास</SectionHeader>
+      <SectionHeader>{t.print.visitHistory}</SectionHeader>
       <div className="mb-8">
         {visits.length === 0 ? (
           <p className="py-4 text-center text-sm text-gray-400">
-            No visit records found / भेटींची नोंद नाही
+            {t.print.noVisitRecords}
           </p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr style={{ backgroundColor: CREAM, borderBottom: `2px solid ${SAFFRON}` }}>
-                {['NO. / क्र.', 'VISIT DATE / तारीख', 'WEIGHT / वजन', 'PAIN LEVEL / वेदना', 'SESSION NOTES / टिप्पण्या'].map((h) => (
+                {[t.print.visitColNo, t.print.visitColDate, t.print.visitColWeight, t.print.visitColPain, t.print.visitColNotes].map((h) => (
                   <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -222,8 +225,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
-        This is an official patient record issued by Pawar&apos;s Yog Therapy Center.
-        Confidential — intended solely for the patient and treating practitioner. | Generated on {today} / ही अधिकृत रुग्ण नोंद आहे. | {today} रोजी तयार केली
+        {t.print.footerText} | {t.print.generatedOn} {today}
       </p>
     </div>
   );

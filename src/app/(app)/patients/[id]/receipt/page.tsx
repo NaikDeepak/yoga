@@ -41,20 +41,20 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       <ReportLetterhead badgeLabel={t.receipt.title} patientCode={patient.patientCode} branch={branch} today={today} />
 
       {/* ── PATIENT ── */}
-      <SectionHeader>PATIENT / रुग्ण</SectionHeader>
+      <SectionHeader>{t.receipt.patientSection}</SectionHeader>
       <div className="mb-6">
         <table className="w-full border-collapse text-sm">
           <tbody>
             <tr className="border-b border-gray-100">
-              <td className="w-28 py-2 font-medium text-gray-700">Full Name / पूर्ण नाव</td>
+              <td className="w-28 py-2 font-medium text-gray-700">{t.form.fullName}</td>
               <td className="py-2 pr-6">{patient.fullName}</td>
-              <td className="w-28 py-2 font-medium text-gray-700">Patient Code / रुग्ण क्रमांक</td>
+              <td className="w-28 py-2 font-medium text-gray-700">{t.receipt.patientCode}</td>
               <td className="py-2">{patient.patientCode}</td>
             </tr>
             <tr className="border-b border-gray-100">
-              <td className="w-28 py-2 font-medium text-gray-700">Branch / शाखा</td>
+              <td className="w-28 py-2 font-medium text-gray-700">{t.form.branch}</td>
               <td className="py-2 pr-6">{branch?.label ?? '—'}</td>
-              <td className="w-28 py-2 font-medium text-gray-700">Mobile / मोबाईल</td>
+              <td className="w-28 py-2 font-medium text-gray-700">{t.form.mobile}</td>
               <td className="py-2">{patient.mobile}</td>
             </tr>
           </tbody>
@@ -62,24 +62,24 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* ── FEE SUMMARY ── */}
-      <SectionHeader>FEE SUMMARY / शुल्क सारांश</SectionHeader>
+      <SectionHeader>{t.receipt.feeSummary}</SectionHeader>
       <div className="mb-6 grid grid-cols-3 gap-4">
-        <FeeBox label="TOTAL FEE / एकूण शुल्क" amount={patientFees.courseFee} variant="neutral" />
-        <FeeBox label="TOTAL PAID / एकूण जमा" amount={patientFees.totalPaid} variant="green" />
+        <FeeBox label={t.receipt.totalFee} amount={patientFees.courseFee} variant="neutral" />
+        <FeeBox label={t.receipt.totalPaid} amount={patientFees.totalPaid} variant="green" />
         <FeeBox
-          label="BALANCE DUE / बाकी"
+          label={t.receipt.balanceDue}
           amount={patientFees.balance ?? 0}
           variant={(patientFees.balance ?? 0) > 0 ? 'orange' : 'green'}
         />
       </div>
 
       {/* ── PAYMENT HISTORY ── */}
-      <SectionHeader>PAYMENT HISTORY / पेमेंट इतिहास</SectionHeader>
+      <SectionHeader>{t.receipt.paymentHistory}</SectionHeader>
       <div className="mb-8">
         <table className="w-full text-sm">
           <thead>
             <tr style={{ backgroundColor: CREAM, borderBottom: `2px solid ${SAFFRON}` }}>
-              {['NO. / क्र.', 'DATE / तारीख', 'DESCRIPTION / तपशील', 'AMOUNT (₹) / रक्कम'].map((h) => (
+              {[t.receipt.no, t.receipt.date, t.receipt.description, t.receipt.amount].map((h) => (
                 <th key={h} className="px-3 py-2 text-left text-xs font-semibold tracking-wide text-gray-600">{h}</th>
               ))}
             </tr>
@@ -94,7 +94,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               </tr>
             ))}
             <tr className="border-t-2 border-gray-300 font-semibold">
-              <td colSpan={3} className="px-3 py-2 text-right">TOTAL PAID / एकूण जमा</td>
+              <td colSpan={3} className="px-3 py-2 text-right">{t.receipt.totalPaid}</td>
               <td className="px-3 py-2" style={{ color: GREEN }}>{formatCurrency(patientFees.totalPaid)}</td>
             </tr>
           </tbody>
@@ -111,7 +111,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </div>
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
-        This is an official receipt issued by Pawar&apos;s Yog Therapy Center. | Generated on {today} / ही अधिकृत पावती आहे. | {today} रोजी तयार केली
+        {t.receipt.footerOfficial} | {t.receipt.footerGenerated} {today}
       </p>
     </div>
   );
