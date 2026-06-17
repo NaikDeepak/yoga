@@ -105,7 +105,7 @@ export function TreatmentPlanForm({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base">Treatment Plan / उपचार योजना</CardTitle>
           <Button

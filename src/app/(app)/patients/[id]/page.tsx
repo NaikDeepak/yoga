@@ -123,7 +123,7 @@ async function Overview({
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Personal / वैयक्तिक</CardTitle>
         </CardHeader>
@@ -141,7 +141,7 @@ async function Overview({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Body Metrics / शरीर</CardTitle>
         </CardHeader>
@@ -165,7 +165,7 @@ async function Overview({
         </CardContent>
       </Card>
 
-      <Card className="sm:col-span-2">
+      <Card className="rounded-2xl sm:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">Contact / संपर्क</CardTitle>
         </CardHeader>
@@ -184,7 +184,7 @@ async function Overview({
         </CardContent>
       </Card>
 
-      <Card className="sm:col-span-2">
+      <Card className="rounded-2xl sm:col-span-2">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-medium text-muted-foreground">Assessment Snapshot / मूल्यांकन सारांश</CardTitle>
           <Link href={`/patients/${patient.id}?tab=assessment`} className="text-xs text-primary hover:underline">
@@ -263,7 +263,7 @@ async function Problems({ patientId }: { patientId: string }) {
         ))}
       </ul>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-4">
           <InlineForm action={add} className="space-y-3">
             <div className="space-y-1.5">
@@ -289,7 +289,7 @@ async function Problems({ patientId }: { patientId: string }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-4">
           <InlineForm action={add} className="space-y-3">
             <input type="hidden" name="isCustom" value="true" />
@@ -317,7 +317,7 @@ async function Documents({ patientId }: { patientId: string }) {
   );
   return (
     <div className="max-w-2xl space-y-4">
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-4">
           <InlineForm
             action={uploadDocumentAction.bind(null, patientId)}
@@ -349,7 +349,7 @@ async function Documents({ patientId }: { patientId: string }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl">
         <ul className="divide-y divide-border">
           {docs.length === 0 && (
             <li className="p-4 text-sm text-muted-foreground">No documents / कागदपत्रे नाहीत</li>
@@ -393,7 +393,7 @@ async function Treatment({ patientId }: { patientId: string }) {
       <TreatmentPlanForm patientId={patientId} initialPlan={plan} />
 
       <div className="space-y-4">
-        <Card>
+        <Card className="rounded-2xl">
           <CardHeader>
             <CardTitle className="text-base">Add Visit / नवीन भेट</CardTitle>
           </CardHeader>
@@ -438,7 +438,7 @@ async function Treatment({ patientId }: { patientId: string }) {
           )}
           {visits.map((v) => (
             <li key={v.id}>
-              <Card>
+              <Card className="rounded-2xl">
                 <CardContent className="pb-3 pt-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{v.visitDate}</span>
@@ -494,7 +494,7 @@ async function Progress({ patientId }: { patientId: string }) {
 
   if (rows.length === 0) {
     return (
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
             Not enough data / पुरेशी माहिती नाही
@@ -506,7 +506,7 @@ async function Progress({ patientId }: { patientId: string }) {
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Weight Trend / वजन (kg)
@@ -523,7 +523,7 @@ async function Progress({ patientId }: { patientId: string }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
             Pain Trend / वेदना पातळी
@@ -540,7 +540,7 @@ async function Progress({ patientId }: { patientId: string }) {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardContent className="grid grid-cols-2 gap-4 pt-6 text-sm sm:grid-cols-4">
           <div>
             <p className="text-muted-foreground">First visit / पहिली भेट</p>
@@ -588,7 +588,7 @@ async function Assessment({ patientId }: { patientId: string }) {
         className="space-y-6"
       >
         {/* Section 1: Primary Concern */}
-        <Card className="border-l-4 border-l-primary/40">
+        <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Primary Concern / मुख्य तक्रार</CardTitle>
           </CardHeader>
@@ -642,7 +642,7 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 2: Medications & Restrictions */}
-        <Card className="border-l-4 border-l-primary/40">
+        <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Medications & Restrictions / औषधे</CardTitle>
           </CardHeader>
@@ -680,7 +680,7 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 3: Lifestyle */}
-        <Card className="border-l-4 border-l-primary/40">
+        <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Lifestyle / जीवनशैली</CardTitle>
           </CardHeader>
@@ -776,7 +776,7 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 4: Exercise History */}
-        <Card className="border-l-4 border-l-primary/40">
+        <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Exercise History / व्यायामाचा इतिहास</CardTitle>
           </CardHeader>
@@ -818,7 +818,7 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         {/* Section 5: Goals & Safety */}
-        <Card className="border-l-4 border-l-destructive/40">
+        <Card className="rounded-2xl border-l-4 border-l-destructive/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Goals & Safety / उद्दिष्टे आणि सुरक्षितता</CardTitle>
           </CardHeader>
@@ -879,7 +879,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
     <div className="space-y-6">
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">
               {patientFees.courseFee !== null ? `₹${patientFees.courseFee.toLocaleString('en-IN')}` : '—'}
@@ -887,13 +887,13 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
             <p className="mt-1 text-xs text-muted-foreground">Course Fee / कोर्स शुल्क</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-primary">₹{patientFees.totalPaid.toLocaleString('en-IN')}</p>
             <p className="mt-1 text-xs text-muted-foreground">Total Paid / भरलेले</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="rounded-2xl">
           <CardContent className="pt-4 text-center">
             <p className={`text-2xl font-bold ${(patientFees.balance ?? 0) > 0 ? 'text-destructive' : 'text-primary'}`}>
               {patientFees.balance !== null ? `₹${patientFees.balance.toLocaleString('en-IN')}` : '—'}
@@ -904,7 +904,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
       </div>
 
       {/* Set course fee */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base">Course Fee / कोर्स शुल्क</CardTitle>
         </CardHeader>
@@ -930,7 +930,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
       </Card>
 
       {/* Add payment */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base">Record Payment / पेमेंट नोंदवा</CardTitle>
         </CardHeader>
@@ -956,7 +956,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
       </Card>
 
       {/* Payment history */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="text-base">Payment History / देयके इतिहास</CardTitle>
         </CardHeader>

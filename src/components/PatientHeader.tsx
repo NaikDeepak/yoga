@@ -54,20 +54,20 @@ export function PatientHeader({
           <p className="text-sm text-muted-foreground">{patient.mobile}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="rounded-full" asChild>
             <Link href={`/patients/${patient.id}/edit`}>
               <Pencil className="mr-1.5 h-3.5 w-3.5" />
               Edit / बदला
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" className="rounded-full" asChild>
             <Link href={`/patients/${patient.id}/print`}>
               <Printer className="mr-1.5 h-3.5 w-3.5" />
               Report / अहवाल
             </Link>
           </Button>
           {hasCourseFee && (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" className="rounded-full" asChild>
               <Link href={`/patients/${patient.id}/receipt`}>
                 <Receipt className="mr-1.5 h-3.5 w-3.5" />
                 Receipt / पावती
