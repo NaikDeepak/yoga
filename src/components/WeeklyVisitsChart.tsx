@@ -56,7 +56,6 @@ export function WeeklyVisitsChart({ data }: WeeklyVisitsChartProps) {
         <Tooltip
           cursor={{ fill: 'var(--accent)', radius: 10 }}
           content={({ active, payload }) => {
-            console.log(payload)
             if (active && payload && payload.length) {
               const data = payload[0].payload;
               return (
