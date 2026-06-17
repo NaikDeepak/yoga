@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { createPatient, getPatient, searchPatients, updatePatient, setPhotoPath } from '@/data/patients';
+import { createPatient, getPatient, searchPatients, updatePatient, setPhotoPath, countPatients } from '@/data/patients';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -56,5 +56,31 @@ describe('searchPatients', () => {
     await createPatient(db, asha);
     await createPatient(db, { fullName: 'Asha Two', mobile: '9876543211' });
     expect(await searchPatients(db, 'asha', 1)).toHaveLength(1);
+  });
+});
+
+describe('searchPatients with offset', () => {
+  it('skips the first N results', async () => {
+    await createPatient(db, { fullName: 'Asha Pawar', mobile: '9000000001' });
+    await createPatient(db, { fullName: 'Asha Two', mobile: '9000000002' });
+    await createPatient(db, { fullName: 'Asha Three', mobile: '9000000003' });
+    const page2 = await searchPatients(db, 'asha', 2, 2);
+    expect(page2).toHaveLength(1);
+  });
+});
+
+describe('countPatients', () => {
+  it('returns total when no filter', async () => {
+    await createPatient(db, { fullName: 'Asha Pawar', mobile: '9000000001' });
+    await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000002' });
+    expect(await countPatients(db)).toBe(2);
+  });
+
+  it('filters by search query', async () => {
+    await createPatient(db, { fullName: 'Asha Pawar', mobile: '9000000001' });
+    await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000002' });
+    expect(await countPatients(db, undefined, 'asha')).toBe(1);
+    expect(await countPatients(db, undefined, 'ravi')).toBe(1);
+    expect(await countPatients(db, undefined, 'nobody')).toBe(0);
   });
 });
