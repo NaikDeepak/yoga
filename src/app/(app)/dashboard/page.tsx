@@ -11,8 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
 import { ArrowUpRight, Plus, UploadCloud } from 'lucide-react';
-import { getLocale } from '@/lib/i18n/server';
-import { getTranslations, type Translations } from '@/lib/i18n/translations';
+import { cookies } from 'next/headers';
+import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
+import { getUserLanguage } from '@/data/preferences';
+import { requireUser } from '@/lib/auth';
 
 const MONTHLY_TARGET = 100;
 
@@ -55,16 +57,27 @@ export default async function DashboardPage({
 }) {
   const { branch: branchParam } = await searchParams;
   const branch = parseBranch(branchParam);
-  const t = getTranslations(await getLocale());
-
   const db = getDb();
-  const [stats, ailments, recentVisits, followUps, pendingAssessments] = await Promise.all([
+  const user = await requireUser();
+  const cookieStore = await cookies();
+  const langCookie = cookieStore.get('lang')?.value;
+  const locale: Locale = (LOCALES as readonly string[]).includes(langCookie ?? '')
+    ? (langCookie as Locale)
+    : await getUserLanguage(db, user.id);
+  const t = getTranslations(locale);
+
+  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
     getRecentVisits(db, 5, branch),
     getFollowUpsThisWeek(db, branch),
     getPendingAssessments(db, 5, branch),
   ]);
+
+  const followUps = rawFollowUps.map(f => ({
+    ...f,
+    nextVisitDate: typeof f.nextVisitDate === 'string' ? f.nextVisitDate.substring(0, 10) : ''
+  })).filter(f => f.nextVisitDate !== '');
 
   // Generate upcoming visits for the next 8 days (today..+7) based on followUps
   // (next_visit_date) — this window must match getFollowUpsThisWeek's window so the
@@ -298,9 +311,18 @@ export default async function DashboardPage({
             <CardTitle className="text-base font-semibold">{t.dashboard.monthlyVisitGoal}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center pt-2 pb-4">
-            <VisitGoalGauge current={stats.visitsThisMonth} target={MONTHLY_TARGET} ofGoal={t.dashboard.ofGoal} />
+            <VisitGoalGauge
+              current={stats.visitsThisMonth}
+              target={MONTHLY_TARGET}
+              ofGoal={t.dashboard.ofGoal}
+              ariaLabel={t.dashboard.visitsThisMonthText
+                .replace('{current}', String(stats.visitsThisMonth))
+                .replace('{target}', String(MONTHLY_TARGET))}
+            />
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.visitsThisMonth} of {MONTHLY_TARGET} visits this month
+              {t.dashboard.visitsThisMonthText
+                .replace('{current}', String(stats.visitsThisMonth))
+                .replace('{target}', String(MONTHLY_TARGET))}
             </p>
           </CardContent>
         </Card>
@@ -401,12 +423,12 @@ function formatDueDate(dateStr: string): string {
 
 const ARC_LENGTH = Math.PI * 80; // semicircle r=80
 
-function VisitGoalGauge({ current, target, ofGoal }: { current: number; target: number; ofGoal: string }) {
+function VisitGoalGauge({ current, target, ofGoal, ariaLabel }: { current: number; target: number; ofGoal: string; ariaLabel: string }) {
   const pct = Math.min(current / target, 1);
   const filled = ARC_LENGTH * pct;
   const gaugeColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#16a34a' : '#ca8a04';
   return (
-    <svg viewBox="0 0 200 115" className="w-full max-w-[200px]" aria-label={`${current} of ${target} visits`}>
+    <svg viewBox="0 0 200 115" className="w-full max-w-[200px]" aria-label={ariaLabel}>
       {/* Track */}
       <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="14" strokeLinecap="round" />
       {/* Progress */}

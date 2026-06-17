@@ -50,7 +50,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
           <span className="text-lg font-bold tracking-tight">Pawar&apos;s Yog Therapy</span>
         </Link>
         {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden" aria-label="Close menu">
+          <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden" aria-label={t.nav.closeMenu}>
             <X className="h-5 w-5" />
           </Button>
         )}
@@ -61,7 +61,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
         {/* Menu Section */}
         <div>
           <h3 className="mb-3 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            Menu
+            {t.nav.menu}
           </h3>
           <nav className="space-y-1">
             {menuItems.map((item) => {
@@ -96,7 +96,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
         {/* General Section */}
         <div>
           <h3 className="mb-3 px-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            General
+            {t.nav.general}
           </h3>
           <nav className="space-y-1">
             {generalItems.map((item) => {

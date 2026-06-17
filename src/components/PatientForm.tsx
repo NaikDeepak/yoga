@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useActionState } from 'react';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
 import { BRANCHES } from '@/lib/presets';
 import type { Patient } from '@/db/schema';
@@ -32,25 +32,22 @@ export function PatientForm({
   const t = useTranslations();
   const [weight, setWeight] = useState(defaultValues?.weightKg?.toString() ?? '');
   const [height, setHeight] = useState(defaultValues?.heightCm?.toString() ?? '');
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+
+  const [state, formAction, isPending] = useActionState(
+    async (prevState: ActionResult | null, formData: FormData) => {
+      if (formData.get('gender') === '__none__') formData.set('gender', '');
+      if (formData.get('branch') === '__none__') formData.set('branch', '');
+      return await action(formData);
+    },
+    null
+  );
 
   const bmi = computeBmi(parseFloat(weight), parseFloat(height));
 
-  function onSubmit(formData: FormData) {
-    startTransition(async () => {
-      setError(null);
-      if (formData.get('gender') === '__none__') formData.set('gender', '');
-      if (formData.get('branch') === '__none__') formData.set('branch', '');
-      const result = await action(formData);
-      if (result && !result.ok) setError(result.error);
-    });
-  }
-
   return (
-    <form action={onSubmit} className="max-w-2xl space-y-6">
-      {error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+    <form action={formAction} className="max-w-2xl space-y-6">
+      {state && !state.ok && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
       )}
 
       {/* Personal Info */}
@@ -69,7 +66,7 @@ export function PatientForm({
             name="fullName"
             required
             defaultValue={defaultValues?.fullName}
-            placeholder="Patient full name"
+            placeholder={t.form.fullNamePlaceholder}
           />
         </div>
         <div className="space-y-2">
@@ -173,7 +170,7 @@ export function PatientForm({
               name="mobile"
               required
               defaultValue={defaultValues?.mobile}
-              placeholder="10-digit mobile"
+              placeholder={t.form.mobilePlaceholder}
             />
           </div>
           <div className="space-y-2">
@@ -231,8 +228,8 @@ export function PatientForm({
         </div>
       </div>
 
-      <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-        {pending ? t.common.saving : submitLabel}
+      <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+        {isPending ? t.common.saving : submitLabel}
       </Button>
     </form>
   );

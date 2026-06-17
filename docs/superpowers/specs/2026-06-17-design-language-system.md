@@ -39,19 +39,26 @@ All primitives live in `src/components/`. They are presentational — no data fe
 **File:** `src/components/PageHeader.tsx`
 
 **Props:**
+
 ```ts
+
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
   actions?: React.ReactNode; // buttons, filters — rendered right-aligned
 }
+
 ```
 
 **Renders:** the standard dashboard-style header row:
-```
+
+```text
+
 [title (h1)]          [actions slot]
 [subtitle (p)]
+
 ```
+
 - `h1`: `text-3xl font-bold tracking-tight text-foreground`
 - `p`: `text-sm text-muted-foreground mt-1`
 - Wrapper: `flex flex-col gap-4 md:flex-row md:items-center md:justify-between`
@@ -65,7 +72,9 @@ interface PageHeaderProps {
 **File:** `src/components/PatientCard.tsx`
 
 **Props:**
+
 ```ts
+
 interface PatientCardProps {
   id: string;
   fullName: string;
@@ -77,6 +86,7 @@ interface PatientCardProps {
     total: 5;
   };
 }
+
 ```
 
 **Renders:** a `rounded-2xl shadow-sm border-border` card that links to `/patients/[id]`:
@@ -98,13 +108,16 @@ Assessment chip states (same logic as current list):
 *(Thin wrapper — enforces `rounded-2xl` and consistent padding on all inner-page cards.)*
 
 **Props:**
+
 ```ts
+
 interface SectionCardProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
   headerActions?: React.ReactNode;
 }
+
 ```
 
 **Renders:** `Card` with `rounded-2xl shadow-sm border-border`. If `title` is provided, renders `CardHeader` with `CardTitle` (`text-base font-semibold`) and optional `headerActions` right-aligned. Always wraps children in `CardContent`.
@@ -116,7 +129,9 @@ interface SectionCardProps {
 **File:** `src/components/EmptyState.tsx`
 
 **Props:**
+
 ```ts
+
 interface EmptyStateProps {
   message: string;             // bilingual e.g. "No patients / रुग्ण नाहीत"
   action?: {
@@ -124,6 +139,7 @@ interface EmptyStateProps {
     href: string;
   };
 }
+
 ```
 
 **Renders:** centered layout inside a plain `div` (no card — caller wraps in SectionCard if needed):
@@ -138,12 +154,15 @@ interface EmptyStateProps {
 **File:** `src/components/Pagination.tsx`
 
 **Props:**
+
 ```ts
+
 interface PaginationProps {
   page: number;                // 1-based current page
   totalPages: number;
   buildHref: (page: number) => string;  // e.g. (p) => `/patients?page=${p}&q=${q}`
 }
+
 ```
 
 **Renders:** a row of page controls:
@@ -170,9 +189,11 @@ interface PaginationProps {
 To avoid breaking these callers, keep the return type as `Patient[]` and add `offset` as an optional 4th param:
 
 ```ts
+
 // Updated signature (backwards-compatible)
 searchPatients(db, query?: string, limit?: number, offset?: number)
   => Promise<Patient[]>
+
 ```
 
 Default: `limit = 12`, `offset = 0`.
@@ -182,10 +203,12 @@ Default: `limit = 12`, `offset = 0`.
 Add a new `countPatients` function for total count (needed for pagination, and already expected by `layout.tsx`):
 
 ```ts
-countPatients(db, query?: string) => Promise<number>
+
+countPatients(db: Db, branch?: string, q?: string): Promise<number>
+
 ```
 
-The `/patients` page calls both: `searchPatients(db, q, 12, offset)` for the page slice, and `countPatients(db, q)` for `totalPages`.
+The `/patients` page calls both: `searchPatients(db, q, 12, offset)` for the page slice, and `countPatients(db, undefined, q)` for `totalPages`.
 
 ---
 
@@ -197,7 +220,7 @@ The `/patients` page calls both: `searchPatients(db, q, 12, offset)` for the pag
 
 - Accept `page` from `searchParams` (default `1`), parse to integer.
 - Compute `offset = (page - 1) * 12`.
-- Call updated `searchPatients(db, q, 12, offset)` → `{ patients, totalCount }`.
+- Call updated `searchPatients(db, q, 12, offset)` → `Promise<Patient[]>`.
 - Call `problemsForPatients` and `assessmentCompletionForPatients` on the paginated subset only.
 - Render:
   1. `<PageHeader title="Patients / रुग्ण" subtitle="{totalCount} registered" actions={<Link …><Button className="rounded-full …">+ New Patient</Button></Link>} />`
@@ -221,11 +244,14 @@ The `/patients` page calls both: `searchPatients(db, q, 12, offset)` for the pag
 **File:** `src/app/(app)/patients/[id]/edit/page.tsx`
 
 Replace current bare heading with:
+
 ```tsx
+
 <PageHeader
   title="Edit Patient / माहिती बदला"
   subtitle={`${patient.fullName} — ${patient.patientCode}`}
 />
+
 ```
 
 ### 4.4 `/patients/new` — New Patient
@@ -233,11 +259,14 @@ Replace current bare heading with:
 **File:** `src/app/(app)/patients/new/page.tsx`
 
 Replace current heading block (if any) with:
+
 ```tsx
+
 <PageHeader
   title="New Patient / नवीन रुग्ण"
   subtitle="Register a new patient / नवीन रुग्ण नोंदवा"
 />
+
 ```
 
 ---
@@ -263,7 +292,7 @@ Replace current heading block (if any) with:
 - `src/components/Pagination.tsx`
 
 **Modified files:**
-- `src/data/patients.ts` — `searchPatients` pagination params + `totalCount` return
+- `src/data/patients.ts` — `searchPatients` pagination params + `countPatients` function
 - `src/app/(app)/patients/page.tsx` — card grid + pagination + PageHeader
 - `src/app/(app)/layout.tsx` — fix `countPatients` import (was already expected, now exported)
 - `src/app/(app)/patients/[id]/page.tsx` — SectionCard sweep + tab polish
@@ -277,7 +306,7 @@ Replace current heading block (if any) with:
 
 ## 7. Testing Notes
 
-- `searchPatients` test: update assertion to destructure `{ patients, totalCount }` and add a test for offset/limit pagination.
+- `searchPatients` and `countPatients` tests: verify pagination, offset/limit query parameters, and new branch/query counting logic.
 - Visual: run `npm run dev`, visit `/patients` — verify 3-col grid, pagination appears when >12 results, search resets to page 1.
 - Visit `/patients/new` and `/patients/[id]/edit` — verify `PageHeader` renders correctly.
 - Visit `/patients/[id]` — verify tab content cards have `rounded-2xl`.

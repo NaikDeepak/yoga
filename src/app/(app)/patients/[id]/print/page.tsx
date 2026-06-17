@@ -11,13 +11,18 @@ import { BRANCHES } from '@/lib/presets';
 import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { getLocale } from '@/lib/i18n/server';
-import { getTranslations } from '@/lib/i18n/translations';
+import { getTranslations, type Translations } from '@/lib/i18n/translations';
 
 const GREEN = '#1B3A2E';
 const SAFFRON = '#C8962E';
 const CREAM = '#FDF8F0';
 
-const GENDER_MARATHI: Record<string, string> = { male: 'पुरुष', female: 'स्त्री', other: 'इतर' };
+function translateGender(gender: string, t: Translations): string {
+  if (gender === 'male') return t.form.genderMale;
+  if (gender === 'female') return t.form.genderFemale;
+  if (gender === 'other') return t.form.genderOther;
+  return gender;
+}
 
 const MODALITY_DB_KEYS = [
   'yogaProgram',
@@ -76,8 +81,8 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
         <div>
           <p className="text-xl font-bold text-gray-900">{patient.fullName}</p>
           <p className="text-sm text-gray-600">
-            {patient.gender ? GENDER_MARATHI[patient.gender] : ''}
-            {patient.age ? ` | Age: ${patient.age} yrs` : ''}
+            {patient.gender ? translateGender(patient.gender, t) : ''}
+            {patient.age ? ` | ${t.form.age}: ${t.form.ageYrs.replace('{age}', String(patient.age))}` : ''}
             {` | ${patient.mobile}`}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -93,10 +98,10 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
         <InfoTable>
           <InfoRow2
             label1={t.form.fullName} value1={patient.fullName}
-            label2={t.form.gender} value2={patient.gender ? GENDER_MARATHI[patient.gender] : '—'}
+            label2={t.form.gender} value2={patient.gender ? translateGender(patient.gender, t) : '—'}
           />
           <InfoRow2
-            label1={t.form.age} value1={patient.age ? `${patient.age} years` : '—'}
+            label1={t.form.age} value1={patient.age ? t.form.ageYears.replace('{age}', String(patient.age)) : '—'}
             label2={t.form.mobile} value2={patient.mobile}
           />
           <InfoRow2

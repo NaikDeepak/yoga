@@ -68,8 +68,8 @@ export function PatientCard({
 
         {/* Problems + assessment chip */}
         <div className="flex flex-wrap items-center gap-1.5 mt-auto">
-          {visible.map((p) => (
-            <Badge key={p} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+          {visible.map((p, index) => (
+            <Badge key={`${p}-${index}`} variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
               {p}
             </Badge>
           ))}

@@ -8,6 +8,8 @@ import { StopwatchWidget } from '@/components/StopwatchWidget';
 import { LocaleProvider } from '@/lib/i18n/context';
 import type { Locale } from '@/lib/i18n/translations';
 
+import { cn } from '@/lib/utils';
+
 interface AppShellProps {
   children: React.ReactNode;
   userEmail: string | null;
@@ -39,9 +41,13 @@ export function AppShell({ children, userEmail, patientCount, locale }: AppShell
         )}
 
         <aside
-          className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out lg:hidden ${
-            isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out lg:hidden",
+            {
+              "translate-x-0": isSidebarOpen,
+              "-translate-x-full": !isSidebarOpen,
+            }
+          )}
         >
           <Sidebar patientCount={patientCount} onClose={() => setIsSidebarOpen(false)} />
         </aside>

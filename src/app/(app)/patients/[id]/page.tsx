@@ -266,7 +266,7 @@ async function Problems({ patientId, t }: { patientId: string; t: Translations }
             </span>
             <DeleteButton
               action={removeProblemAction.bind(null, patientId, p.id)}
-              confirmText={`Remove ${p.problem}?`}
+              confirmText={t.problems.removeConfirmation.replace('{problem}', p.problem)}
               label={t.common.remove}
             />
           </li>
@@ -382,7 +382,7 @@ async function Documents({ patientId, t }: { patientId: string; t: Translations 
               </div>
               <DeleteButton
                 action={deleteDocumentAction.bind(null, patientId, d.id)}
-                confirmText={`Delete ${d.originalName}?`}
+                confirmText={t.documents.deleteConfirmation.replace('{name}', d.originalName)}
               />
             </li>
           ))}
@@ -719,10 +719,10 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
                   className={selectClass}
                 >
                   <option value="">—</option>
-                  <option value="<2h">&lt;2 hrs</option>
-                  <option value="2-4h">2–4 hrs</option>
-                  <option value="4-8h">4–8 hrs</option>
-                  <option value="8+h">8+ hrs</option>
+                  <option value="<2h">{t.assessment.sittingOptions.under2}</option>
+                  <option value="2-4h">{t.assessment.sittingOptions.twoToFour}</option>
+                  <option value="4-8h">{t.assessment.sittingOptions.fourToEight}</option>
+                  <option value="8+h">{t.assessment.sittingOptions.overEight}</option>
                 </select>
               </div>
               <div className="space-y-1.5">
@@ -984,7 +984,7 @@ function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: P
                   </div>
                   <DeleteButton
                     action={deletePaymentAction.bind(null, patientId, p.id)}
-                    confirmText={`Delete payment of ₹${p.amount}? / ₹${p.amount} पेमेंट हटवायचे?`}
+                    confirmText={t.fees.deletePaymentConfirmation.replace('{amount}', String(p.amount))}
                     label="×"
                   />
                 </li>

@@ -19,13 +19,13 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
-    <nav aria-label="Page navigation" className="flex items-center justify-center gap-1">
+    <nav aria-label="Page navigation / पान नेव्हिगेशन" className="flex items-center justify-center gap-1">
       {page === 1 ? (
-        <Button variant="outline" size="sm" className="rounded-full" disabled>
+        <Button variant="outline" size="sm" className="rounded-full" disabled aria-label="Previous page / मागील पान">
           <ChevronLeft className="h-4 w-4" />
         </Button>
       ) : (
-        <Button variant="outline" size="sm" className="rounded-full" asChild>
+        <Button variant="outline" size="sm" className="rounded-full" asChild aria-label="Previous page / मागील पान">
           <Link href={buildHref(page - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Link>
@@ -49,11 +49,11 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
       )}
 
       {page === totalPages ? (
-        <Button variant="outline" size="sm" className="rounded-full" disabled>
+        <Button variant="outline" size="sm" className="rounded-full" disabled aria-label="Next page / पुढील पान">
           <ChevronRight className="h-4 w-4" />
         </Button>
       ) : (
-        <Button variant="outline" size="sm" className="rounded-full" asChild>
+        <Button variant="outline" size="sm" className="rounded-full" asChild aria-label="Next page / पुढील पान">
           <Link href={buildHref(page + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Link>

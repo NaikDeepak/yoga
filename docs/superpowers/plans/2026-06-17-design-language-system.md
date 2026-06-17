@@ -62,6 +62,7 @@
 Add to `tests/data/patients.test.ts` (after the existing `searchPatients` describe block):
 
 ```ts
+
 import { countPatients } from '@/data/patients';   // add to existing import line
 
 describe('searchPatients with offset', () => {
@@ -89,12 +90,15 @@ describe('countPatients', () => {
     expect(await countPatients(db, undefined, 'nobody')).toBe(0);
   });
 });
+
 ```
 
 - [ ] **Step 2: Run to confirm failure**
 
 ```bash
+
 npm test -- tests/data/patients.test.ts
+
 ```
 
 Expected: FAIL — `searchPatients with offset` fails because offset param doesn't exist yet; `countPatients` filter test fails.
@@ -104,6 +108,7 @@ Expected: FAIL — `searchPatients with offset` fails because offset param doesn
 Replace the two functions in `src/data/patients.ts`:
 
 ```ts
+
 // Add 'and' to the existing drizzle-orm import
 import { and, count, desc, eq, ilike, or } from 'drizzle-orm';
 
@@ -143,12 +148,15 @@ export async function countPatients(db: Db, branch?: string, q?: string): Promis
   const [{ value }] = await db.select({ value: count() }).from(patients).where(where);
   return value;
 }
+
 ```
 
 - [ ] **Step 4: Run all tests**
 
 ```bash
+
 npm test
+
 ```
 
 Expected: all tests pass, including existing `searchPatients` tests (the new params are optional — existing call sites are unaffected).
@@ -156,8 +164,10 @@ Expected: all tests pass, including existing `searchPatients` tests (the new par
 - [ ] **Step 5: Commit**
 
 ```bash
+
 git add src/data/patients.ts tests/data/patients.test.ts
 git commit -m "feat: add offset param to searchPatients and q filter to countPatients"
+
 ```
 
 ---
@@ -175,6 +185,7 @@ git commit -m "feat: add offset param to searchPatients and q filter to countPat
 - [ ] **Step 1: Create `src/components/PageHeader.tsx`**
 
 ```tsx
+
 import React from 'react';
 
 interface PageHeaderProps {
@@ -196,6 +207,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
     </div>
   );
 }
+
 ```
 
 - [ ] **Step 2: Update `src/app/(app)/patients/new/page.tsx`**
@@ -203,6 +215,7 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
 Replace the entire file content:
 
 ```tsx
+
 import { PageHeader } from '@/components/PageHeader';
 import { PatientForm } from '@/components/PatientForm';
 import { createPatientAction } from '@/actions/patients';
@@ -212,12 +225,13 @@ export default function NewPatientPage() {
     <div className="space-y-8 pb-10">
       <PageHeader
         title="New Patient / नवीन रुग्ण"
-        subtitle="Fill in the details below to register a new patient."
+        subtitle="Fill in the details below to register a new patient. / नवीन रुग्णाची नोंदणी करण्यासाठी खालील माहिती भरा."
       />
       <PatientForm action={createPatientAction} submitLabel="Register / नोंदणी करा" />
     </div>
   );
 }
+
 ```
 
 - [ ] **Step 3: Update `src/app/(app)/patients/[id]/edit/page.tsx`**
@@ -225,6 +239,7 @@ export default function NewPatientPage() {
 Replace the entire file content:
 
 ```tsx
+
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
@@ -249,12 +264,15 @@ export default async function EditPatientPage({
     </div>
   );
 }
+
 ```
 
 - [ ] **Step 4: Type-check**
 
 ```bash
+
 npm run typecheck
+
 ```
 
 Expected: no errors on these files.
@@ -262,8 +280,10 @@ Expected: no errors on these files.
 - [ ] **Step 5: Commit**
 
 ```bash
+
 git add src/components/PageHeader.tsx src/app/\(app\)/patients/new/page.tsx src/app/\(app\)/patients/\[id\]/edit/page.tsx
 git commit -m "feat: add PageHeader component and apply to new/edit patient pages"
+
 ```
 
 ---
@@ -282,6 +302,7 @@ git commit -m "feat: add PageHeader component and apply to new/edit patient page
 - [ ] **Step 1: Create `src/components/SectionCard.tsx`**
 
 ```tsx
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -306,11 +327,13 @@ export function SectionCard({ title, children, className, headerActions }: Secti
     </Card>
   );
 }
+
 ```
 
 - [ ] **Step 2: Create `src/components/EmptyState.tsx`**
 
 ```tsx
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
@@ -331,12 +354,15 @@ export function EmptyState({ message, action }: EmptyStateProps) {
     </div>
   );
 }
+
 ```
 
 - [ ] **Step 3: Type-check**
 
 ```bash
+
 npm run typecheck
+
 ```
 
 Expected: no errors.
@@ -344,8 +370,10 @@ Expected: no errors.
 - [ ] **Step 4: Commit**
 
 ```bash
+
 git add src/components/SectionCard.tsx src/components/EmptyState.tsx
 git commit -m "feat: add SectionCard and EmptyState primitives"
+
 ```
 
 ---
@@ -362,6 +390,7 @@ git commit -m "feat: add SectionCard and EmptyState primitives"
 - [ ] **Step 1: Create `src/components/Pagination.tsx`**
 
 ```tsx
+
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -426,12 +455,15 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
     </div>
   );
 }
+
 ```
 
 - [ ] **Step 2: Type-check**
 
 ```bash
+
 npm run typecheck
+
 ```
 
 Expected: no errors.
@@ -439,8 +471,10 @@ Expected: no errors.
 - [ ] **Step 3: Commit**
 
 ```bash
+
 git add src/components/Pagination.tsx
 git commit -m "feat: add Pagination component with URL-based page controls"
+
 ```
 
 ---
@@ -453,7 +487,9 @@ git commit -m "feat: add Pagination component with URL-based page controls"
 **Interfaces:**
 - Consumes: nothing from earlier tasks
 - Produces:
+
 ```ts
+
 PatientCard({
   id: string,
   fullName: string,
@@ -462,11 +498,13 @@ PatientCard({
   problems: string[],          // display names
   completionStatus: { filled: number; total: 5 },
 })
+
 ```
 
 - [ ] **Step 1: Create `src/components/PatientCard.tsx`**
 
 ```tsx
+
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -554,12 +592,15 @@ export function PatientCard({
     </Link>
   );
 }
+
 ```
 
 - [ ] **Step 2: Type-check**
 
 ```bash
+
 npm run typecheck
+
 ```
 
 Expected: no errors.
@@ -567,8 +608,10 @@ Expected: no errors.
 - [ ] **Step 3: Commit**
 
 ```bash
+
 git add src/components/PatientCard.tsx
 git commit -m "feat: add PatientCard grid tile component"
+
 ```
 
 ---
@@ -589,6 +632,7 @@ git commit -m "feat: add PatientCard grid tile component"
 - [ ] **Step 1: Replace `src/app/(app)/patients/page.tsx`**
 
 ```tsx
+
 import Link from 'next/link';
 import { Plus, Search } from 'lucide-react';
 import { getDb } from '@/db/client';
@@ -632,7 +676,7 @@ export default async function PatientsPage({
     <div className="space-y-8 pb-10">
       <PageHeader
         title="Patients / रुग्ण"
-        subtitle={`${totalCount} registered`}
+        subtitle={`${totalCount} registered / ${totalCount} नोंदणीकृत`}
         actions={
           <Button asChild className="rounded-full gap-2 px-5 h-10 shadow-md">
             <Link href="/patients/new">
@@ -699,12 +743,15 @@ export default async function PatientsPage({
     </div>
   );
 }
+
 ```
 
 - [ ] **Step 2: Type-check**
 
 ```bash
+
 npm run typecheck
+
 ```
 
 Expected: no errors.
@@ -712,7 +759,9 @@ Expected: no errors.
 - [ ] **Step 3: Run tests**
 
 ```bash
+
 npm test
+
 ```
 
 Expected: all pass.
@@ -730,8 +779,10 @@ Verify:
 - [ ] **Step 5: Commit**
 
 ```bash
+
 git add src/app/\(app\)/patients/page.tsx
 git commit -m "feat: convert patients list to card grid with pagination"
+
 ```
 
 ---
@@ -751,6 +802,7 @@ git commit -m "feat: convert patients list to card grid with pagination"
 In `src/components/PatientHeader.tsx`, add `className="rounded-full"` to each outline Button:
 
 ```tsx
+
 {/* Replace the three Button elements starting at line ~57 */}
 <div className="flex gap-2">
   <Button variant="outline" size="sm" className="rounded-full" asChild>
@@ -774,6 +826,7 @@ In `src/components/PatientHeader.tsx`, add `className="rounded-full"` to each ou
     </Button>
   )}
 </div>
+
 ```
 
 - [ ] **Step 2: Sweep `rounded-2xl` onto every Card in the patient detail page**
@@ -783,7 +836,9 @@ In `src/app/(app)/patients/[id]/page.tsx`, find every `<Card` that does **not** 
 Specific instances to update:
 
 **Overview tab (function `Overview`):**
+
 ```tsx
+
 // Personal card — line ~128
 <Card className="rounded-2xl">
 
@@ -795,37 +850,49 @@ Specific instances to update:
 
 // Assessment Snapshot card — line ~187
 <Card className="rounded-2xl sm:col-span-2">
+
 ```
 
 **Problems tab (function `Problems`):**
+
 ```tsx
+
 // Preset form card — line ~265
 <Card className="rounded-2xl">
 
 // Custom form card — line ~292
 <Card className="rounded-2xl">
+
 ```
 
 **Documents tab (function `Documents`):**
+
 ```tsx
+
 // Upload form card — line ~319
 <Card className="rounded-2xl">
 
 // Documents list card — line ~352
 <Card className="rounded-2xl">
+
 ```
 
 **Treatment tab (function `Treatment`):**
+
 ```tsx
+
 // Add Visit card — line ~395
 <Card className="rounded-2xl">
 
 // Individual visit cards (inside the visits.map) — line ~441
 <Card className="rounded-2xl">
+
 ```
 
 **Progress tab (function `Progress`):**
+
 ```tsx
+
 // Weight chart card — line ~509
 <Card className="rounded-2xl">
 
@@ -834,20 +901,26 @@ Specific instances to update:
 
 // Stats summary card — line ~544
 <Card className="rounded-2xl">
+
 ```
 
 **Assessment tab (function `Assessment`):**
+
 ```tsx
+
 // All five section cards — they have border-l-4, keep that:
 <Card className="rounded-2xl border-l-4 border-l-primary/40">
 // (replace the bare `border-l-4 border-l-primary/40` on each of the 5 cards)
 
 // Goals & Safety card uses border-l-destructive/40:
 <Card className="rounded-2xl border-l-4 border-l-destructive/40">
+
 ```
 
 **Fees tab (function `Fees`):**
+
 ```tsx
+
 // Three summary cards (grid-cols-3) — line ~881
 <Card className="rounded-2xl">   {/* × 3 */}
 
@@ -859,6 +932,7 @@ Specific instances to update:
 
 // Payment history card — line ~959
 <Card className="rounded-2xl">
+
 ```
 
 - [ ] **Step 3: Round the Card in `TreatmentPlanForm`**
@@ -866,14 +940,18 @@ Specific instances to update:
 Read `src/components/TreatmentPlanForm.tsx`. Find any `<Card` without `rounded-2xl` and add it:
 
 ```tsx
+
 // Whatever Card is at the top level of TreatmentPlanForm, add rounded-2xl
 <Card className="rounded-2xl">
+
 ```
 
 - [ ] **Step 4: Type-check**
 
 ```bash
+
 npm run typecheck
+
 ```
 
 Expected: no errors.
@@ -881,7 +959,9 @@ Expected: no errors.
 - [ ] **Step 5: Run tests**
 
 ```bash
+
 npm test
+
 ```
 
 Expected: all pass.
@@ -899,8 +979,10 @@ Verify:
 - [ ] **Step 7: Commit**
 
 ```bash
+
 git add src/components/PatientHeader.tsx src/app/\(app\)/patients/\[id\]/page.tsx src/components/TreatmentPlanForm.tsx
 git commit -m "feat: apply rounded-2xl to patient detail cards and pill buttons to PatientHeader"
+
 ```
 
 ---

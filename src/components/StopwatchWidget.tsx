@@ -130,7 +130,7 @@ export function StopwatchWidget() {
                 mode === 'session' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
               )}
             >
-              Session
+              {t.stopwatch.sessionMode}
             </button>
             <button
               onClick={() => switchMode('pulse')}
@@ -139,13 +139,13 @@ export function StopwatchWidget() {
                 mode === 'pulse' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent',
               )}
             >
-              Pulse
+              {t.stopwatch.pulseMode}
             </button>
           </div>
           <button
             onClick={() => setExpanded(false)}
             className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Collapse timer"
+            aria-label={t.stopwatch.collapseTimer}
           >
             <X className="h-4 w-4" />
           </button>
@@ -178,7 +178,7 @@ export function StopwatchWidget() {
               )}
               {sessionStatus === 'paused' && (
                 <>
-                  <Button size="sm" onClick={startSession} className="rounded-full w-20">Resume</Button>
+                  <Button size="sm" onClick={startSession} className="rounded-full w-20">{t.stopwatch.resume}</Button>
                   <Button size="sm" variant="outline" onClick={resetSession} className="rounded-full">{t.stopwatch.reset}</Button>
                 </>
               )}
@@ -205,7 +205,7 @@ export function StopwatchWidget() {
                   ))}
                 </div>
                 <span className="text-5xl font-mono font-bold text-muted-foreground/30">{pulseDuration}</span>
-                <Button size="sm" onClick={startPulse} className="rounded-full w-36">Start Countdown</Button>
+                <Button size="sm" onClick={startPulse} className="rounded-full w-36">{t.stopwatch.startCountdown}</Button>
               </>
             )}
 
@@ -223,11 +223,11 @@ export function StopwatchWidget() {
                     max="250"
                     value={beats}
                     onChange={e => setBeats(e.target.value)}
-                    placeholder="Beats counted"
+                    placeholder={t.stopwatch.beatsCounted}
                     className="h-9 flex-1 rounded-md border border-border px-3 text-center text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     autoFocus
                   />
-                  <Button size="sm" onClick={calculateBpm} className="rounded-full shrink-0">BPM</Button>
+                  <Button size="sm" onClick={calculateBpm} className="rounded-full shrink-0">{t.stopwatch.bpm}</Button>
                 </div>
               </>
             )}
@@ -238,7 +238,7 @@ export function StopwatchWidget() {
                   <div className="text-5xl font-bold tabular-nums text-primary">{bpm}</div>
                   <div className="mt-1 text-sm text-muted-foreground">{t.stopwatch.bpm}</div>
                 </div>
-                <Button size="sm" variant="outline" onClick={resetPulse} className="rounded-full w-24">Redo</Button>
+                <Button size="sm" variant="outline" onClick={resetPulse} className="rounded-full w-24">{t.stopwatch.redo}</Button>
               </>
             )}
           </div>

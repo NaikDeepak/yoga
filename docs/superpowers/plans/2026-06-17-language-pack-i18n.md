@@ -81,6 +81,7 @@
 Create `tests/data/preferences.test.ts`:
 
 ```ts
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { getUserLanguage, setUserLanguage } from '@/data/preferences';
@@ -107,13 +108,17 @@ describe('setUserLanguage', () => {
     expect(await getUserLanguage(db, 'user-123')).toBe('en');
   });
 });
+
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
+
 npm test tests/data/preferences.test.ts
+
 ```
+
 Expected: FAIL — `getUserLanguage` not found
 
 - [ ] **Step 3: Add `userPreferences` table to schema**
@@ -121,6 +126,7 @@ Expected: FAIL — `getUserLanguage` not found
 In `src/db/schema.ts`, after the existing imports add to the schema (below the `feePayments` table, before the type exports at the end):
 
 ```ts
+
 export const userPreferences = pgTable('user_preferences', {
   userId: text('user_id').primaryKey(),
   language: text('language').notNull().default('en'),
@@ -128,19 +134,24 @@ export const userPreferences = pgTable('user_preferences', {
 });
 
 export type UserPreference = typeof userPreferences.$inferSelect;
+
 ```
 
 - [ ] **Step 4: Generate and run migration**
 
 ```bash
+
 npm run db:generate
 npm run db:migrate
+
 ```
+
 Expected: new migration file created in `drizzle/`, migration applied.
 
 - [ ] **Step 5: Implement `src/data/preferences.ts`**
 
 ```ts
+
 import { eq } from 'drizzle-orm';
 import { userPreferences } from '@/db/schema';
 import type { Db } from '@/db/types';
@@ -165,27 +176,36 @@ export async function setUserLanguage(db: Db, userId: string, locale: Locale): P
       set: { language: locale, updatedAt: new Date() },
     });
 }
+
 ```
 
 - [ ] **Step 6: Run tests to verify they pass**
 
 ```bash
+
 npm test tests/data/preferences.test.ts
+
 ```
+
 Expected: PASS (3 tests)
 
 - [ ] **Step 7: Run typecheck and full test suite**
 
 ```bash
+
 npm run typecheck && npm test
+
 ```
+
 Expected: all pass.
 
 - [ ] **Step 8: Commit**
 
 ```bash
+
 git add src/db/schema.ts src/data/preferences.ts tests/data/preferences.test.ts drizzle/
 git commit -m "feat: add user_preferences table and preferences data layer"
+
 ```
 
 ---
@@ -205,6 +225,7 @@ git commit -m "feat: add user_preferences table and preferences data layer"
 - [ ] **Step 1: Create `src/lib/i18n/en.ts`**
 
 ```ts
+
 export const en = {
   common: {
     save: 'Save',
@@ -535,11 +556,13 @@ export const en = {
 } as const;
 
 export type Translations = typeof en;
+
 ```
 
 - [ ] **Step 2: Create `src/lib/i18n/mr.ts`**
 
 ```ts
+
 import type { Translations } from './en';
 
 export const mr: Translations = {
@@ -870,11 +893,13 @@ export const mr: Translations = {
     errorPrefix: 'त्रुटी:',
   },
 };
+
 ```
 
 - [ ] **Step 3: Create `src/lib/i18n/translations.ts`**
 
 ```ts
+
 import { en } from './en';
 import { mr } from './mr';
 import type { Translations } from './en';
@@ -888,11 +913,13 @@ const localeMap: Record<Locale, Translations> = { en, mr };
 export function getTranslations(locale: Locale): Translations {
   return localeMap[locale];
 }
+
 ```
 
 - [ ] **Step 4: Create `src/lib/i18n/server.ts`**
 
 ```ts
+
 import { cookies } from 'next/headers';
 import { LOCALES, type Locale } from './translations';
 
@@ -901,27 +928,36 @@ export async function getLocale(): Promise<Locale> {
   const lang = cookieStore.get('lang')?.value;
   return (LOCALES as readonly string[]).includes(lang ?? '') ? (lang as Locale) : 'en';
 }
+
 ```
 
 - [ ] **Step 5: Run typecheck**
 
 ```bash
+
 npm run typecheck
+
 ```
+
 Expected: PASS. If TypeScript reports missing keys in mr.ts, fix them.
 
 - [ ] **Step 6: Run full test suite**
 
 ```bash
+
 npm test
+
 ```
+
 Expected: all existing tests pass (translation files have no test — type system is the check).
 
 - [ ] **Step 7: Commit**
 
 ```bash
+
 git add src/lib/i18n/
 git commit -m "feat: add i18n translation files (en, mr) and core helpers"
+
 ```
 
 ---
@@ -940,6 +976,7 @@ git commit -m "feat: add i18n translation files (en, mr) and core helpers"
 - [ ] **Step 1: Create `src/lib/i18n/context.tsx`**
 
 ```tsx
+
 'use client';
 
 import { createContext, useContext } from 'react';
@@ -967,6 +1004,7 @@ export function LocaleProvider({
 export function useTranslations(): Translations {
   return useContext(LocaleContext);
 }
+
 ```
 
 - [ ] **Step 2: Update `src/app/(app)/layout.tsx`**
@@ -974,6 +1012,7 @@ export function useTranslations(): Translations {
 Replace the entire file content:
 
 ```ts
+
 import { requireUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { countPatients } from '@/data/patients';
@@ -1004,6 +1043,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     </AppShell>
   );
 }
+
 ```
 
 - [ ] **Step 3: Update `src/components/AppShell.tsx`**
@@ -1011,6 +1051,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 Add `locale` prop and wrap content in `LocaleProvider`. Replace the existing file:
 
 ```tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -1076,27 +1117,36 @@ export function AppShell({ children, userEmail, patientCount, locale }: AppShell
     </LocaleProvider>
   );
 }
+
 ```
 
 - [ ] **Step 4: Run typecheck**
 
 ```bash
+
 npm run typecheck
+
 ```
+
 Expected: PASS.
 
 - [ ] **Step 5: Run full test suite**
 
 ```bash
+
 npm test
+
 ```
+
 Expected: all pass.
 
 - [ ] **Step 6: Commit**
 
 ```bash
+
 git add src/lib/i18n/context.tsx src/app/\(app\)/layout.tsx src/components/AppShell.tsx
 git commit -m "feat: wire LocaleProvider into AppShell; resolve locale in app layout"
+
 ```
 
 ---
@@ -1118,6 +1168,7 @@ git commit -m "feat: wire LocaleProvider into AppShell; resolve locale in app la
 Create `tests/actions/preferences.test.ts`:
 
 ```ts
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb } from '../helpers/action-mocks';
@@ -1138,18 +1189,23 @@ describe('saveLanguageAction', () => {
     await expect(saveLanguageAction('hi' as 'en' | 'mr')).rejects.toThrow(/Invalid locale/);
   });
 });
+
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
+
 npm test tests/actions/preferences.test.ts
+
 ```
+
 Expected: FAIL — `saveLanguageAction` not found
 
 - [ ] **Step 3: Create `src/actions/preferences.ts`**
 
 ```ts
+
 'use server';
 
 import { cookies } from 'next/headers';
@@ -1173,18 +1229,23 @@ export async function saveLanguageAction(locale: Locale): Promise<void> {
   });
   revalidatePath('/', 'layout');
 }
+
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
 
 ```bash
+
 npm test tests/actions/preferences.test.ts
+
 ```
+
 Expected: PASS (2 tests)
 
 - [ ] **Step 5: Create `src/app/(app)/settings/page.tsx`**
 
 ```tsx
+
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
 import { saveLanguageAction } from '@/actions/preferences';
@@ -1243,37 +1304,54 @@ export default async function SettingsPage() {
     </div>
   );
 }
+
 ```
 
 - [ ] **Step 6: Enable Settings link in `src/components/Sidebar.tsx`**
 
 Find the `menuItems` array. Change the Settings entry from:
+
 ```ts
+
 { name: 'Settings', href: '#', icon: Settings, disabled: true },
+
 ```
+
 to (this is in the `generalItems` array — locate the correct array):
 
 In the `generalItems` array, find:
+
 ```ts
+
 { name: 'Settings', href: '#', icon: Settings, disabled: true },
+
 ```
+
 Replace with:
+
 ```ts
+
 { name: 'Settings', href: '/settings', icon: Settings },
+
 ```
 
 - [ ] **Step 7: Run typecheck and full test suite**
 
 ```bash
+
 npm run typecheck && npm test
+
 ```
+
 Expected: all pass.
 
 - [ ] **Step 8: Commit**
 
 ```bash
+
 git add src/actions/preferences.ts tests/actions/preferences.test.ts src/app/\(app\)/settings/ src/components/Sidebar.tsx
 git commit -m "feat: add saveLanguageAction, Settings page, and enable Settings nav link"
+
 ```
 
 ---
@@ -1292,40 +1370,53 @@ git commit -m "feat: add saveLanguageAction, Settings page, and enable Settings 
 - Modify: `src/app/register/page.tsx`
 
 **Pattern for all server component pages:**
+
 ```ts
+
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
 
 // Inside the async function:
 const t = getTranslations(await getLocale());
 // Then use t.section.key everywhere
+
 ```
 
 **Template variable replacement pattern:**
+
 ```ts
+
 t.patients.registered.replace('{count}', String(totalCount))
 t.assessment.chip.partial.replace('{filled}', String(filled))
 t.dashboard.viewAll.replace('{count}', String(followUps.length))
+
 ```
 
 - [ ] **Step 1: Migrate `src/app/(app)/dashboard/page.tsx`**
 
 Add imports at top:
+
 ```ts
+
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+
 ```
 
 Replace the `WEEKDAYS` constant and related helpers with locale-aware versions inside `DashboardPage`:
 
 ```ts
+
 export default async function DashboardPage({ ... }) {
   const t = getTranslations(await getLocale());
   // ... existing data fetching ...
+
 ```
 
 Replace `dateHeaderLabel` to accept `t`:
+
 ```ts
+
 function dateHeaderLabel(date: string, today: string, tomorrow: string, t: ReturnType<typeof getTranslations>): string {
   if (date === today) return t.dashboard.today;
   if (date === tomorrow) return t.dashboard.tomorrow;
@@ -1335,10 +1426,13 @@ function dateHeaderLabel(date: string, today: string, tomorrow: string, t: Retur
   const dateStr = formatDueDate(date);
   return `${weekday}, ${dateStr}`;
 }
+
 ```
 
 Replace `groupFollowUps` call to pass `t`:
+
 ```ts
+
 function groupFollowUps(followUps: FollowUp[], t: ReturnType<typeof getTranslations>): AgendaRow[] {
   const today = getISTDateString(0);
   const tomorrow = getISTDateString(1);
@@ -1353,19 +1447,25 @@ function groupFollowUps(followUps: FollowUp[], t: ReturnType<typeof getTranslati
   }
   return rows;
 }
+
 ```
 
 Replace `pendingReason` function:
+
 ```ts
+
 function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: ReturnType<typeof getTranslations>): string {
   if (missingLifestyle && missingTreatment) return t.dashboard.pendingReason.both;
   if (missingLifestyle) return t.dashboard.pendingReason.lifestyle;
   return t.dashboard.pendingReason.treatment;
 }
+
 ```
 
 Replace all UI strings — examples:
+
 ```tsx
+
 // Header
 <h1 ...>{t.dashboard.title}</h1>
 <p ...>{t.dashboard.subtitle}</p>
@@ -1403,6 +1503,7 @@ Weight → {t.dashboard.weight}
 Pain Scale → {t.dashboard.painScale}
 Due: {date} → {t.dashboard.due}: {date}
 Pending badge → {t.common.pending}
+
 ```
 
 Also pass `t` to `pendingReason` calls: `pendingReason(p.missingLifestyle, p.missingTreatment, t)`
@@ -1411,18 +1512,26 @@ And pass `t` to `groupFollowUps`: `groupFollowUps(followUps, t)`
 - [ ] **Step 2: Migrate `src/app/(app)/patients/page.tsx`**
 
 Add:
+
 ```ts
+
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+
 ```
 
 Inside `PatientsPage`:
+
 ```ts
+
 const t = getTranslations(await getLocale());
+
 ```
 
 Replacements:
+
 ```tsx
+
 title="Patients / रुग्ण" → title={t.patients.title}
 subtitle={`${totalCount} registered`} → subtitle={t.patients.registered.replace('{count}', String(totalCount))}
 New Patient / नवीन रुग्ण → {t.patients.newPatient}
@@ -1430,6 +1539,7 @@ placeholder="Search name or mobile / ..." → placeholder={t.patients.searchPlac
 aria-label="Search patients" → aria-label={t.patients.searchPlaceholder}
 No patients found / ... → {t.patients.notFound}
 Register first patient / ... → {t.patients.registerFirst}
+
 ```
 
 - [ ] **Step 3: Migrate `src/app/(app)/patients/new/page.tsx`**
@@ -1437,9 +1547,11 @@ Register first patient / ... → {t.patients.registerFirst}
 Add import + `const t = getTranslations(await getLocale())`:
 
 ```tsx
+
 title={t.patients.newPatientTitle}
 subtitle={t.patients.newPatientSubtitle}
 submitLabel={t.patients.newPatient}
+
 ```
 
 - [ ] **Step 4: Migrate `src/app/(app)/patients/[id]/page.tsx`**
@@ -1447,7 +1559,9 @@ submitLabel={t.patients.newPatient}
 Add import + `const t = getTranslations(await getLocale())`.
 
 Replace the `TABS` constant (currently hardcoded with bilingual labels):
+
 ```ts
+
 const TABS = [
   ['overview', t.patientDetail.tabs.overview],
   ['problems', t.patientDetail.tabs.problems],
@@ -1457,17 +1571,21 @@ const TABS = [
   ['fees', t.patientDetail.tabs.fees],
   ['assessment', t.patientDetail.tabs.assessment],
 ] as const;
+
 ```
 
 Note: Moving `TABS` inside the async function so `t` is available. The `Tab` type must remain: `type Tab = 'overview' | 'problems' | 'documents' | 'treatment' | 'progress' | 'fees' | 'assessment'` (define it explicitly since the `as const` tabs are now dynamic).
 
 Replace `isValidTab`:
+
 ```ts
+
 const VALID_TABS = ['overview', 'problems', 'documents', 'treatment', 'progress', 'fees', 'assessment'] as const;
 type Tab = typeof VALID_TABS[number];
 function isValidTab(value: unknown): value is Tab {
   return typeof value === 'string' && VALID_TABS.includes(value as Tab);
 }
+
 ```
 
 For all the section strings inside each tab component (Overview, Problems, Documents, etc.) — these are sub-functions defined in the same file. Pass `t` to each sub-function as a parameter and replace all bilingual strings with `t.section.key`.
@@ -1486,9 +1604,12 @@ Note: Sub-functions defined inside the file (Overview, Problems, etc.) must acce
 - [ ] **Step 5: Migrate `src/app/(app)/patients/[id]/edit/page.tsx`**
 
 Add import + `const t = getTranslations(await getLocale())`:
+
 ```tsx
+
 <PageHeader title={t.patientDetail.editTitle} subtitle={`${patient.fullName} · ${patient.patientCode}`} />
 submitLabel={t.common.save}
+
 ```
 
 - [ ] **Step 6: Migrate `src/app/(app)/patients/[id]/print/page.tsx` and `receipt/page.tsx`**
@@ -1496,15 +1617,21 @@ submitLabel={t.common.save}
 Both pages are server components. Add the same import pattern.
 
 For print:
+
 ```tsx
+
 <title>{t.print.patientReport}</title>
 Generated on → {t.print.generatedOn}
+
 ```
 
 For receipt:
+
 ```tsx
+
 <title>{t.receipt.title}</title>
 Payment Receipt heading → {t.receipt.title}
+
 ```
 
 - [ ] **Step 7: Migrate `src/app/login/page.tsx`**
@@ -1512,17 +1639,24 @@ Payment Receipt heading → {t.receipt.title}
 The login page is outside `(app)` layout but can still read the `lang` cookie via `getLocale()`:
 
 ```ts
+
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+
 ```
 
 Inside `LoginPage`:
+
 ```ts
+
 const t = getTranslations(await getLocale());
+
 ```
 
 Replacements:
+
 ```tsx
+
 Pawar's Yog Therapy → {t.auth.loginTitle}
 Admin Login / प्रवेश → {t.auth.loginSubtitle}
 Wrong email or password / ... → {t.auth.wrongCredentials}
@@ -1532,6 +1666,7 @@ Password / पासवर्ड → {t.auth.password}
 Sign in / लॉगिन → {t.auth.loginBtn}
 Don't have an account? → {t.auth.noAccount}
 Register / नोंदणी करा → {t.auth.registerLink}
+
 ```
 
 - [ ] **Step 8: Migrate `src/app/register/page.tsx`**
@@ -1541,15 +1676,20 @@ Same import pattern. Read the file first, then replace all bilingual strings wit
 - [ ] **Step 9: Run typecheck and full test suite**
 
 ```bash
+
 npm run typecheck && npm test
+
 ```
+
 Expected: all pass.
 
 - [ ] **Step 10: Commit**
 
 ```bash
+
 git add src/app/
 git commit -m "refactor: migrate server component pages to i18n translation keys"
+
 ```
 
 ---
@@ -1569,31 +1709,42 @@ git commit -m "refactor: migrate server component pages to i18n translation keys
 - Modify: `src/components/Sidebar.tsx`
 
 **Pattern for all client components:**
+
 ```ts
+
 import { useTranslations } from '@/lib/i18n/context';
 
 // Inside the component function:
 const t = useTranslations();
 // Then use t.section.key everywhere
+
 ```
 
 - [ ] **Step 1: Migrate `src/components/PatientCard.tsx`**
 
 Add `'use client'` directive at the top (first line). Add import and hook:
+
 ```tsx
+
 'use client';
 
 import { useTranslations } from '@/lib/i18n/context';
 // ... existing imports ...
+
 ```
 
 Inside `PatientCard`:
+
 ```ts
+
 const t = useTranslations();
+
 ```
 
 Replace `assessmentChip` function to accept `t`:
+
 ```ts
+
 function assessmentChip(filled: number, t: ReturnType<typeof useTranslations>): { text: string; cls: string } {
   if (filled === 5)
     return { text: t.assessment.chip.complete, cls: 'bg-primary/10 text-primary' };
@@ -1604,30 +1755,39 @@ function assessmentChip(filled: number, t: ReturnType<typeof useTranslations>): 
     };
   return { text: t.assessment.chip.missing, cls: 'bg-muted text-muted-foreground' };
 }
+
 ```
 
 Call it as `assessmentChip(completionStatus.filled, t)`.
 
 Replace overflow count:
+
 ```tsx
+
 {overflow > 0 && (
   <span className="text-xs text-muted-foreground">
     {t.patients.moreProblems.replace('{count}', String(overflow))}
   </span>
 )}
+
 ```
 
 - [ ] **Step 2: Migrate `src/components/PatientHeader.tsx`**
 
 Add import and hook. Replace:
+
 ```tsx
+
 Edit / บดลา → {t.patientDetail.edit}
 Report / อहवाล → {t.patientDetail.report}
 Receipt / पावती → {t.patientDetail.receipt}
+
 ```
 
 Full replacement in JSX:
+
 ```tsx
+
 <Link href={`/patients/${patient.id}/edit`}>
   <Pencil className="mr-1.5 h-3.5 w-3.5" />
   {t.patientDetail.edit}
@@ -1642,6 +1802,7 @@ Full replacement in JSX:
   <Receipt className="mr-1.5 h-3.5 w-3.5" />
   {t.patientDetail.receipt}
 </Link>
+
 ```
 
 - [ ] **Step 3: Migrate `src/components/PatientForm.tsx`**
@@ -1649,7 +1810,9 @@ Full replacement in JSX:
 Add import and hook inside `PatientForm`.
 
 Replace section labels and form labels:
+
 ```tsx
+
 Personal Info / वैयक्तिक माहिती → {t.form.personalInfo}
 Full Name / पूर्ण नाव * → {t.form.fullName} *
 Photo / फोटो → {t.form.photoLabel}
@@ -1671,6 +1834,7 @@ Address / ... → {t.form.address}
 Emergency Contact / ... → {t.form.emergencyContact}
 Branch / ... → {t.form.branch}
 Select branch → {t.form.selectBranch}
+
 ```
 
 The `submitLabel` prop already comes from the parent — no change needed for the button text.
@@ -1680,6 +1844,7 @@ The `submitLabel` prop already comes from the parent — no change needed for th
 Add import and hook. Replace `PLAN_FIELDS` constant — it currently maps field keys to bilingual strings. Change to use translation keys:
 
 ```ts
+
 const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
   ['yogaProgram', t.treatmentPlan.yoga],
   ['pranayam', t.treatmentPlan.pranayam],
@@ -1689,16 +1854,20 @@ const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
   ['medicines', t.treatmentPlan.medicines],
   ['panchkarma', t.treatmentPlan.panchkarma],
 ];
+
 ```
 
 Note: `PLAN_FIELDS` must be defined inside the component function (after `const t = useTranslations()`), not at module scope. Move it inside `TreatmentPlanForm`.
 
 Replace button strings:
+
 ```tsx
+
 Save Plan / ... → {t.treatmentPlan.saveBtn}
 Saving… → {t.treatmentPlan.saving}
 Progress Notes / ... → {t.treatmentPlan.progressNotes}
 Treatment Plan / ... → {t.treatmentPlan.title}  (card title if present)
+
 ```
 
 - [ ] **Step 5: Migrate `src/components/DeleteButton.tsx`**
@@ -1706,6 +1875,7 @@ Treatment Plan / ... → {t.treatmentPlan.title}  (card title if present)
 Add import and hook. The `label` prop has a default value of `'Delete / काढा'` — remove the default (callers should pass it explicitly, or use `t.deleteButton.deleteBtn` as the default via the hook):
 
 ```tsx
+
 export function DeleteButton({
   action,
   confirmText,
@@ -1717,44 +1887,61 @@ export function DeleteButton({
 }) {
   const t = useTranslations();
   const displayLabel = label ?? t.deleteButton.deleteBtn;
+
 ```
 
 Replace dialog strings:
+
 ```tsx
+
 <AlertDialogTitle>{t.deleteButton.confirmDelete}</AlertDialogTitle>
 <AlertDialogCancel>{t.deleteButton.cancelBtn}</AlertDialogCancel>
 {pending ? t.deleteButton.deleting : t.deleteButton.deleteBtn}
+
 ```
 
 Replace trigger button:
+
 ```tsx
+
 <Button ...>{displayLabel}</Button>
+
 ```
 
 - [ ] **Step 6: Migrate `src/components/InlineForm.tsx`**
 
 Add import and hook. Replace:
+
 ```tsx
+
 Saving… / ... → {t.inlineForm.submitting}
 Saved / ... → {t.inlineForm.saved}
 Something went wrong... → {t.inlineForm.genericError}
+
 ```
 
 Full replacement:
+
 ```tsx
+
 {error && <p className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 {pending && <p className="mb-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{t.inlineForm.submitting}</p>}
 {saved && !pending && <p className="mb-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{t.inlineForm.saved}</p>}
+
 ```
 
 And in the error catch block:
+
 ```ts
+
 setError(t.inlineForm.genericError);
+
 ```
 
 Note: `useTranslations()` is called inside the component, but the `genericError` string is set in a closure (the `action` callback). Capture it before the closure:
 
 ```tsx
+
 export function InlineForm({ action, children, className }) {
   const t = useTranslations();
   const genericError = t.inlineForm.genericError;
@@ -1762,28 +1949,37 @@ export function InlineForm({ action, children, className }) {
   // Inside catch:
   setError(genericError);
 }
+
 ```
 
 - [ ] **Step 7: Migrate `src/components/BranchFilter.tsx`**
 
 Add import and hook. Replace:
+
 ```tsx
+
 placeholder="All branches / สр्व शाखा" → placeholder={t.branchFilter.allBranches}
 All branches / สर्व शाखा → {t.branchFilter.allBranches}
+
 ```
 
 - [ ] **Step 8: Migrate `src/components/GlobalSearch.tsx`**
 
 Add import and hook. Replace:
+
 ```tsx
+
 placeholder="Search for a patient / ..." → placeholder={t.globalSearch.placeholder}
 No matches / ... → {t.globalSearch.noResults}
+
 ```
 
 - [ ] **Step 9: Migrate `src/components/StopwatchWidget.tsx`**
 
 Add import and hook. Read the full StopwatchWidget file (it was partially read). Replace all bilingual strings with `t.stopwatch.*` keys:
+
 ```tsx
+
 Session Timer / ... → {t.stopwatch.title}
 Start / ... → {t.stopwatch.start}
 Pause / ... → {t.stopwatch.pause}
@@ -1793,6 +1989,7 @@ Tap to measure BPM / ... → {t.stopwatch.tapToMeasure}
 BPM → {t.stopwatch.bpm}
 Tapping… / ... → {t.stopwatch.tapping}
 Tap again / ... → {t.stopwatch.tapAgain}
+
 ```
 
 - [ ] **Step 10: Migrate `src/components/Sidebar.tsx`**
@@ -1800,6 +1997,7 @@ Tap again / ... → {t.stopwatch.tapAgain}
 Add import and hook. Replace all navigation item `name` strings, section headings, and the bottom card:
 
 ```tsx
+
 // Inside Sidebar function:
 const t = useTranslations();
 
@@ -1814,35 +2012,51 @@ const generalItems = [
   { name: t.nav.settings, href: '/settings', icon: Settings },
   { name: t.nav.help, href: '#', icon: HelpCircle, disabled: true },
 ];
+
 ```
 
 Replace section headings and bottom card:
+
 ```tsx
+
 Menu → {t.nav.dashboard.slice(0, 0) /* section heading */}
+
 ```
 
 Actually the section headings are hardcoded `"Menu"` and `"General"` — these aren't in the spec. Leave them as-is (they're internal UI chrome, not patient-facing strings). Only replace strings in the spec.
 
 Replace bottom card:
+
 ```tsx
+
 Need Help? → {t.nav.needHelp}
 Contact support if you... → {t.nav.needHelpBody}
 Contact Support → {t.nav.contactSupport}
+
 ```
 
 Replace logout:
+
 ```tsx
+
 Logout → {t.nav.logout}
+
 ```
 
 Replace "Soon" badge:
+
 ```tsx
+
 Soon → {t.common.soon}
+
 ```
 
 Replace close button aria-label:
+
 ```tsx
+
 aria-label="Close menu" → aria-label={t.nav.dashboard} // or keep as English for screen readers
+
 ```
 
 Leave the `aria-label="Close menu"` and `aria-label="Open sidebar"` in TopNav as-is (accessible names don't need translation in this phase).
@@ -1850,15 +2064,20 @@ Leave the `aria-label="Close menu"` and `aria-label="Open sidebar"` in TopNav as
 - [ ] **Step 11: Run typecheck and full test suite**
 
 ```bash
+
 npm run typecheck && npm test
+
 ```
+
 Expected: all pass.
 
 - [ ] **Step 12: Commit**
 
 ```bash
+
 git add src/components/
 git commit -m "refactor: migrate client components to i18n translation keys"
+
 ```
 
 ---

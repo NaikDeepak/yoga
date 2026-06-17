@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { userPreferences } from '@/db/schema';
 import type { Db } from '@/db/types';
+import { getISTDateString } from '@/lib/dates';
 
 type Locale = 'en' | 'mr';
 
@@ -19,6 +20,6 @@ export async function setUserLanguage(db: Db, userId: string, locale: Locale): P
     .values({ userId, language: locale })
     .onConflictDoUpdate({
       target: userPreferences.userId,
-      set: { language: locale, updatedAt: new Date() },
+      set: { language: locale, updatedAt: new Date(getISTDateString()) },
     });
 }

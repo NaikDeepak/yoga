@@ -83,4 +83,15 @@ describe('countPatients', () => {
     expect(await countPatients(db, undefined, 'ravi')).toBe(1);
     expect(await countPatients(db, undefined, 'nobody')).toBe(0);
   });
+
+  it('filters by both branch and search query', async () => {
+    await createPatient(db, { fullName: 'Asha Pawar', mobile: '9000000001', branch: 'kop' });
+    await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000002', branch: 'kop' });
+    await createPatient(db, { fullName: 'Asha Joshi', mobile: '9000000003', branch: 'pune' });
+    expect(await countPatients(db, 'kop', 'asha')).toBe(1);
+    expect(await countPatients(db, 'kop', 'joshi')).toBe(1);
+    expect(await countPatients(db, 'pune', 'asha')).toBe(1);
+    expect(await countPatients(db, 'pune', 'joshi')).toBe(1);
+    expect(await countPatients(db, 'pune', 'ravi')).toBe(0);
+  });
 });

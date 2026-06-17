@@ -1,6 +1,7 @@
 import {
-  pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index,
+  pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index, check,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const patients = pgTable('patients', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -139,7 +140,9 @@ export type FeePayment = typeof feePayments.$inferSelect;
 export const userPreferences = pgTable('user_preferences', {
   userId: text('user_id').primaryKey(),
   language: text('language').notNull().default('en'),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-}).enableRLS();
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  check('language_check', sql`language IN ('en', 'mr')`),
+]).enableRLS();
 
 export type UserPreference = typeof userPreferences.$inferSelect;

@@ -30,6 +30,9 @@ export const mr: Translations = {
     needHelp: 'मदत हवी आहे?',
     needHelpBody: 'रुग्ण नोंदींमध्ये समस्या येत असल्यास समर्थनाशी संपर्क साधा.',
     contactSupport: 'समर्थनाशी संपर्क करा',
+    closeMenu: 'मेनू बंद करा',
+    menu: 'मेनू',
+    general: 'सामान्य',
   },
   dashboard: {
     title: 'डॅशबोर्ड',
@@ -73,6 +76,7 @@ export const mr: Translations = {
       treatment: 'उपचार योजना कमी',
     },
     patientsLabel: 'रुग्ण',
+    visitsThisMonthText: 'या महिन्यात {current} पैकी {target} भेटी',
   },
   patients: {
     title: 'रुग्ण',
@@ -124,6 +128,7 @@ export const mr: Translations = {
   problems: {
     title: 'समस्या',
     noProblems: 'कोणत्याही समस्या नोंदवल्या नाहीत',
+    removeConfirmation: '{problem} काढायचे का?',
     presetLabel: 'पूर्वनिर्धारित',
     noteLabel: 'टीप',
     notePlaceholder: 'ऐच्छिक टीप',
@@ -134,6 +139,7 @@ export const mr: Translations = {
   },
   documents: {
     title: 'कागदपत्रे',
+    deleteConfirmation: '{name} काढायची का?',
     typeLabel: 'प्रकार',
     fileLabel: 'फाइल (PDF/JPG/PNG, जास्तीत जास्त 10MB)',
     uploadBtn: 'अपलोड करा',
@@ -164,6 +170,7 @@ export const mr: Translations = {
   },
   fees: {
     title: 'शुल्क',
+    deletePaymentConfirmation: '₹{amount} चे पेमेंट काढायचे का?',
     courseFee: 'कोर्स शुल्क',
     totalPaid: 'एकूण भरलेले',
     balanceDue: 'शिल्लक रक्कम',
@@ -228,6 +235,12 @@ export const mr: Translations = {
     hasContraindications: 'कोणते विरोधाभास आहेत का?',
     contraindicationDetails: 'विरोधाभासाचे तपशील',
     saveBtn: 'मूल्यमापन जतन करा',
+    sittingOptions: {
+      under2: '२ तासांपेक्षा कमी',
+      twoToFour: '२–४ तास',
+      fourToEight: '४–८ तास',
+      overEight: '८+ तास',
+    },
   },
   treatmentPlan: {
     title: 'उपचार योजना',
@@ -290,6 +303,13 @@ export const mr: Translations = {
     bpm: 'BPM',
     tapping: 'टॅप होत आहे…',
     tapAgain: 'पुन्हा टॅप करा',
+    sessionMode: 'सत्र',
+    pulseMode: 'नाडी',
+    collapseTimer: 'टायमर लहान करा',
+    resume: 'पुन्हा सुरू करा',
+    startCountdown: 'उलटी गिनती सुरू करा',
+    beatsCounted: 'मोजलेले ठोके',
+    redo: 'पुन्हा करा',
   },
   branchFilter: {
     allBranches: 'सर्व शाखा',
@@ -300,7 +320,9 @@ export const mr: Translations = {
   },
   form: {
     fullName: 'पूर्ण नाव',
+    fullNamePlaceholder: 'रुग्णाचे पूर्ण नाव',
     mobile: 'मोबाईल',
+    mobilePlaceholder: '१०-अंकी मोबाईल नंबर',
     email: 'ईमेल',
     address: 'पत्ता',
     age: 'वय',
@@ -320,6 +342,8 @@ export const mr: Translations = {
     bodyMetrics: 'शरीर मापे',
     contactInfo: 'संपर्क माहिती',
     bmi: 'BMI',
+    ageYears: '{age} वर्षे',
+    ageYrs: '{age} वर्षे',
   },
   print: {
     patientReport: 'रुग्ण अहवाल',

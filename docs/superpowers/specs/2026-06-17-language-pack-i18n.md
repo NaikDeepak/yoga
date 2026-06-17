@@ -18,8 +18,10 @@
 ## 2. Supported Locales
 
 ```ts
+
 export const LOCALES = ['en', 'mr'] as const;
 export type Locale = typeof LOCALES[number]; // 'en' | 'mr'
+
 ```
 
 To add Hindi later: add `'hi'` to `LOCALES` and create `src/lib/i18n/hi.ts`.
@@ -30,13 +32,15 @@ To add Hindi later: add `'hi'` to `LOCALES` and create `src/lib/i18n/hi.ts`.
 
 ### 3.1 File Layout
 
-```
+```text
+
 src/lib/i18n/
   en.ts             — English strings (source of truth, defines Translations type)
   mr.ts             — Marathi strings (must satisfy Translations type)
   translations.ts   — getTranslations(), LOCALES, Locale type (no server imports — safe for client)
   server.ts         — getLocale() only (imports next/headers cookies — server-only)
   context.tsx       — LocaleProvider (client), useTranslations() hook
+
 ```
 
 **Why the split:** `next/headers` is server-only. `context.tsx` is a client component and cannot import from a file that imports `next/headers`. By keeping `getTranslations()` in `translations.ts` (no server imports) and isolating `getLocale()` in `server.ts`, client and server code can each import safely.
@@ -44,6 +48,7 @@ src/lib/i18n/
 ### 3.2 `en.ts` — Full Key Catalogue
 
 ```ts
+
 export const en = {
   common: {
     save: 'Save',
@@ -355,6 +360,7 @@ export const en = {
 } as const;
 
 export type Translations = typeof en;
+
 ```
 
 ### 3.3 `mr.ts` — Marathi Strings
@@ -362,6 +368,7 @@ export type Translations = typeof en;
 `mr.ts` must export an object satisfying `Translations`. Every key present in `en.ts` must be present in `mr.ts`. TypeScript enforces this at compile time:
 
 ```ts
+
 import type { Translations } from './en';
 export const mr: Translations = {
   common: {
@@ -384,6 +391,7 @@ export const mr: Translations = {
   },
   // ... (all keys, full Marathi translations)
 };
+
 ```
 
 ---
@@ -393,6 +401,7 @@ export const mr: Translations = {
 ### 4.1 `src/lib/i18n/translations.ts` (client-safe)
 
 ```ts
+
 import { en } from './en';
 import { mr } from './mr';
 import type { Translations } from './en';
@@ -406,11 +415,13 @@ const localeMap: Record<Locale, Translations> = { en, mr };
 export function getTranslations(locale: Locale): Translations {
   return localeMap[locale];
 }
+
 ```
 
 ### 4.2 `src/lib/i18n/server.ts` (server-only — never import from client components)
 
 ```ts
+
 import { cookies } from 'next/headers';
 import { LOCALES, type Locale } from './translations';
 
@@ -419,6 +430,7 @@ export async function getLocale(): Promise<Locale> {
   const lang = cookieStore.get('lang')?.value;
   return (LOCALES as readonly string[]).includes(lang ?? '') ? (lang as Locale) : 'en';
 }
+
 ```
 
 **Server components** import from both: `getTranslations` from `./translations`, `getLocale` from `./server`.
@@ -429,6 +441,7 @@ export async function getLocale(): Promise<Locale> {
 ## 5. Client Context — `src/lib/i18n/context.tsx`
 
 ```tsx
+
 'use client';
 import { createContext, useContext } from 'react';
 import { en } from './en';
@@ -449,6 +462,7 @@ export function LocaleProvider({ locale, children }: { locale: Locale; children:
 export function useTranslations(): Translations {
   return useContext(LocaleContext);
 }
+
 ```
 
 **`AppShell`** receives `locale: Locale` from `layout.tsx` and renders `<LocaleProvider locale={locale}>` around children.
@@ -460,28 +474,34 @@ export function useTranslations(): Translations {
 ### 6.1 Schema addition — `src/db/schema.ts`
 
 ```ts
+
 export const userPreferences = pgTable('user_preferences', {
   userId: text('user_id').primaryKey(),
   language: text('language').notNull().default('en'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
+
 ```
 
 ### 6.2 Data function — `src/data/preferences.ts`
 
 ```ts
+
 export async function getUserLanguage(db: Db, userId: string): Promise<Locale> { ... }
 export async function setUserLanguage(db: Db, userId: string, locale: Locale): Promise<void> { ... }
+
 ```
 
 ### 6.3 Server action — `src/actions/preferences.ts`
 
 ```ts
+
 export async function saveLanguageAction(locale: Locale): Promise<void>
 // Validates locale ∈ LOCALES
 // Calls setUserLanguage(db, userId, locale)
 // Sets 'lang' cookie (httpOnly, path='/', maxAge = 1 year)
 // revalidatePath('/', 'layout')
+
 ```
 
 ### 6.4 Layout sync — `src/app/(app)/layout.tsx`

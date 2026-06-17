@@ -25,15 +25,15 @@ export default async function PatientsPage({
 }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const { q, page: rawPage } = await searchParams;
   const page = parsePage(rawPage);
-  const offset = (page - 1) * PAGE_SIZE;
   const db = getDb();
   const t = getTranslations(await getLocale());
 
-  const [list, totalCount] = await Promise.all([
-    searchPatients(db, q, PAGE_SIZE, offset),
-    countPatients(db, undefined, q),
-  ]);
+  const totalCount = await countPatients(db, undefined, q);
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const clampedPage = totalPages > 0 ? Math.min(page, totalPages) : 1;
+  const offset = (clampedPage - 1) * PAGE_SIZE;
+
+  const list = await searchPatients(db, q, PAGE_SIZE, offset);
 
   const [problems, completions] = await Promise.all([
     problemsForPatients(db, list.map((p) => p.id)),
@@ -100,7 +100,7 @@ export default async function PatientsPage({
             })}
           </div>
           <Pagination
-            page={page}
+            page={clampedPage}
             totalPages={totalPages}
             buildHref={(p) =>
               `/patients?q=${encodeURIComponent(q ?? '')}&page=${p}`

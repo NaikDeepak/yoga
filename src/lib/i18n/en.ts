@@ -28,6 +28,9 @@ export const en = {
     needHelp: 'Need Help?',
     needHelpBody: 'Contact support if you experience any issues with patient records.',
     contactSupport: 'Contact Support',
+    closeMenu: 'Close menu',
+    menu: 'Menu',
+    general: 'General',
   },
   dashboard: {
     title: 'Dashboard',
@@ -71,6 +74,7 @@ export const en = {
       treatment: 'Treatment plan missing',
     },
     patientsLabel: 'Patients',
+    visitsThisMonthText: '{current} of {target} visits this month',
   },
   patients: {
     title: 'Patients',
@@ -122,6 +126,7 @@ export const en = {
   problems: {
     title: 'Problems',
     noProblems: 'No problems recorded',
+    removeConfirmation: 'Remove {problem}?',
     presetLabel: 'Preset',
     noteLabel: 'Note',
     notePlaceholder: 'Optional note',
@@ -132,6 +137,7 @@ export const en = {
   },
   documents: {
     title: 'Documents',
+    deleteConfirmation: 'Delete {name}?',
     typeLabel: 'Type',
     fileLabel: 'File (PDF/JPG/PNG, max 10MB)',
     uploadBtn: 'Upload',
@@ -162,6 +168,7 @@ export const en = {
   },
   fees: {
     title: 'Fees',
+    deletePaymentConfirmation: 'Delete payment of ₹{amount}?',
     courseFee: 'Course Fee',
     totalPaid: 'Total Paid',
     balanceDue: 'Balance Due',
@@ -226,6 +233,12 @@ export const en = {
     hasContraindications: 'Any contraindications?',
     contraindicationDetails: 'Contraindication details',
     saveBtn: 'Save Assessment',
+    sittingOptions: {
+      under2: '< 2 hrs',
+      twoToFour: '2–4 hrs',
+      fourToEight: '4–8 hrs',
+      overEight: '8+ hrs',
+    },
   },
   treatmentPlan: {
     title: 'Treatment Plan',
@@ -288,6 +301,13 @@ export const en = {
     bpm: 'BPM',
     tapping: 'Tapping…',
     tapAgain: 'Tap again',
+    sessionMode: 'Session',
+    pulseMode: 'Pulse',
+    collapseTimer: 'Collapse timer',
+    resume: 'Resume',
+    startCountdown: 'Start Countdown',
+    beatsCounted: 'Beats counted',
+    redo: 'Redo',
   },
   branchFilter: {
     allBranches: 'All branches',
@@ -298,7 +318,9 @@ export const en = {
   },
   form: {
     fullName: 'Full Name',
+    fullNamePlaceholder: 'Patient full name',
     mobile: 'Mobile',
+    mobilePlaceholder: '10-digit mobile',
     email: 'Email',
     address: 'Address',
     age: 'Age',
@@ -318,6 +340,8 @@ export const en = {
     bodyMetrics: 'Body Metrics',
     contactInfo: 'Contact Info',
     bmi: 'BMI',
+    ageYears: '{age} years',
+    ageYrs: '{age} yrs',
   },
   print: {
     patientReport: 'Patient Report',
