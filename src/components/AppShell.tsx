@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/Sidebar';
 import { TopNav } from '@/components/TopNav';
+import { StopwatchWidget } from '@/components/StopwatchWidget';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -47,9 +48,9 @@ export function AppShell({ children, userEmail, patientCount }: AppShellProps) {
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden relative">
-        <TopNav 
-          userEmail={userEmail} 
-          onMenuClick={() => setIsSidebarOpen(true)} 
+        <TopNav
+          userEmail={userEmail}
+          onMenuClick={() => setIsSidebarOpen(true)}
         />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
           <div className="mx-auto w-full max-w-6xl">
@@ -57,6 +58,8 @@ export function AppShell({ children, userEmail, patientCount }: AppShellProps) {
           </div>
         </main>
       </div>
+
+      <StopwatchWidget />
     </div>
   );
 }
