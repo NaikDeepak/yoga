@@ -1,14 +1,18 @@
 import Link from 'next/link';
 import { getDb } from '@/db/client';
-import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/dashboard';
+import { getDashboardStats, getAilmentBreakdown, getRecentVisits, getPendingAssessments } from '@/data/dashboard';
 import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
+import { WeeklyVisitsChart } from '@/components/WeeklyVisitsChart';
 import { BranchFilter } from '@/components/BranchFilter';
 import { RevenueStatCard } from '@/components/RevenueStatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
+import { ArrowUpRight, Plus, UploadCloud } from 'lucide-react';
+
+const MONTHLY_TARGET = 100;
 
 function parseBranch(value?: string): BranchKey | undefined {
   return BRANCHES.some((b) => b.key === value) ? (value as BranchKey) : undefined;
@@ -56,176 +60,330 @@ export default async function DashboardPage({
   const branch = parseBranch(branchParam);
 
   const db = getDb();
-  const [stats, ailments, recentVisits, followUps] = await Promise.all([
+  const [stats, ailments, recentVisits, followUps, pendingAssessments] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
-    getRecentVisits(db, 10, branch),
+    getRecentVisits(db, 5, branch),
     getFollowUpsThisWeek(db, branch),
+    getPendingAssessments(db, 5, branch),
   ]);
 
+  // Generate upcoming visits for the next 8 days (today..+7) based on followUps
+  // (next_visit_date) — this window must match getFollowUpsThisWeek's window so the
+  // chart and the Reminders panel never disagree.
+  const todayStr = getISTDateString(0);
+  const upcomingVisitsData = Array.from({ length: 8 }, (_, i) => {
+    const dateStr = getISTDateString(i);
+    // Count how many follow-ups happen on this day, safely handling strings with time parts
+    const count = followUps.filter(f => {
+      const fDate = typeof f.nextVisitDate === 'string' ? f.nextVisitDate.substring(0, 10) : '';
+      return fDate === dateStr;
+    }).length;
+    return { date: dateStr, count, isToday: dateStr === todayStr };
+  });
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold">Dashboard / डॅशबोर्ड</h1>
-        <div className="flex items-center gap-3">
+    <div className="space-y-8 pb-10">
+      {/* Header Row */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage your clinic, patients, and tasks with ease.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
           <BranchFilter />
-          <Button asChild size="sm">
-            <Link href="/patients/new">+ New Patient / नवीन रुग्ण</Link>
+          <Button variant="outline" className="rounded-full gap-2 px-5 h-10 border-border" asChild>
+            <Link href="#">
+              <UploadCloud className="h-4 w-4" />
+              Import Data
+            </Link>
+          </Button>
+          <Button className="rounded-full gap-2 px-5 h-10 shadow-md" asChild>
+            <Link href="/patients/new">
+              <Plus className="h-4 w-4" />
+              Add Patient
+            </Link>
           </Button>
         </div>
       </div>
 
-      {/* Follow-ups card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Follow-ups This Week / या आठवड्यातील पाठपुरावा</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {followUps.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No follow-ups in the next 7 days / या आठवड्यात कोणी नाही
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {groupFollowUps(followUps).map((row, i) =>
-                row.kind === 'header' ? (
-                  <li
-                    key={`header-${row.label}-${i}`}
-                    className="pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground first:pt-0"
-                  >
-                    {row.label}
-                  </li>
-                ) : (
-                  <li
-                    key={row.followUp.patientId}
-                    className="flex items-center justify-between gap-2 border-b border-border pb-3 text-sm last:border-0 last:pb-0"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <Link href={`/patients/${row.followUp.patientId}`} className="font-medium hover:text-primary">
-                        {row.followUp.fullName}
-                      </Link>
-                      <div className="flex items-center gap-2">
-                        <a href={`tel:${row.followUp.mobile}`} className="text-xs text-muted-foreground hover:text-primary">
-                          {row.followUp.mobile}
-                        </a>
-                        <a
-                          href={whatsappUrl(row.followUp.mobile, row.followUp.fullName, row.followUp.nextVisitDate)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Send WhatsApp reminder / WhatsApp आठवण पाठवा"
-                          className="text-green-600 hover:text-green-700"
-                        >
-                          <WhatsAppIcon className="h-3.5 w-3.5" />
-                        </a>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="border-brand-accent text-brand-accent text-xs">
-                        {row.followUp.patientCode}
-                      </Badge>
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Due / देय: {formatDueDate(row.followUp.nextVisitDate)}
-                      </span>
-                    </div>
-                  </li>
-                ),
-              )}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      {/* Stat Cards Row */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {/* Primary Solid Green Card */}
+        <Card className="rounded-2xl border-none bg-gradient-to-br from-primary/90 to-primary text-primary-foreground shadow-md relative overflow-hidden">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-primary-foreground/90">Total Patients</CardTitle>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <p className="text-4xl font-bold tracking-tight">{stats.totalPatients}</p>
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-primary-foreground/80 font-medium bg-black/10 w-fit px-2 py-1 rounded-md">
+              <ArrowUpRight className="h-3 w-3" />
+              <span>Increased from last month</span>
+            </div>
+          </CardContent>
+          {/* Decorative shapes */}
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-6 -left-6 h-32 w-32 rounded-full bg-black/10 blur-2xl" />
+        </Card>
 
-      {/* Stat cards — 2-col on mobile, 4-col on md+ */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        {/* Regular Stat Cards */}
         <StatCard
-          title="Total Patients / रुग्ण"
-          value={String(stats.totalPatients)}
-        />
-        <StatCard
-          title="Visits This Month / भेटी"
+          title="Visits This Month"
           value={String(stats.visitsThisMonth)}
+          trend="Increased from last month"
+          icon={<ArrowUpRight className="h-3.5 w-3.5" />}
         />
-        <StatCard
-          title="Most Common / सामान्य आजार"
-          value={stats.mostCommonProblem ?? '—'}
-        />
+        
         <RevenueStatCard value={stats.revenueThisMonth} />
+
+        <StatCard
+          title="Most Common Ailment"
+          value={stats.mostCommonProblem ?? '—'}
+          trend="High frequency"
+        />
       </div>
 
-      {/* Ailment chart + Recent activity side-by-side on md+ */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+      {/* Analytics & Reminders Row */}
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr_1fr]">
+        <Card className="rounded-2xl shadow-sm border-border overflow-hidden flex flex-col">
           <CardHeader>
-            <CardTitle className="text-base">Ailment Breakdown / आजार</CardTitle>
+            <CardTitle className="text-lg font-semibold">Weekly Patient Visits</CardTitle>
           </CardHeader>
-          <CardContent>
-            {ailments.length > 0 ? (
-              <AilmentBarChart data={ailments} />
-            ) : (
-              <p className="text-sm text-muted-foreground">No data yet / माहिती नाही</p>
-            )}
+          <CardContent className="flex-1 pb-2">
+            <div className="h-[250px] w-full mt-4">
+              <WeeklyVisitsChart data={upcomingVisitsData} />
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent Activity / अलीकडील</CardTitle>
+        <Card className="rounded-2xl shadow-sm border-border">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-semibold">Reminders</CardTitle>
           </CardHeader>
           <CardContent>
-            {recentVisits.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No visits yet / भेटी नाहीत</p>
+            <div className="rounded-xl bg-accent/40 p-4 border border-border/50">
+              <h4 className="font-semibold text-sm mb-1 text-foreground">Follow-ups This Week</h4>
+              <p className="text-xs text-muted-foreground mb-4">Send reminders to patients</p>
+              {followUps.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground">No follow-ups / या आठवड्यात कोणी नाही</p>
+                </div>
+              ) : (
+                <ul className="space-y-4">
+                  {followUps.slice(0, 3).map((f) => (
+                    <li key={f.patientId} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
+                          {f.fullName.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <Link href={`/patients/${f.patientId}`} className="text-sm font-semibold truncate hover:text-primary transition-colors">
+                            {f.fullName}
+                          </Link>
+                          <span className="text-xs text-muted-foreground truncate">
+                            Due: {formatDueDate(f.nextVisitDate)}
+                          </span>
+                        </div>
+                      </div>
+                      <Button asChild size="sm" className="rounded-full h-8 shrink-0 shadow-sm" variant="default">
+                        <a href={whatsappUrl(f.mobile, f.fullName, f.nextVisitDate)} target="_blank" rel="noopener noreferrer">
+                          Send Msg
+                        </a>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {followUps.length > 3 && (
+                <Button variant="link" size="sm" className="mt-2 w-full text-xs text-primary" asChild>
+                  <Link href="/patients">View all {followUps.length} follow-ups</Link>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Week's Schedule — full follow-up list grouped by day */}
+        <Card className="rounded-2xl shadow-sm border-border flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">Week&apos;s Schedule</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto max-h-[340px] pr-1">
+            {followUps.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No visits this week</p>
             ) : (
-              <ul className="space-y-3">
-                {recentVisits.map((v) => (
-                  <li
-                    key={v.visitId}
-                    className="flex items-start justify-between gap-2 border-b border-border pb-3 text-sm last:border-0 last:pb-0"
-                  >
-                    <div className="flex flex-col gap-0.5">
-                      <Link
-                        href={`/patients/${v.patientId}`}
-                        className="font-medium hover:text-primary"
-                      >
-                        {v.patientName}
+              <ul className="space-y-1">
+                {groupFollowUps(followUps).map((row, i) =>
+                  row.kind === 'header' ? (
+                    <li key={`h-${i}`} className="pt-3 first:pt-0 pb-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{row.label}</span>
+                    </li>
+                  ) : (
+                    <li key={row.followUp.patientId + row.followUp.nextVisitDate} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent/40 transition-colors">
+                      <div className="h-7 w-7 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
+                        {row.followUp.fullName.substring(0, 2).toUpperCase()}
+                      </div>
+                      <Link href={`/patients/${row.followUp.patientId}`} className="text-sm font-medium truncate hover:text-primary transition-colors flex-1">
+                        {row.followUp.fullName}
                       </Link>
-                      <span className="text-xs text-muted-foreground">{v.visitDate}</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{formatDueDate(row.followUp.nextVisitDate)}</span>
+                    </li>
+                  )
+                )}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom Row: Collaboration, Progress, Time Tracker */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Pending Assessments */}
+        <Card className="rounded-2xl shadow-sm border-border">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-semibold">Pending Assessments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {pendingAssessments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">All assessments complete / सर्व पूर्ण</p>
+            ) : (
+              <ul className="space-y-4 mt-2">
+                {pendingAssessments.map((p) => (
+                  <li key={p.patientId} className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                      {initials(p.fullName)}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className="border-brand-accent text-brand-accent text-xs"
-                      >
-                        {v.patientCode}
-                      </Badge>
-                      {v.weightKg !== null && (
-                        <span className="text-xs text-muted-foreground">{v.weightKg}kg</span>
-                      )}
-                      {v.painScale !== null && (
-                        <span
-                          className={`h-3 w-3 rounded-full ${painDotColor(v.painScale)}`}
-                          title={`Pain: ${v.painScale} / वेदना: ${v.painScale}`}
-                        />
-                      )}
+                    <div className="flex flex-col min-w-0">
+                      <Link href={`/patients/${p.patientId}?tab=${p.missingLifestyle ? 'assessment' : 'treatment'}`} className="text-sm font-medium truncate hover:text-primary transition-colors">
+                        {p.fullName}
+                      </Link>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                        {pendingReason(p.missingLifestyle, p.missingTreatment)}
+                      </span>
                     </div>
+                    <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none shrink-0">Pending</Badge>
                   </li>
                 ))}
               </ul>
             )}
           </CardContent>
         </Card>
+
+        {/* Ailment Breakdown (Replacing Donut Chart Placeholder) */}
+        <Card className="rounded-2xl shadow-sm border-border flex flex-col justify-between">
+          <CardHeader className="pb-0">
+            <CardTitle className="text-base font-semibold">Ailment Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col justify-center pb-6 mt-4">
+            {ailments.length > 0 ? (
+              <div className="h-[220px] w-full">
+                <AilmentBarChart data={ailments} />
+              </div>
+            ) : (
+              <div className="flex h-[220px] w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/50">
+                <p className="text-sm text-muted-foreground">No ailment data yet</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Monthly Visit Goal */}
+        <Card className="rounded-2xl shadow-sm border-border flex flex-col items-center justify-center">
+          <CardHeader className="pb-0 w-full">
+            <CardTitle className="text-base font-semibold">Monthly Visit Goal</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center pt-2 pb-4">
+            <VisitGoalGauge current={stats.visitsThisMonth} target={MONTHLY_TARGET} />
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.visitsThisMonth} of {MONTHLY_TARGET} visits this month
+            </p>
+          </CardContent>
+        </Card>
       </div>
+      
+      {/* Recent Activity Full Width */}
+      <Card className="rounded-2xl shadow-sm border-border">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Recent Visits</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentVisits.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No visits yet / भेटी नाहीत</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 rounded-tl-lg">Patient Name</th>
+                    <th className="px-4 py-3">Patient ID</th>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Weight</th>
+                    <th className="px-4 py-3 rounded-tr-lg">Pain Scale</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentVisits.map((v, i) => (
+                    <tr key={v.visitId} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 font-medium">
+                        <Link href={`/patients/${v.patientId}`} className="hover:text-primary transition-colors">
+                          {v.patientName}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className="border-brand-accent/50 text-brand-accent bg-brand-accent/5 shadow-none">{v.patientCode}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{v.visitDate}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{v.weightKg ? `${v.weightKg} kg` : '—'}</td>
+                      <td className="px-4 py-3">
+                        {v.painScale !== null ? (
+                          <div className="flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full ${painDotColor(v.painScale)}`} />
+                            <span className="text-muted-foreground">{v.painScale}/10</span>
+                          </div>
+                        ) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function StatCard({ title, value }: { title: string; value: string }) {
+function StatCard({ title, value, trend, icon }: { title: string; value: string; trend?: string; icon?: React.ReactNode }) {
   return (
-    <Card>
+    <Card className="rounded-2xl shadow-sm border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xs font-medium text-muted-foreground">{title}</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+          {icon && (
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground">
+              {icon}
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold">{value}</p>
+        <p className="text-3xl font-bold tracking-tight">{value}</p>
+        {trend && (
+          <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
+            <span className="text-green-600 bg-green-100 dark:bg-green-900/30 px-1 rounded inline-flex items-center">
+              <ArrowUpRight className="h-3 w-3" />
+            </span>
+            {trend}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -243,16 +401,46 @@ function formatDueDate(dateStr: string): string {
   return `${String(day).padStart(2, '0')} ${months[month - 1]}`;
 }
 
+const ARC_LENGTH = Math.PI * 80; // semicircle r=80
+
+function VisitGoalGauge({ current, target }: { current: number; target: number }) {
+  const pct = Math.min(current / target, 1);
+  const filled = ARC_LENGTH * pct;
+  const gaugeColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#16a34a' : '#ca8a04';
+  return (
+    <svg viewBox="0 0 200 115" className="w-full max-w-[200px]" aria-label={`${current} of ${target} visits`}>
+      {/* Track */}
+      <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="14" strokeLinecap="round" />
+      {/* Progress */}
+      <path
+        d="M 20 105 A 80 80 0 0 1 180 105"
+        fill="none"
+        stroke={gaugeColor}
+        strokeWidth="14"
+        strokeLinecap="round"
+        strokeDasharray={`${filled} ${ARC_LENGTH}`}
+      />
+      {/* Count */}
+      <text x="100" y="82" textAnchor="middle" fontSize="30" fontWeight="700" fill="currentColor">{current}</text>
+      <text x="100" y="100" textAnchor="middle" fontSize="11" fill="currentColor" opacity="0.5">{Math.round(pct * 100)}% of goal</text>
+    </svg>
+  );
+}
+
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function pendingReason(missingLifestyle: boolean, missingTreatment: boolean): string {
+  if (missingLifestyle && missingTreatment) return 'Lifestyle & treatment missing';
+  if (missingLifestyle) return 'Lifestyle missing';
+  return 'Treatment plan missing';
+}
+
 function whatsappUrl(mobile: string, fullName: string, nextVisitDate: string): string {
   const date = formatDueDate(nextVisitDate);
   const text = `Hello ${fullName}, a reminder from Pawar's Yog Therapy — your next session is on ${date}. / नमस्कार ${fullName}, आपल्या पुढील योग थेरपी भेटीची आठवण — ${date} रोजी आहे.`;
   return `https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`;
-}
-
-function WhatsAppIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-    </svg>
-  );
 }

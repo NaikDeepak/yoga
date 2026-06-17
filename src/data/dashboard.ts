@@ -1,5 +1,5 @@
-import { count, countDistinct, sum, desc, gte, lt, eq, and } from 'drizzle-orm';
-import { patients, patientProblems, visits, feePayments } from '@/db/schema';
+import { count, countDistinct, sum, desc, gte, lt, eq, and, isNull, or } from 'drizzle-orm';
+import { patients, patientProblems, visits, feePayments, lifestyleAssessments, treatmentPlans } from '@/db/schema';
 import { getISTDateString } from '@/lib/dates';
 import type { Db } from '@/db/types';
 
@@ -91,6 +91,49 @@ export type RecentVisit = {
   weightKg: number | null;
   painScale: number | null;
 };
+
+export type PendingAssessment = {
+  patientId: string;
+  patientCode: string;
+  fullName: string;
+  missingLifestyle: boolean;
+  missingTreatment: boolean;
+};
+
+export async function getPendingAssessments(
+  db: Db,
+  limit = 5,
+  branch?: string,
+): Promise<PendingAssessment[]> {
+  const branchFilter = branch ? eq(patients.branch, branch) : undefined;
+  const rows = await db
+    .select({
+      patientId: patients.id,
+      patientCode: patients.patientCode,
+      fullName: patients.fullName,
+      lifestyleId: lifestyleAssessments.id,
+      treatmentId: treatmentPlans.id,
+    })
+    .from(patients)
+    .leftJoin(lifestyleAssessments, eq(lifestyleAssessments.patientId, patients.id))
+    .leftJoin(treatmentPlans, eq(treatmentPlans.patientId, patients.id))
+    .where(
+      and(
+        or(isNull(lifestyleAssessments.id), isNull(treatmentPlans.id)),
+        branchFilter,
+      )
+    )
+    .orderBy(desc(patients.createdAt))
+    .limit(limit);
+
+  return rows.map((r) => ({
+    patientId: r.patientId,
+    patientCode: r.patientCode,
+    fullName: r.fullName,
+    missingLifestyle: r.lifestyleId === null,
+    missingTreatment: r.treatmentId === null,
+  }));
+}
 
 export async function getRecentVisits(
   db: Db,

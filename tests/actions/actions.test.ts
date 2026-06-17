@@ -143,6 +143,13 @@ describe('addVisitAction with nextVisitDate', () => {
     expect(r).toMatchObject({ ok: false });
     expect(await listVisits(db, p.id)).toHaveLength(0);
   });
+
+  it('revalidates the dashboard so new follow-ups show without a hard refresh', async () => {
+    const { revalidatePath } = await import('next/cache');
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    await addVisitAction(p.id, fd({ visitDate: '2026-06-14', progressNote: 'ok' }));
+    expect(revalidatePath).toHaveBeenCalledWith('/dashboard');
+  });
 });
 
 describe('documents actions', () => {
