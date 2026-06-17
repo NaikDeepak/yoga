@@ -135,3 +135,11 @@ export const feePayments = pgTable('fee_payments', {
 
 export type FeeRow = typeof fees.$inferSelect;
 export type FeePayment = typeof feePayments.$inferSelect;
+
+export const userPreferences = pgTable('user_preferences', {
+  userId: text('user_id').primaryKey(),
+  language: text('language').notNull().default('en'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export type UserPreference = typeof userPreferences.$inferSelect;
