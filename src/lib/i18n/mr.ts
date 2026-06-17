@@ -265,7 +265,11 @@ export const mr: Translations = {
     noAccount: 'खाते नाही?',
     registerLink: 'नोंदणी करा',
     registerTitle: 'खाते तयार करा',
+    registerSubtitle: 'प्रशासक नोंदणी',
     registerBtn: 'खाते तयार करा',
+    registrationFailed: 'नोंदणी अयशस्वी. कृपया पुन्हा प्रयत्न करा.',
+    alreadyHaveAccount: 'आधीच खाते आहे?',
+    signIn: 'साइन इन करा',
   },
   stopwatch: {
     title: 'सत्र टायमर',

@@ -5,6 +5,8 @@ import { getPatientFees } from '@/data/fees';
 import { BRANCHES } from '@/lib/presets';
 import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
+import { getLocale } from '@/lib/i18n/server';
+import { getTranslations } from '@/lib/i18n/translations';
 
 const GREEN = '#1B3A2E';
 const SAFFRON = '#C8962E';
@@ -25,6 +27,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const patientFees = await getPatientFees(db, id);
   if (patientFees.courseFee === null) redirect(`/patients/${id}`);
 
+  const t = getTranslations(await getLocale());
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
   const today = getISTDateString();
 
@@ -35,7 +38,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* ── LETTERHEAD ── */}
-      <ReportLetterhead badgeLabel="Receipt" patientCode={patient.patientCode} branch={branch} today={today} />
+      <ReportLetterhead badgeLabel={t.receipt.title} patientCode={patient.patientCode} branch={branch} today={today} />
 
       {/* ── PATIENT ── */}
       <SectionHeader>PATIENT / रुग्ण</SectionHeader>

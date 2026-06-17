@@ -5,11 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getLocale } from '@/lib/i18n/server';
+import { getTranslations } from '@/lib/i18n/translations';
 
 export default async function RegisterPage({
   searchParams,
 }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
+  const t = getTranslations(await getLocale());
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
@@ -17,30 +20,30 @@ export default async function RegisterPage({
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Leaf className="h-6 w-6 text-primary" aria-hidden="true" />
           </div>
-          <CardTitle>Pawar&apos;s Yog Therapy</CardTitle>
-          <CardDescription>Admin Register / नवीन नोंदणी</CardDescription>
+          <CardTitle>{t.auth.loginTitle}</CardTitle>
+          <CardDescription>{t.auth.registerSubtitle}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              Registration failed. Please try again. / नोंदणी अयशस्वी. कृपया पुन्हा प्रयत्न करा.
+              {t.auth.registrationFailed}
             </p>
           )}
           <form action={signUpAction} className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="email">Email / ईमेल</Label>
+              <Label htmlFor="email">{t.auth.email}</Label>
               <Input id="email" name="email" type="email" required autoComplete="email" />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="password">Password / पासवर्ड</Label>
+              <Label htmlFor="password">{t.auth.password}</Label>
               <Input id="password" name="password" type="password" required autoComplete="new-password" />
             </div>
-            <Button type="submit" className="w-full">Register / नोंदणी करा</Button>
+            <Button type="submit" className="w-full">{t.auth.registerBtn}</Button>
           </form>
           <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
+            {t.auth.alreadyHaveAccount}{' '}
             <Link href="/login" className="font-medium text-primary hover:underline">
-              Sign in / लॉगिन
+              {t.auth.signIn}
             </Link>
           </p>
         </CardContent>

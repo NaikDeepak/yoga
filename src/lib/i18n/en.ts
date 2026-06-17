@@ -263,7 +263,11 @@ export const en = {
     noAccount: "Don't have an account?",
     registerLink: 'Register',
     registerTitle: 'Create Account',
+    registerSubtitle: 'Admin Register',
     registerBtn: 'Create Account',
+    registrationFailed: 'Registration failed. Please try again.',
+    alreadyHaveAccount: 'Already have an account?',
+    signIn: 'Sign in',
   },
   stopwatch: {
     title: 'Session Timer',

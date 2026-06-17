@@ -10,6 +10,8 @@ import { getISTDateString } from '@/lib/dates';
 import { BRANCHES } from '@/lib/presets';
 import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
+import { getLocale } from '@/lib/i18n/server';
+import { getTranslations } from '@/lib/i18n/translations';
 
 const GREEN = '#1B3A2E';
 const SAFFRON = '#C8962E';
@@ -44,6 +46,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
     getPatientFees(db, id),
   ]);
 
+  const t = getTranslations(await getLocale());
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
   const today = getISTDateString();
@@ -59,7 +62,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* ── LETTERHEAD ── */}
-      <ReportLetterhead badgeLabel="Patient Report" patientCode={patient.patientCode} branch={branch} today={today} />
+      <ReportLetterhead badgeLabel={t.print.patientReport} patientCode={patient.patientCode} branch={branch} today={today} />
 
       {/* ── PATIENT IDENTIFICATION ── */}
       <SectionHeader>PATIENT IDENTIFICATION / रुग्णाची ओळख</SectionHeader>

@@ -10,6 +10,8 @@ import { PageHeader } from '@/components/PageHeader';
 import { PatientCard } from '@/components/PatientCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Pagination } from '@/components/Pagination';
+import { getLocale } from '@/lib/i18n/server';
+import { getTranslations } from '@/lib/i18n/translations';
 
 const PAGE_SIZE = 12;
 
@@ -25,6 +27,7 @@ export default async function PatientsPage({
   const page = parsePage(rawPage);
   const offset = (page - 1) * PAGE_SIZE;
   const db = getDb();
+  const t = getTranslations(await getLocale());
 
   const [list, totalCount] = await Promise.all([
     searchPatients(db, q, PAGE_SIZE, offset),
@@ -40,13 +43,13 @@ export default async function PatientsPage({
   return (
     <div className="space-y-8 pb-10">
       <PageHeader
-        title="Patients / रुग्ण"
-        subtitle={`${totalCount} registered`}
+        title={t.patients.title}
+        subtitle={t.patients.registered.replace('{count}', String(totalCount))}
         actions={
           <Button asChild className="rounded-full gap-2 px-5 h-10 shadow-md">
             <Link href="/patients/new">
               <Plus className="h-4 w-4" />
-              New Patient / नवीन रुग्ण
+              {t.patients.newPatient}
             </Link>
           </Button>
         }
@@ -60,9 +63,9 @@ export default async function PatientsPage({
           />
           <Input
             name="q"
-            aria-label="Search patients"
+            aria-label={t.patients.searchPlaceholder}
             defaultValue={q ?? ''}
-            placeholder="Search name or mobile / नाव किंवा मोबाईल"
+            placeholder={t.patients.searchPlaceholder}
             className="pl-9 rounded-full"
           />
         </div>
@@ -70,10 +73,10 @@ export default async function PatientsPage({
 
       {list.length === 0 ? (
         <EmptyState
-          message="No patients found / रुग्ण सापडले नाहीत"
+          message={t.patients.notFound}
           action={
             !q
-              ? { label: 'Register first patient / पहिला रुग्ण नोंदवा', href: '/patients/new' }
+              ? { label: t.patients.registerFirst, href: '/patients/new' }
               : undefined
           }
         />

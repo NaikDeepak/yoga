@@ -29,17 +29,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { getLocale } from '@/lib/i18n/server';
+import { getTranslations } from '@/lib/i18n/translations';
+import type { Translations } from '@/lib/i18n/en';
 
-const TABS = [
-  ['overview', 'Overview / माहिती'],
-  ['problems', 'Problems / आजार'],
-  ['documents', 'Documents / रिपोर्ट्स'],
-  ['treatment', 'Treatment & Visits / उपचार'],
-  ['progress', 'Progress / प्रगती'],
-  ['fees', 'Fees / शुल्क'],
-  ['assessment', 'Assessment / मूल्यांकन'],
-] as const;
-type Tab = (typeof TABS)[number][0];
+const VALID_TABS = ['overview', 'problems', 'documents', 'treatment', 'progress', 'fees', 'assessment'] as const;
+type Tab = typeof VALID_TABS[number];
 
 function painColor(scale: number) {
   if (scale <= 3) return 'bg-primary';
@@ -48,7 +43,7 @@ function painColor(scale: number) {
 }
 
 function isValidTab(value: unknown): value is Tab {
-  return typeof value === 'string' && TABS.some(([key]) => key === value);
+  return typeof value === 'string' && VALID_TABS.includes(value as Tab);
 }
 
 export default async function PatientPage({
@@ -58,6 +53,7 @@ export default async function PatientPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const t = getTranslations(await getLocale());
   const { id } = await params;
   const rawTab = (await searchParams).tab;
   const tab: Tab = isValidTab(rawTab) ? rawTab : 'overview';
@@ -67,6 +63,16 @@ export default async function PatientPage({
 
   const photoUrl = patient.photoPath ? await getStorage().createSignedUrl(patient.photoPath) : null;
   const patientFees = await getPatientFees(db, id);
+
+  const TABS: [Tab, string][] = [
+    ['overview', t.patientDetail.tabs.overview],
+    ['problems', t.patientDetail.tabs.problems],
+    ['documents', t.patientDetail.tabs.documents],
+    ['treatment', t.patientDetail.tabs.treatment],
+    ['progress', t.patientDetail.tabs.progress],
+    ['fees', t.patientDetail.tabs.fees],
+    ['assessment', t.patientDetail.tabs.assessment],
+  ];
 
   return (
     <div className="space-y-6">
@@ -93,13 +99,13 @@ export default async function PatientPage({
 
       {/* Tab content — keyed by tab so it remounts and fades in on every switch */}
       <div key={tab} className="animate-in fade-in duration-200">
-        {tab === 'overview' && <Overview patient={patient} />}
-        {tab === 'problems' && <Problems patientId={id} />}
-        {tab === 'documents' && <Documents patientId={id} />}
-        {tab === 'treatment' && <Treatment patientId={id} />}
-        {tab === 'progress' && <Progress patientId={id} />}
-        {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} />}
-        {tab === 'assessment' && <Assessment patientId={id} />}
+        {tab === 'overview' && <Overview patient={patient} t={t} />}
+        {tab === 'problems' && <Problems patientId={id} t={t} />}
+        {tab === 'documents' && <Documents patientId={id} t={t} />}
+        {tab === 'treatment' && <Treatment patientId={id} t={t} />}
+        {tab === 'progress' && <Progress patientId={id} t={t} />}
+        {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} t={t} />}
+        {tab === 'assessment' && <Assessment patientId={id} t={t} />}
       </div>
     </div>
   );
@@ -107,8 +113,10 @@ export default async function PatientPage({
 
 async function Overview({
   patient,
+  t,
 }: {
   patient: NonNullable<Awaited<ReturnType<typeof getPatient>>>;
+  t: Translations;
 }) {
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const assessment = await getLifestyleAssessmentSnapshot(getDb(), patient.id);
@@ -125,13 +133,13 @@ async function Overview({
     <div className="grid gap-4 sm:grid-cols-2">
       <Card className="rounded-2xl">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Personal / वैयक्तिक</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t.patientDetail.personal}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {[
-            ['Age / वय', patient.age],
-            ['Gender / लिंग', patient.gender],
-            ['Occupation / व्यवसाय', patient.occupation],
+            [t.patientDetail.age, patient.age],
+            [t.patientDetail.gender, patient.gender],
+            [t.patientDetail.occupation, patient.occupation],
           ].map(([k, v]) => (
             <div key={String(k)} className="flex justify-between border-b border-border pb-1.5">
               <span className="text-muted-foreground">{k}</span>
@@ -143,12 +151,12 @@ async function Overview({
 
       <Card className="rounded-2xl">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Body Metrics / शरीर</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t.patientDetail.bodyMetrics}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {[
-            ['Weight / वजन', patient.weightKg ? `${patient.weightKg} kg` : null],
-            ['Height / उंची', patient.heightCm ? `${patient.heightCm} cm` : null],
+            [t.patientDetail.weightKg, patient.weightKg ? `${patient.weightKg} kg` : null],
+            [t.patientDetail.heightCm, patient.heightCm ? `${patient.heightCm} cm` : null],
           ].map(([k, v]) => (
             <div key={String(k)} className="flex justify-between border-b border-border pb-1.5">
               <span className="text-muted-foreground">{k}</span>
@@ -167,14 +175,14 @@ async function Overview({
 
       <Card className="rounded-2xl sm:col-span-2">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Contact / संपर्क</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t.patientDetail.contact}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
           {[
-            ['Mobile / मोबाईल', patient.mobile],
-            ['Email / ईमेल', patient.email],
-            ['Emergency / आपत्कालीन', patient.emergencyContact],
-            ['Address / पत्ता', patient.address],
+            [t.patientDetail.mobile, patient.mobile],
+            [t.patientDetail.email, patient.email],
+            [t.patientDetail.emergency, patient.emergencyContact],
+            [t.patientDetail.address, patient.address],
           ].map(([k, v]) => (
             <div key={String(k)} className="flex justify-between gap-4 border-b border-border pb-1.5">
               <span className="text-muted-foreground">{k}</span>
@@ -186,27 +194,29 @@ async function Overview({
 
       <Card className="rounded-2xl sm:col-span-2">
         <CardHeader className="pb-2 flex flex-row items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">Assessment Snapshot / मूल्यांकन सारांश</CardTitle>
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t.patientDetail.assessmentSnapshot}</CardTitle>
           <Link href={`/patients/${patient.id}?tab=assessment`} className="text-xs text-primary hover:underline">
-            {assessment ? 'Edit →' : 'Fill in →'}
+            {assessment ? t.patientDetail.editSnapshot : t.patientDetail.fillSnapshot}
           </Link>
         </CardHeader>
         <CardContent className="text-sm">
           {!assessment ? (
-            <p className="text-muted-foreground">No assessment filled yet / मूल्यांकन नाही</p>
+            <p className="text-muted-foreground">{t.patientDetail.noAssessment}</p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {(() => {
                 const activityLabels: Record<string, string> = {
-                  sedentary: 'Sedentary / बैठी', light: 'Light / सौम्य', active: 'Active / सक्रिय',
+                  sedentary: t.assessment.sedentary,
+                  light: t.assessment.light,
+                  active: t.assessment.active,
                 };
                 const stressColor = assessment.stressLevel == null ? '' : assessment.stressLevel >= 8 ? 'text-destructive font-medium' : assessment.stressLevel >= 5 ? 'text-yellow-700 font-medium' : 'text-primary font-medium';
                 const sleepColor = assessment.sleepQuality == null ? '' : assessment.sleepQuality <= 3 ? 'text-destructive font-medium' : assessment.sleepQuality <= 6 ? 'text-yellow-700 font-medium' : 'text-primary font-medium';
                 return [
-                  { label: 'Stress / ताण', value: assessment.stressLevel != null ? `${assessment.stressLevel}/10` : null, cls: stressColor },
-                  { label: 'Sleep Quality / झोप', value: assessment.sleepQuality != null ? `${assessment.sleepQuality}/10` : null, cls: sleepColor },
-                  { label: 'Activity / सक्रियता', value: assessment.activityLevel ? (activityLabels[assessment.activityLevel] ?? assessment.activityLevel) : null, cls: '' },
-                  { label: 'Goal / उद्दिष्ट', value: assessment.primaryGoal, cls: '' },
+                  { label: t.patientDetail.stress, value: assessment.stressLevel != null ? `${assessment.stressLevel}/10` : null, cls: stressColor },
+                  { label: t.patientDetail.sleepQuality, value: assessment.sleepQuality != null ? `${assessment.sleepQuality}/10` : null, cls: sleepColor },
+                  { label: t.patientDetail.activity, value: assessment.activityLevel ? (activityLabels[assessment.activityLevel] ?? assessment.activityLevel) : null, cls: '' },
+                  { label: t.patientDetail.goal, value: assessment.primaryGoal, cls: '' },
                 ].map(({ label, value, cls }) => (
                   <div key={label} className="flex justify-between gap-4 border-b border-border pb-1.5">
                     <span className="text-muted-foreground shrink-0">{label}</span>
@@ -222,7 +232,7 @@ async function Overview({
                   <div className="sm:col-span-2 mt-1 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive text-xs font-medium">
                     <span className="shrink-0">⚠</span>
                     <span>
-                      Contraindications noted / धोके नोंदवले
+                      {t.patientDetail.contraindicationsNoted}
                       {details && ` — ${details}`}
                     </span>
                   </div>
@@ -236,14 +246,14 @@ async function Overview({
   );
 }
 
-async function Problems({ patientId }: { patientId: string }) {
+async function Problems({ patientId, t }: { patientId: string; t: Translations }) {
   const problems = await listProblems(getDb(), patientId);
   const add = addProblemAction.bind(null, patientId);
   return (
     <div className="max-w-xl space-y-4">
       <ul className="space-y-2">
         {problems.length === 0 && (
-          <li className="text-sm text-muted-foreground">No problems recorded / नोंद नाही</li>
+          <li className="text-sm text-muted-foreground">{t.problems.noProblems}</li>
         )}
         {problems.map((p) => (
           <li
@@ -257,7 +267,7 @@ async function Problems({ patientId }: { patientId: string }) {
             <DeleteButton
               action={removeProblemAction.bind(null, patientId, p.id)}
               confirmText={`Remove ${p.problem}?`}
-              label="Remove / काढा"
+              label={t.common.remove}
             />
           </li>
         ))}
@@ -267,24 +277,24 @@ async function Problems({ patientId }: { patientId: string }) {
         <CardContent className="pt-4">
           <InlineForm action={add} className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="problem-preset">Preset / आजार निवडा</Label>
+              <Label htmlFor="problem-preset">{t.problems.presetLabel}</Label>
               <select
                 id="problem-preset"
                 name="problem"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {PRESET_PROBLEMS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
+                {PRESET_PROBLEMS.map((prob) => (
+                  <option key={prob} value={prob}>
+                    {prob}
                   </option>
                 ))}
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="problem-note">Note / टीप</Label>
-              <Input id="problem-note" name="note" placeholder="Optional note" />
+              <Label htmlFor="problem-note">{t.problems.noteLabel}</Label>
+              <Input id="problem-note" name="note" placeholder={t.problems.notePlaceholder} />
             </div>
-            <Button type="submit" size="sm">Add / जोडा</Button>
+            <Button type="submit" size="sm">{t.problems.addBtn}</Button>
           </InlineForm>
         </CardContent>
       </Card>
@@ -294,14 +304,14 @@ async function Problems({ patientId }: { patientId: string }) {
           <InlineForm action={add} className="space-y-3">
             <input type="hidden" name="isCustom" value="true" />
             <div className="space-y-1.5">
-              <Label htmlFor="custom-problem">Other problem / इतर आजार</Label>
+              <Label htmlFor="custom-problem">{t.problems.otherProblem}</Label>
               <Input
                 id="custom-problem"
                 name="problem"
-                placeholder="Type custom problem / आजार लिहा"
+                placeholder={t.problems.customPlaceholder}
               />
             </div>
-            <Button type="submit" size="sm">Add custom / इतर जोडा</Button>
+            <Button type="submit" size="sm">{t.problems.addCustomBtn}</Button>
           </InlineForm>
         </CardContent>
       </Card>
@@ -309,7 +319,7 @@ async function Problems({ patientId }: { patientId: string }) {
   );
 }
 
-async function Documents({ patientId }: { patientId: string }) {
+async function Documents({ patientId, t }: { patientId: string; t: Translations }) {
   const docs = await listDocuments(getDb(), patientId);
   const storage = getStorage();
   const withUrls = await Promise.all(
@@ -324,19 +334,19 @@ async function Documents({ patientId }: { patientId: string }) {
             className="flex flex-wrap items-end gap-3"
           >
             <div className="space-y-1.5">
-              <Label htmlFor="doc-type">Type / प्रकार</Label>
+              <Label htmlFor="doc-type">{t.documents.typeLabel}</Label>
               <select
                 id="doc-type"
                 name="docType"
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                {DOC_TYPES.map((t) => (
-                  <option key={t}>{t}</option>
+                {DOC_TYPES.map((docType) => (
+                  <option key={docType}>{docType}</option>
                 ))}
               </select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="doc-file">File (PDF/JPG/PNG, max 10MB)</Label>
+              <Label htmlFor="doc-file">{t.documents.fileLabel}</Label>
               <Input
                 id="doc-file"
                 name="file"
@@ -344,7 +354,7 @@ async function Documents({ patientId }: { patientId: string }) {
                 accept="application/pdf,image/jpeg,image/png"
               />
             </div>
-            <Button type="submit" size="sm">Upload / अपलोड</Button>
+            <Button type="submit" size="sm">{t.documents.uploadBtn}</Button>
           </InlineForm>
         </CardContent>
       </Card>
@@ -352,7 +362,7 @@ async function Documents({ patientId }: { patientId: string }) {
       <Card className="rounded-2xl">
         <ul className="divide-y divide-border">
           {docs.length === 0 && (
-            <li className="p-4 text-sm text-muted-foreground">No documents / कागदपत्रे नाहीत</li>
+            <li className="p-4 text-sm text-muted-foreground">{t.documents.noDocs}</li>
           )}
           {withUrls.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-2 px-4 py-3">
@@ -382,7 +392,7 @@ async function Documents({ patientId }: { patientId: string }) {
   );
 }
 
-async function Treatment({ patientId }: { patientId: string }) {
+async function Treatment({ patientId, t }: { patientId: string; t: Translations }) {
   const db = getDb();
   const plan = await getTreatmentPlan(db, patientId);
   const visits = await listVisits(db, patientId);
@@ -395,7 +405,7 @@ async function Treatment({ patientId }: { patientId: string }) {
       <div className="space-y-4">
         <Card className="rounded-2xl">
           <CardHeader>
-            <CardTitle className="text-base">Add Visit / नवीन भेट</CardTitle>
+            <CardTitle className="text-base">{t.treatment.addVisit}</CardTitle>
           </CardHeader>
           <CardContent>
             <InlineForm
@@ -404,37 +414,37 @@ async function Treatment({ patientId }: { patientId: string }) {
             >
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="visitDate">Date / तारीख</Label>
+                  <Label htmlFor="visitDate">{t.treatment.visitDate}</Label>
                   <Input id="visitDate" name="visitDate" type="date" defaultValue={today} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="visitWeight">Weight (kg)</Label>
+                  <Label htmlFor="visitWeight">{t.treatment.visitWeight}</Label>
                   <Input id="visitWeight" name="weightKg" type="number" step="0.1" placeholder="—" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="visitPain">Pain (1–10)</Label>
+                  <Label htmlFor="visitPain">{t.treatment.visitPain}</Label>
                   <Input id="visitPain" name="painScale" type="number" min="1" max="10" placeholder="—" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="nextVisitDate">
-                  Next visit / पुढील भेट{' '}
-                  <span className="text-xs text-muted-foreground">(optional / ऐच्छिक)</span>
+                  {t.treatment.nextVisit}{' '}
+                  <span className="text-xs text-muted-foreground">({t.treatment.nextVisitOptional})</span>
                 </Label>
                 <Input id="nextVisitDate" name="nextVisitDate" type="date" min={today} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="progressNote">Progress note / प्रगती नोंद</Label>
+                <Label htmlFor="progressNote">{t.treatment.progressNote}</Label>
                 <Textarea id="progressNote" name="progressNote" rows={2} />
               </div>
-              <Button type="submit" size="sm">Add visit / भेट जोडा</Button>
+              <Button type="submit" size="sm">{t.treatment.addVisitBtn}</Button>
             </InlineForm>
           </CardContent>
         </Card>
 
         <ul className="space-y-2">
           {visits.length === 0 && (
-            <li className="text-sm text-muted-foreground">No visits yet / भेटी नाहीत</li>
+            <li className="text-sm text-muted-foreground">{t.treatment.noVisits}</li>
           )}
           {visits.map((v) => (
             <li key={v.id}>
@@ -467,7 +477,7 @@ async function Treatment({ patientId }: { patientId: string }) {
   );
 }
 
-async function Progress({ patientId }: { patientId: string }) {
+async function Progress({ patientId, t }: { patientId: string; t: Translations }) {
   const db = getDb();
   const rows = await listVisitsWithData(db, patientId);
 
@@ -497,7 +507,7 @@ async function Progress({ patientId }: { patientId: string }) {
       <Card className="rounded-2xl">
         <CardContent className="pt-6">
           <p className="text-sm text-muted-foreground">
-            Not enough data / पुरेशी माहिती नाही
+            {t.progress.notEnoughData}
           </p>
         </CardContent>
       </Card>
@@ -509,7 +519,7 @@ async function Progress({ patientId }: { patientId: string }) {
       <Card className="rounded-2xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Weight Trend / वजन (kg)
+            {t.progress.weightTrend}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -517,7 +527,7 @@ async function Progress({ patientId }: { patientId: string }) {
             <VisitLineChart data={weightData} color="var(--primary)" unit="kg" />
           ) : (
             <p className="text-sm text-muted-foreground">
-              Not enough data / पुरेशी माहिती नाही
+              {t.progress.notEnoughData}
             </p>
           )}
         </CardContent>
@@ -526,7 +536,7 @@ async function Progress({ patientId }: { patientId: string }) {
       <Card className="rounded-2xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Pain Trend / वेदना पातळी
+            {t.progress.painTrend}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -534,7 +544,7 @@ async function Progress({ patientId }: { patientId: string }) {
             <VisitLineChart data={painData} color="var(--destructive)" unit="" />
           ) : (
             <p className="text-sm text-muted-foreground">
-              Not enough data / पुरेशी माहिती नाही
+              {t.progress.notEnoughData}
             </p>
           )}
         </CardContent>
@@ -543,20 +553,20 @@ async function Progress({ patientId }: { patientId: string }) {
       <Card className="rounded-2xl">
         <CardContent className="grid grid-cols-2 gap-4 pt-6 text-sm sm:grid-cols-4">
           <div>
-            <p className="text-muted-foreground">First visit / पहिली भेट</p>
+            <p className="text-muted-foreground">{t.progress.firstVisit}</p>
             <p className="font-medium">{firstDate ?? '—'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Latest / शेवटची</p>
+            <p className="text-muted-foreground">{t.progress.latest}</p>
             <p className="font-medium">{latestDate ?? '—'}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Visits with data / माहिती</p>
+            <p className="text-muted-foreground">{t.progress.visitsWithData}</p>
             <p className="font-medium">{rows.length}</p>
           </div>
           {weightChange !== null && (
             <div>
-              <p className="text-muted-foreground">Weight change / बदल</p>
+              <p className="text-muted-foreground">{t.progress.weightChange}</p>
               <p className="font-medium text-foreground">
                 {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
               </p>
@@ -564,7 +574,7 @@ async function Progress({ patientId }: { patientId: string }) {
           )}
           {painChange !== null && (
             <div>
-              <p className="text-muted-foreground">Pain change / वेदना बदल</p>
+              <p className="text-muted-foreground">{t.progress.painChange}</p>
               <p className={`font-medium ${painChange <= 0 ? 'text-primary' : 'text-destructive'}`}>
                 {painChange < 0 ? '↓' : '↑'} {Math.abs(painChange)}
               </p>
@@ -576,7 +586,7 @@ async function Progress({ patientId }: { patientId: string }) {
   );
 }
 
-async function Assessment({ patientId }: { patientId: string }) {
+async function Assessment({ patientId, t }: { patientId: string; t: Translations }) {
   const existing = await getLifestyleAssessment(getDb(), patientId);
   const selectClass =
     'w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring';
@@ -590,11 +600,11 @@ async function Assessment({ patientId }: { patientId: string }) {
         {/* Section 1: Primary Concern */}
         <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Primary Concern / मुख्य तक्रार</CardTitle>
+            <CardTitle className="text-base">{t.assessment.primaryConcern}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="a-chiefComplaint">What brings you here / कशासाठी आलात</Label>
+              <Label htmlFor="a-chiefComplaint">{t.assessment.chiefComplaint}</Label>
               <Textarea
                 id="a-chiefComplaint"
                 name="chiefComplaint"
@@ -603,16 +613,16 @@ async function Assessment({ patientId }: { patientId: string }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="a-duration">Since when / केव्हापासून</Label>
+              <Label htmlFor="a-duration">{t.assessment.duration}</Label>
               <Input
                 id="a-duration"
                 name="duration"
-                placeholder="e.g. 2 months / २ महिने"
+                placeholder={t.assessment.durationPlaceholder}
                 defaultValue={existing?.duration ?? ''}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="a-aggravatingFactors">What makes it worse / काय त्रास वाढवते</Label>
+              <Label htmlFor="a-aggravatingFactors">{t.assessment.aggravatingFactors}</Label>
               <Textarea
                 id="a-aggravatingFactors"
                 name="aggravatingFactors"
@@ -621,7 +631,7 @@ async function Assessment({ patientId }: { patientId: string }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="a-relievingFactors">What makes it better / काय आराम देते</Label>
+              <Label htmlFor="a-relievingFactors">{t.assessment.relievingFactors}</Label>
               <Textarea
                 id="a-relievingFactors"
                 name="relievingFactors"
@@ -630,7 +640,7 @@ async function Assessment({ patientId }: { patientId: string }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="a-previousTreatment">Previous treatments tried / आधी कोणते उपचार केले</Label>
+              <Label htmlFor="a-previousTreatment">{t.assessment.previousTreatment}</Label>
               <Textarea
                 id="a-previousTreatment"
                 name="previousTreatment"
@@ -644,11 +654,11 @@ async function Assessment({ patientId }: { patientId: string }) {
         {/* Section 2: Medications & Restrictions */}
         <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Medications & Restrictions / औषधे</CardTitle>
+            <CardTitle className="text-base">{t.assessment.medicationsTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="a-currentMedications">Current medications / सध्याची औषधे</Label>
+              <Label htmlFor="a-currentMedications">{t.assessment.currentMedications}</Label>
               <Textarea
                 id="a-currentMedications"
                 name="currentMedications"
@@ -657,7 +667,7 @@ async function Assessment({ patientId }: { patientId: string }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="a-doctorDiagnosis">Doctor&apos;s diagnosis / डॉक्टरांचे निदान</Label>
+              <Label htmlFor="a-doctorDiagnosis">{t.assessment.doctorDiagnosis}</Label>
               <Textarea
                 id="a-doctorDiagnosis"
                 name="doctorDiagnosis"
@@ -667,7 +677,7 @@ async function Assessment({ patientId }: { patientId: string }) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="a-doctorRestrictions">
-                Doctor&apos;s restrictions / डॉक्टरांनी काय टाळायला सांगितले
+                {t.assessment.doctorRestrictions}
               </Label>
               <Textarea
                 id="a-doctorRestrictions"
@@ -682,12 +692,12 @@ async function Assessment({ patientId }: { patientId: string }) {
         {/* Section 3: Lifestyle */}
         <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Lifestyle / जीवनशैली</CardTitle>
+            <CardTitle className="text-base">{t.assessment.lifestyleTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="a-workType">Work type / कामाचा प्रकार</Label>
+                <Label htmlFor="a-workType">{t.assessment.workType}</Label>
                 <select
                   id="a-workType"
                   name="workType"
@@ -695,13 +705,13 @@ async function Assessment({ patientId }: { patientId: string }) {
                   className={selectClass}
                 >
                   <option value="">—</option>
-                  <option value="desk">Desk job / बैठे काम</option>
-                  <option value="standing">Standing / उभे राहणे</option>
-                  <option value="physical">Physical labour / शारीरिक श्रम</option>
+                  <option value="desk">{t.assessment.workDesk}</option>
+                  <option value="standing">{t.assessment.workStanding}</option>
+                  <option value="physical">{t.assessment.workPhysical}</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-dailySitting">Daily sitting / दररोज बसणे</Label>
+                <Label htmlFor="a-dailySitting">{t.assessment.dailySitting}</Label>
                 <select
                   id="a-dailySitting"
                   name="dailySitting"
@@ -716,7 +726,7 @@ async function Assessment({ patientId }: { patientId: string }) {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-activityLevel">Activity level / सक्रियता</Label>
+                <Label htmlFor="a-activityLevel">{t.assessment.activityLevel}</Label>
                 <select
                   id="a-activityLevel"
                   name="activityLevel"
@@ -724,13 +734,13 @@ async function Assessment({ patientId }: { patientId: string }) {
                   className={selectClass}
                 >
                   <option value="">—</option>
-                  <option value="sedentary">Sedentary / बैठी जीवनशैली</option>
-                  <option value="light">Light / सौम्य</option>
-                  <option value="active">Active / सक्रिय</option>
+                  <option value="sedentary">{t.assessment.sedentary}</option>
+                  <option value="light">{t.assessment.light}</option>
+                  <option value="active">{t.assessment.active}</option>
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-sleepHours">Sleep hours / झोपेचे तास</Label>
+                <Label htmlFor="a-sleepHours">{t.assessment.sleepHours}</Label>
                 <Input
                   id="a-sleepHours"
                   name="sleepHours"
@@ -739,7 +749,7 @@ async function Assessment({ patientId }: { patientId: string }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-sleepQuality">Sleep quality / झोपेचा दर्जा <span className="text-xs text-muted-foreground">(1 = poor, 10 = excellent)</span></Label>
+                <Label htmlFor="a-sleepQuality">{t.assessment.sleepQuality} <span className="text-xs text-muted-foreground">({t.assessment.sleepQualityHint})</span></Label>
                 <Input
                   id="a-sleepQuality"
                   name="sleepQuality"
@@ -751,7 +761,7 @@ async function Assessment({ patientId }: { patientId: string }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-stressLevel">Stress level / ताण पातळी <span className="text-xs text-muted-foreground">(1 = calm, 10 = very stressed)</span></Label>
+                <Label htmlFor="a-stressLevel">{t.assessment.stressLevel} <span className="text-xs text-muted-foreground">({t.assessment.stressLevelHint})</span></Label>
                 <Input
                   id="a-stressLevel"
                   name="stressLevel"
@@ -763,7 +773,7 @@ async function Assessment({ patientId }: { patientId: string }) {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="a-screenTime">Screen time / स्क्रीन वेळ</Label>
+                <Label htmlFor="a-screenTime">{t.assessment.screenTime}</Label>
                 <Input
                   id="a-screenTime"
                   name="screenTime"
@@ -778,20 +788,20 @@ async function Assessment({ patientId }: { patientId: string }) {
         {/* Section 4: Exercise History */}
         <Card className="rounded-2xl border-l-4 border-l-primary/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Exercise History / व्यायामाचा इतिहास</CardTitle>
+            <CardTitle className="text-base">{t.assessment.exerciseTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="a-previousExercise">Previous exercise / आधीचा व्यायाम</Label>
+              <Label htmlFor="a-previousExercise">{t.assessment.previousExercise}</Label>
               <Input
                 id="a-previousExercise"
                 name="previousExercise"
-                placeholder="e.g. yoga, walking / योग, चालणे"
+                placeholder={t.assessment.previousExercisePlaceholder}
                 defaultValue={existing?.previousExercise ?? ''}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="a-fitnessLevel">Fitness level / तंदुरुस्ती पातळी</Label>
+              <Label htmlFor="a-fitnessLevel">{t.assessment.fitnessLevel}</Label>
               <select
                 id="a-fitnessLevel"
                 name="fitnessLevel"
@@ -799,9 +809,9 @@ async function Assessment({ patientId }: { patientId: string }) {
                 className={selectClass}
               >
                 <option value="">—</option>
-                <option value="beginner">Beginner / नवीन</option>
-                <option value="intermediate">Intermediate / मध्यम</option>
-                <option value="active">Active / सक्रिय</option>
+                <option value="beginner">{t.assessment.fitnessBeginner}</option>
+                <option value="intermediate">{t.assessment.fitnessIntermediate}</option>
+                <option value="active">{t.assessment.fitnessActive}</option>
               </select>
             </div>
             <label className="flex items-center gap-2.5 text-sm cursor-pointer rounded-md border border-border px-3 py-2.5 hover:bg-muted/50">
@@ -812,7 +822,7 @@ async function Assessment({ patientId }: { patientId: string }) {
                 defaultChecked={existing?.fearOfMovement ?? false}
                 className="h-4 w-4 rounded border-input accent-primary"
               />
-              Afraid movement worsens pain? / हालचालीची भीती
+              {t.assessment.fearOfMovement}
             </label>
           </CardContent>
         </Card>
@@ -820,11 +830,11 @@ async function Assessment({ patientId }: { patientId: string }) {
         {/* Section 5: Goals & Safety */}
         <Card className="rounded-2xl border-l-4 border-l-destructive/40">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Goals & Safety / उद्दिष्टे आणि सुरक्षितता</CardTitle>
+            <CardTitle className="text-base">{t.assessment.goalsTitle}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="a-primaryGoal">Primary goal / मुख्य उद्दिष्ट</Label>
+              <Label htmlFor="a-primaryGoal">{t.assessment.primaryGoal}</Label>
               <Textarea
                 id="a-primaryGoal"
                 name="primaryGoal"
@@ -833,11 +843,11 @@ async function Assessment({ patientId }: { patientId: string }) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="a-activityStruggle">Activity currently struggling with / अडचणीचे काम</Label>
+              <Label htmlFor="a-activityStruggle">{t.assessment.activityStruggle}</Label>
               <Input
                 id="a-activityStruggle"
                 name="activityStruggle"
-                placeholder="e.g. climbing stairs / जिने चढणे"
+                placeholder={t.assessment.activityStrugglePlaceholder}
                 defaultValue={existing?.activityStruggle ?? ''}
               />
             </div>
@@ -849,10 +859,10 @@ async function Assessment({ patientId }: { patientId: string }) {
                 defaultChecked={existing?.hasContraindications ?? false}
                 className="h-4 w-4 rounded border-input accent-primary"
               />
-              Any contraindications? / काही धोके?
+              {t.assessment.hasContraindications}
             </label>
             <div className="space-y-1.5">
-              <Label htmlFor="a-contraindicationDetails">Contraindication details / तपशील</Label>
+              <Label htmlFor="a-contraindicationDetails">{t.assessment.contraindicationDetails}</Label>
               <Textarea
                 id="a-contraindicationDetails"
                 name="contraindicationDetails"
@@ -864,14 +874,14 @@ async function Assessment({ patientId }: { patientId: string }) {
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit">Save Assessment / सेव्ह करा</Button>
+          <Button type="submit">{t.assessment.saveBtn}</Button>
         </div>
       </InlineForm>
     </div>
   );
 }
 
-function Fees({ patientId, patientFees }: { patientId: string; patientFees: PatientFees }) {
+function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: PatientFees; t: Translations }) {
   const boundSetFee = setCourseFeeAction.bind(null, patientId, { ok: false, error: '' });
   const boundAddPayment = addPaymentAction.bind(null, patientId, { ok: false, error: '' });
 
@@ -884,13 +894,13 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
             <p className="text-2xl font-bold">
               {patientFees.courseFee !== null ? `₹${patientFees.courseFee.toLocaleString('en-IN')}` : '—'}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Course Fee / कोर्स शुल्क</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t.fees.courseFee}</p>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold text-primary">₹{patientFees.totalPaid.toLocaleString('en-IN')}</p>
-            <p className="mt-1 text-xs text-muted-foreground">Total Paid / भरलेले</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t.fees.totalPaid}</p>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
@@ -898,7 +908,7 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
             <p className={`text-2xl font-bold ${(patientFees.balance ?? 0) > 0 ? 'text-destructive' : 'text-primary'}`}>
               {patientFees.balance !== null ? `₹${patientFees.balance.toLocaleString('en-IN')}` : '—'}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">Balance Due / बाकी</p>
+            <p className="mt-1 text-xs text-muted-foreground">{t.fees.balanceDue}</p>
           </CardContent>
         </Card>
       </div>
@@ -906,13 +916,13 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
       {/* Set course fee */}
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-base">Course Fee / कोर्स शुल्क</CardTitle>
+          <CardTitle className="text-base">{t.fees.setCourseFee}</CardTitle>
         </CardHeader>
         <CardContent>
           <InlineForm action={boundSetFee}>
             <div className="flex items-end gap-3">
               <div className="flex-1 space-y-1">
-                <Label htmlFor="courseFee">Total Course Fee (₹) / एकूण शुल्क</Label>
+                <Label htmlFor="courseFee">{t.fees.totalCourseFee}</Label>
                 <Input
                   id="courseFee"
                   name="courseFee"
@@ -920,10 +930,10 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
                   step="0.01"
                   min="0"
                   defaultValue={patientFees.courseFee ?? ''}
-                  placeholder="e.g. 2000 / उदा. 2000"
+                  placeholder="e.g. 2000"
                 />
               </div>
-              <Button type="submit" size="sm">Set / सेट करा</Button>
+              <Button type="submit" size="sm">{t.fees.setBtn}</Button>
             </div>
           </InlineForm>
         </CardContent>
@@ -932,25 +942,25 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
       {/* Add payment */}
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-base">Record Payment / पेमेंट नोंदवा</CardTitle>
+          <CardTitle className="text-base">{t.fees.recordPayment}</CardTitle>
         </CardHeader>
         <CardContent>
           <InlineForm action={boundAddPayment}>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="space-y-1">
-                <Label htmlFor="amount">Amount (₹) / रक्कम</Label>
+                <Label htmlFor="amount">{t.fees.amount}</Label>
                 <Input id="amount" name="amount" type="number" step="0.01" min="0.01" placeholder="—" />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="paymentDate">Date / तारीख</Label>
+                <Label htmlFor="paymentDate">{t.fees.paymentDate}</Label>
                 <Input id="paymentDate" name="paymentDate" type="date" />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="description">Note / टीप</Label>
-                <Input id="description" name="description" placeholder="e.g. First instalment / उदा. पहिला हप्ता" />
+                <Label htmlFor="description">{t.fees.note}</Label>
+                <Input id="description" name="description" placeholder={t.fees.notePlaceholder} />
               </div>
             </div>
-            <Button type="submit" size="sm" className="mt-3">Add / जोडा</Button>
+            <Button type="submit" size="sm" className="mt-3">{t.fees.addBtn}</Button>
           </InlineForm>
         </CardContent>
       </Card>
@@ -958,11 +968,11 @@ function Fees({ patientId, patientFees }: { patientId: string; patientFees: Pati
       {/* Payment history */}
       <Card className="rounded-2xl">
         <CardHeader>
-          <CardTitle className="text-base">Payment History / देयके इतिहास</CardTitle>
+          <CardTitle className="text-base">{t.fees.paymentHistory}</CardTitle>
         </CardHeader>
         <CardContent>
           {patientFees.payments.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No payments recorded / पेमेंट नोंद नाही</p>
+            <p className="text-sm text-muted-foreground">{t.fees.noPayments}</p>
           ) : (
             <ul className="space-y-2">
               {patientFees.payments.map((p) => (

@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
 import { ArrowUpRight, Plus, UploadCloud } from 'lucide-react';
+import { getLocale } from '@/lib/i18n/server';
+import { getTranslations, type Translations } from '@/lib/i18n/translations';
 
 const MONTHLY_TARGET = 100;
 
@@ -22,14 +24,14 @@ type AgendaRow =
   | { kind: 'header'; label: string }
   | { kind: 'item'; followUp: FollowUp };
 
-function groupFollowUps(followUps: FollowUp[]): AgendaRow[] {
+function groupFollowUps(followUps: FollowUp[], t: Translations): AgendaRow[] {
   const today = getISTDateString(0);
   const tomorrow = getISTDateString(1);
   const rows: AgendaRow[] = [];
   let lastDate: string | null = null;
   for (const f of followUps) {
     if (f.nextVisitDate !== lastDate) {
-      rows.push({ kind: 'header', label: dateHeaderLabel(f.nextVisitDate, today, tomorrow) });
+      rows.push({ kind: 'header', label: dateHeaderLabel(f.nextVisitDate, today, tomorrow, t) });
       lastDate = f.nextVisitDate;
     }
     rows.push({ kind: 'item', followUp: f });
@@ -37,18 +39,13 @@ function groupFollowUps(followUps: FollowUp[]): AgendaRow[] {
   return rows;
 }
 
-const WEEKDAYS: [string, string][] = [
-  ['Sun', 'रवि'], ['Mon', 'सोम'], ['Tue', 'मंगळ'], ['Wed', 'बुध'],
-  ['Thu', 'गुरु'], ['Fri', 'शुक्र'], ['Sat', 'शनि'],
-];
-
-function dateHeaderLabel(date: string, today: string, tomorrow: string): string {
-  if (date === today) return 'Today / आज';
-  if (date === tomorrow) return 'Tomorrow / उद्या';
+function dateHeaderLabel(date: string, today: string, tomorrow: string, t: Translations): string {
+  if (date === today) return t.dashboard.today;
+  if (date === tomorrow) return t.dashboard.tomorrow;
   const [year, month, day] = date.split('-').map(Number);
-  const [enWeekday, mrWeekday] = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  const weekday = t.dashboard.weekdays[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
   const dateStr = formatDueDate(date);
-  return `${enWeekday}, ${dateStr} / ${mrWeekday}, ${dateStr}`;
+  return `${weekday}, ${dateStr}`;
 }
 
 export default async function DashboardPage({
@@ -58,6 +55,7 @@ export default async function DashboardPage({
 }) {
   const { branch: branchParam } = await searchParams;
   const branch = parseBranch(branchParam);
+  const t = getTranslations(await getLocale());
 
   const db = getDb();
   const [stats, ailments, recentVisits, followUps, pendingAssessments] = await Promise.all([
@@ -87,9 +85,9 @@ export default async function DashboardPage({
       {/* Header Row */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t.dashboard.title}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your clinic, patients, and tasks with ease.
+            {t.dashboard.subtitle}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -97,13 +95,13 @@ export default async function DashboardPage({
           <Button variant="outline" className="rounded-full gap-2 px-5 h-10 border-border" asChild>
             <Link href="#">
               <UploadCloud className="h-4 w-4" />
-              Import Data
+              {t.dashboard.importData}
             </Link>
           </Button>
           <Button className="rounded-full gap-2 px-5 h-10 shadow-md" asChild>
             <Link href="/patients/new">
               <Plus className="h-4 w-4" />
-              Add Patient
+              {t.dashboard.addPatient}
             </Link>
           </Button>
         </div>
@@ -115,7 +113,7 @@ export default async function DashboardPage({
         <Card className="rounded-2xl border-none bg-gradient-to-br from-primary/90 to-primary text-primary-foreground shadow-md relative overflow-hidden">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-primary-foreground/90">Total Patients</CardTitle>
+              <CardTitle className="text-sm font-medium text-primary-foreground/90">{t.dashboard.totalPatients}</CardTitle>
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </div>
@@ -125,7 +123,7 @@ export default async function DashboardPage({
             <p className="text-4xl font-bold tracking-tight">{stats.totalPatients}</p>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-primary-foreground/80 font-medium bg-black/10 w-fit px-2 py-1 rounded-md">
               <ArrowUpRight className="h-3 w-3" />
-              <span>Increased from last month</span>
+              <span>{t.dashboard.increasedLastMonth}</span>
             </div>
           </CardContent>
           {/* Decorative shapes */}
@@ -135,18 +133,18 @@ export default async function DashboardPage({
 
         {/* Regular Stat Cards */}
         <StatCard
-          title="Visits This Month"
+          title={t.dashboard.visitsThisMonth}
           value={String(stats.visitsThisMonth)}
-          trend="Increased from last month"
+          trend={t.dashboard.increasedLastMonth}
           icon={<ArrowUpRight className="h-3.5 w-3.5" />}
         />
-        
+
         <RevenueStatCard value={stats.revenueThisMonth} />
 
         <StatCard
-          title="Most Common Ailment"
+          title={t.dashboard.mostCommonAilment}
           value={stats.mostCommonProblem ?? '—'}
-          trend="High frequency"
+          trend={t.dashboard.highFrequency}
         />
       </div>
 
@@ -154,7 +152,7 @@ export default async function DashboardPage({
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr_1fr]">
         <Card className="rounded-2xl shadow-sm border-border overflow-hidden flex flex-col">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Weekly Patient Visits</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t.dashboard.weeklyVisits}</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-2">
             <div className="h-[250px] w-full mt-4">
@@ -165,15 +163,15 @@ export default async function DashboardPage({
 
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Reminders</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t.dashboard.reminders}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="rounded-xl bg-accent/40 p-4 border border-border/50">
-              <h4 className="font-semibold text-sm mb-1 text-foreground">Follow-ups This Week</h4>
-              <p className="text-xs text-muted-foreground mb-4">Send reminders to patients</p>
+              <h4 className="font-semibold text-sm mb-1 text-foreground">{t.dashboard.followUpsThisWeek}</h4>
+              <p className="text-xs text-muted-foreground mb-4">{t.dashboard.sendReminders}</p>
               {followUps.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">No follow-ups / या आठवड्यात कोणी नाही</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.noFollowUps}</p>
                 </div>
               ) : (
                 <ul className="space-y-4">
@@ -188,13 +186,13 @@ export default async function DashboardPage({
                             {f.fullName}
                           </Link>
                           <span className="text-xs text-muted-foreground truncate">
-                            Due: {formatDueDate(f.nextVisitDate)}
+                            {t.dashboard.due}: {formatDueDate(f.nextVisitDate)}
                           </span>
                         </div>
                       </div>
                       <Button asChild size="sm" className="rounded-full h-8 shrink-0 shadow-sm" variant="default">
                         <a href={whatsappUrl(f.mobile, f.fullName, f.nextVisitDate)} target="_blank" rel="noopener noreferrer">
-                          Send Msg
+                          {t.dashboard.sendMsg}
                         </a>
                       </Button>
                     </li>
@@ -203,7 +201,7 @@ export default async function DashboardPage({
               )}
               {followUps.length > 3 && (
                 <Button variant="link" size="sm" className="mt-2 w-full text-xs text-primary" asChild>
-                  <Link href="/patients">View all {followUps.length} follow-ups</Link>
+                  <Link href="/patients">{t.dashboard.viewAll.replace('{count}', String(followUps.length))}</Link>
                 </Button>
               )}
             </div>
@@ -213,14 +211,14 @@ export default async function DashboardPage({
         {/* Week's Schedule — full follow-up list grouped by day */}
         <Card className="rounded-2xl shadow-sm border-border flex flex-col">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">Week&apos;s Schedule</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t.dashboard.weeksSchedule}</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto max-h-[340px] pr-1">
             {followUps.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No visits this week</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noVisitsThisWeek}</p>
             ) : (
               <ul className="space-y-1">
-                {groupFollowUps(followUps).map((row, i) =>
+                {groupFollowUps(followUps, t).map((row, i) =>
                   row.kind === 'header' ? (
                     <li key={`h-${i}`} className="pt-3 first:pt-0 pb-1">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{row.label}</span>
@@ -248,11 +246,11 @@ export default async function DashboardPage({
         {/* Pending Assessments */}
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Pending Assessments</CardTitle>
+            <CardTitle className="text-base font-semibold">{t.dashboard.pendingAssessments}</CardTitle>
           </CardHeader>
           <CardContent>
             {pendingAssessments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">All assessments complete / सर्व पूर्ण</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.allAssessmentsComplete}</p>
             ) : (
               <ul className="space-y-4 mt-2">
                 {pendingAssessments.map((p) => (
@@ -265,7 +263,7 @@ export default async function DashboardPage({
                         {p.fullName}
                       </Link>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                        {pendingReason(p.missingLifestyle, p.missingTreatment)}
+                        {pendingReason(p.missingLifestyle, p.missingTreatment, t)}
                       </span>
                     </div>
                     <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none shrink-0">Pending</Badge>
@@ -433,10 +431,10 @@ function initials(fullName: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function pendingReason(missingLifestyle: boolean, missingTreatment: boolean): string {
-  if (missingLifestyle && missingTreatment) return 'Lifestyle & treatment missing';
-  if (missingLifestyle) return 'Lifestyle missing';
-  return 'Treatment plan missing';
+function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: Translations): string {
+  if (missingLifestyle && missingTreatment) return t.dashboard.pendingReason.both;
+  if (missingLifestyle) return t.dashboard.pendingReason.lifestyle;
+  return t.dashboard.pendingReason.treatment;
 }
 
 function whatsappUrl(mobile: string, fullName: string, nextVisitDate: string): string {
