@@ -89,20 +89,20 @@ export function TreatmentPlanForm({
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Replace current plan? / योजना बदलायची?</AlertDialogTitle>
+            <AlertDialogTitle>{t.treatmentPlan.replaceTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace your current plan with an AI draft. Unsaved edits will be lost. Continue? / यामुळे तुमची सध्याची योजना AI मसुद्याने बदलली जाईल. न जतन केलेले बदल मिटवले जातील. पुढे जायचे?
+              {t.treatmentPlan.replaceDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel / रद्द करा</AlertDialogCancel>
+            <AlertDialogCancel>{t.treatmentPlan.cancelBtn}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setShowConfirm(false);
                 void doGenerate();
               }}
             >
-              Continue / पुढे जा
+              {t.treatmentPlan.continueBtn}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -121,12 +121,12 @@ export function TreatmentPlanForm({
             {generating ? (
               <>
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Generating… / तयार होत आहे
+                {t.treatmentPlan.generatingBtn}
               </>
             ) : (
               <>
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                Generate with AI / AI ने तयार करा
+                {t.treatmentPlan.generateBtn}
               </>
             )}
           </Button>
@@ -134,7 +134,7 @@ export function TreatmentPlanForm({
         <CardContent>
           {genError && (
             <p className="mb-3 text-sm text-destructive font-medium">
-              AI generation failed: {genError} — please try again / पुन्हा प्रयत्न करा
+              {t.treatmentPlan.aiError}: {genError} — {t.treatmentPlan.tryAgain}
             </p>
           )}
           <InlineForm

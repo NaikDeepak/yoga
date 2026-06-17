@@ -97,7 +97,7 @@ export function StopwatchWidget() {
   const chipLabel =
     mode === 'session' && sessionStatus === 'running' ? `● ${elapsed}s`
     : mode === 'pulse' && pulseStep === 'countdown' ? `♡ ${countdown}`
-    : '⏱ Timer';
+    : `⏱ ${t.stopwatch.title}`;
 
   // --- Collapsed state ---
   if (!expanded) {
@@ -119,7 +119,7 @@ export function StopwatchWidget() {
     <div className="fixed bottom-6 right-6 z-50 w-72 rounded-2xl border border-border bg-card shadow-xl">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <span className="text-sm font-semibold">Timer</span>
+        <span className="text-sm font-semibold">{t.stopwatch.title}</span>
         <div className="flex items-center gap-2">
           {/* Mode toggle */}
           <div className="flex overflow-hidden rounded-lg border border-border text-xs">
