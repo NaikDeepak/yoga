@@ -105,12 +105,7 @@ export default async function DashboardPage({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <BranchFilter />
-          <Button variant="outline" className="rounded-full gap-2 px-5 h-10 border-border" asChild>
-            <Link href="#">
-              <UploadCloud className="h-4 w-4" />
-              {t.dashboard.importData}
-            </Link>
-          </Button>
+
           <Button className="rounded-full gap-2 px-5 h-10 shadow-md" asChild>
             <Link href="/patients/new">
               <Plus className="h-4 w-4" />
@@ -327,7 +322,7 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Recent Activity Full Width */}
       <Card className="rounded-2xl shadow-sm border-border">
         <CardHeader>
