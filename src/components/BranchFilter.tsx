@@ -3,6 +3,7 @@
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { BRANCHES } from '@/lib/presets';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTranslations } from '@/lib/i18n/context';
 
 const ALL = '__all__';
 
@@ -11,6 +12,7 @@ export function BranchFilter() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const current = searchParams.get('branch') ?? ALL;
+  const t = useTranslations();
 
   function handleChange(value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -26,10 +28,10 @@ export function BranchFilter() {
   return (
     <Select value={current} onValueChange={handleChange}>
       <SelectTrigger className="w-[280px]">
-        <SelectValue placeholder="All branches / सर्व शाखा" />
+        <SelectValue placeholder={t.branchFilter.allBranches} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={ALL}>All branches / सर्व शाखा</SelectItem>
+        <SelectItem value={ALL}>{t.branchFilter.allBranches}</SelectItem>
         {BRANCHES.map((b) => (
           <SelectItem key={b.key} value={b.key}>{b.label}</SelectItem>
         ))}

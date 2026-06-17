@@ -5,11 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getLocale } from '@/lib/i18n/server';
+import { getTranslations } from '@/lib/i18n/translations';
 
 export default async function LoginPage({
   searchParams,
 }: { searchParams: Promise<{ error?: string; registered?: string }> }) {
   const { error, registered } = await searchParams;
+  const t = getTranslations(await getLocale());
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
@@ -17,35 +20,35 @@ export default async function LoginPage({
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Leaf className="h-6 w-6 text-primary" aria-hidden="true" />
           </div>
-          <CardTitle>Pawar&apos;s Yog Therapy</CardTitle>
-          <CardDescription>Admin Login / प्रवेश</CardDescription>
+          <CardTitle>{t.auth.loginTitle}</CardTitle>
+          <CardDescription>{t.auth.loginSubtitle}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              Wrong email or password / चुकीचा ईमेल किंवा पासवर्ड
+              {t.auth.wrongCredentials}
             </p>
           )}
           {registered === '1' && (
             <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
-              Account registered! Please sign in. / खाते नोंदणीकृत झाले!
+              {t.auth.accountRegistered}
             </p>
           )}
           <form action={signInAction} className="space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="email">Email / ईमेल</Label>
+              <Label htmlFor="email">{t.auth.email}</Label>
               <Input id="email" name="email" type="email" required autoComplete="email" />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="password">Password / पासवर्ड</Label>
+              <Label htmlFor="password">{t.auth.password}</Label>
               <Input id="password" name="password" type="password" required autoComplete="current-password" />
             </div>
-            <Button type="submit" className="w-full">Sign in / लॉगिन</Button>
+            <Button type="submit" className="w-full">{t.auth.loginBtn}</Button>
           </form>
           <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
+            {t.auth.noAccount}{' '}
             <Link href="/register" className="font-medium text-primary hover:underline">
-              Register / नोंदणी करा
+              {t.auth.registerLink}
             </Link>
           </p>
         </CardContent>

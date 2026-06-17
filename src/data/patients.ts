@@ -1,4 +1,4 @@
-import { count, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { patients, type Patient } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { nextPatientCode } from '@/lib/patient-code';
@@ -32,7 +32,12 @@ export async function setPhotoPath(db: Db, id: string, photoPath: string): Promi
   await db.update(patients).set({ photoPath }).where(eq(patients.id, id));
 }
 
-export async function searchPatients(db: Db, q?: string, limit?: number): Promise<Patient[]> {
+export async function searchPatients(
+  db: Db,
+  q?: string,
+  limit?: number,
+  offset?: number,
+): Promise<Patient[]> {
   const query = q?.trim();
   const where = query
     ? or(
@@ -42,13 +47,24 @@ export async function searchPatients(db: Db, q?: string, limit?: number): Promis
       )
     : undefined;
   const base = db.select().from(patients).where(where).orderBy(desc(patients.createdAt));
-  return limit !== undefined ? base.limit(limit) : base;
+  if (limit !== undefined) {
+    return offset !== undefined ? base.limit(limit).offset(offset) : base.limit(limit);
+  }
+  return base;
 }
 
-export async function countPatients(db: Db, branch?: string): Promise<number> {
-  const [{ value }] = await db
-    .select({ value: count() })
-    .from(patients)
-    .where(branch ? eq(patients.branch, branch) : undefined);
+export async function countPatients(db: Db, branch?: string, q?: string): Promise<number> {
+  const query = q?.trim();
+  const qWhere = query
+    ? or(
+        ilike(patients.fullName, `%${query}%`),
+        ilike(patients.mobile, `%${query}%`),
+        ilike(patients.patientCode, `%${query}%`),
+      )
+    : undefined;
+  const branchWhere = branch ? eq(patients.branch, branch) : undefined;
+  const where =
+    qWhere && branchWhere ? and(qWhere, branchWhere) : (qWhere ?? branchWhere);
+  const [{ value }] = await db.select({ value: count() }).from(patients).where(where);
   return value;
 }

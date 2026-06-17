@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Cell, Tooltip } from 'recharts';
 
 interface WeeklyVisitsChartProps {
@@ -7,6 +8,12 @@ interface WeeklyVisitsChartProps {
 }
 
 export function WeeklyVisitsChart({ data }: WeeklyVisitsChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const maxCount = Math.max(...data.map(d => d.count));
   // Ensure the chart has a reasonable scale even if all upcoming days are empty
   const yDomainMax = Math.max(5, maxCount * 1.1);
@@ -32,8 +39,12 @@ export function WeeklyVisitsChart({ data }: WeeklyVisitsChartProps) {
     };
   });
 
+  if (!mounted) {
+    return <div className="h-[250px] w-full" />;
+  }
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height={250}>
       <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }} barSize={32}>
         <defs>
           <pattern id="diagonal-stripe" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">

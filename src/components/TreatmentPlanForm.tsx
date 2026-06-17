@@ -20,16 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { TreatmentPlan } from '@/db/schema';
 import type { TreatmentDraftFields } from '@/lib/gemini';
-
-const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
-  ['yogaProgram', 'Yoga Program / योग कार्यक्रम'],
-  ['pranayam', 'Pranayam / प्राणायाम'],
-  ['massage', 'Massage / मसाज'],
-  ['yogaTherapy', 'Yoga Therapy / योग थेरपी'],
-  ['dietPlan', 'Diet Plan / आहार योजना'],
-  ['medicines', 'Medicines / औषधे'],
-  ['panchkarma', 'Panchkarma / पंचकर्म'],
-];
+import { useTranslations } from '@/lib/i18n/context';
 
 export function TreatmentPlanForm({
   patientId,
@@ -38,6 +29,18 @@ export function TreatmentPlanForm({
   patientId: string;
   initialPlan: TreatmentPlan | undefined;
 }) {
+  const t = useTranslations();
+
+  const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
+    ['yogaProgram', t.treatmentPlan.yoga],
+    ['pranayam', t.treatmentPlan.pranayam],
+    ['massage', t.treatmentPlan.massage],
+    ['yogaTherapy', t.treatmentPlan.yogaTherapy],
+    ['dietPlan', t.treatmentPlan.diet],
+    ['medicines', t.treatmentPlan.medicines],
+    ['panchkarma', t.treatmentPlan.panchkarma],
+  ];
+
   const [fields, setFields] = useState<TreatmentDraftFields>({
     yogaProgram: initialPlan?.yogaProgram ?? '',
     pranayam: initialPlan?.pranayam ?? '',
@@ -86,28 +89,28 @@ export function TreatmentPlanForm({
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Replace current plan? / योजना बदलायची?</AlertDialogTitle>
+            <AlertDialogTitle>{t.treatmentPlan.replaceTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace your current plan with an AI draft. Unsaved edits will be lost. Continue? / यामुळे तुमची सध्याची योजना AI मसुद्याने बदलली जाईल. न जतन केलेले बदल मिटवले जातील. पुढे जायचे?
+              {t.treatmentPlan.replaceDesc}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel / रद्द करा</AlertDialogCancel>
+            <AlertDialogCancel>{t.treatmentPlan.cancelBtn}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 setShowConfirm(false);
                 void doGenerate();
               }}
             >
-              Continue / पुढे जा
+              {t.treatmentPlan.continueBtn}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base">Treatment Plan / उपचार योजना</CardTitle>
+          <CardTitle className="text-base">{t.treatmentPlan.title}</CardTitle>
           <Button
             type="button"
             variant="outline"
@@ -118,12 +121,12 @@ export function TreatmentPlanForm({
             {generating ? (
               <>
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Generating… / तयार होत आहे
+                {t.treatmentPlan.generatingBtn}
               </>
             ) : (
               <>
                 <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                Generate with AI / AI ने तयार करा
+                {t.treatmentPlan.generateBtn}
               </>
             )}
           </Button>
@@ -131,7 +134,7 @@ export function TreatmentPlanForm({
         <CardContent>
           {genError && (
             <p className="mb-3 text-sm text-destructive font-medium">
-              AI generation failed: {genError} — please try again / पुन्हा प्रयत्न करा
+              {t.treatmentPlan.aiError}: {genError} — {t.treatmentPlan.tryAgain}
             </p>
           )}
           <InlineForm
@@ -152,7 +155,7 @@ export function TreatmentPlanForm({
               </div>
             ))}
             <Button type="submit" size="sm" disabled={generating}>
-              Save plan / योजना जतन करा
+              {t.treatmentPlan.saveBtn}
             </Button>
           </InlineForm>
         </CardContent>

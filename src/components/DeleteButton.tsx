@@ -13,16 +13,19 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { useTranslations } from '@/lib/i18n/context';
 
 export function DeleteButton({
   action,
   confirmText,
-  label = 'Delete / काढा',
+  label,
 }: {
   action: () => Promise<{ ok: boolean; error?: string }>;
   confirmText: string;
   label?: string;
 }) {
+  const t = useTranslations();
+  const displayLabel = label ?? t.deleteButton.deleteBtn;
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -45,22 +48,22 @@ export function DeleteButton({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-          {label}
+          {displayLabel}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirm / पुष्टी करा</AlertDialogTitle>
+          <AlertDialogTitle>{t.deleteButton.confirmDelete}</AlertDialogTitle>
           <AlertDialogDescription>{confirmText}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel / रद्द करा</AlertDialogCancel>
+          <AlertDialogCancel>{t.deleteButton.cancelBtn}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={pending}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {pending ? 'Deleting…' : 'Delete / काढा'}
+            {pending ? t.deleteButton.deleting : t.deleteButton.deleteBtn}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -11,6 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
 import { ArrowUpRight, Plus, UploadCloud } from 'lucide-react';
+import { cookies } from 'next/headers';
+import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
+import { getUserLanguage } from '@/data/preferences';
+import { requireUser } from '@/lib/auth';
 
 const MONTHLY_TARGET = 100;
 
@@ -22,14 +26,14 @@ type AgendaRow =
   | { kind: 'header'; label: string }
   | { kind: 'item'; followUp: FollowUp };
 
-function groupFollowUps(followUps: FollowUp[]): AgendaRow[] {
+function groupFollowUps(followUps: FollowUp[], t: Translations): AgendaRow[] {
   const today = getISTDateString(0);
   const tomorrow = getISTDateString(1);
   const rows: AgendaRow[] = [];
   let lastDate: string | null = null;
   for (const f of followUps) {
     if (f.nextVisitDate !== lastDate) {
-      rows.push({ kind: 'header', label: dateHeaderLabel(f.nextVisitDate, today, tomorrow) });
+      rows.push({ kind: 'header', label: dateHeaderLabel(f.nextVisitDate, today, tomorrow, t) });
       lastDate = f.nextVisitDate;
     }
     rows.push({ kind: 'item', followUp: f });
@@ -37,18 +41,13 @@ function groupFollowUps(followUps: FollowUp[]): AgendaRow[] {
   return rows;
 }
 
-const WEEKDAYS: [string, string][] = [
-  ['Sun', 'रवि'], ['Mon', 'सोम'], ['Tue', 'मंगळ'], ['Wed', 'बुध'],
-  ['Thu', 'गुरु'], ['Fri', 'शुक्र'], ['Sat', 'शनि'],
-];
-
-function dateHeaderLabel(date: string, today: string, tomorrow: string): string {
-  if (date === today) return 'Today / आज';
-  if (date === tomorrow) return 'Tomorrow / उद्या';
+function dateHeaderLabel(date: string, today: string, tomorrow: string, t: Translations): string {
+  if (date === today) return t.dashboard.today;
+  if (date === tomorrow) return t.dashboard.tomorrow;
   const [year, month, day] = date.split('-').map(Number);
-  const [enWeekday, mrWeekday] = WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  const weekday = t.dashboard.weekdays[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
   const dateStr = formatDueDate(date);
-  return `${enWeekday}, ${dateStr} / ${mrWeekday}, ${dateStr}`;
+  return `${weekday}, ${dateStr}`;
 }
 
 export default async function DashboardPage({
@@ -58,15 +57,27 @@ export default async function DashboardPage({
 }) {
   const { branch: branchParam } = await searchParams;
   const branch = parseBranch(branchParam);
-
   const db = getDb();
-  const [stats, ailments, recentVisits, followUps, pendingAssessments] = await Promise.all([
+  const user = await requireUser();
+  const cookieStore = await cookies();
+  const langCookie = cookieStore.get('lang')?.value;
+  const locale: Locale = (LOCALES as readonly string[]).includes(langCookie ?? '')
+    ? (langCookie as Locale)
+    : await getUserLanguage(db, user.id);
+  const t = getTranslations(locale);
+
+  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
     getRecentVisits(db, 5, branch),
     getFollowUpsThisWeek(db, branch),
     getPendingAssessments(db, 5, branch),
   ]);
+
+  const followUps = rawFollowUps.map(f => ({
+    ...f,
+    nextVisitDate: typeof f.nextVisitDate === 'string' ? f.nextVisitDate.substring(0, 10) : ''
+  })).filter(f => f.nextVisitDate !== '');
 
   // Generate upcoming visits for the next 8 days (today..+7) based on followUps
   // (next_visit_date) — this window must match getFollowUpsThisWeek's window so the
@@ -87,23 +98,18 @@ export default async function DashboardPage({
       {/* Header Row */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t.dashboard.title}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage your clinic, patients, and tasks with ease.
+            {t.dashboard.subtitle}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <BranchFilter />
-          <Button variant="outline" className="rounded-full gap-2 px-5 h-10 border-border" asChild>
-            <Link href="#">
-              <UploadCloud className="h-4 w-4" />
-              Import Data
-            </Link>
-          </Button>
+
           <Button className="rounded-full gap-2 px-5 h-10 shadow-md" asChild>
             <Link href="/patients/new">
               <Plus className="h-4 w-4" />
-              Add Patient
+              {t.dashboard.addPatient}
             </Link>
           </Button>
         </div>
@@ -115,7 +121,7 @@ export default async function DashboardPage({
         <Card className="rounded-2xl border-none bg-gradient-to-br from-primary/90 to-primary text-primary-foreground shadow-md relative overflow-hidden">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-primary-foreground/90">Total Patients</CardTitle>
+              <CardTitle className="text-sm font-medium text-primary-foreground/90">{t.dashboard.totalPatients}</CardTitle>
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </div>
@@ -125,7 +131,7 @@ export default async function DashboardPage({
             <p className="text-4xl font-bold tracking-tight">{stats.totalPatients}</p>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-primary-foreground/80 font-medium bg-black/10 w-fit px-2 py-1 rounded-md">
               <ArrowUpRight className="h-3 w-3" />
-              <span>Increased from last month</span>
+              <span>{t.dashboard.increasedLastMonth}</span>
             </div>
           </CardContent>
           {/* Decorative shapes */}
@@ -135,18 +141,18 @@ export default async function DashboardPage({
 
         {/* Regular Stat Cards */}
         <StatCard
-          title="Visits This Month"
+          title={t.dashboard.visitsThisMonth}
           value={String(stats.visitsThisMonth)}
-          trend="Increased from last month"
+          trend={t.dashboard.increasedLastMonth}
           icon={<ArrowUpRight className="h-3.5 w-3.5" />}
         />
-        
+
         <RevenueStatCard value={stats.revenueThisMonth} />
 
         <StatCard
-          title="Most Common Ailment"
+          title={t.dashboard.mostCommonAilment}
           value={stats.mostCommonProblem ?? '—'}
-          trend="High frequency"
+          trend={t.dashboard.highFrequency}
         />
       </div>
 
@@ -154,7 +160,7 @@ export default async function DashboardPage({
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr_1fr]">
         <Card className="rounded-2xl shadow-sm border-border overflow-hidden flex flex-col">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Weekly Patient Visits</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t.dashboard.weeklyVisits}</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-2">
             <div className="h-[250px] w-full mt-4">
@@ -165,15 +171,15 @@ export default async function DashboardPage({
 
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">Reminders</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t.dashboard.reminders}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="rounded-xl bg-accent/40 p-4 border border-border/50">
-              <h4 className="font-semibold text-sm mb-1 text-foreground">Follow-ups This Week</h4>
-              <p className="text-xs text-muted-foreground mb-4">Send reminders to patients</p>
+              <h4 className="font-semibold text-sm mb-1 text-foreground">{t.dashboard.followUpsThisWeek}</h4>
+              <p className="text-xs text-muted-foreground mb-4">{t.dashboard.sendReminders}</p>
               {followUps.length === 0 ? (
                 <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">No follow-ups / या आठवड्यात कोणी नाही</p>
+                  <p className="text-sm text-muted-foreground">{t.dashboard.noFollowUps}</p>
                 </div>
               ) : (
                 <ul className="space-y-4">
@@ -188,13 +194,13 @@ export default async function DashboardPage({
                             {f.fullName}
                           </Link>
                           <span className="text-xs text-muted-foreground truncate">
-                            Due: {formatDueDate(f.nextVisitDate)}
+                            {t.dashboard.due}: {formatDueDate(f.nextVisitDate)}
                           </span>
                         </div>
                       </div>
                       <Button asChild size="sm" className="rounded-full h-8 shrink-0 shadow-sm" variant="default">
                         <a href={whatsappUrl(f.mobile, f.fullName, f.nextVisitDate)} target="_blank" rel="noopener noreferrer">
-                          Send Msg
+                          {t.dashboard.sendMsg}
                         </a>
                       </Button>
                     </li>
@@ -203,7 +209,7 @@ export default async function DashboardPage({
               )}
               {followUps.length > 3 && (
                 <Button variant="link" size="sm" className="mt-2 w-full text-xs text-primary" asChild>
-                  <Link href="/patients">View all {followUps.length} follow-ups</Link>
+                  <Link href="/patients">{t.dashboard.viewAll.replace('{count}', String(followUps.length))}</Link>
                 </Button>
               )}
             </div>
@@ -213,14 +219,14 @@ export default async function DashboardPage({
         {/* Week's Schedule — full follow-up list grouped by day */}
         <Card className="rounded-2xl shadow-sm border-border flex flex-col">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">Week&apos;s Schedule</CardTitle>
+            <CardTitle className="text-lg font-semibold">{t.dashboard.weeksSchedule}</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto max-h-[340px] pr-1">
             {followUps.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No visits this week</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noVisitsThisWeek}</p>
             ) : (
               <ul className="space-y-1">
-                {groupFollowUps(followUps).map((row, i) =>
+                {groupFollowUps(followUps, t).map((row, i) =>
                   row.kind === 'header' ? (
                     <li key={`h-${i}`} className="pt-3 first:pt-0 pb-1">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{row.label}</span>
@@ -248,11 +254,11 @@ export default async function DashboardPage({
         {/* Pending Assessments */}
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Pending Assessments</CardTitle>
+            <CardTitle className="text-base font-semibold">{t.dashboard.pendingAssessments}</CardTitle>
           </CardHeader>
           <CardContent>
             {pendingAssessments.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">All assessments complete / सर्व पूर्ण</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.allAssessmentsComplete}</p>
             ) : (
               <ul className="space-y-4 mt-2">
                 {pendingAssessments.map((p) => (
@@ -265,10 +271,10 @@ export default async function DashboardPage({
                         {p.fullName}
                       </Link>
                       <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                        {pendingReason(p.missingLifestyle, p.missingTreatment)}
+                        {pendingReason(p.missingLifestyle, p.missingTreatment, t)}
                       </span>
                     </div>
-                    <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none shrink-0">Pending</Badge>
+                    <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none shrink-0">{t.common.pending}</Badge>
                   </li>
                 ))}
               </ul>
@@ -279,7 +285,7 @@ export default async function DashboardPage({
         {/* Ailment Breakdown (Replacing Donut Chart Placeholder) */}
         <Card className="rounded-2xl shadow-sm border-border flex flex-col justify-between">
           <CardHeader className="pb-0">
-            <CardTitle className="text-base font-semibold">Ailment Breakdown</CardTitle>
+            <CardTitle className="text-base font-semibold">{t.dashboard.ailmentBreakdown}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col justify-center pb-6 mt-4">
             {ailments.length > 0 ? (
@@ -288,7 +294,7 @@ export default async function DashboardPage({
               </div>
             ) : (
               <div className="flex h-[220px] w-full items-center justify-center rounded-lg border border-dashed border-border bg-muted/50">
-                <p className="text-sm text-muted-foreground">No ailment data yet</p>
+                <p className="text-sm text-muted-foreground">{t.dashboard.noAilmentData}</p>
               </div>
             )}
           </CardContent>
@@ -297,35 +303,44 @@ export default async function DashboardPage({
         {/* Monthly Visit Goal */}
         <Card className="rounded-2xl shadow-sm border-border flex flex-col items-center justify-center">
           <CardHeader className="pb-0 w-full">
-            <CardTitle className="text-base font-semibold">Monthly Visit Goal</CardTitle>
+            <CardTitle className="text-base font-semibold">{t.dashboard.monthlyVisitGoal}</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center pt-2 pb-4">
-            <VisitGoalGauge current={stats.visitsThisMonth} target={MONTHLY_TARGET} />
+            <VisitGoalGauge
+              current={stats.visitsThisMonth}
+              target={MONTHLY_TARGET}
+              ofGoal={t.dashboard.ofGoal}
+              ariaLabel={t.dashboard.visitsThisMonthText
+                .replace('{current}', String(stats.visitsThisMonth))
+                .replace('{target}', String(MONTHLY_TARGET))}
+            />
             <p className="text-xs text-muted-foreground mt-1">
-              {stats.visitsThisMonth} of {MONTHLY_TARGET} visits this month
+              {t.dashboard.visitsThisMonthText
+                .replace('{current}', String(stats.visitsThisMonth))
+                .replace('{target}', String(MONTHLY_TARGET))}
             </p>
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Recent Activity Full Width */}
       <Card className="rounded-2xl shadow-sm border-border">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Recent Visits</CardTitle>
+          <CardTitle className="text-lg font-semibold">{t.dashboard.recentVisits}</CardTitle>
         </CardHeader>
         <CardContent>
           {recentVisits.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No visits yet / भेटी नाहीत</p>
+            <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noVisitsYet}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="text-xs text-muted-foreground uppercase bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 rounded-tl-lg">Patient Name</th>
-                    <th className="px-4 py-3">Patient ID</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3">Weight</th>
-                    <th className="px-4 py-3 rounded-tr-lg">Pain Scale</th>
+                    <th className="px-4 py-3 rounded-tl-lg">{t.dashboard.patientName}</th>
+                    <th className="px-4 py-3">{t.dashboard.patientId}</th>
+                    <th className="px-4 py-3">{t.dashboard.date}</th>
+                    <th className="px-4 py-3">{t.dashboard.weight}</th>
+                    <th className="px-4 py-3 rounded-tr-lg">{t.dashboard.painScale}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -403,12 +418,12 @@ function formatDueDate(dateStr: string): string {
 
 const ARC_LENGTH = Math.PI * 80; // semicircle r=80
 
-function VisitGoalGauge({ current, target }: { current: number; target: number }) {
+function VisitGoalGauge({ current, target, ofGoal, ariaLabel }: { current: number; target: number; ofGoal: string; ariaLabel: string }) {
   const pct = Math.min(current / target, 1);
   const filled = ARC_LENGTH * pct;
   const gaugeColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#16a34a' : '#ca8a04';
   return (
-    <svg viewBox="0 0 200 115" className="w-full max-w-[200px]" aria-label={`${current} of ${target} visits`}>
+    <svg viewBox="0 0 200 115" className="w-full max-w-[200px]" aria-label={ariaLabel}>
       {/* Track */}
       <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="14" strokeLinecap="round" />
       {/* Progress */}
@@ -422,7 +437,7 @@ function VisitGoalGauge({ current, target }: { current: number; target: number }
       />
       {/* Count */}
       <text x="100" y="82" textAnchor="middle" fontSize="30" fontWeight="700" fill="currentColor">{current}</text>
-      <text x="100" y="100" textAnchor="middle" fontSize="11" fill="currentColor" opacity="0.5">{Math.round(pct * 100)}% of goal</text>
+      <text x="100" y="100" textAnchor="middle" fontSize="11" fill="currentColor" opacity="0.5">{Math.round(pct * 100)}{ofGoal}</text>
     </svg>
   );
 }
@@ -433,10 +448,10 @@ function initials(fullName: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function pendingReason(missingLifestyle: boolean, missingTreatment: boolean): string {
-  if (missingLifestyle && missingTreatment) return 'Lifestyle & treatment missing';
-  if (missingLifestyle) return 'Lifestyle missing';
-  return 'Treatment plan missing';
+function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: Translations): string {
+  if (missingLifestyle && missingTreatment) return t.dashboard.pendingReason.both;
+  if (missingLifestyle) return t.dashboard.pendingReason.lifestyle;
+  return t.dashboard.pendingReason.treatment;
 }
 
 function whatsappUrl(mobile: string, fullName: string, nextVisitDate: string): string {

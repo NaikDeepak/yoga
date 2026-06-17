@@ -4,6 +4,7 @@ import { act } from 'react';
 import { render, screen } from '@testing-library/react';
 import { PatientHeader } from '@/components/PatientHeader';
 import type { Patient } from '@/db/schema';
+import { en } from '@/lib/i18n/en';
 
 let observerCallback: (entries: { isIntersecting: boolean }[]) => void = () => {};
 
@@ -54,11 +55,11 @@ describe('PatientHeader', () => {
 
   it('only renders the Receipt link when hasCourseFee is true', () => {
     render(<PatientHeader patient={patient} photoUrl={null} hasCourseFee={true} />);
-    expect(screen.getByText('Receipt / पावती')).toBeInTheDocument();
+    expect(screen.getByText(en.patientDetail.receipt)).toBeInTheDocument();
   });
 
   it('does not render the Receipt link when hasCourseFee is false', () => {
     render(<PatientHeader patient={patient} photoUrl={null} hasCourseFee={false} />);
-    expect(screen.queryByText('Receipt / पावती')).not.toBeInTheDocument();
+    expect(screen.queryByText(en.patientDetail.receipt)).not.toBeInTheDocument();
   });
 });

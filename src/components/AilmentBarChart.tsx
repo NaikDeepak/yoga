@@ -3,8 +3,10 @@
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
+import { useTranslations } from '@/lib/i18n/context';
 
 export function AilmentBarChart({ data }: { data: { problem: string; count: number }[] }) {
+  const t = useTranslations();
   if (data.length === 0) return null;
 
   const maxCount = Math.max(...data.map((d) => d.count));
@@ -40,7 +42,7 @@ export function AilmentBarChart({ data }: { data: { problem: string; count: numb
               return (
                 <div className="rounded-lg border border-border bg-background p-2 shadow-sm text-xs">
                   <div className="font-semibold">{entry.problem}</div>
-                  <div className="text-muted-foreground">{entry.count} Patients / रुग्ण</div>
+                  <div className="text-muted-foreground">{entry.count} {t.dashboard.patientsLabel}</div>
                 </div>
               );
             }
