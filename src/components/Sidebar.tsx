@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Leaf, 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  BarChart, 
-  Settings, 
-  HelpCircle, 
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  BarChart,
+  Settings,
+  HelpCircle,
   LogOut,
   X
 } from 'lucide-react';
@@ -20,14 +19,16 @@ import { Button } from '@/components/ui/button';
 interface SidebarProps {
   className?: string;
   onClose?: () => void;
+  patientCount?: number;
 }
 
-export function Sidebar({ className, onClose }: SidebarProps) {
+export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
   const pathname = usePathname();
 
-  const menuItems = [
+  type MenuItem = { name: string; href: string; icon: React.ComponentType<{ className?: string }>; disabled?: boolean; badge?: number };
+  const menuItems: MenuItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Patients', href: '/patients', icon: Users },
+    { name: 'Patients', href: '/patients', icon: Users, badge: patientCount },
     { name: 'Calendar', href: '#', icon: Calendar, disabled: true },
     { name: 'Analytics', href: '#', icon: BarChart, disabled: true },
   ];
@@ -42,7 +43,8 @@ export function Sidebar({ className, onClose }: SidebarProps) {
       {/* Brand */}
       <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-transparent">
         <Link href="/dashboard" className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
-          <Leaf className="h-6 w-6 text-primary" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/pytc-logo.png" alt="PYTC" width={32} height={32} className="object-contain" />
           <span className="text-lg font-bold tracking-tight">Pawar&apos;s Yog Therapy</span>
         </Link>
         {onClose && (
@@ -69,14 +71,19 @@ export function Sidebar({ className, onClose }: SidebarProps) {
                   href={item.href}
                   className={cn(
                     'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
-                    isActive 
-                      ? 'bg-primary/10 text-primary' 
+                    isActive
+                      ? 'bg-primary/10 text-primary'
                       : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
                     item.disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
                   )}
                 >
                   <Icon className={cn('h-5 w-5', isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground')} />
                   {item.name}
+                  {item.badge !== undefined && !item.disabled && (
+                    <span className="ml-auto min-w-[20px] text-center text-[10px] font-semibold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full leading-none">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                   {item.disabled && <span className="ml-auto text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">Soon</span>}
                 </Link>
               );
@@ -107,10 +114,10 @@ export function Sidebar({ className, onClose }: SidebarProps) {
                 </Link>
               );
             })}
-            
+
             {/* Logout Action */}
             <form action={signOutAction} className="w-full">
-              <button 
+              <button
                 type="submit"
                 className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive"
               >

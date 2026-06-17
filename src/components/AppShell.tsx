@@ -8,9 +8,10 @@ import { TopNav } from '@/components/TopNav';
 interface AppShellProps {
   children: React.ReactNode;
   userEmail: string | null;
+  patientCount: number;
 }
 
-export function AppShell({ children, userEmail }: AppShellProps) {
+export function AppShell({ children, userEmail, patientCount }: AppShellProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
 
@@ -23,25 +24,25 @@ export function AppShell({ children, userEmail }: AppShellProps) {
     <div className="flex h-screen w-full overflow-hidden bg-muted/20">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-64 shrink-0 shadow-sm z-30">
-        <Sidebar />
+        <Sidebar patientCount={patientCount} />
       </aside>
 
       {/* Mobile Sidebar overlay */}
       {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden backdrop-blur-sm" 
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
           aria-hidden="true"
         />
       )}
 
       {/* Mobile Sidebar */}
-      <aside 
+      <aside
         className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out lg:hidden ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <Sidebar onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar patientCount={patientCount} onClose={() => setIsSidebarOpen(false)} />
       </aside>
 
       {/* Main Content Area */}

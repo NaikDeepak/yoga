@@ -1,4 +1,4 @@
-import { desc, eq, ilike, or } from 'drizzle-orm';
+import { count, desc, eq, ilike, or } from 'drizzle-orm';
 import { patients, type Patient } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { nextPatientCode } from '@/lib/patient-code';
@@ -43,4 +43,12 @@ export async function searchPatients(db: Db, q?: string, limit?: number): Promis
     : undefined;
   const base = db.select().from(patients).where(where).orderBy(desc(patients.createdAt));
   return limit !== undefined ? base.limit(limit) : base;
+}
+
+export async function countPatients(db: Db, branch?: string): Promise<number> {
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(patients)
+    .where(branch ? eq(patients.branch, branch) : undefined);
+  return value;
 }

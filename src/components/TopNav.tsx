@@ -12,25 +12,25 @@ interface TopNavProps {
 
 export function TopNav({ userEmail, onMenuClick }: TopNavProps) {
   // Extract initials for the avatar
-  const initials = userEmail 
-    ? userEmail.split('@')[0].substring(0, 2).toUpperCase() 
+  const initials = userEmail
+    ? userEmail.split('@')[0].substring(0, 2).toUpperCase()
     : 'PY';
 
   return (
     <header className="sticky top-0 z-20 flex h-20 w-full items-center justify-between gap-4 bg-background px-4 lg:px-8 border-b border-border/50">
       <div className="flex items-center gap-4 flex-1">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="lg:hidden shrink-0" 
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden shrink-0"
           onClick={onMenuClick}
           aria-label="Open sidebar"
         >
           <Menu className="h-5 w-5" />
         </Button>
-        
+
         {/* Search is hidden on very small screens, shown as full bar on md+ */}
-        <div className="flex-1 max-w-2xl hidden md:block">
+        <div className="flex-1 hidden md:block">
           <GlobalSearch size="lg" className="w-full" />
         </div>
       </div>
@@ -44,7 +44,7 @@ export function TopNav({ userEmail, onMenuClick }: TopNavProps) {
         <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground relative" aria-label="Mail">
           <Mail className="h-5 w-5" />
         </Button>
-        
+
         <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground relative" aria-label="Notifications">
           <Bell className="h-5 w-5" />
           <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive border-2 border-background"></span>

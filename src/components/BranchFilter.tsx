@@ -25,7 +25,7 @@ export function BranchFilter() {
 
   return (
     <Select value={current} onValueChange={handleChange}>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-[280px]">
         <SelectValue placeholder="All branches / सर्व शाखा" />
       </SelectTrigger>
       <SelectContent>

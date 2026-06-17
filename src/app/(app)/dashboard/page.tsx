@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getDb } from '@/db/client';
-import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/dashboard';
+import { getDashboardStats, getAilmentBreakdown, getRecentVisits, getPendingAssessments } from '@/data/dashboard';
 import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { WeeklyVisitsChart } from '@/components/WeeklyVisitsChart';
@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
-import { ArrowUpRight, Plus, UploadCloud, PieChart, Users, Clock, PlayCircle } from 'lucide-react';
+import { ArrowUpRight, Plus, UploadCloud } from 'lucide-react';
+
+const MONTHLY_TARGET = 100;
 
 function parseBranch(value?: string): BranchKey | undefined {
   return BRANCHES.some((b) => b.key === value) ? (value as BranchKey) : undefined;
@@ -58,11 +60,12 @@ export default async function DashboardPage({
   const branch = parseBranch(branchParam);
 
   const db = getDb();
-  const [stats, ailments, recentVisits, followUps] = await Promise.all([
+  const [stats, ailments, recentVisits, followUps, pendingAssessments] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
     getRecentVisits(db, 5, branch),
     getFollowUpsThisWeek(db, branch),
+    getPendingAssessments(db, 5, branch),
   ]);
 
   // Generate upcoming visits for the next 8 days (today..+7) based on followUps
@@ -148,7 +151,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Analytics & Reminders Row */}
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr_1fr]">
         <Card className="rounded-2xl shadow-sm border-border overflow-hidden flex flex-col">
           <CardHeader>
             <CardTitle className="text-lg font-semibold">Weekly Patient Visits</CardTitle>
@@ -168,7 +171,6 @@ export default async function DashboardPage({
             <div className="rounded-xl bg-accent/40 p-4 border border-border/50">
               <h4 className="font-semibold text-sm mb-1 text-foreground">Follow-ups This Week</h4>
               <p className="text-xs text-muted-foreground mb-4">Send reminders to patients</p>
-              
               {followUps.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-sm text-muted-foreground">No follow-ups / या आठवड्यात कोणी नाही</p>
@@ -207,43 +209,70 @@ export default async function DashboardPage({
             </div>
           </CardContent>
         </Card>
+
+        {/* Week's Schedule — full follow-up list grouped by day */}
+        <Card className="rounded-2xl shadow-sm border-border flex flex-col">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">Week&apos;s Schedule</CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-y-auto max-h-[340px] pr-1">
+            {followUps.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No visits this week</p>
+            ) : (
+              <ul className="space-y-1">
+                {groupFollowUps(followUps).map((row, i) =>
+                  row.kind === 'header' ? (
+                    <li key={`h-${i}`} className="pt-3 first:pt-0 pb-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{row.label}</span>
+                    </li>
+                  ) : (
+                    <li key={row.followUp.patientId + row.followUp.nextVisitDate} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent/40 transition-colors">
+                      <div className="h-7 w-7 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
+                        {row.followUp.fullName.substring(0, 2).toUpperCase()}
+                      </div>
+                      <Link href={`/patients/${row.followUp.patientId}`} className="text-sm font-medium truncate hover:text-primary transition-colors flex-1">
+                        {row.followUp.fullName}
+                      </Link>
+                      <span className="text-[10px] text-muted-foreground shrink-0">{formatDueDate(row.followUp.nextVisitDate)}</span>
+                    </li>
+                  )
+                )}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Bottom Row: Collaboration, Progress, Time Tracker */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Pending Assessments (Replacing Team Collaboration) */}
+        {/* Pending Assessments */}
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base font-semibold">Pending Assessments</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-4 mt-2">
-              {/* Placeholders representing patients needing assessment */}
-              <li className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">RJ</div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Rahul Jadhav</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Lifestyle missing</span>
-                </div>
-                <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none">Pending</Badge>
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-pink-100 flex items-center justify-center text-pink-700 font-bold text-xs">SK</div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Sneha Kulkarni</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Diet plan missing</span>
-                </div>
-                <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none">Pending</Badge>
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold text-xs">AM</div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Amit Mishra</span>
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Ready for review</span>
-                </div>
-                <Badge variant="secondary" className="ml-auto text-[10px] bg-green-100 text-green-800 border-none shadow-none">Completed</Badge>
-              </li>
-            </ul>
+            {pendingAssessments.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">All assessments complete / सर्व पूर्ण</p>
+            ) : (
+              <ul className="space-y-4 mt-2">
+                {pendingAssessments.map((p) => (
+                  <li key={p.patientId} className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                      {initials(p.fullName)}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <Link href={`/patients/${p.patientId}?tab=${p.missingLifestyle ? 'assessment' : 'treatment'}`} className="text-sm font-medium truncate hover:text-primary transition-colors">
+                        {p.fullName}
+                      </Link>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                        {pendingReason(p.missingLifestyle, p.missingTreatment)}
+                      </span>
+                    </div>
+                    <Badge variant="secondary" className="ml-auto text-[10px] bg-yellow-100 text-yellow-800 border-none shadow-none shrink-0">Pending</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
 
@@ -265,30 +294,16 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
 
-        {/* Time Tracker / Today Overview */}
-        <Card className="rounded-2xl border-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-primary text-primary-foreground shadow-lg overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/80 to-green-950/90 z-0"></div>
-          <CardHeader className="relative z-10 pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground/80">Today&apos;s Overview</CardTitle>
+        {/* Monthly Visit Goal */}
+        <Card className="rounded-2xl shadow-sm border-border flex flex-col items-center justify-center">
+          <CardHeader className="pb-0 w-full">
+            <CardTitle className="text-base font-semibold">Monthly Visit Goal</CardTitle>
           </CardHeader>
-          <CardContent className="relative z-10 flex flex-col justify-between h-[calc(100%-60px)]">
-            <div className="text-center py-4">
-              <div className="text-5xl font-bold tracking-wider tabular-nums">
-                {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-              </div>
-              <p className="text-sm mt-2 text-primary-foreground/70 font-medium tracking-wide">
-                {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
-            </div>
-            
-            <div className="flex items-center justify-center gap-4 mt-auto pb-2">
-              <Button size="icon" className="h-12 w-12 rounded-full bg-white text-primary hover:bg-white/90 shadow-md">
-                <PlayCircle className="h-6 w-6" />
-              </Button>
-              <Button size="icon" className="h-10 w-10 rounded-full bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm border-none">
-                <Plus className="h-5 w-5" />
-              </Button>
-            </div>
+          <CardContent className="flex flex-col items-center pt-2 pb-4">
+            <VisitGoalGauge current={stats.visitsThisMonth} target={MONTHLY_TARGET} />
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats.visitsThisMonth} of {MONTHLY_TARGET} visits this month
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -384,6 +399,44 @@ function formatDueDate(dateStr: string): string {
   const [, month, day] = dateStr.split('-').map(Number);
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${String(day).padStart(2, '0')} ${months[month - 1]}`;
+}
+
+const ARC_LENGTH = Math.PI * 80; // semicircle r=80
+
+function VisitGoalGauge({ current, target }: { current: number; target: number }) {
+  const pct = Math.min(current / target, 1);
+  const filled = ARC_LENGTH * pct;
+  const gaugeColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#16a34a' : '#ca8a04';
+  return (
+    <svg viewBox="0 0 200 115" className="w-full max-w-[200px]" aria-label={`${current} of ${target} visits`}>
+      {/* Track */}
+      <path d="M 20 105 A 80 80 0 0 1 180 105" fill="none" stroke="currentColor" strokeOpacity="0.1" strokeWidth="14" strokeLinecap="round" />
+      {/* Progress */}
+      <path
+        d="M 20 105 A 80 80 0 0 1 180 105"
+        fill="none"
+        stroke={gaugeColor}
+        strokeWidth="14"
+        strokeLinecap="round"
+        strokeDasharray={`${filled} ${ARC_LENGTH}`}
+      />
+      {/* Count */}
+      <text x="100" y="82" textAnchor="middle" fontSize="30" fontWeight="700" fill="currentColor">{current}</text>
+      <text x="100" y="100" textAnchor="middle" fontSize="11" fill="currentColor" opacity="0.5">{Math.round(pct * 100)}% of goal</text>
+    </svg>
+  );
+}
+
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function pendingReason(missingLifestyle: boolean, missingTreatment: boolean): string {
+  if (missingLifestyle && missingTreatment) return 'Lifestyle & treatment missing';
+  if (missingLifestyle) return 'Lifestyle missing';
+  return 'Treatment plan missing';
 }
 
 function whatsappUrl(mobile: string, fullName: string, nextVisitDate: string): string {
