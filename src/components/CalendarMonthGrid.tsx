@@ -79,12 +79,18 @@ export function CalendarMonthGrid({ year, month, todayISO, followUpsByDate }: Ca
       <div className="grid grid-cols-7 gap-1">
         {weeks.flat().map((day) => {
           const count = followUpsByDate[day.date]?.length ?? 0;
+          const dayNum = Number(day.date.slice(8, 10));
+          const monthIndex = Number(day.date.slice(5, 7)) - 1;
+          const yearPart = day.date.slice(0, 4);
+          const dayLabel = `${dayNum} ${t.calendar.months[monthIndex]} ${yearPart}`;
+          const dueLabel = t.calendar.patientsDue.replace('{count}', String(count));
           return (
             <button
               key={day.date}
               type="button"
               disabled={count === 0}
               onClick={() => setSelectedDate(day.date)}
+              aria-label={count > 0 ? `${dayLabel} — ${dueLabel}` : dayLabel}
               className={cn(
                 'relative flex h-20 flex-col items-center justify-start rounded-lg border border-border p-2 text-sm transition-colors',
                 day.isCurrentMonth ? 'bg-card text-foreground' : 'bg-muted/30 text-muted-foreground',
@@ -94,7 +100,7 @@ export function CalendarMonthGrid({ year, month, todayISO, followUpsByDate }: Ca
               )}
             >
               <span className={cn('text-xs', day.isToday && 'font-bold text-primary')}>
-                {Number(day.date.slice(8, 10))}
+                {dayNum}
               </span>
               {count > 0 && (
                 <span className="mt-1 min-w-[20px] rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground">
@@ -110,7 +116,10 @@ export function CalendarMonthGrid({ year, month, todayISO, followUpsByDate }: Ca
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedDate} — {t.calendar.patientsDue.replace('{count}', String(selectedFollowUps.length))}
+              {selectedDate ? (() => {
+                const [y, m, d] = selectedDate.split('-').map(Number);
+                return `${d} ${t.calendar.months[m - 1]} ${y}`;
+              })() : ''} — {t.calendar.patientsDue.replace('{count}', String(selectedFollowUps.length))}
             </DialogTitle>
           </DialogHeader>
           {selectedFollowUps.length === 0 ? (

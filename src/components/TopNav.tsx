@@ -66,7 +66,7 @@ export function TopNav({ userEmail, locale, onMenuClick }: TopNavProps) {
           aria-label={locale === 'en' ? "Switch to Marathi / मराठीमध्ये बदला" : "Switch to English / इंग्रजीमध्ये बदला"}
         >
           <Globe className={cn("h-3.5 w-3.5 text-muted-foreground", isPending && "animate-spin")} />
-          <span>{locale === 'en' ? 'मराठी' : 'English'}</span>
+          <span>{locale === 'en' ? 'Marathi / मराठी' : 'English / इंग्रजी'}</span>
         </Button>
 
         <div className="h-8 w-px bg-border mx-2 hidden sm:block"></div>

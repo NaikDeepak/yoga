@@ -687,31 +687,31 @@ to:
 
 In the module map table, update the `src/data/visits.ts` row's "Key exports" column (currently `addVisit, listVisits, listVisitsWithData, getISTDateString, getFollowUpsThisWeek`) to:
 
-```
+```text
 | `src/data/visits.ts` | visit log | `addVisit`, `listVisits`, `listVisitsWithData`, `getISTDateString`, `getFollowUpsThisWeek`, `getFollowUpsInRange` |
 ```
 
 Add a new row directly after the `src/lib/presets.ts` row:
 
-```
+```text
 | `src/lib/calendar.ts` | pure month-grid date math | `buildMonthGrid`, `shiftMonth` |
 ```
 
 Update the `src/components/*` row's component list (append after `BranchFilter`):
 
-```
+```text
 ..., BranchFilter (branch-scoped dashboard filter), CalendarMonthGrid (read-only month-grid follow-up view with day-click dialog)
 ```
 
 Add a new row after the `src/app/(app)/dashboard` row:
 
-```
+```text
 | `src/app/(app)/calendar` | read-only month-grid view of upcoming follow-ups, branch filter, month navigation | — |
 ```
 
 In the Phase roadmap section at the bottom, update the Phase 2 line to append `calendar month view ✅`:
 
-```
+```text
 Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups ✅; global search ✅; branch filter ✅; calendar month view ✅.
 ```
 
@@ -719,7 +719,7 @@ Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups ✅; 
 
 Add these lines after the existing `Branch filter on the dashboard...` checklist item (after line 42):
 
-```
+```text
 - [ ] Calendar page shows a month grid; days with follow-ups show a count badge, days without do not open a dialog
 - [ ] Clicking a day with follow-ups opens a dialog listing those patients, each linking to their profile
 - [ ] Prev/Next/Today controls on the calendar navigate months and update the URL's `month` query param

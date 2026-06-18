@@ -37,7 +37,9 @@ export function buildMonthGrid(year: number, month: number, todayISO: string): C
 
 export function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
   const total = year * 12 + (month - 1) + delta;
-  return { year: Math.floor(total / 12), month: (total % 12) + 1 };
+  const monthIndex = ((total % 12) + 12) % 12;
+  const normalizedYear = (total - monthIndex) / 12;
+  return { year: normalizedYear, month: monthIndex + 1 };
 }
 
 export function parseMonth(value?: string): { year: number; month: number } {
@@ -45,7 +47,7 @@ export function parseMonth(value?: string): { year: number; month: number } {
   if (match) {
     const year = Number(match[1]);
     const month = Number(match[2]);
-    if (month >= 1 && month <= 12) return { year, month };
+    if (year >= 1000 && year <= 9999 && month >= 1 && month <= 12) return { year, month };
   }
   const [year, month] = getISTDateString(0).split('-').map(Number);
   return { year, month };

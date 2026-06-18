@@ -81,6 +81,11 @@ describe('shiftMonth', () => {
   it('rolls back to the previous year from January', () => {
     expect(shiftMonth(2026, 1, -1)).toEqual({ year: 2025, month: 12 });
   });
+
+  it('correctly handles negative total months and shift offsets', () => {
+    expect(shiftMonth(0, 1, -2)).toEqual({ year: -1, month: 11 });
+    expect(shiftMonth(0, 1, -14)).toEqual({ year: -2, month: 11 });
+  });
 });
 
 describe('parseMonth', () => {
@@ -106,6 +111,16 @@ describe('parseMonth', () => {
   it('falls back to the current IST month when month is out of range (13+)', () => {
     const [year, month] = getISTDateString(0).split('-').map(Number);
     expect(parseMonth('2026-13')).toEqual({ year, month });
+  });
+
+  it('falls back to the current IST month when year is out of range (< 1000)', () => {
+    const [year, month] = getISTDateString(0).split('-').map(Number);
+    expect(parseMonth('0999-06')).toEqual({ year, month });
+  });
+
+  it('falls back to the current IST month when year is out of range (> 9999)', () => {
+    const [year, month] = getISTDateString(0).split('-').map(Number);
+    expect(parseMonth('10000-06')).toEqual({ year, month });
   });
 });
 
