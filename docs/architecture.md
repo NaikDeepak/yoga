@@ -9,6 +9,8 @@ Drizzle ORM everywhere; tests run the same migrations on in-memory PGlite.
 Request flow: page (server component) → `src/actions/*` ('use server': auth → zod → repo → revalidate)
 → `src/data/*` (pure DB functions taking `db`) → `src/db/schema.ts`.
 
+**Design tokens** (spacing, color, typography): `docs/superpowers/specs/2026-06-17-design-language-system.md`, Section 1 — the single source of truth for heading/text/card/button classNames.
+
 ## Module map
 | Path | Responsibility | Key exports |
 |---|---|---|

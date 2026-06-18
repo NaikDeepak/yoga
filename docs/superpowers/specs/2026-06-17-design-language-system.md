@@ -14,6 +14,14 @@ These rules are derived from the existing dashboard and must be applied consiste
 |---|---|
 | Page heading | `text-3xl font-bold tracking-tight text-foreground` |
 | Page subtitle | `text-sm text-muted-foreground mt-1` |
+| Section heading (H2) | `text-xl font-semibold` |
+| Card title (H3) | `text-base font-semibold` |
+| Entity name | `text-2xl font-semibold` |
+| Body emphasis | `text-sm font-medium` |
+| Body | `text-sm font-normal` |
+| Stat / field label | `text-sm font-medium text-muted-foreground` |
+| Label / meta | `text-xs text-muted-foreground` |
+| Caption / badge | `text-xs font-medium uppercase tracking-wide` |
 | Card | `rounded-2xl shadow-sm border-border` |
 | Primary CTA button | `rounded-full gap-2 px-5 h-10 shadow-md` |
 | Outline/secondary button | `rounded-full gap-2 px-5 h-10 border-border` |
@@ -22,6 +30,8 @@ These rules are derived from the existing dashboard and must be applied consiste
 | Page header row | `flex flex-col gap-4 md:flex-row md:items-center md:justify-between` |
 | Patient code badge | `border-brand-accent text-brand-accent` (variant="outline") |
 | Empty state | Centered muted text inside a card, optional CTA button |
+
+Font: Inter (Latin) + Noto Sans Devanagari (Devanagari), loaded via `next/font/google` in `src/app/layout.tsx`. See `docs/superpowers/specs/2026-06-18-typography-design.md` for rationale.
 
 Color palette (already in `globals.css`, do not change):
 - Background: warm cream `oklch(0.977 0.007 75)`
