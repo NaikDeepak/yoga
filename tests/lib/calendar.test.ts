@@ -1,0 +1,75 @@
+import { describe, it, expect } from 'vitest';
+import { buildMonthGrid, shiftMonth } from '@/lib/calendar';
+
+describe('buildMonthGrid', () => {
+  it('produces only full weeks of 7 days', () => {
+    const weeks = buildMonthGrid(2026, 6, '2026-06-18');
+    for (const week of weeks) {
+      expect(week).toHaveLength(7);
+    }
+  });
+
+  it('places the 1st of the month at the weekday position JS Date reports', () => {
+    const weeks = buildMonthGrid(2026, 6, '2026-06-18');
+    const flat = weeks.flat();
+    const firstIndex = flat.findIndex((d) => d.date === '2026-06-01' && d.isCurrentMonth);
+    const expectedWeekday = new Date(Date.UTC(2026, 5, 1)).getUTCDay();
+    expect(firstIndex % 7).toBe(expectedWeekday);
+  });
+
+  it('includes the last day of the month exactly once, marked as current month', () => {
+    const weeks = buildMonthGrid(2026, 6, '2026-06-18');
+    const flat = weeks.flat();
+    const matches = flat.filter((d) => d.date === '2026-06-30' && d.isCurrentMonth);
+    expect(matches).toHaveLength(1);
+  });
+
+  it('marks leading/trailing days from adjacent months as not current month', () => {
+    const weeks = buildMonthGrid(2026, 6, '2026-06-18');
+    const firstWeek = weeks[0];
+    const leading = firstWeek.filter((d) => d.date < '2026-06-01');
+    for (const day of leading) {
+      expect(day.isCurrentMonth).toBe(false);
+    }
+  });
+
+  it('marks exactly the cell matching todayISO as isToday', () => {
+    const weeks = buildMonthGrid(2026, 6, '2026-06-18');
+    const flat = weeks.flat();
+    const todayCells = flat.filter((d) => d.isToday);
+    expect(todayCells).toHaveLength(1);
+    expect(todayCells[0].date).toBe('2026-06-18');
+  });
+
+  it('handles a leap-year February fully (29 days)', () => {
+    const weeks = buildMonthGrid(2024, 2, '2024-02-01');
+    const flat = weeks.flat();
+    const feb29 = flat.find((d) => d.date === '2024-02-29');
+    expect(feb29?.isCurrentMonth).toBe(true);
+  });
+
+  it('handles a non-leap-year February correctly (28 days, no Feb 29)', () => {
+    const weeks = buildMonthGrid(2026, 2, '2026-02-01');
+    const flat = weeks.flat();
+    const feb29 = flat.find((d) => d.date === '2026-02-29' && d.isCurrentMonth);
+    expect(feb29).toBeUndefined();
+  });
+});
+
+describe('shiftMonth', () => {
+  it('moves forward within the same year', () => {
+    expect(shiftMonth(2026, 6, 1)).toEqual({ year: 2026, month: 7 });
+  });
+
+  it('moves backward within the same year', () => {
+    expect(shiftMonth(2026, 6, -1)).toEqual({ year: 2026, month: 5 });
+  });
+
+  it('rolls over to the next year from December', () => {
+    expect(shiftMonth(2026, 12, 1)).toEqual({ year: 2027, month: 1 });
+  });
+
+  it('rolls back to the previous year from January', () => {
+    expect(shiftMonth(2026, 1, -1)).toEqual({ year: 2025, month: 12 });
+  });
+});
