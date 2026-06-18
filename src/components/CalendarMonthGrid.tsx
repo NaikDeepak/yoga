@@ -122,7 +122,10 @@ export function CalendarMonthGrid({ year, month, todayISO, followUpsByDate }: Ca
                   <Link href={`/patients/${f.patientId}`} className="text-sm font-medium hover:text-primary transition-colors">
                     {f.fullName}
                   </Link>
-                  <span className="text-xs text-muted-foreground">{f.patientCode}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{f.patientCode}</span>
+                    <span className="text-xs text-muted-foreground">{f.mobile}</span>
+                  </div>
                 </li>
               ))}
             </ul>
