@@ -32,6 +32,20 @@ export const en = {
     menu: 'Menu',
     general: 'General',
   },
+  calendar: {
+    title: 'Calendar',
+    subtitle: 'Browse upcoming follow-ups by month.',
+    today: 'Today',
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
+    noFollowUps: 'No follow-ups today',
+    patientsDue: '{count} patients due',
+    weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as readonly string[],
+    months: [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ] as readonly string[],
+  },
   dashboard: {
     title: 'Dashboard',
     subtitle: 'Manage your clinic, patients, and tasks with ease.',
