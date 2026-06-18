@@ -123,7 +123,7 @@ describe('getFollowUpsInRange', () => {
     });
     // A later, not-yet-attended visit row dated inside the browsed future range, with no follow-up.
     await addVisit(db, p.id, {
-      visitDate: getISTDateString(35),
+      visitDate: getISTDateString(20),
       progressNote: 'future-dated visit with no follow-up',
     });
 
