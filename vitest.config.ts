@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['tests/setup.ts'],
+    exclude: ['**/node_modules/**', '**/.worktrees/**'],
     coverage: {
       provider: 'v8',
       include: ['src/lib/**', 'src/data/**', 'src/actions/**'],
