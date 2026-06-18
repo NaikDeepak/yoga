@@ -34,6 +34,20 @@ export const mr: Translations = {
     menu: 'मेनू',
     general: 'सामान्य',
   },
+  calendar: {
+    title: 'दिनदर्शिका',
+    subtitle: 'महिन्यानुसार आगामी फॉलो-अप पहा.',
+    today: 'आज',
+    prevMonth: 'मागील महिना',
+    nextMonth: 'पुढील महिना',
+    noFollowUps: 'आज फॉलो-अप नाहीत',
+    patientsDue: '{count} रुग्ण देय',
+    weekdays: ['रवि', 'सोम', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि'] as readonly string[],
+    months: [
+      'जानेवारी', 'फेब्रुवारी', 'मार्च', 'एप्रिल', 'मे', 'जून',
+      'जुलै', 'ऑगस्ट', 'सप्टेंबर', 'ऑक्टोबर', 'नोव्हेंबर', 'डिसेंबर',
+    ] as readonly string[],
+  },
   dashboard: {
     title: 'डॅशबोर्ड',
     subtitle: 'आपले क्लिनिक, रुग्ण आणि कार्ये सहजपणे व्यवस्थापित करा.',

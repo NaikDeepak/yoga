@@ -1,16 +1,29 @@
 'use client';
 
-import { Menu, Mail, Bell } from 'lucide-react';
+import { useTransition } from 'react';
+import { Menu, Globe } from 'lucide-react';
 import { GlobalSearch } from '@/components/GlobalSearch';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import { saveLanguageAction } from '@/actions/preferences';
+import type { Locale } from '@/lib/i18n/translations';
 
 interface TopNavProps {
   userEmail: string | null;
+  locale: Locale;
   onMenuClick?: () => void;
 }
 
-export function TopNav({ userEmail, onMenuClick }: TopNavProps) {
+export function TopNav({ userEmail, locale, onMenuClick }: TopNavProps) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleLanguageToggle = () => {
+    const nextLocale = locale === 'en' ? 'mr' : 'en';
+    startTransition(async () => {
+      await saveLanguageAction(nextLocale);
+    });
+  };
   // Extract initials for the avatar
   const initials = userEmail
     ? userEmail.split('@')[0].substring(0, 2).toUpperCase()
@@ -41,13 +54,19 @@ export function TopNav({ userEmail, onMenuClick }: TopNavProps) {
           <GlobalSearch size="default" className="w-48 sm:w-64" />
         </div>
 
-        <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground relative" aria-label="Mail">
-          <Mail className="h-5 w-5" />
-        </Button>
-
-        <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground relative" aria-label="Notifications">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive border-2 border-background"></span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLanguageToggle}
+          disabled={isPending}
+          className={cn(
+            "flex items-center gap-1.5 h-9 px-3 rounded-full font-semibold text-xs border-border/60 hover:bg-accent hover:text-accent-foreground transition-all duration-200 shadow-sm",
+            isPending && "opacity-75 cursor-not-allowed"
+          )}
+          aria-label={locale === 'en' ? "Switch to Marathi / मराठीमध्ये बदला" : "Switch to English / इंग्रजीमध्ये बदला"}
+        >
+          <Globe className={cn("h-3.5 w-3.5 text-muted-foreground", isPending && "animate-spin")} />
+          <span>{locale === 'en' ? 'Marathi / मराठी' : 'English / इंग्रजी'}</span>
         </Button>
 
         <div className="h-8 w-px bg-border mx-2 hidden sm:block"></div>

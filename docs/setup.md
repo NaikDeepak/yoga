@@ -40,6 +40,11 @@
 - [ ] Search by name and by mobile
 - [ ] Global search box in the top nav finds a patient by name, patient code, or mobile and jumps to their profile
 - [ ] Branch filter on the dashboard scopes stats, agenda, and recent activity to the selected branch
+- [ ] Calendar page shows a month grid; days with follow-ups show a count badge, days without do not open a dialog
+- [ ] Clicking a day with follow-ups opens a dialog listing those patients, each linking to their profile
+- [ ] Prev/Next/Today controls on the calendar navigate months and update the URL's `month` query param
+- [ ] Branch filter on the calendar page scopes the visible follow-ups to the selected branch
+- [ ] Today's date is visually highlighted in the calendar grid
 - [ ] Dashboard follow-ups are grouped under Today/Tomorrow/weekday headers
 - [ ] Print view → Save as PDF produces clean A4
 - [ ] Logged-out user hitting /patients is redirected to /login

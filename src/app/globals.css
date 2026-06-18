@@ -71,5 +71,5 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans, Inter, ui-sans-serif, system-ui, sans-serif);
+  font-family: var(--font-sans), var(--font-devanagari), ui-sans-serif, system-ui, sans-serif;
 }

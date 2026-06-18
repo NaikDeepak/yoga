@@ -31,7 +31,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
   const menuItems: MenuItem[] = [
     { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
     { name: t.nav.patients, href: '/patients', icon: Users, badge: patientCount },
-    { name: t.nav.calendar, href: '#', icon: Calendar, disabled: true },
+    { name: t.nav.calendar, href: '/calendar', icon: Calendar },
     { name: t.nav.analytics, href: '#', icon: BarChart, disabled: true },
   ];
 

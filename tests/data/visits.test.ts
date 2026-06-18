@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { addVisit, getFollowUpsThisWeek, getISTDateString } from '@/data/visits';
+import { addVisit, getFollowUpsThisWeek, getFollowUpsInRange, getISTDateString } from '@/data/visits';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
 
@@ -83,6 +83,62 @@ describe('getFollowUpsThisWeek', () => {
     await addVisit(db, p2.id, { visitDate: getISTDateString(0), progressNote: 'b', nextVisitDate: getISTDateString(1) });
 
     const result = await getFollowUpsThisWeek(db, 'Manjari BK');
+    expect(result).toHaveLength(1);
+    expect(result[0].fullName).toBe('Asha Pawar');
+  });
+});
+
+describe('getFollowUpsInRange', () => {
+  it('returns follow-ups within an arbitrary range beyond a week', async () => {
+    const p = await createPatient(db, { fullName: 'Month Browser', mobile: '9000000007' });
+    await addVisit(db, p.id, {
+      visitDate: getISTDateString(0),
+      progressNote: 'note',
+      nextVisitDate: getISTDateString(20),
+    });
+
+    const result = await getFollowUpsInRange(db, getISTDateString(15), getISTDateString(25));
+    expect(result.map((f) => f.patientId)).toContain(p.id);
+  });
+
+  it('excludes a follow-up outside the given range', async () => {
+    const p = await createPatient(db, { fullName: 'Out Of Range', mobile: '9000000008' });
+    await addVisit(db, p.id, {
+      visitDate: getISTDateString(0),
+      progressNote: 'note',
+      nextVisitDate: getISTDateString(50),
+    });
+
+    const result = await getFollowUpsInRange(db, getISTDateString(15), getISTDateString(25));
+    expect(result.map((f) => f.patientId)).not.toContain(p.id);
+  });
+
+  it('uses real today — not the range start — as the cutoff for the latest-visit lookup, even when browsing a future range', async () => {
+    const p = await createPatient(db, { fullName: 'Future Browser', mobile: '9000000009' });
+    // A real visit happening today, with a real follow-up far in the future.
+    await addVisit(db, p.id, {
+      visitDate: getISTDateString(0),
+      progressNote: 'visit with a real follow-up',
+      nextVisitDate: getISTDateString(40),
+    });
+    // A later, not-yet-attended visit row dated inside the browsed future range, with no follow-up.
+    await addVisit(db, p.id, {
+      visitDate: getISTDateString(20),
+      progressNote: 'future-dated visit with no follow-up',
+    });
+
+    const result = await getFollowUpsInRange(db, getISTDateString(30), getISTDateString(45));
+    const entry = result.find((f) => f.patientId === p.id);
+    expect(entry?.nextVisitDate).toBe(getISTDateString(40));
+  });
+
+  it('filters by branch when provided', async () => {
+    const p1 = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543211', branch: 'Manjari BK' });
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000010', branch: 'Kharadi' });
+    await addVisit(db, p1.id, { visitDate: getISTDateString(0), progressNote: 'a', nextVisitDate: getISTDateString(20) });
+    await addVisit(db, p2.id, { visitDate: getISTDateString(0), progressNote: 'b', nextVisitDate: getISTDateString(20) });
+
+    const result = await getFollowUpsInRange(db, getISTDateString(15), getISTDateString(25), 'Manjari BK');
     expect(result).toHaveLength(1);
     expect(result[0].fullName).toBe('Asha Pawar');
   });

@@ -160,7 +160,7 @@ export default async function DashboardPage({
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr_1fr]">
         <Card className="rounded-2xl shadow-sm border-border overflow-hidden flex flex-col">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">{t.dashboard.weeklyVisits}</CardTitle>
+            <CardTitle className="text-xl font-semibold">{t.dashboard.weeklyVisits}</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-2">
             <div className="h-[250px] w-full mt-4">
@@ -171,7 +171,7 @@ export default async function DashboardPage({
 
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-semibold">{t.dashboard.reminders}</CardTitle>
+            <CardTitle className="text-xl font-semibold">{t.dashboard.reminders}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="rounded-xl bg-accent/40 p-4 border border-border/50">
@@ -219,7 +219,7 @@ export default async function DashboardPage({
         {/* Week's Schedule — full follow-up list grouped by day */}
         <Card className="rounded-2xl shadow-sm border-border flex flex-col">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold">{t.dashboard.weeksSchedule}</CardTitle>
+            <CardTitle className="text-xl font-semibold">{t.dashboard.weeksSchedule}</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto max-h-[340px] pr-1">
             {followUps.length === 0 ? (
@@ -326,7 +326,7 @@ export default async function DashboardPage({
       {/* Recent Activity Full Width */}
       <Card className="rounded-2xl shadow-sm border-border">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">{t.dashboard.recentVisits}</CardTitle>
+          <CardTitle className="text-xl font-semibold">{t.dashboard.recentVisits}</CardTitle>
         </CardHeader>
         <CardContent>
           {recentVisits.length === 0 ? (

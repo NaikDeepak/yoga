@@ -35,22 +35,24 @@ export async function listVisitsWithData(db: Db, patientId: string): Promise<Vis
 
 export { getISTDateString };
 
-export async function getFollowUpsThisWeek(db: Db, branch?: string): Promise<FollowUp[]> {
-  const today = getISTDateString(0);
-  const end = getISTDateString(7);
+export async function getFollowUpsInRange(db: Db, start: string, end: string, branch?: string): Promise<FollowUp[]> {
+  const cutoff = getISTDateString(0);
 
-  // Use the most recent *already-happened* visit per patient (visitDate <= today) to
+  // Use the most recent *already-happened* visit per patient (visitDate <= cutoff) to
   // read the follow-up date from. A new visit with no next-visit-date intentionally
   // clears any earlier one (the patient came back, the old plan is moot) — but a
   // future-dated visit row (not yet attended) must not be treated as "the latest
   // visit", or it would mask a real, still-valid follow-up from an actual visit.
+  // `cutoff` is always real "today", independent of `start`/`end` — browsing a future
+  // month must not move this cutoff forward, or it would start treating not-yet-attended
+  // visits as the latest one.
   const latestPerPatient = db
     .selectDistinctOn([visits.patientId], {
       patientId: visits.patientId,
       nextVisitDate: visits.nextVisitDate,
     })
     .from(visits)
-    .where(lte(visits.visitDate, today))
+    .where(lte(visits.visitDate, cutoff))
     .orderBy(visits.patientId, desc(visits.visitDate), desc(visits.createdAt))
     .as('latest');
 
@@ -68,7 +70,7 @@ export async function getFollowUpsThisWeek(db: Db, branch?: string): Promise<Fol
     .where(
       and(
         isNotNull(latestPerPatient.nextVisitDate),
-        gte(latestPerPatient.nextVisitDate, today),
+        gte(latestPerPatient.nextVisitDate, start),
         lte(latestPerPatient.nextVisitDate, end),
         branch ? eq(patients.branch, branch) : undefined,
       ),
@@ -76,4 +78,8 @@ export async function getFollowUpsThisWeek(db: Db, branch?: string): Promise<Fol
     .orderBy(latestPerPatient.nextVisitDate);
 
   return rows.filter((r): r is FollowUp => r.nextVisitDate !== null);
+}
+
+export async function getFollowUpsThisWeek(db: Db, branch?: string): Promise<FollowUp[]> {
+  return getFollowUpsInRange(db, getISTDateString(0), getISTDateString(7), branch);
 }
