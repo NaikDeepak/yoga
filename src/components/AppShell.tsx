@@ -55,6 +55,7 @@ export function AppShell({ children, userEmail, patientCount, locale }: AppShell
         <div className="flex flex-1 flex-col overflow-hidden relative">
           <TopNav
             userEmail={userEmail}
+            locale={locale}
             onMenuClick={() => setIsSidebarOpen(true)}
           />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
