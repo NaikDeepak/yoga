@@ -11,3 +11,4 @@ scratch/
 skills-lock.json
 .vercel
 .superpowers/
+.worktrees/
