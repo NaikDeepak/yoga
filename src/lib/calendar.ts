@@ -12,7 +12,8 @@ export function buildMonthGrid(year: number, month: number, todayISO: string): C
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const startWeekday = firstOfMonth.getUTCDay();
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const totalCells = Math.ceil((startWeekday + daysInMonth) / 7) * 7;
+  const totalWeeks = Math.max(5, Math.ceil((startWeekday + daysInMonth) / 7));
+  const totalCells = totalWeeks * 7;
 
   const days: CalendarDay[] = [];
   for (let i = 0; i < totalCells; i++) {

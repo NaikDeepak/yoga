@@ -54,6 +54,14 @@ describe('buildMonthGrid', () => {
     const feb29 = flat.find((d) => d.date === '2026-02-29' && d.isCurrentMonth);
     expect(feb29).toBeUndefined();
   });
+
+  it('always tiles into 5 or 6 weeks, even for a 28-day month starting on Sunday', () => {
+    // February 2026 has 28 days and starts on a Sunday, so (startWeekday + daysInMonth) / 7
+    // divides evenly into 4 weeks. The grid must still be clamped to a minimum of 5 weeks.
+    const weeks = buildMonthGrid(2026, 2, '2026-02-15');
+    expect(weeks.length).toBeGreaterThanOrEqual(5);
+    expect(weeks.length).toBeLessThanOrEqual(6);
+  });
 });
 
 describe('shiftMonth', () => {
