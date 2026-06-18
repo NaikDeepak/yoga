@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildMonthGrid, shiftMonth } from '@/lib/calendar';
+import { buildMonthGrid, shiftMonth, parseMonth, monthRange } from '@/lib/calendar';
+import { getISTDateString } from '@/lib/dates';
 
 describe('buildMonthGrid', () => {
   it('produces only full weeks of 7 days', () => {
@@ -79,5 +80,49 @@ describe('shiftMonth', () => {
 
   it('rolls back to the previous year from January', () => {
     expect(shiftMonth(2026, 1, -1)).toEqual({ year: 2025, month: 12 });
+  });
+});
+
+describe('parseMonth', () => {
+  it('parses a valid YYYY-MM string', () => {
+    expect(parseMonth('2026-06')).toEqual({ year: 2026, month: 6 });
+  });
+
+  it('falls back to the current IST month when input does not match the regex', () => {
+    const [year, month] = getISTDateString(0).split('-').map(Number);
+    expect(parseMonth('not-a-date')).toEqual({ year, month });
+  });
+
+  it('falls back to the current IST month when input is undefined', () => {
+    const [year, month] = getISTDateString(0).split('-').map(Number);
+    expect(parseMonth(undefined)).toEqual({ year, month });
+  });
+
+  it('falls back to the current IST month when month is out of range (00)', () => {
+    const [year, month] = getISTDateString(0).split('-').map(Number);
+    expect(parseMonth('2026-00')).toEqual({ year, month });
+  });
+
+  it('falls back to the current IST month when month is out of range (13+)', () => {
+    const [year, month] = getISTDateString(0).split('-').map(Number);
+    expect(parseMonth('2026-13')).toEqual({ year, month });
+  });
+});
+
+describe('monthRange', () => {
+  it('returns the full range for a 30-day month', () => {
+    expect(monthRange(2026, 6)).toEqual({ start: '2026-06-01', end: '2026-06-30' });
+  });
+
+  it('returns the full range for a 31-day month', () => {
+    expect(monthRange(2026, 7)).toEqual({ start: '2026-07-01', end: '2026-07-31' });
+  });
+
+  it('returns 28 days for a non-leap-year February', () => {
+    expect(monthRange(2026, 2)).toEqual({ start: '2026-02-01', end: '2026-02-28' });
+  });
+
+  it('returns 29 days for a leap-year February', () => {
+    expect(monthRange(2024, 2)).toEqual({ start: '2024-02-01', end: '2024-02-29' });
   });
 });

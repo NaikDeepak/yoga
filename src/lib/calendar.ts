@@ -1,3 +1,5 @@
+import { getISTDateString } from '@/lib/dates';
+
 export type CalendarDay = {
   date: string;
   isCurrentMonth: boolean;
@@ -36,4 +38,22 @@ export function buildMonthGrid(year: number, month: number, todayISO: string): C
 export function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
   const total = year * 12 + (month - 1) + delta;
   return { year: Math.floor(total / 12), month: (total % 12) + 1 };
+}
+
+export function parseMonth(value?: string): { year: number; month: number } {
+  const match = value?.match(/^(\d{4})-(\d{2})$/);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    if (month >= 1 && month <= 12) return { year, month };
+  }
+  const [year, month] = getISTDateString(0).split('-').map(Number);
+  return { year, month };
+}
+
+export function monthRange(year: number, month: number): { start: string; end: string } {
+  const start = `${year}-${String(month).padStart(2, '0')}-01`;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  return { start, end };
 }

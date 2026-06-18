@@ -3,6 +3,7 @@ import { getFollowUpsInRange, getISTDateString, type FollowUp } from '@/data/vis
 import { CalendarMonthGrid } from '@/components/CalendarMonthGrid';
 import { BranchFilter } from '@/components/BranchFilter';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
+import { parseMonth, monthRange } from '@/lib/calendar';
 import { cookies } from 'next/headers';
 import { getTranslations, LOCALES, type Locale } from '@/lib/i18n/translations';
 import { getUserLanguage } from '@/data/preferences';
@@ -10,24 +11,6 @@ import { requireUser } from '@/lib/auth';
 
 function parseBranch(value?: string): BranchKey | undefined {
   return BRANCHES.some((b) => b.key === value) ? (value as BranchKey) : undefined;
-}
-
-function parseMonth(value?: string): { year: number; month: number } {
-  const match = value?.match(/^(\d{4})-(\d{2})$/);
-  if (match) {
-    const year = Number(match[1]);
-    const month = Number(match[2]);
-    if (month >= 1 && month <= 12) return { year, month };
-  }
-  const [year, month] = getISTDateString(0).split('-').map(Number);
-  return { year, month };
-}
-
-function monthRange(year: number, month: number): { start: string; end: string } {
-  const start = `${year}-${String(month).padStart(2, '0')}-01`;
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-  return { start, end };
 }
 
 export default async function CalendarPage({
