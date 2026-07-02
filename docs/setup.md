@@ -62,6 +62,12 @@ Mock mode refuses to run in production (`isLocalMock()` throws).
 - [ ] Branch filter on the calendar page scopes the visible follow-ups to the selected branch
 - [ ] Today's date is visually highlighted in the calendar grid
 - [ ] Dashboard follow-ups are grouped under Today/Tomorrow/weekday headers
+- [ ] Reminders card "Send Msg" opens WhatsApp with the bilingual reminder prefilled for the right patient and number
+- [ ] Week's Schedule row WhatsApp icon opens wa.me for that patient with their follow-up date
+- [ ] Calendar day-dialog row WhatsApp icon opens wa.me for that patient
+- [ ] Digest button appears on the Reminders card only when tomorrow has follow-ups, shows the count, and opens wa.me addressed to the clinic's own number with one numbered line per patient (name, code, mobile, branch)
+- [ ] With a branch filter active, the digest lists only that branch's patients
+- [ ] On a phone logged into the clinic's WhatsApp number, the digest opens the "Message yourself" chat
 - [ ] Print view → Save as PDF produces clean A4
 - [ ] Logged-out user hitting /patients is redirected to /login
 - [ ] With signups disabled, /register shows an error instead of creating a user

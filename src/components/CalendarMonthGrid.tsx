@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { buildMonthGrid, shiftMonth } from '@/lib/calendar';
+import { reminderUrl } from '@/lib/whatsapp';
 import type { FollowUp } from '@/data/visits';
 import { useTranslations } from '@/lib/i18n/context';
 import { cn } from '@/lib/utils';
@@ -134,6 +135,16 @@ export function CalendarMonthGrid({ year, month, todayISO, followUpsByDate }: Ca
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">{f.patientCode}</span>
                     <span className="text-xs text-muted-foreground">{f.mobile}</span>
+                    <Button asChild size="icon" variant="ghost" className="h-6 w-6 shrink-0">
+                      <a
+                        href={reminderUrl(f.mobile, f.fullName, f.nextVisitDate)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={t.dashboard.sendMsg}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
                   </div>
                 </li>
               ))}

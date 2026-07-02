@@ -64,6 +64,7 @@ export const mr: Translations = {
     sendReminders: 'रुग्णांना स्मरणपत्रे पाठवा',
     noFollowUps: 'या आठवड्यात फॉलो-अप नाहीत',
     sendMsg: 'संदेश पाठवा',
+    whatsappDigest: 'उद्याची यादी → WhatsApp ({count})',
     viewAll: 'सर्व {count} फॉलो-अप पहा',
     weeksSchedule: 'आठवड्याचे वेळापत्रक',
     noVisitsThisWeek: 'या आठवड्यात भेटी नाहीत',

@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
-import { ArrowUpRight, Plus, UploadCloud } from 'lucide-react';
+import { formatDueDate } from '@/lib/dates';
+import { reminderUrl, digestUrl } from '@/lib/whatsapp';
+import { ArrowUpRight, MessageCircle, Plus, UploadCloud } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
 import { getUserLanguage } from '@/data/preferences';
@@ -83,6 +85,8 @@ export default async function DashboardPage({
   // (next_visit_date) — this window must match getFollowUpsThisWeek's window so the
   // chart and the Reminders panel never disagree.
   const todayStr = getISTDateString(0);
+  const tomorrowStr = getISTDateString(1);
+  const tomorrowFollowUps = followUps.filter((f) => f.nextVisitDate === tomorrowStr);
   const upcomingVisitsData = Array.from({ length: 8 }, (_, i) => {
     const dateStr = getISTDateString(i);
     // Count how many follow-ups happen on this day, safely handling strings with time parts
@@ -172,6 +176,13 @@ export default async function DashboardPage({
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-xl font-semibold">{t.dashboard.reminders}</CardTitle>
+            {tomorrowFollowUps.length > 0 && (
+              <Button asChild size="sm" variant="outline" className="rounded-full shrink-0">
+                <a href={digestUrl(tomorrowFollowUps, tomorrowStr)} target="_blank" rel="noopener noreferrer">
+                  {t.dashboard.whatsappDigest.replace('{count}', String(tomorrowFollowUps.length))}
+                </a>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             <div className="rounded-xl bg-accent/40 p-4 border border-border/50">
@@ -199,7 +210,7 @@ export default async function DashboardPage({
                         </div>
                       </div>
                       <Button asChild size="sm" className="rounded-full h-8 shrink-0 shadow-sm" variant="default">
-                        <a href={whatsappUrl(f.mobile, f.fullName, f.nextVisitDate)} target="_blank" rel="noopener noreferrer">
+                        <a href={reminderUrl(f.mobile, f.fullName, f.nextVisitDate)} target="_blank" rel="noopener noreferrer">
                           {t.dashboard.sendMsg}
                         </a>
                       </Button>
@@ -240,6 +251,16 @@ export default async function DashboardPage({
                         {row.followUp.fullName}
                       </Link>
                       <span className="text-[10px] text-muted-foreground shrink-0">{formatDueDate(row.followUp.nextVisitDate)}</span>
+                      <Button asChild size="icon" variant="ghost" className="h-6 w-6 shrink-0">
+                        <a
+                          href={reminderUrl(row.followUp.mobile, row.followUp.fullName, row.followUp.nextVisitDate)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={t.dashboard.sendMsg}
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                        </a>
+                      </Button>
                     </li>
                   )
                 )}
@@ -410,12 +431,6 @@ function painDotColor(scale: number) {
   return 'bg-destructive';
 }
 
-function formatDueDate(dateStr: string): string {
-  const [, month, day] = dateStr.split('-').map(Number);
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${String(day).padStart(2, '0')} ${months[month - 1]}`;
-}
-
 const ARC_LENGTH = Math.PI * 80; // semicircle r=80
 
 function VisitGoalGauge({ current, target, ofGoal, ariaLabel }: { current: number; target: number; ofGoal: string; ariaLabel: string }) {
@@ -452,10 +467,4 @@ function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: 
   if (missingLifestyle && missingTreatment) return t.dashboard.pendingReason.both;
   if (missingLifestyle) return t.dashboard.pendingReason.lifestyle;
   return t.dashboard.pendingReason.treatment;
-}
-
-function whatsappUrl(mobile: string, fullName: string, nextVisitDate: string): string {
-  const date = formatDueDate(nextVisitDate);
-  const text = `Hello ${fullName}, a reminder from Pawar's Yog Therapy — your next session is on ${date}. / नमस्कार ${fullName}, आपल्या पुढील योग थेरपी भेटीची आठवण — ${date} रोजी आहे.`;
-  return `https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`;
 }

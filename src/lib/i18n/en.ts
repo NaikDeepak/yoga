@@ -62,6 +62,7 @@ export const en = {
     sendReminders: 'Send reminders to patients',
     noFollowUps: 'No follow-ups this week',
     sendMsg: 'Send Msg',
+    whatsappDigest: "Tomorrow's list → WhatsApp ({count})",
     viewAll: 'View all {count} follow-ups',
     weeksSchedule: "Week's Schedule",
     noVisitsThisWeek: 'No visits this week',
