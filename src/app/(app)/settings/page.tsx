@@ -1,13 +1,22 @@
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations, LOCALES } from '@/lib/i18n/translations';
-import { saveLanguageAction } from '@/actions/preferences';
+import { saveLanguageAction, saveWhatsappNumberAction } from '@/actions/preferences';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { InlineForm } from '@/components/InlineForm';
+import { requireUser } from '@/lib/auth';
+import { getDb } from '@/db/client';
+import { getWhatsappNumber } from '@/data/preferences';
+import { CLINIC } from '@/lib/clinic';
 
 export default async function SettingsPage() {
   const locale = await getLocale();
   const t = getTranslations(locale);
+  const user = await requireUser();
+  const whatsappNumber = await getWhatsappNumber(getDb(), user.id);
 
   return (
     <div className="space-y-8 pb-10">
@@ -50,6 +59,31 @@ export default async function SettingsPage() {
               {t.settings.saveBtn}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl shadow-sm border-border max-w-lg">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold">{t.settings.whatsappTitle}</CardTitle>
+          <CardDescription>{t.settings.whatsappDescription.replace('{phone}', CLINIC.phone)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InlineForm action={saveWhatsappNumberAction} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="whatsappNumber">{t.form.mobile}</Label>
+              <Input
+                id="whatsappNumber"
+                name="whatsappNumber"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder={t.form.mobilePlaceholder}
+                defaultValue={whatsappNumber ?? ''}
+              />
+            </div>
+            <Button type="submit" className="rounded-full px-6">
+              {t.settings.saveBtn}
+            </Button>
+          </InlineForm>
         </CardContent>
       </Card>
     </div>

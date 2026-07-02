@@ -1,5 +1,4 @@
 import { formatDueDate } from '@/lib/dates';
-import { CLINIC } from '@/lib/clinic';
 
 // Structural subset of FollowUp (src/data/visits.ts) — kept local so lib never imports from data.
 export type DigestEntry = {
@@ -33,6 +32,6 @@ export function buildDigestMessage(entries: DigestEntry[], dateISO: string): str
   return [header, ...lines].join('\n');
 }
 
-export function digestUrl(entries: DigestEntry[], dateISO: string): string {
-  return waMeUrl(CLINIC.whatsappDigits, buildDigestMessage(entries, dateISO));
+export function digestUrl(entries: DigestEntry[], dateISO: string, targetMobile: string): string {
+  return waMeUrl(targetMobile, buildDigestMessage(entries, dateISO));
 }

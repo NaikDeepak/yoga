@@ -15,7 +15,8 @@ import { reminderUrl, digestUrl } from '@/lib/whatsapp';
 import { ArrowUpRight, MessageCircle, Plus, UploadCloud } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
-import { getUserLanguage } from '@/data/preferences';
+import { getUserLanguage, getWhatsappNumber } from '@/data/preferences';
+import { CLINIC } from '@/lib/clinic';
 import { requireUser } from '@/lib/auth';
 
 const MONTHLY_TARGET = 100;
@@ -68,13 +69,15 @@ export default async function DashboardPage({
     : await getUserLanguage(db, user.id);
   const t = getTranslations(locale);
 
-  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments] = await Promise.all([
+  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, savedWhatsappNumber] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
     getRecentVisits(db, 5, branch),
     getFollowUpsThisWeek(db, branch),
     getPendingAssessments(db, 5, branch),
+    getWhatsappNumber(db, user.id),
   ]);
+  const digestTarget = savedWhatsappNumber ?? CLINIC.whatsappDigits;
 
   const followUps = rawFollowUps.map(f => ({
     ...f,
@@ -178,7 +181,7 @@ export default async function DashboardPage({
             <CardTitle className="text-xl font-semibold">{t.dashboard.reminders}</CardTitle>
             {tomorrowFollowUps.length > 0 && (
               <Button asChild size="sm" variant="outline" className="rounded-full shrink-0">
-                <a href={digestUrl(tomorrowFollowUps, tomorrowStr)} target="_blank" rel="noopener noreferrer">
+                <a href={digestUrl(tomorrowFollowUps, tomorrowStr, digestTarget)} target="_blank" rel="noopener noreferrer">
                   {t.dashboard.whatsappDigest.replace('{count}', String(tomorrowFollowUps.length))}
                 </a>
               </Button>

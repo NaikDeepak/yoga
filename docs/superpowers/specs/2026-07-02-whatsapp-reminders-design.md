@@ -46,6 +46,10 @@ All buttons are plain anchors (`<Button asChild><a target="_blank" rel="noopener
 - **Calendar day dialog** (`CalendarMonthGrid.tsx`, already a client island): same icon button per row.
 - **Digest button** (Reminders card header): rendered only when tomorrow (IST) has ≥ 1 follow-up; label shows the count. It filters the *already-fetched* `followUps`, so an active branch filter scopes the digest — deliberate: a per-branch checklist.
 
+## Configuration
+
+The digest target is a per-user preference, not a clinic-wide setting: the digest is a message-to-self, so it should reach the WhatsApp of whoever is looking at the dashboard — different staff can each get the checklist on their own phone. Stored as nullable `user_preferences.whatsapp_number` (10-digit form, same shape as `patients.mobile`, DB check constraint), edited on the Settings page via `saveWhatsappNumberAction`; `null`/unset falls back to `CLINIC.whatsappDigits`, so the digest works before anyone opens Settings. The language and number upserts each `set` only their own column, so they never clobber each other.
+
 ## i18n
 
 One new key pair, `dashboard.whatsappDigest`: `"Tomorrow's list → WhatsApp ({count})"` / `'उद्याची यादी → WhatsApp ({count})'`. Icon buttons reuse `dashboard.sendMsg`. The reminder/digest message bodies are bilingual-in-one and live in the lib, not the i18n tree (they are patient-facing, not UI-locale-dependent).

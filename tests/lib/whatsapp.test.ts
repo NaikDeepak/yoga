@@ -98,8 +98,13 @@ describe('buildDigestMessage', () => {
 });
 
 describe('digestUrl', () => {
-  it('addresses the clinic own WhatsApp number', () => {
-    const url = digestUrl([entry()], '2026-07-03');
+  it('addresses the clinic own WhatsApp number when given as target', () => {
+    const url = digestUrl([entry()], '2026-07-03', CLINIC.whatsappDigits);
     expect(url.startsWith(`https://wa.me/${CLINIC.whatsappDigits}?text=`)).toBe(true);
+  });
+
+  it('addresses a configured 10-digit target with 91 prefix', () => {
+    const url = digestUrl([entry()], '2026-07-03', '9812345678');
+    expect(url.startsWith('https://wa.me/919812345678?text=')).toBe(true);
   });
 });
