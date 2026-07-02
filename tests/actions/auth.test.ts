@@ -89,9 +89,9 @@ describe('local mock mode', () => {
     expect(cookieSet).not.toHaveBeenCalled();
   });
 
-  it('signs out by deleting the session cookie', async () => {
+  it('signs out by deleting the session cookie with matching path', async () => {
     await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
-    expect(cookieDelete).toHaveBeenCalledWith(MOCK_SESSION_COOKIE);
+    expect(cookieDelete).toHaveBeenCalledWith({ name: MOCK_SESSION_COOKIE, path: '/' });
     expect(auth.signOut).not.toHaveBeenCalled();
   });
 

@@ -4,10 +4,14 @@ import { isPublicPath } from '@/lib/auth-paths';
 import { isLocalMock, MOCK_SESSION_COOKIE } from '@/lib/local-mock';
 
 export async function updateSession(request: NextRequest) {
+  // API routes check the session themselves and must answer 401 JSON, not a
+  // 307 to /login (applies to both mock and Supabase branches).
+  const isApiPath = request.nextUrl.pathname.startsWith('/api/');
+
   if (isLocalMock()) {
     const hasSession = request.cookies.has(MOCK_SESSION_COOKIE);
     const { pathname } = request.nextUrl;
-    if (!hasSession && !isPublicPath(pathname)) {
+    if (!hasSession && !isApiPath && !isPublicPath(pathname)) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
       return NextResponse.redirect(url);
@@ -40,7 +44,7 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   // If user is not logged in and path is not public, redirect to login
-  if (!user && !isPublicPath(request.nextUrl.pathname)) {
+  if (!user && !isApiPath && !isPublicPath(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     const redirectResponse = NextResponse.redirect(url);

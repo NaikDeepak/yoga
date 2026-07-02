@@ -8,10 +8,11 @@ export const MOCK_SESSION_COOKIE = 'mock_session';
 
 export function isLocalMock(): boolean {
   if (process.env.LOCAL_MOCK !== 'true') return false;
-  if (process.env.NODE_ENV === 'production') {
-    // This app holds PHI; the mock path bypasses auth and serves files
-    // unauthenticated. Fail loudly rather than ever running it in production.
-    throw new Error('LOCAL_MOCK cannot be enabled in production');
+  // This app holds PHI and the mock path bypasses auth. Fail closed: only
+  // development and test may run it; production, staging, or anything else
+  // fails loudly rather than silently deciding.
+  if (process.env.NODE_ENV !== 'development' && process.env.NODE_ENV !== 'test') {
+    throw new Error(`LOCAL_MOCK cannot be enabled when NODE_ENV=${process.env.NODE_ENV} — development/test only`);
   }
   return true;
 }

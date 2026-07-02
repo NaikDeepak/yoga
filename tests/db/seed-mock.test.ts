@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { count } from 'drizzle-orm';
 import { createTestDb } from '../helpers/db';
 import { seedMockData } from '@/db/seed-mock';
+import { getISTDateString } from '@/lib/dates';
 import { patients, patientProblems, visits, lifestyleAssessments, treatmentPlans, fees, feePayments } from '@/db/schema';
 import type { Db } from '@/db/types';
 
@@ -37,7 +38,7 @@ describe('seedMockData', () => {
   it('seeds upcoming follow-ups so the dashboard agenda is populated', async () => {
     await seedMockData(db);
     const rows = await db.select({ next: visits.nextVisitDate }).from(visits);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getISTDateString(0);
     const upcoming = rows.filter((r) => r.next !== null && r.next >= today);
     expect(upcoming.length).toBeGreaterThan(0);
   });

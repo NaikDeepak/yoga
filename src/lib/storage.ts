@@ -1,5 +1,5 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { r2Storage } from './r2-storage';
 import { isLocalMock } from './local-mock';
@@ -19,16 +19,27 @@ export { r2Storage };
 // directly. URLs are not signed or access-controlled — dev-only by design
 // (isLocalMock() refuses to run in production).
 export function localFileStorage(baseDir: string = LOCAL_UPLOADS_DIR): FileStorage {
+  const root = resolve(baseDir);
+  // Storage keys are relative POSIX paths; anything that resolves outside
+  // baseDir (absolute paths, .. segments, backslashes) is rejected.
+  const safeTarget = (path: string): string => {
+    const target = resolve(root, path);
+    if (path.includes('\\') || !target.startsWith(root + sep)) {
+      throw new Error(`Invalid storage path: ${path}`);
+    }
+    return target;
+  };
   return {
     async upload(path, file) {
-      const target = join(baseDir, path);
+      const target = safeTarget(path);
       await mkdir(dirname(target), { recursive: true });
       await writeFile(target, Buffer.from(await file.arrayBuffer()));
     },
     async remove(path) {
-      await rm(join(baseDir, path), { force: true });
+      await rm(safeTarget(path), { force: true });
     },
     async createSignedUrl(path) {
+      safeTarget(path);
       return `/uploads/${path}`;
     },
   };

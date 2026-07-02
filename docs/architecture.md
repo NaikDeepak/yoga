@@ -56,7 +56,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/app/(app)/dashboard` | clinic-wide stats, ailment bar chart, recent visits, day-grouped follow-up agenda, branch filter, quick-add patient | — |
 | `src/app/(app)/calendar` | read-only month-grid view of upcoming follow-ups, branch filter, month navigation | — |
 | `src/app/(app)/patients/*` | list/new/detail(tabs+progress+assessment)/edit/print pages | — |
-| `src/middleware.ts` | session refresh; redirects unauthenticated → /login | — |
+| `src/middleware.ts` | session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
 
 ## Invariants (do not break)
 - BMI is never stored; always computed from weight/height.

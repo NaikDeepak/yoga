@@ -13,15 +13,23 @@ describe('isLocalMock', () => {
     expect(isLocalMock()).toBe(false);
   });
 
-  it('is true when LOCAL_MOCK=true outside production', () => {
+  it('is true when LOCAL_MOCK=true in development or test', () => {
     vi.stubEnv('LOCAL_MOCK', 'true');
+    expect(isLocalMock()).toBe(true); // vitest runs with NODE_ENV=test
+    vi.stubEnv('NODE_ENV', 'development');
     expect(isLocalMock()).toBe(true);
   });
 
   it('throws when LOCAL_MOCK=true in production', () => {
     vi.stubEnv('LOCAL_MOCK', 'true');
     vi.stubEnv('NODE_ENV', 'production');
-    expect(() => isLocalMock()).toThrow('LOCAL_MOCK cannot be enabled in production');
+    expect(() => isLocalMock()).toThrow('LOCAL_MOCK cannot be enabled when NODE_ENV=production');
+  });
+
+  it('fails closed for any other environment (e.g. staging)', () => {
+    vi.stubEnv('LOCAL_MOCK', 'true');
+    vi.stubEnv('NODE_ENV', 'staging');
+    expect(() => isLocalMock()).toThrow('LOCAL_MOCK cannot be enabled when NODE_ENV=staging');
   });
 });
 

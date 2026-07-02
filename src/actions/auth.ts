@@ -25,7 +25,8 @@ export async function signInAction(formData: FormData) {
 export async function signOutAction() {
   if (isLocalMock()) {
     const cookieStore = await cookies();
-    cookieStore.delete(MOCK_SESSION_COOKIE);
+    // path must match the scope the cookie was set with
+    cookieStore.delete({ name: MOCK_SESSION_COOKIE, path: '/' });
     redirect('/login');
   }
 

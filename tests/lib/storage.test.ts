@@ -13,7 +13,7 @@ vi.mock('@/lib/r2-storage', () => ({
   }),
 }));
 
-import { mkdtemp, readFile, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { supabaseStorage, r2Storage, getStorage, localFileStorage, BUCKET } from '@/lib/storage';
@@ -97,8 +97,13 @@ describe('r2Storage (via mocked module boundary)', () => {
 });
 
 describe('localFileStorage', () => {
+  let dir: string;
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'yoga-uploads-'));
+  });
+  afterEach(() => rm(dir, { recursive: true, force: true }));
+
   it('round-trips a file through upload, url, and remove', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'yoga-uploads-'));
     const storage = localFileStorage(dir);
     const content = new Uint8Array([1, 2, 3]);
     const f = new File([content], 'scan.pdf', { type: 'application/pdf' });
@@ -115,8 +120,19 @@ describe('localFileStorage', () => {
   });
 
   it('remove tolerates missing files', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'yoga-uploads-'));
     await expect(localFileStorage(dir).remove('does/not/exist.pdf')).resolves.toBeUndefined();
+  });
+
+  it('rejects path traversal, absolute paths, and backslashes', async () => {
+    const storage = localFileStorage(dir);
+    const f = new File([new Uint8Array([1])], 'a.pdf', { type: 'application/pdf' });
+    for (const evil of ['../escape.pdf', 'p/../../escape.pdf', '/etc/passwd', 'a\\..\\b.pdf']) {
+      await expect(storage.upload(evil, f)).rejects.toThrow('Invalid storage path');
+      await expect(storage.remove(evil)).rejects.toThrow('Invalid storage path');
+      await expect(storage.createSignedUrl(evil)).rejects.toThrow('Invalid storage path');
+    }
+    // interior dots that don't escape are fine
+    await expect(storage.createSignedUrl('p/x..y.pdf')).resolves.toBe('/uploads/p/x..y.pdf');
   });
 });
 
