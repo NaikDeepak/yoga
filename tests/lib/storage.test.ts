@@ -13,7 +13,10 @@ vi.mock('@/lib/r2-storage', () => ({
   }),
 }));
 
-import { supabaseStorage, r2Storage, getStorage, BUCKET } from '@/lib/storage';
+import { mkdtemp, readFile, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { supabaseStorage, r2Storage, getStorage, localFileStorage, BUCKET } from '@/lib/storage';
 
 const bucketApi = {
   upload: vi.fn(),
@@ -93,6 +96,30 @@ describe('r2Storage (via mocked module boundary)', () => {
   });
 });
 
+describe('localFileStorage', () => {
+  it('round-trips a file through upload, url, and remove', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'yoga-uploads-'));
+    const storage = localFileStorage(dir);
+    const content = new Uint8Array([1, 2, 3]);
+    const f = new File([content], 'scan.pdf', { type: 'application/pdf' });
+
+    await storage.upload('patients/p1/documents/abc-scan.pdf', f);
+    const written = await readFile(join(dir, 'patients/p1/documents/abc-scan.pdf'));
+    expect(new Uint8Array(written)).toEqual(content);
+
+    expect(await storage.createSignedUrl('patients/p1/documents/abc-scan.pdf'))
+      .toBe('/uploads/patients/p1/documents/abc-scan.pdf');
+
+    await storage.remove('patients/p1/documents/abc-scan.pdf');
+    await expect(stat(join(dir, 'patients/p1/documents/abc-scan.pdf'))).rejects.toThrow();
+  });
+
+  it('remove tolerates missing files', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'yoga-uploads-'));
+    await expect(localFileStorage(dir).remove('does/not/exist.pdf')).resolves.toBeUndefined();
+  });
+});
+
 describe('getStorage', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -114,6 +141,16 @@ describe('getStorage', () => {
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-key');
     const { getStorage: gs } = await import('@/lib/storage');
     expect(typeof gs().upload).toBe('function');
+  });
+
+  it('uses local file storage in local mock mode, even with R2 configured', async () => {
+    vi.stubEnv('LOCAL_MOCK', 'true');
+    vi.stubEnv('R2_ACCOUNT_ID', 'acct');
+    vi.stubEnv('R2_ACCESS_KEY_ID', 'key');
+    vi.stubEnv('R2_SECRET_ACCESS_KEY', 'secret');
+    vi.stubEnv('R2_BUCKET', 'bucket');
+    const { getStorage: gs } = await import('@/lib/storage');
+    expect(await gs().createSignedUrl('a/b.pdf')).toBe('/uploads/a/b.pdf');
   });
 
   it('uses R2 when all four R2 env vars are set', async () => {

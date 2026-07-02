@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getSessionUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { searchPatients } from '@/data/patients';
 
 export async function GET(req: Request) {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized / अनधिकृत' }, { status: 401 });
   }
