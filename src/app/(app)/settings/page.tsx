@@ -68,7 +68,7 @@ export default async function SettingsPage() {
           <CardDescription>{t.settings.whatsappDescription.replace('{phone}', CLINIC.phone)}</CardDescription>
         </CardHeader>
         <CardContent>
-          <InlineForm action={saveWhatsappNumberAction} className="space-y-4">
+          <InlineForm action={saveWhatsappNumberAction} resetOnSuccess={false} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="whatsappNumber">{t.form.mobile}</Label>
               <Input

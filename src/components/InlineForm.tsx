@@ -7,11 +7,13 @@ import { useTranslations } from '@/lib/i18n/context';
 import { cn } from '@/lib/utils';
 
 export function InlineForm({
-  action, children, className,
+  action, children, className, resetOnSuccess = true,
 }: {
   action: (formData: FormData) => Promise<ActionResult>;
   children: React.ReactNode;
   className?: string;
+  // false for edit-in-place fields: reset() restores mount-time defaultValue, not the saved value
+  resetOnSuccess?: boolean;
 }) {
   const t = useTranslations();
   const genericError = t.inlineForm.genericError;
@@ -29,7 +31,7 @@ export function InlineForm({
         try {
           const result = await action(formData);
           if (result && !result.ok) setError(result.error);
-          else { setError(null); setSaved(true); ref.current?.reset(); }
+          else { setError(null); setSaved(true); if (resetOnSuccess) ref.current?.reset(); }
         } catch (err) {
           // Re-throw Next.js redirect/notFound errors so the framework handles them
           if (err instanceof Error && (err.message === 'NEXT_REDIRECT' || err.message === 'NEXT_NOT_FOUND')) {

@@ -6,6 +6,7 @@ import { requireUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { setUserLanguage, setWhatsappNumber } from '@/data/preferences';
 import { LOCALES, type Locale } from '@/lib/i18n/translations';
+import { whatsappNumberSchema, firstError } from '@/lib/validation';
 import type { ActionResult } from '@/actions/patients';
 
 export async function saveLanguageAction(locale: Locale): Promise<ActionResult> {
@@ -25,12 +26,10 @@ export async function saveLanguageAction(locale: Locale): Promise<ActionResult> 
 }
 
 export async function saveWhatsappNumberAction(formData: FormData): Promise<ActionResult> {
-  const raw = String(formData.get('whatsappNumber') ?? '').trim();
-  if (raw !== '' && !/^\d{10}$/.test(raw)) {
-    return { ok: false, error: '10-digit mobile required / १० अंकी मोबाईल आवश्यक' };
-  }
   const user = await requireUser();
-  await setWhatsappNumber(getDb(), user.id, raw === '' ? null : raw);
+  const parsed = whatsappNumberSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  await setWhatsappNumber(getDb(), user.id, parsed.data.whatsappNumber ?? null);
   revalidatePath('/settings');
   revalidatePath('/dashboard');
   return { ok: true };

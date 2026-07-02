@@ -14,8 +14,8 @@ This feature makes reminders a first-class, zero-cost capability using free What
 **In scope:**
 - Pure lib `src/lib/whatsapp.ts` for URL/message construction (extracting the existing ad-hoc dashboard helper).
 - Per-patient reminder buttons in: dashboard Reminders card (existing, refactored), dashboard Week's Schedule rows (new), calendar day-dialog rows (new).
-- On-demand "tomorrow's appointments digest" button on the Reminders card header: opens wa.me addressed to the clinic's **own** number with a numbered list of tomorrow's follow-ups (name, code, mobile, branch). On a phone logged into the clinic's WhatsApp this is the "Message yourself" chat.
-- Shared clinic identity constant `src/lib/clinic.ts` (name, phone, wa.me digits), consumed by the letterhead and the digest.
+- On-demand "tomorrow's appointments digest" button on the Reminders card header: opens wa.me addressed to the viewing user's configured digest number, falling back to the clinic's own number when unset (see Configuration), with a numbered list of tomorrow's follow-ups (name, code, mobile, branch). On a phone logged into the target number's WhatsApp this is the "Message yourself" chat.
+- Shared clinic identity constant `src/lib/clinic.ts` (name, phone, wa.me digits), consumed by the letterhead and as the digest's fallback target.
 
 **Out of scope (not this feature):**
 - WhatsApp Cloud API / Twilio / any BSP integration; automated or scheduled sending (cron); delivery/read tracking; a send-log table; opt-out management. If automation is wanted later, the message builders here are the reusable half — only the delivery mechanism changes.
@@ -30,7 +30,7 @@ This feature makes reminders a first-class, zero-cost capability using free What
 - `buildReminderMessage(fullName, nextVisitDate)` — byte-for-byte the message the dashboard produces today (bilingual EN + MR in one body; short brand string "Pawar's Yog Therapy" intentionally unchanged).
 - `reminderUrl(mobile, fullName, nextVisitDate)` — composition used by all three button sites.
 - `buildDigestMessage(entries, dateISO)` — header `Tomorrow's appointments / उद्याच्या भेटी — <dd MMM>` + numbered lines `<i>. <name> (<code>) — <mobile> — <branch|—>`.
-- `digestUrl(entries, dateISO)` — digest addressed to `CLINIC.whatsappDigits`.
+- `digestUrl(entries, dateISO, targetMobile)` — digest addressed to `targetMobile`; the caller (dashboard) resolves the per-user digest number with `CLINIC.whatsappDigits` as fallback (see Configuration).
 - `DigestEntry` is a local structural type (`fullName`, `patientCode`, `mobile`, `branch`); `FollowUp` from `src/data/visits` is assignable to it — the lib must not import from `src/data` (layering).
 
 `src/lib/clinic.ts` — `CLINIC` constant: display name/phone/email/hours (moved from `ReportLetterhead.tsx`) plus `whatsappDigits` (`918550921037`).
@@ -56,7 +56,7 @@ One new key pair, `dashboard.whatsappDigest`: `"Tomorrow's list → WhatsApp ({c
 
 ## Testing
 
-- `tests/lib/whatsapp.test.ts`: URL prefixing/stripping/encoding (incl. Devanagari); `buildReminderMessage` exact-string equality against the pre-refactor literal (locks the pure-refactor guarantee); `reminderUrl` verbatim-equal to the old `whatsappUrl` output; digest with 0/1/many entries, numbering, order, `branch: null`; `digestUrl` targets the clinic digits.
+- `tests/lib/whatsapp.test.ts`: URL prefixing/stripping/encoding (incl. Devanagari); `buildReminderMessage` exact-string equality against the pre-refactor literal (locks the pure-refactor guarantee); `reminderUrl` verbatim-equal to the old `whatsappUrl` output; digest with 0/1/many entries, numbering, order, `branch: null`; `digestUrl` targets the passed number (clinic digits and a 10-digit personal number).
 - `tests/lib/dates.test.ts`: `formatDueDate` (padding, month abbreviation, December); `getISTDateString` offset with injected base date.
 - No data/action tests: no new queries or mutations.
 - UI: manual checklist entries in `docs/setup.md` (see Verification there).
@@ -64,7 +64,7 @@ One new key pair, `dashboard.whatsappDigest`: `"Tomorrow's list → WhatsApp ({c
 ## Edge cases / accepted limitations
 
 - **Digest URL length**: ~30 Marathi entries ≈ 4–6 KB URL — fine for modern browsers and WhatsApp; no truncation logic (speculative complexity at single-clinic scale).
-- **Message-to-self**: only a phone logged into the clinic number gets the "Message yourself" chat; other phones open a normal chat *to* the clinic number — still a usable checklist (lands in the clinic inbox).
+- **Message-to-self**: only a phone logged into the digest target number gets the "Message yourself" chat; other phones open a normal chat *to* that number — still a usable checklist (lands in that number's inbox).
 - **`branch: null`** renders as `—` in digest lines.
 - **Zero follow-ups tomorrow**: button hidden; `buildDigestMessage([])` still returns a sane header + "No appointments / भेटी नाहीत" defensively.
 - **Date format**: `dd MMM` with English month abbreviation in both message halves — matches existing behavior; digits + short month are readable in both scripts.

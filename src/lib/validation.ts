@@ -69,6 +69,13 @@ export type VisitInput = z.infer<typeof visitSchema>;
 
 export const docTypeSchema = z.enum(DOC_TYPES);
 
+export const whatsappNumberSchema = z.object({
+  whatsappNumber: opt(
+    z.string().trim().regex(/^\d{10}$/, '10-digit mobile required / १० अंकी मोबाईल आवश्यक')
+  ),
+});
+export type WhatsappNumberInput = z.infer<typeof whatsappNumberSchema>;
+
 export function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input / चुकीची माहिती';
 }
