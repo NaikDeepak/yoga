@@ -58,6 +58,32 @@ describe('generateTreatmentDraft', () => {
     await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('GEMINI_API_KEY is not set');
   });
 
+  it('returns a canned draft in local mock mode without an API key', async () => {
+    delete process.env.GEMINI_API_KEY;
+    vi.stubEnv('LOCAL_MOCK', 'true');
+    try {
+      const result = await generateTreatmentDraft(MOCK_CONTEXT);
+      for (const key of Object.keys(MOCK_DRAFT)) {
+        expect(typeof result[key as keyof typeof result]).toBe('string');
+      }
+      expect(result.yogaProgram).not.toBe('');
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('still calls the real API in local mock mode when a key is set', async () => {
+    vi.stubEnv('LOCAL_MOCK', 'true');
+    try {
+      mockGeminiOk(MOCK_DRAFT);
+      expect(await generateTreatmentDraft(MOCK_CONTEXT)).toEqual(MOCK_DRAFT);
+      expect(fetchMock).toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('throws on HTTP error from Gemini', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 429, text: async () => 'Rate limited' });
     await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('Gemini API error 429');

@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react(), tsconfigPaths()],
   test: {
     environment: 'node',
+    // PGlite tests time out under parallel coverage load at the 5s default
+    testTimeout: 30_000,
     setupFiles: ['tests/setup.ts'],
     exclude: [...configDefaults.exclude, '**/.worktrees/**'],
     coverage: {

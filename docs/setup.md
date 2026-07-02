@@ -1,5 +1,21 @@
 # Setup (one-time)
 
+## Run locally without Supabase (local mock mode)
+
+No accounts or keys needed — fully offline:
+
+1. `npm install`
+2. Copy `.env.example` → `.env` and set only `LOCAL_MOCK=true` (all other vars may stay blank).
+3. `npm run dev` → sign in at `/login` as **dr.pawar@example.com** / **password**.
+
+What you get: a file-backed PGlite Postgres at `.local-db/` (migrated + seeded with demo
+patients, visits, fees on first start), file uploads under `public/uploads/`, and a canned AI
+treatment draft (set `GEMINI_API_KEY` to use the real API). Both dirs are gitignored.
+Reset everything by deleting `.local-db/` and `public/uploads/`.
+Mock mode refuses to run in production (`isLocalMock()` throws).
+
+## Real Supabase setup
+
 1. Create a Supabase project (free tier, region ap-south-1).
 2. SQL editor → run nothing manually; locally run `npm run db:migrate` with `DATABASE_URL` set to the
    **session pooler** connection string (drizzle migrations need it once), then switch `DATABASE_URL`

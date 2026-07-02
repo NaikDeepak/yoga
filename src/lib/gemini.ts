@@ -1,3 +1,5 @@
+import { isLocalMock } from './local-mock';
+
 export type TreatmentDraftFields = {
   yogaProgram: string;
   pranayam: string;
@@ -137,8 +139,20 @@ function buildPrompt(ctx: TreatmentContext): string {
   return lines.join('\n');
 }
 
+// Offline stand-in used in local mock mode when no API key is configured.
+const MOCK_TREATMENT_DRAFT: TreatmentDraftFields = {
+  yogaProgram: 'Gentle hatha sequence 30 min daily: Tadasana, Bhujangasana, Marjaryasana, Setu Bandhasana. Increase holds gradually over 4 weeks.',
+  pranayam: 'Anulom Vilom 10 min and Bhramari 5 rounds every morning on an empty stomach.',
+  massage: 'Weekly full-body abhyanga with warm sesame oil; focus on the lower back and shoulders.',
+  yogaTherapy: 'Supported restorative poses with bolster; avoid deep forward bends until pain subsides.',
+  dietPlan: 'Warm, freshly cooked meals; reduce fried and processed food; last meal before 8 pm; 2.5 L water daily.',
+  medicines: 'Ashwagandha 500 mg after dinner; Triphala churna 1 tsp with warm water at bedtime.',
+  panchkarma: '',
+};
+
 export async function generateTreatmentDraft(context: TreatmentContext): Promise<TreatmentDraftFields> {
   const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey && isLocalMock()) return { ...MOCK_TREATMENT_DRAFT };
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
 
   const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {

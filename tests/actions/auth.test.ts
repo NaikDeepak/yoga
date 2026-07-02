@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { signInAction, signOutAction, signUpAction } from '@/actions/auth';
+import { MOCK_SESSION_COOKIE } from '@/lib/local-mock';
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((url: string) => { throw new Error(`REDIRECT:${url}`); }),
@@ -12,6 +13,12 @@ const auth = {
 };
 vi.mock('@/lib/supabase/server', () => ({
   createSupabaseServerClient: async () => ({ auth }),
+}));
+
+const cookieSet = vi.fn();
+const cookieDelete = vi.fn();
+vi.mock('next/headers', () => ({
+  cookies: async () => ({ set: cookieSet, delete: cookieDelete }),
 }));
 
 const fd = (entries: Record<string, string>) => {
@@ -60,5 +67,37 @@ describe('signUpAction', () => {
     auth.signUp.mockResolvedValue({ error: { message: 'User already registered' } });
     await expect(signUpAction(fd({ email: 'dup@b.c', password: 'secret' })))
       .rejects.toThrow(`REDIRECT:/register?error=${encodeURIComponent('User already registered')}`);
+  });
+});
+
+describe('local mock mode', () => {
+  beforeEach(() => vi.stubEnv('LOCAL_MOCK', 'true'));
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('signs in with the mock credentials and sets an httpOnly session cookie', async () => {
+    await expect(signInAction(fd({ email: 'dr.pawar@example.com', password: 'password' })))
+      .rejects.toThrow('REDIRECT:/dashboard');
+    expect(cookieSet).toHaveBeenCalledWith(
+      MOCK_SESSION_COOKIE, '1', { httpOnly: true, sameSite: 'lax', path: '/' },
+    );
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('rejects wrong mock credentials without setting a cookie', async () => {
+    await expect(signInAction(fd({ email: 'dr.pawar@example.com', password: 'nope' })))
+      .rejects.toThrow('REDIRECT:/login?error=1');
+    expect(cookieSet).not.toHaveBeenCalled();
+  });
+
+  it('signs out by deleting the session cookie with matching path', async () => {
+    await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
+    expect(cookieDelete).toHaveBeenCalledWith({ name: MOCK_SESSION_COOKIE, path: '/' });
+    expect(auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it('short-circuits sign-up to the login page', async () => {
+    await expect(signUpAction(fd({ email: 'x@y.z', password: 'pw' })))
+      .rejects.toThrow('REDIRECT:/login?registered=1');
+    expect(auth.signUp).not.toHaveBeenCalled();
   });
 });
