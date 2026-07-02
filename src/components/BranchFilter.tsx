@@ -27,7 +27,7 @@ export function BranchFilter() {
 
   return (
     <Select value={current} onValueChange={handleChange}>
-      <SelectTrigger className="w-[280px]">
+      <SelectTrigger className="w-full sm:w-[280px]">
         <SelectValue placeholder={t.branchFilter.allBranches} />
       </SelectTrigger>
       <SelectContent>

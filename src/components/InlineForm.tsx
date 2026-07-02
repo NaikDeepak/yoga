@@ -4,6 +4,8 @@ import { useState, useRef } from 'react';
 import type { ActionResult } from '@/actions/patients';
 import { useTranslations } from '@/lib/i18n/context';
 
+import { cn } from '@/lib/utils';
+
 export function InlineForm({
   action, children, className,
 }: {
@@ -42,7 +44,7 @@ export function InlineForm({
       {error && <p className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
       {pending && <p className="mb-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{t.inlineForm.submitting}</p>}
       {saved && !pending && <p className="mb-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{t.inlineForm.saved}</p>}
-      <fieldset disabled={pending} className="contents">
+      <fieldset disabled={pending} className={cn("min-w-0 border-0 p-0 m-0", className)}>
         {children}
       </fieldset>
     </form>

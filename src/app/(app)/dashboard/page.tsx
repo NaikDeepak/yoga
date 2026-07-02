@@ -105,15 +105,17 @@ export default async function DashboardPage({
       {/* Header Row */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t.dashboard.title}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">{t.dashboard.title}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {t.dashboard.subtitle}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <BranchFilter />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
+          <div className="w-full sm:w-auto">
+            <BranchFilter />
+          </div>
 
-          <Button className="rounded-full gap-2 px-5 h-10 shadow-md" asChild>
+          <Button className="rounded-full gap-2 px-5 h-10 shadow-md w-full sm:w-auto justify-center" asChild>
             <Link href="/patients/new">
               <Plus className="h-4 w-4" />
               {t.dashboard.addPatient}
@@ -123,19 +125,19 @@ export default async function DashboardPage({
       </div>
 
       {/* Stat Cards Row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Primary Solid Green Card */}
         <Card className="rounded-2xl border-none bg-gradient-to-br from-primary/90 to-primary text-primary-foreground shadow-md relative overflow-hidden">
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-primary-foreground/90">{t.dashboard.totalPatients}</CardTitle>
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-sm font-medium text-primary-foreground/90 truncate">{t.dashboard.totalPatients}</CardTitle>
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm">
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </div>
             </div>
           </CardHeader>
           <CardContent className="relative z-10">
-            <p className="text-4xl font-bold tracking-tight">{stats.totalPatients}</p>
+            <p className="text-3xl sm:text-4xl font-bold tracking-tight truncate">{stats.totalPatients}</p>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-primary-foreground/80 font-medium bg-black/10 w-fit px-2 py-1 rounded-md">
               <ArrowUpRight className="h-3 w-3" />
               <span>{t.dashboard.increasedLastMonth}</span>
@@ -177,10 +179,10 @@ export default async function DashboardPage({
         </Card>
 
         <Card className="rounded-2xl shadow-sm border-border">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-xl font-semibold">{t.dashboard.reminders}</CardTitle>
+          <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <CardTitle className="text-xl font-semibold truncate">{t.dashboard.reminders}</CardTitle>
             {tomorrowFollowUps.length > 0 && (
-              <Button asChild size="sm" variant="outline" className="rounded-full shrink-0">
+              <Button asChild size="sm" variant="outline" className="rounded-full shrink-0 w-full sm:w-auto text-center justify-center">
                 <a href={digestUrl(tomorrowFollowUps, tomorrowStr, digestTarget)} target="_blank" rel="noopener noreferrer">
                   {t.dashboard.whatsappDigest.replace('{count}', String(tomorrowFollowUps.length))}
                 </a>
@@ -402,19 +404,19 @@ export default async function DashboardPage({
 
 function StatCard({ title, value, trend, icon }: { title: string; value: string; trend?: string; icon?: React.ReactNode }) {
   return (
-    <Card className="rounded-2xl shadow-sm border-border">
+    <Card className="rounded-2xl shadow-sm border-border min-w-0">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground truncate">{title}</CardTitle>
           {icon && (
-            <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border text-muted-foreground">
+            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground">
               {icon}
             </div>
           )}
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-bold tracking-tight">{value}</p>
+        <p className="text-2xl sm:text-3xl font-bold tracking-tight truncate" title={value}>{value}</p>
         {trend && (
           <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
             <span className="text-green-600 bg-green-100 dark:bg-green-900/30 px-1 rounded inline-flex items-center">

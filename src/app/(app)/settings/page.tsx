@@ -55,7 +55,7 @@ export default async function SettingsPage() {
                 </label>
               ))}
             </div>
-            <Button type="submit" className="rounded-full px-6">
+            <Button type="submit" className="rounded-full px-6 w-full sm:w-auto">
               {t.settings.saveBtn}
             </Button>
           </form>
@@ -80,7 +80,7 @@ export default async function SettingsPage() {
                 defaultValue={whatsappNumber ?? ''}
               />
             </div>
-            <Button type="submit" className="rounded-full px-6">
+            <Button type="submit" className="rounded-full px-6 w-full sm:w-auto">
               {t.settings.saveBtn}
             </Button>
           </InlineForm>
