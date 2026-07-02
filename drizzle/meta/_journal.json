@@ -50,6 +50,13 @@
       "when": 1781703422702,
       "tag": "0006_large_miracleman",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783003768651,
+      "tag": "0007_silent_madelyne_pryor",
+      "breakpoints": true
     }
   ]
 }

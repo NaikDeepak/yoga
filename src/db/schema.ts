@@ -140,9 +140,11 @@ export type FeePayment = typeof feePayments.$inferSelect;
 export const userPreferences = pgTable('user_preferences', {
   userId: text('user_id').primaryKey(),
   language: text('language').notNull().default('en'),
+  whatsappNumber: text('whatsapp_number'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [
   check('language_check', sql`language IN ('en', 'mr')`),
+  check('whatsapp_number_check', sql`whatsapp_number IS NULL OR whatsapp_number ~ '^[0-9]{10}$'`),
 ]).enableRLS();
 
 export type UserPreference = typeof userPreferences.$inferSelect;
