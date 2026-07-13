@@ -151,3 +151,41 @@ export const userPreferences = pgTable('user_preferences', {
 ]).enableRLS();
 
 export type UserPreference = typeof userPreferences.$inferSelect;
+
+export const exercises = pgTable('exercises', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  nameMr: text('name_mr').notNull(),
+  category: text('category').notNull(), // 'neck', 'back', 'core', 'lower_body'
+  description: text('description'),
+  descriptionMr: text('description_mr'),
+  repetitions: text('repetitions').notNull(),
+  repetitionsMr: text('repetitions_mr').notNull(),
+  daysPerWeek: text('days_per_week').notNull(),
+  daysPerWeekMr: text('days_per_week_mr').notNull(),
+  steps: text('steps').array().notNull(), // text array
+  stepsMr: text('steps_mr').array().notNull(), // text array
+  tip: text('tip'),
+  tipMr: text('tip_mr'),
+  imagePath: text('image_path'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}).enableRLS();
+
+export const prescribedExercises = pgTable('prescribed_exercises', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  exerciseId: uuid('exercise_id').notNull()
+    .references(() => exercises.id, { onDelete: 'cascade' }),
+  // Per-patient dose overrides; null falls back to the exercise's library default.
+  repetitions: text('repetitions'),
+  daysPerWeek: text('days_per_week'),
+  customNote: text('custom_note'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('prescribed_exercises_patient_idx').on(table.patientId),
+]).enableRLS();
+
+export type Exercise = typeof exercises.$inferSelect;
+export type PrescribedExerciseRow = typeof prescribedExercises.$inferSelect;
+

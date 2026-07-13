@@ -131,3 +131,14 @@ export const paymentSchema = z.object({
   description: opt(z.string().trim().max(200, 'Description too long / तपशील खूप मोठा आहे')),
 });
 export type PaymentInput = z.infer<typeof paymentSchema>;
+
+export const prescribedExerciseSchema = z.object({
+  exerciseId: z.string().uuid('Invalid exercise / अमान्य व्यायाम'),
+  customNote: opt(z.string().trim().max(500)).nullable(),
+  repetitions: opt(z.string().trim().max(100, 'Too long / खूप मोठे')).nullable(),
+  daysPerWeek: opt(z.string().trim().max(100, 'Too long / खूप मोठे')).nullable(),
+});
+
+export const prescribedExercisesListSchema = z.array(prescribedExerciseSchema);
+export type PrescribedExerciseInput = z.infer<typeof prescribedExerciseSchema>;
+

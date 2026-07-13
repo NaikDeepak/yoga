@@ -64,6 +64,13 @@
       "when": 1783916445003,
       "tag": "0008_purple_rictor",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783922662801,
+      "tag": "0009_nice_forgotten_one",
+      "breakpoints": true
     }
   ]
 }
