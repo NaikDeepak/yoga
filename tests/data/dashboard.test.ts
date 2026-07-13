@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { getDashboardStats, getAilmentBreakdown, getRecentVisits } from '@/data/dashboard';
+import { getDashboardStats, getAilmentBreakdown, getRecentVisits, getBirthdaysToday } from '@/data/dashboard';
 import { addVisit, listVisitsWithData } from '@/data/visits';
 import { addPayment, setCourseFee } from '@/data/fees';
 import { createPatient } from '@/data/patients';
 import { addProblem } from '@/data/problems';
 import type { Db } from '@/db/types';
+import { getISTDateString } from '@/lib/dates';
 
 let db: Db;
 beforeEach(async () => { db = await createTestDb(); });
@@ -164,5 +165,63 @@ describe('listVisitsWithData', () => {
     const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
     await addVisit(db, p.id, { visitDate: '2026-06-01', progressNote: 'note only' });
     expect(await listVisitsWithData(db, p.id)).toHaveLength(0);
+  });
+});
+
+describe('getBirthdaysToday', () => {
+  it('returns patients with birthday matching today (IST)', async () => {
+    const todayIST = getISTDateString(0);
+    const tomorrowIST = getISTDateString(1);
+    const [, mm, dd] = todayIST.split('-');
+    const [, tmm, tdd] = tomorrowIST.split('-');
+    
+    // Create patient with birthday today (year doesn't matter, e.g. 1990)
+    const birthDateToday = `1990-${mm}-${dd}`;
+    const p1 = await createPatient(db, {
+      fullName: 'Birthday Patient 1',
+      mobile: '9876543210',
+      birthDate: birthDateToday,
+      branch: 'Manjari BK'
+    });
+
+    // Create patient with birthday tomorrow
+    const birthDateTomorrow = `1990-${tmm}-${tdd}`;
+    const p1tom = await createPatient(db, {
+      fullName: 'Birthday Patient Tomorrow',
+      mobile: '9876543211',
+      birthDate: birthDateTomorrow,
+      branch: 'Manjari BK'
+    });
+
+    // Create patient with birthday not today or tomorrow
+    const p2 = await createPatient(db, {
+      fullName: 'Other Patient',
+      mobile: '9000000001',
+      birthDate: '1990-12-31'
+    });
+
+    // Create patient with no birthday
+    const p3 = await createPatient(db, {
+      fullName: 'No Birthday Patient',
+      mobile: '9000000002'
+    });
+
+    const results = await getBirthdaysToday(db);
+    expect(results).toHaveLength(2);
+    
+    const todayResult = results.find(r => r.id === p1.id);
+    const tomResult = results.find(r => r.id === p1tom.id);
+    
+    expect(todayResult).toBeDefined();
+    expect(todayResult?.isTomorrow).toBe(false);
+    expect(tomResult).toBeDefined();
+    expect(tomResult?.isTomorrow).toBe(true);
+
+    // Test branch filter
+    const manjariResults = await getBirthdaysToday(db, 'Manjari BK');
+    expect(manjariResults).toHaveLength(2);
+
+    const kharadiResults = await getBirthdaysToday(db, 'Kharadi');
+    expect(kharadiResults).toHaveLength(0);
   });
 });

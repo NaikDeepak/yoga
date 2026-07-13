@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useActionState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
 import { BRANCHES } from '@/lib/presets';
 import type { Patient } from '@/db/schema';
@@ -75,6 +76,16 @@ export function PatientForm({
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
+            <Label htmlFor="birthDate">{t.form.birthDate}</Label>
+            <Input
+              id="birthDate"
+              name="birthDate"
+              type="date"
+              defaultValue={defaultValues?.birthDate ? String(defaultValues.birthDate).substring(0, 10) : ''}
+              placeholder={t.form.birthDatePlaceholder}
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="age">{t.form.age}</Label>
             <Input
               id="age"
@@ -86,7 +97,7 @@ export function PatientForm({
               placeholder="—"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2 sm:col-span-1">
             <Label htmlFor="gender">{t.form.gender}</Label>
             <Select name="gender" defaultValue={defaultValues?.gender ?? '__none__'}>
               <SelectTrigger id="gender">
@@ -229,7 +240,14 @@ export function PatientForm({
       </div>
 
       <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-        {isPending ? t.common.saving : submitLabel}
+        {isPending ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+            <span>{t.common.saving}</span>
+          </>
+        ) : (
+          submitLabel
+        )}
       </Button>
     </form>
   );

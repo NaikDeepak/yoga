@@ -24,6 +24,12 @@ describe('patientSchema', () => {
     expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', age: '150' }).success).toBe(false);
     expect(patientSchema.safeParse({ fullName: '', mobile: '9876543210' }).success).toBe(false);
   });
+  it('accepts valid birthDate and rejects bad format or invalid calendar dates', () => {
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '2000-01-01' }).success).toBe(true);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '' }).success).toBe(true);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '01-01-2000' }).success).toBe(false);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '2000-02-30' }).success).toBe(false);
+  });
 });
 
 describe('problemSchema', () => {

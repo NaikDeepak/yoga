@@ -22,6 +22,7 @@
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.18.0",
     "next": "^15.5.19",
+    "nextjs-toploader": "^3.9.17",
     "postgres": "^3.4.9",
     "radix-ui": "^1.5.0",
     "react": "^19.2.7",

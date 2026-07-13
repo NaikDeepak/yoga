@@ -5,6 +5,7 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { InlineForm } from '@/components/InlineForm';
 import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/SubmitButton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -154,9 +155,9 @@ export function TreatmentPlanForm({
                 />
               </div>
             ))}
-            <Button type="submit" size="sm" disabled={generating}>
+            <SubmitButton size="sm" disabled={generating} pendingLabel={`${t.treatmentPlan.saveBtn}...`}>
               {t.treatmentPlan.saveBtn}
-            </Button>
+            </SubmitButton>
           </InlineForm>
         </CardContent>
       </Card>

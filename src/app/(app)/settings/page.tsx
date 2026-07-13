@@ -3,7 +3,7 @@ import { getTranslations, LOCALES } from '@/lib/i18n/translations';
 import { saveLanguageAction } from '@/actions/preferences';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/SubmitButton';
 
 export default async function SettingsPage() {
   const locale = await getLocale();
@@ -46,9 +46,9 @@ export default async function SettingsPage() {
                 </label>
               ))}
             </div>
-            <Button type="submit" className="rounded-full px-6">
+            <SubmitButton className="rounded-full px-6" pendingLabel={`${t.settings.saveBtn}...`}>
               {t.settings.saveBtn}
-            </Button>
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>

@@ -18,6 +18,7 @@ export const patients = pgTable('patients', {
   occupation: text('occupation'),
   emergencyContact: text('emergency_contact'),
   branch: text('branch'),
+  birthDate: date('birth_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }).enableRLS();
 

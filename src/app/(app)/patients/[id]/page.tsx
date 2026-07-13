@@ -24,6 +24,7 @@ import { InlineForm } from '@/components/InlineForm';
 import { PatientHeader } from '@/components/PatientHeader';
 import { TabDropdown } from '@/components/TabDropdown';
 import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/SubmitButton';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -137,6 +138,7 @@ async function Overview({
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           {[
+            [t.patientDetail.birthDate, patient.birthDate ? String(patient.birthDate).substring(0, 10) : null],
             [t.patientDetail.age, patient.age],
             [t.patientDetail.gender, patient.gender],
             [t.patientDetail.occupation, patient.occupation],
@@ -294,7 +296,7 @@ async function Problems({ patientId, t }: { patientId: string; t: Translations }
               <Label htmlFor="problem-note">{t.problems.noteLabel}</Label>
               <Input id="problem-note" name="note" placeholder={t.problems.notePlaceholder} />
             </div>
-            <Button type="submit" size="sm">{t.problems.addBtn}</Button>
+            <SubmitButton size="sm" pendingLabel={`${t.problems.addBtn}...`}>{t.problems.addBtn}</SubmitButton>
           </InlineForm>
         </CardContent>
       </Card>
@@ -311,7 +313,7 @@ async function Problems({ patientId, t }: { patientId: string; t: Translations }
                 placeholder={t.problems.customPlaceholder}
               />
             </div>
-            <Button type="submit" size="sm">{t.problems.addCustomBtn}</Button>
+            <SubmitButton size="sm" pendingLabel={`${t.problems.addCustomBtn}...`}>{t.problems.addCustomBtn}</SubmitButton>
           </InlineForm>
         </CardContent>
       </Card>
@@ -354,7 +356,7 @@ async function Documents({ patientId, t }: { patientId: string; t: Translations 
                 accept="application/pdf,image/jpeg,image/png"
               />
             </div>
-            <Button type="submit" size="sm">{t.documents.uploadBtn}</Button>
+            <SubmitButton size="sm" pendingLabel={`${t.documents.uploadBtn}...`}>{t.documents.uploadBtn}</SubmitButton>
           </InlineForm>
         </CardContent>
       </Card>
@@ -437,7 +439,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
                 <Label htmlFor="progressNote">{t.treatment.progressNote}</Label>
                 <Textarea id="progressNote" name="progressNote" rows={2} />
               </div>
-              <Button type="submit" size="sm">{t.treatment.addVisitBtn}</Button>
+              <SubmitButton size="sm" pendingLabel={`${t.treatment.addVisitBtn}...`}>{t.treatment.addVisitBtn}</SubmitButton>
             </InlineForm>
           </CardContent>
         </Card>
@@ -874,7 +876,7 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
         </Card>
 
         <div className="flex justify-end">
-          <Button type="submit">{t.assessment.saveBtn}</Button>
+          <SubmitButton pendingLabel={`${t.assessment.saveBtn}...`}>{t.assessment.saveBtn}</SubmitButton>
         </div>
       </InlineForm>
     </div>
@@ -933,7 +935,7 @@ function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: P
                   placeholder="e.g. 2000"
                 />
               </div>
-              <Button type="submit" size="sm">{t.fees.setBtn}</Button>
+              <SubmitButton size="sm" pendingLabel={`${t.fees.setBtn}...`}>{t.fees.setBtn}</SubmitButton>
             </div>
           </InlineForm>
         </CardContent>
@@ -960,7 +962,7 @@ function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: P
                 <Input id="description" name="description" placeholder={t.fees.notePlaceholder} />
               </div>
             </div>
-            <Button type="submit" size="sm" className="mt-3">{t.fees.addBtn}</Button>
+            <SubmitButton size="sm" className="mt-3" pendingLabel={`${t.fees.addBtn}...`}>{t.fees.addBtn}</SubmitButton>
           </InlineForm>
         </CardContent>
       </Card>
