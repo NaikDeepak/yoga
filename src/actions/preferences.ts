@@ -4,8 +4,9 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { requireUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
-import { setUserLanguage } from '@/data/preferences';
+import { setUserLanguage, setWhatsappNumber } from '@/data/preferences';
 import { LOCALES, type Locale } from '@/lib/i18n/translations';
+import { whatsappNumberSchema, firstError } from '@/lib/validation';
 import type { ActionResult } from '@/actions/patients';
 
 export async function saveLanguageAction(locale: Locale): Promise<ActionResult> {
@@ -21,5 +22,15 @@ export async function saveLanguageAction(locale: Locale): Promise<ActionResult> 
     maxAge: 60 * 60 * 24 * 365,
   });
   revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+export async function saveWhatsappNumberAction(formData: FormData): Promise<ActionResult> {
+  const user = await requireUser();
+  const parsed = whatsappNumberSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  await setWhatsappNumber(getDb(), user.id, parsed.data.whatsappNumber ?? null);
+  revalidatePath('/settings');
+  revalidatePath('/dashboard');
   return { ok: true };
 }

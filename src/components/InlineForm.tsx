@@ -4,12 +4,16 @@ import { useState, useRef } from 'react';
 import type { ActionResult } from '@/actions/patients';
 import { useTranslations } from '@/lib/i18n/context';
 
+import { cn } from '@/lib/utils';
+
 export function InlineForm({
-  action, children, className,
+  action, children, className, resetOnSuccess = true,
 }: {
   action: (formData: FormData) => Promise<ActionResult>;
   children: React.ReactNode;
   className?: string;
+  // false for edit-in-place fields: reset() restores mount-time defaultValue, not the saved value
+  resetOnSuccess?: boolean;
 }) {
   const t = useTranslations();
   const genericError = t.inlineForm.genericError;
@@ -27,7 +31,7 @@ export function InlineForm({
         try {
           const result = await action(formData);
           if (result && !result.ok) setError(result.error);
-          else { setError(null); setSaved(true); ref.current?.reset(); }
+          else { setError(null); setSaved(true); if (resetOnSuccess) ref.current?.reset(); }
         } catch (err) {
           // Re-throw Next.js redirect/notFound errors so the framework handles them
           if (err instanceof Error && (err.message === 'NEXT_REDIRECT' || err.message === 'NEXT_NOT_FOUND')) {
@@ -42,7 +46,7 @@ export function InlineForm({
       {error && <p className="mb-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
       {pending && <p className="mb-2 rounded-md bg-muted px-3 py-2 text-sm text-muted-foreground">{t.inlineForm.submitting}</p>}
       {saved && !pending && <p className="mb-2 rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">{t.inlineForm.saved}</p>}
-      <fieldset disabled={pending} className="contents">
+      <fieldset disabled={pending} className={cn("min-w-0 border-0 p-0 m-0", className)}>
         {children}
       </fieldset>
     </form>

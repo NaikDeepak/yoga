@@ -1,5 +1,5 @@
 {
-  "id": "c5a2889c-08e3-43df-ad86-b244450036e7",
+  "id": "4f0fbd0b-7653-409f-adcd-d7f143626d80",
   "prevId": "ba7d744b-1440-412b-b426-ce789b1cfa56",
   "version": "7",
   "dialect": "postgresql",
@@ -591,12 +591,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "birth_date": {
-          "name": "birth_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -742,6 +736,12 @@
           "notNull": true,
           "default": "'en'"
         },
+        "whatsapp_number": {
+          "name": "whatsapp_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
@@ -759,6 +759,10 @@
         "language_check": {
           "name": "language_check",
           "value": "language IN ('en', 'mr')"
+        },
+        "whatsapp_number_check": {
+          "name": "whatsapp_number_check",
+          "value": "whatsapp_number IS NULL OR whatsapp_number ~ '^[0-9]{10}$'"
         }
       },
       "isRLSEnabled": true

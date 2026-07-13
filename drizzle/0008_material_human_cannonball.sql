@@ -1,1 +1,0 @@
-CREATE INDEX "visits_patient_latest_idx" ON "visits" USING btree ("patient_id","visit_date" DESC NULLS LAST,"created_at" DESC NULLS LAST);

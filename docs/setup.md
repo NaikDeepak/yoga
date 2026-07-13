@@ -1,5 +1,21 @@
 # Setup (one-time)
 
+## Run locally without Supabase (local mock mode)
+
+No accounts or keys needed — fully offline:
+
+1. `npm install`
+2. Copy `.env.example` → `.env` and set only `LOCAL_MOCK=true` (all other vars may stay blank).
+3. `npm run dev` → sign in at `/login` as **dr.pawar@example.com** / **password**.
+
+What you get: a file-backed PGlite Postgres at `.local-db/` (migrated + seeded with demo
+patients, visits, fees on first start), file uploads under `public/uploads/`, and a canned AI
+treatment draft (set `GEMINI_API_KEY` to use the real API). Both dirs are gitignored.
+Reset everything by deleting `.local-db/` and `public/uploads/`.
+Mock mode refuses to run in production (`isLocalMock()` throws).
+
+## Real Supabase setup
+
 1. Create a Supabase project (free tier, region ap-south-1).
 2. SQL editor → run nothing manually; locally run `npm run db:migrate` with `DATABASE_URL` set to the
    **session pooler** connection string (drizzle migrations need it once), then switch `DATABASE_URL`
@@ -46,6 +62,13 @@
 - [ ] Branch filter on the calendar page scopes the visible follow-ups to the selected branch
 - [ ] Today's date is visually highlighted in the calendar grid
 - [ ] Dashboard follow-ups are grouped under Today/Tomorrow/weekday headers
+- [ ] Reminders card "Send Msg" opens WhatsApp with the bilingual reminder prefilled for the right patient and number
+- [ ] Week's Schedule row WhatsApp icon opens wa.me for that patient with their follow-up date
+- [ ] Calendar day-dialog row WhatsApp icon opens wa.me for that patient
+- [ ] Digest button appears on the Reminders card only when tomorrow has follow-ups, shows the count, and opens wa.me addressed to the configured digest number (or the clinic number when unset) with one numbered line per patient (name, code, mobile, branch)
+- [ ] Settings → WhatsApp digest number saves a 10-digit number, rejects invalid input with a bilingual error, and clearing it falls back to the clinic number
+- [ ] With a branch filter active, the digest lists only that branch's patients
+- [ ] On a phone logged into the clinic's WhatsApp number, the digest opens the "Message yourself" chat
 - [ ] Print view → Save as PDF produces clean A4
 - [ ] Logged-out user hitting /patients is redirected to /login
 - [ ] With signups disabled, /register shows an error instead of creating a user

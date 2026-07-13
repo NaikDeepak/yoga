@@ -1,13 +1,22 @@
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations, LOCALES } from '@/lib/i18n/translations';
-import { saveLanguageAction } from '@/actions/preferences';
+import { saveLanguageAction, saveWhatsappNumberAction } from '@/actions/preferences';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { SubmitButton } from '@/components/SubmitButton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { InlineForm } from '@/components/InlineForm';
+import { requireUser } from '@/lib/auth';
+import { getDb } from '@/db/client';
+import { getWhatsappNumber } from '@/data/preferences';
+import { CLINIC } from '@/lib/clinic';
 
 export default async function SettingsPage() {
   const locale = await getLocale();
   const t = getTranslations(locale);
+  const user = await requireUser();
+  const whatsappNumber = await getWhatsappNumber(getDb(), user.id);
 
   return (
     <div className="space-y-8 pb-10">
@@ -46,10 +55,35 @@ export default async function SettingsPage() {
                 </label>
               ))}
             </div>
-            <SubmitButton className="rounded-full px-6" pendingLabel={`${t.settings.saveBtn}...`}>
+            <SubmitButton className="rounded-full px-6 w-full sm:w-auto" pendingLabel={`${t.settings.saveBtn}...`}>
               {t.settings.saveBtn}
             </SubmitButton>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl shadow-sm border-border max-w-lg">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold">{t.settings.whatsappTitle}</CardTitle>
+          <CardDescription>{t.settings.whatsappDescription.replace('{phone}', CLINIC.phone)}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <InlineForm action={saveWhatsappNumberAction} resetOnSuccess={false} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="whatsappNumber">{t.form.mobile}</Label>
+              <Input
+                id="whatsappNumber"
+                name="whatsappNumber"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder={t.form.mobilePlaceholder}
+                defaultValue={whatsappNumber ?? ''}
+              />
+            </div>
+            <SubmitButton className="rounded-full px-6 w-full sm:w-auto" pendingLabel={`${t.settings.saveBtn}...`}>
+              {t.settings.saveBtn}
+            </SubmitButton>
+          </InlineForm>
         </CardContent>
       </Card>
     </div>

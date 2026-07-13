@@ -67,6 +67,7 @@ export const en = {
     birthdayWishSubtext: 'Wish them a healthy year! / त्यांचे वर्ष आरोग्यदायी जावो!',
     noBirthdays: 'No birthdays today or tomorrow',
     sendMsg: 'Send Msg',
+    whatsappDigest: "Tomorrow's list → WhatsApp ({count})",
     viewAll: 'View all {count} follow-ups',
     weeksSchedule: "Week's Schedule",
     noVisitsThisWeek: 'No visits this week',
@@ -288,6 +289,8 @@ export const en = {
     languageDescription: 'Choose your preferred language for the interface',
     saveBtn: 'Save Preferences',
     saved: 'Preferences saved',
+    whatsappTitle: 'WhatsApp Digest Number',
+    whatsappDescription: "Tomorrow's appointment list opens in WhatsApp addressed to this number. Leave blank to use the clinic number ({phone}).",
     languages: {
       en: 'English',
       mr: 'मराठी',

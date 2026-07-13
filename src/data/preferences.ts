@@ -23,3 +23,21 @@ export async function setUserLanguage(db: Db, userId: string, locale: Locale): P
       set: { language: locale, updatedAt: new Date(getISTDateString()) },
     });
 }
+
+export async function getWhatsappNumber(db: Db, userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ whatsappNumber: userPreferences.whatsappNumber })
+    .from(userPreferences)
+    .where(eq(userPreferences.userId, userId));
+  return row?.whatsappNumber ?? null;
+}
+
+export async function setWhatsappNumber(db: Db, userId: string, mobile: string | null): Promise<void> {
+  await db
+    .insert(userPreferences)
+    .values({ userId, whatsappNumber: mobile })
+    .onConflictDoUpdate({
+      target: userPreferences.userId,
+      set: { whatsappNumber: mobile, updatedAt: new Date(getISTDateString()) },
+    });
+}

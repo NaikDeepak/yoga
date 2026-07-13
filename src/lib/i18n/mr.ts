@@ -69,6 +69,7 @@ export const mr: Translations = {
     birthdayWishSubtext: 'त्यांचे वर्ष आरोग्यदायी जावो! / Wish them a healthy year!',
     noBirthdays: 'आज किंवा उद्या वाढदिवस नाहीत',
     sendMsg: 'संदेश पाठवा',
+    whatsappDigest: 'उद्याची यादी → WhatsApp ({count})',
     viewAll: 'सर्व {count} फॉलो-अप पहा',
     weeksSchedule: 'आठवड्याचे वेळापत्रक',
     noVisitsThisWeek: 'या आठवड्यात भेटी नाहीत',
@@ -290,6 +291,8 @@ export const mr: Translations = {
     languageDescription: 'इंटरफेससाठी आपली पसंतीची भाषा निवडा',
     saveBtn: 'प्राधान्यक्रम जतन करा',
     saved: 'प्राधान्यक्रम जतन केले',
+    whatsappTitle: 'WhatsApp यादी क्रमांक',
+    whatsappDescription: 'उद्याच्या भेटींची यादी या क्रमांकावर WhatsApp मध्ये उघडेल. रिकामे ठेवल्यास क्लिनिक क्रमांक ({phone}) वापरला जाईल.',
     languages: {
       en: 'English',
       mr: 'मराठी',

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { getSessionUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
@@ -13,8 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ patientId: string }> },
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getSessionUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized / अनधिकृत' }, { status: 401 });
     }
