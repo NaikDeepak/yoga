@@ -175,8 +175,8 @@ describe('getBirthdaysToday', () => {
     const [, mm, dd] = todayIST.split('-');
     const [, tmm, tdd] = tomorrowIST.split('-');
     
-    // Create patient with birthday today (year doesn't matter, e.g. 1990)
-    const birthDateToday = `1990-${mm}-${dd}`;
+    // Create patient with birthday today (leap year 2000 so 02-29 stays a valid date)
+    const birthDateToday = `2000-${mm}-${dd}`;
     const p1 = await createPatient(db, {
       fullName: 'Birthday Patient 1',
       mobile: '9876543210',
@@ -185,7 +185,7 @@ describe('getBirthdaysToday', () => {
     });
 
     // Create patient with birthday tomorrow
-    const birthDateTomorrow = `1990-${tmm}-${tdd}`;
+    const birthDateTomorrow = `2000-${tmm}-${tdd}`;
     const p1tom = await createPatient(db, {
       fullName: 'Birthday Patient Tomorrow',
       mobile: '9876543211',
@@ -193,15 +193,16 @@ describe('getBirthdaysToday', () => {
       branch: 'Manjari BK'
     });
 
-    // Create patient with birthday not today or tomorrow
-    const p2 = await createPatient(db, {
+    // Create patient with birthday not today or tomorrow (two days out never matches)
+    const [, omm, odd] = getISTDateString(2).split('-');
+    await createPatient(db, {
       fullName: 'Other Patient',
       mobile: '9000000001',
-      birthDate: '1990-12-31'
+      birthDate: `2000-${omm}-${odd}`
     });
 
     // Create patient with no birthday
-    const p3 = await createPatient(db, {
+    await createPatient(db, {
       fullName: 'No Birthday Patient',
       mobile: '9000000002'
     });

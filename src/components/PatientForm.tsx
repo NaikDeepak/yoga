@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useActionState } from 'react';
-import { Loader2 } from 'lucide-react';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
 import { BRANCHES } from '@/lib/presets';
 import type { Patient } from '@/db/schema';
 import type { ActionResult } from '@/actions/patients';
-import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -34,7 +33,7 @@ export function PatientForm({
   const [weight, setWeight] = useState(defaultValues?.weightKg?.toString() ?? '');
   const [height, setHeight] = useState(defaultValues?.heightCm?.toString() ?? '');
 
-  const [state, formAction, isPending] = useActionState(
+  const [state, formAction] = useActionState(
     async (prevState: ActionResult | null, formData: FormData) => {
       if (formData.get('gender') === '__none__') formData.set('gender', '');
       if (formData.get('branch') === '__none__') formData.set('branch', '');
@@ -239,16 +238,9 @@ export function PatientForm({
         </div>
       </div>
 
-      <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-        {isPending ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-            <span>{t.common.saving}</span>
-          </>
-        ) : (
-          submitLabel
-        )}
-      </Button>
+      <SubmitButton className="w-full sm:w-auto" pendingLabel={t.common.saving}>
+        {submitLabel}
+      </SubmitButton>
     </form>
   );
 }

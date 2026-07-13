@@ -198,12 +198,12 @@ export async function getBirthdaysToday(
       )
     );
 
-  const todayMD = `${tMM}-${tDD}`;
+  const tomorrowMD = `${tomMM}-${tomDD}`;
   return rows.map((r) => {
     const bMD = r.birthDate ? String(r.birthDate).substring(5, 10) : '';
     return {
       ...r,
-      isTomorrow: bMD !== todayMD,
+      isTomorrow: bMD === tomorrowMD,
     };
   });
 }

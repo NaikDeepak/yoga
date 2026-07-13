@@ -128,8 +128,7 @@ export default async function DashboardPage({
                 {t.dashboard.birthdaysToday}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {locale === 'en' ? 'Wish them a healthy year! / ' : 'त्यांचे वर्ष आरोग्यदायी जावो! / '}
-                {locale === 'mr' ? 'आरोग्यदायी वर्षाच्या शुभेच्छा द्या!' : 'Wish them a healthy year!'}
+                {t.dashboard.birthdayWishSubtext}
               </p>
             </div>
           </div>

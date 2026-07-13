@@ -9,6 +9,9 @@ interface SubmitButtonProps extends Omit<ComponentProps<typeof Button>, 'type'> 
   pendingLabel?: string;
 }
 
+// Must be rendered inside a <form>: useFormStatus only reports the enclosing
+// form's submission, and returns { pending: false } forever when there is none.
+
 export function SubmitButton({
   children,
   pendingLabel,

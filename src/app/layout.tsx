@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${notoSansDevanagari.variable}`}>
       <body className="min-h-screen bg-background text-foreground">
-        <NextTopLoader color="oklch(0.478 0.096 145)" showSpinner={false} height={3} />
+        <NextTopLoader color="var(--primary)" showSpinner={false} height={3} />
         {children}
       </body>
     </html>
