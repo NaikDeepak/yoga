@@ -511,6 +511,6 @@ function whatsappUrl(mobile: string, fullName: string, nextVisitDate: string): s
 }
 
 function birthdayWhatsappUrl(mobile: string, fullName: string, t: Translations): string {
-  const text = t.dashboard.birthdayWishMsg.replace('{name}', fullName);
+  const text = t.dashboard.birthdayWishMsg.replaceAll('{name}', fullName);
   return `https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`;
 }
