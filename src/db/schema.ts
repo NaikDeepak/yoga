@@ -69,7 +69,9 @@ export const visits = pgTable('visits', {
   painScale: integer('pain_scale'),
   nextVisitDate: date('next_visit_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-}).enableRLS();
+}, (table) => [
+  index('visits_patient_latest_idx').on(table.patientId, table.visitDate.desc(), table.createdAt.desc())
+]).enableRLS();
 
 export type Patient = typeof patients.$inferSelect;
 export type PatientProblem = typeof patientProblems.$inferSelect;
