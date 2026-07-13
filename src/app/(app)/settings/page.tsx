@@ -3,7 +3,7 @@ import { getTranslations, LOCALES } from '@/lib/i18n/translations';
 import { saveLanguageAction, saveWhatsappNumberAction } from '@/actions/preferences';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { InlineForm } from '@/components/InlineForm';
@@ -55,9 +55,9 @@ export default async function SettingsPage() {
                 </label>
               ))}
             </div>
-            <Button type="submit" className="rounded-full px-6 w-full sm:w-auto">
+            <SubmitButton className="rounded-full px-6 w-full sm:w-auto" pendingLabel={`${t.settings.saveBtn}...`}>
               {t.settings.saveBtn}
-            </Button>
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
@@ -80,9 +80,9 @@ export default async function SettingsPage() {
                 defaultValue={whatsappNumber ?? ''}
               />
             </div>
-            <Button type="submit" className="rounded-full px-6 w-full sm:w-auto">
+            <SubmitButton className="rounded-full px-6 w-full sm:w-auto" pendingLabel={`${t.settings.saveBtn}...`}>
               {t.settings.saveBtn}
-            </Button>
+            </SubmitButton>
           </InlineForm>
         </CardContent>
       </Card>

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   patientSchema, problemSchema, treatmentSchema, visitSchema, docTypeSchema,
 } from '@/lib/validation';
+import { getISTDateString } from '@/lib/dates';
 
 describe('patientSchema', () => {
   it('accepts a minimal valid patient', () => {
@@ -23,6 +24,17 @@ describe('patientSchema', () => {
     expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', email: 'nope' }).success).toBe(false);
     expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', age: '150' }).success).toBe(false);
     expect(patientSchema.safeParse({ fullName: '', mobile: '9876543210' }).success).toBe(false);
+  });
+  it('accepts valid birthDate and rejects bad format or invalid calendar dates', () => {
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '2000-01-01' }).success).toBe(true);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '' }).success).toBe(true);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '01-01-2000' }).success).toBe(false);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '2000-02-30' }).success).toBe(false);
+  });
+  it('accepts today as birthDate but rejects future dates', () => {
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: getISTDateString(0) }).success).toBe(true);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: getISTDateString(1) }).success).toBe(false);
+    expect(patientSchema.safeParse({ fullName: 'A', mobile: '9876543210', birthDate: '2999-01-01' }).success).toBe(false);
   });
 });
 

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getDb } from '@/db/client';
-import { getDashboardStats, getAilmentBreakdown, getRecentVisits, getPendingAssessments } from '@/data/dashboard';
+import { getDashboardStats, getAilmentBreakdown, getRecentVisits, getPendingAssessments, getBirthdaysToday } from '@/data/dashboard';
 import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { WeeklyVisitsChart } from '@/components/WeeklyVisitsChart';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
 import { formatDueDate } from '@/lib/dates';
 import { reminderUrl, digestUrl } from '@/lib/whatsapp';
-import { ArrowUpRight, MessageCircle, Plus, UploadCloud } from 'lucide-react';
+import { ArrowUpRight, Cake, MessageCircle, Plus, UploadCloud } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
 import { getUserLanguage, getWhatsappNumber } from '@/data/preferences';
@@ -69,12 +69,13 @@ export default async function DashboardPage({
     : await getUserLanguage(db, user.id);
   const t = getTranslations(locale);
 
-  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, savedWhatsappNumber] = await Promise.all([
+  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, birthdaysToday, savedWhatsappNumber] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
     getRecentVisits(db, 5, branch),
     getFollowUpsThisWeek(db, branch),
     getPendingAssessments(db, 5, branch),
+    getBirthdaysToday(db, branch),
     getWhatsappNumber(db, user.id),
   ]);
   const digestTarget = savedWhatsappNumber ?? CLINIC.whatsappDigits;
@@ -123,6 +124,54 @@ export default async function DashboardPage({
           </Button>
         </div>
       </div>
+
+      {/* Birthday Alerts In-App Notification Banner */}
+      {birthdaysToday.length > 0 && (
+        <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-2xl p-5 flex flex-col gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-pink-500/20 text-pink-700 rounded-full dark:text-pink-400">
+              <Cake className="h-6 w-6 animate-pulse" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">
+                {t.dashboard.birthdaysToday}
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                {t.dashboard.birthdayWishSubtext}
+              </p>
+            </div>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {birthdaysToday.map((patient) => (
+              <li key={patient.id} className="bg-background/60 backdrop-blur-md rounded-xl p-3 border border-purple-500/10 flex items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="h-8 w-8 rounded-full bg-pink-100 dark:bg-pink-950/50 flex items-center justify-center text-pink-700 dark:text-pink-400 font-bold text-xs shrink-0">
+                    {patient.fullName.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <Link href={`/patients/${patient.id}`} className="text-sm font-semibold truncate hover:text-primary transition-colors">
+                      {patient.fullName}
+                    </Link>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        {patient.patientCode}
+                      </span>
+                      <Badge variant="secondary" className={`text-[9px] px-1 py-0 h-4 border-none shadow-none leading-none flex items-center ${patient.isTomorrow ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-400' : 'bg-pink-100 text-pink-800 dark:bg-pink-950/50 dark:text-pink-400'}`}>
+                        {patient.isTomorrow ? t.dashboard.tomorrow : t.dashboard.today}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+                <Button asChild size="sm" variant="outline" className="rounded-full h-8 px-3 text-xs border-pink-500/20 text-pink-700 hover:bg-pink-500/10 hover:text-pink-800 dark:text-pink-400 dark:border-pink-500/30">
+                  <a href={birthdayWhatsappUrl(patient.mobile, patient.fullName, t)} target="_blank" rel="noopener noreferrer">
+                    {t.dashboard.sendWish}
+                  </a>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Stat Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -472,4 +521,9 @@ function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: 
   if (missingLifestyle && missingTreatment) return t.dashboard.pendingReason.both;
   if (missingLifestyle) return t.dashboard.pendingReason.lifestyle;
   return t.dashboard.pendingReason.treatment;
+}
+
+function birthdayWhatsappUrl(mobile: string, fullName: string, t: Translations): string {
+  const text = t.dashboard.birthdayWishMsg.replaceAll('{name}', fullName);
+  return `https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`;
 }

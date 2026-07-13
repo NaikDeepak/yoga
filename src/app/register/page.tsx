@@ -1,7 +1,7 @@
 import { signUpAction } from '@/actions/auth';
 import Link from 'next/link';
 import { Leaf } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,7 +38,9 @@ export default async function RegisterPage({
               <Label htmlFor="password">{t.auth.password}</Label>
               <Input id="password" name="password" type="password" required autoComplete="new-password" />
             </div>
-            <Button type="submit" className="w-full">{t.auth.registerBtn}</Button>
+            <SubmitButton className="w-full" pendingLabel={`${t.auth.registerBtn}...`}>
+              {t.auth.registerBtn}
+            </SubmitButton>
           </form>
           <p className="text-center text-sm text-muted-foreground">
             {t.auth.alreadyHaveAccount}{' '}

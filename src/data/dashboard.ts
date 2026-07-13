@@ -1,4 +1,4 @@
-import { count, countDistinct, sum, desc, gte, lt, eq, and, isNull, or } from 'drizzle-orm';
+import { count, countDistinct, sum, desc, gte, lt, eq, and, isNull, or, sql, isNotNull } from 'drizzle-orm';
 import { patients, patientProblems, visits, feePayments, lifestyleAssessments, treatmentPlans } from '@/db/schema';
 import { getISTDateString } from '@/lib/dates';
 import type { Db } from '@/db/types';
@@ -155,4 +155,55 @@ export async function getRecentVisits(
     .where(branch ? eq(patients.branch, branch) : undefined)
     .orderBy(desc(visits.visitDate), desc(visits.createdAt))
     .limit(limit);
+}
+
+export type BirthdayPatient = {
+  id: string;
+  fullName: string;
+  patientCode: string;
+  mobile: string;
+  birthDate: string | null;
+  branch: string | null;
+  isTomorrow: boolean;
+};
+
+export async function getBirthdaysToday(
+  db: Db,
+  branch?: string,
+): Promise<BirthdayPatient[]> {
+  const todayIST = getISTDateString(0);
+  const tomorrowIST = getISTDateString(1);
+  const [, tMM, tDD] = todayIST.split('-');
+  const [, tomMM, tomDD] = tomorrowIST.split('-');
+  const branchFilter = branch ? eq(patients.branch, branch) : undefined;
+
+  const rows = await db
+    .select({
+      id: patients.id,
+      fullName: patients.fullName,
+      patientCode: patients.patientCode,
+      mobile: patients.mobile,
+      birthDate: patients.birthDate,
+      branch: patients.branch,
+    })
+    .from(patients)
+    .where(
+      and(
+        isNotNull(patients.birthDate),
+        or(
+          sql`to_char(${patients.birthDate}, 'MM-DD') = ${`${tMM}-${tDD}`}`,
+          sql`to_char(${patients.birthDate}, 'MM-DD') = ${`${tomMM}-${tomDD}`}`,
+        ),
+        branchFilter,
+      )
+    );
+
+  const tomorrowMD = `${tomMM}-${tomDD}`;
+  return rows.map((r) => {
+    const bMD = r.birthDate ? String(r.birthDate).substring(5, 10) : '';
+    return {
+      ...r,
+      isTomorrow: bMD === tomorrowMD,
+    };
+  });
 }

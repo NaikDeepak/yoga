@@ -5,7 +5,7 @@ import { computeBmi, bmiCategory } from '@/lib/bmi';
 import { BRANCHES } from '@/lib/presets';
 import type { Patient } from '@/db/schema';
 import type { ActionResult } from '@/actions/patients';
-import { Button } from '@/components/ui/button';
+import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,7 +33,7 @@ export function PatientForm({
   const [weight, setWeight] = useState(defaultValues?.weightKg?.toString() ?? '');
   const [height, setHeight] = useState(defaultValues?.heightCm?.toString() ?? '');
 
-  const [state, formAction, isPending] = useActionState(
+  const [state, formAction] = useActionState(
     async (prevState: ActionResult | null, formData: FormData) => {
       if (formData.get('gender') === '__none__') formData.set('gender', '');
       if (formData.get('branch') === '__none__') formData.set('branch', '');
@@ -75,6 +75,16 @@ export function PatientForm({
         </div>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <div className="space-y-2">
+            <Label htmlFor="birthDate">{t.form.birthDate}</Label>
+            <Input
+              id="birthDate"
+              name="birthDate"
+              type="date"
+              defaultValue={defaultValues?.birthDate ? String(defaultValues.birthDate).substring(0, 10) : ''}
+              placeholder={t.form.birthDatePlaceholder}
+            />
+          </div>
+          <div className="space-y-2">
             <Label htmlFor="age">{t.form.age}</Label>
             <Input
               id="age"
@@ -86,7 +96,7 @@ export function PatientForm({
               placeholder="—"
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 col-span-2 sm:col-span-1">
             <Label htmlFor="gender">{t.form.gender}</Label>
             <Select name="gender" defaultValue={defaultValues?.gender ?? '__none__'}>
               <SelectTrigger id="gender">
@@ -228,9 +238,9 @@ export function PatientForm({
         </div>
       </div>
 
-      <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-        {isPending ? t.common.saving : submitLabel}
-      </Button>
+      <SubmitButton className="w-full sm:w-auto" pendingLabel={t.common.saving}>
+        {submitLabel}
+      </SubmitButton>
     </form>
   );
 }
