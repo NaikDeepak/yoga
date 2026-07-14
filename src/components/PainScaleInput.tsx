@@ -36,8 +36,9 @@ export function PainScaleInput({
           onClick={() => setValue(value === n ? null : n)}
           className={cn(
             'h-9 w-9 rounded-full border text-sm font-medium transition-colors',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             value === n
-              ? selectedColor(n)
+              ? cn(selectedColor(n), 'hover:opacity-90')
               : 'bg-background text-foreground border-border hover:bg-muted',
           )}
         >

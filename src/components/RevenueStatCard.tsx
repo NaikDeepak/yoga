@@ -25,6 +25,7 @@ export function RevenueStatCard({ value }: { value: number }) {
           {t.dashboard.revenueThisMonth}
         </CardTitle>
         <button
+          type="button"
           onClick={() => setVisible(!visible)}
           className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-accent transition-colors"
           title={visible ? 'Hide revenue' : 'Show revenue'}

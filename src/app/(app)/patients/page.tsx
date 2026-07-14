@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Form from 'next/form';
 import { Plus, Search } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { searchPatients, countPatients } from '@/data/patients';
@@ -55,7 +56,7 @@ export default async function PatientsPage({
         }
       />
 
-      <form method="get" className="flex max-w-md items-center gap-2">
+      <Form action="/patients" className="flex max-w-md items-center gap-2">
         <div className="relative flex-1">
           <Search
             className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -72,7 +73,7 @@ export default async function PatientsPage({
         <Button type="submit" variant="outline" className="rounded-full px-5 shrink-0">
           {t.common.search}
         </Button>
-      </form>
+      </Form>
 
       {list.length === 0 ? (
         <EmptyState

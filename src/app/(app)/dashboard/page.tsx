@@ -148,7 +148,7 @@ export default async function DashboardPage({
               <li key={patient.id} className="bg-card rounded-xl p-3 border border-brand-accent/20 flex items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="h-9 w-9 rounded-full bg-brand-accent/15 flex items-center justify-center text-brand-accent font-bold text-xs shrink-0">
-                    {patient.fullName.substring(0, 2).toUpperCase()}
+                    {initials(patient.fullName)}
                   </div>
                   <div className="flex flex-col min-w-0">
                     <Link href={`/patients/${patient.id}`} className="text-sm font-semibold truncate hover:text-primary transition-colors">
@@ -244,7 +244,7 @@ export default async function DashboardPage({
                   ) : (
                     <li key={row.followUp.patientId + row.followUp.nextVisitDate} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent/40 transition-colors">
                       <div className="h-9 w-9 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                        {row.followUp.fullName.substring(0, 2).toUpperCase()}
+                        {initials(row.followUp.fullName)}
                       </div>
                       <Link href={`/patients/${row.followUp.patientId}`} className="text-sm font-medium truncate hover:text-primary transition-colors flex-1">
                         {row.followUp.fullName}
