@@ -12,6 +12,7 @@ import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations, type Translations } from '@/lib/i18n/translations';
+import { getPrescribedExercises } from '@/data/exercises';
 
 const GREEN = '#1B3A2E';
 const SAFFRON = '#C8962E';
@@ -44,14 +45,16 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   const patient = await getPatient(db, id);
   if (!patient) notFound();
 
-  const [problems, plan, visits, patientFees] = await Promise.all([
+  const [problems, plan, visits, patientFees, prescribedExercises] = await Promise.all([
     listProblems(db, id),
     getTreatmentPlan(db, id),
     listVisits(db, id),
     getPatientFees(db, id),
+    getPrescribedExercises(db, id),
   ]);
 
-  const t = getTranslations(await getLocale());
+  const locale = await getLocale();
+  const t = getTranslations(locale);
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
   const today = getISTDateString();
@@ -167,6 +170,57 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                 {plan?.medicines && <PlanRow label={t.print.medicines} value={plan.medicines} />}
                 {plan?.panchkarma && <PlanRow label={t.print.panchkarma} value={plan.panchkarma} />}
                 {latestNote && <PlanRow label={t.print.progressNotes} value={latestNote} />}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {/* ── PRESCRIBED EXERCISES ── */}
+      {prescribedExercises.length > 0 && (
+        <>
+          <SectionHeader>{locale === 'mr' ? 'निर्धारित व्यायाम मार्गदर्शिका (Prescribed Exercises)' : 'Prescribed Exercises / निर्धारित व्यायाम मार्गदर्शिका'}</SectionHeader>
+          <div className="mb-6">
+            <table className="w-full text-sm border-collapse">
+              <tbody>
+                {prescribedExercises.map((pe) => (
+                  <tr key={pe.id} className="border-b border-gray-100 align-top">
+                    <td className="w-40 py-3 pr-4 font-semibold text-gray-800">
+                      {locale === 'mr' ? pe.nameMr : pe.name}
+                      <div className="text-[10px] text-gray-500 font-medium mt-1">
+                        {locale === 'mr'
+                          ? `वेळा: ${pe.repetitionsOverride ?? pe.repetitionsMr} | वारंवारता: ${pe.daysPerWeekOverride ?? pe.daysPerWeekMr}`
+                          : `Reps: ${pe.repetitionsOverride ?? pe.repetitions} | Freq: ${pe.daysPerWeekOverride ?? pe.daysPerWeek}`}
+                      </div>
+                    </td>
+                    <td className="py-3">
+                      <div className="flex gap-4 items-start">
+                        <div className="flex-1 min-w-0">
+                          <ol className="list-decimal list-inside space-y-1 text-xs text-gray-600 pl-1">
+                            {(locale === 'mr' ? pe.stepsMr : pe.steps).map((step, idx) => (
+                              <li key={idx} className="leading-relaxed">{step}</li>
+                            ))}
+                          </ol>
+                        </div>
+                        {pe.imagePath && (
+                          <div className="shrink-0 w-24 h-24 border border-gray-200 rounded p-1 bg-gray-50 flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={pe.imagePath} 
+                              alt={locale === 'mr' ? pe.nameMr : pe.name} 
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {pe.customNote && (
+                        <div className="mt-2.5 text-xs border border-dashed border-amber-200 bg-amber-50/50 p-2 rounded-lg text-amber-900 font-medium leading-relaxed">
+                          <strong>{locale === 'mr' ? 'सानुकूल सूचना:' : 'Custom Instruction:'}</strong> {pe.customNote}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

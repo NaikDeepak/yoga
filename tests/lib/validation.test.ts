@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   patientSchema, problemSchema, treatmentSchema, visitSchema, docTypeSchema,
+  prescribedExercisesListSchema,
 } from '@/lib/validation';
 import { getISTDateString } from '@/lib/dates';
 
@@ -101,5 +102,36 @@ describe('docTypeSchema', () => {
   it('accepts known types only', () => {
     expect(docTypeSchema.safeParse('MRI').success).toBe(true);
     expect(docTypeSchema.safeParse('Selfie').success).toBe(false);
+  });
+});
+
+describe('prescribedExercisesListSchema', () => {
+  const uuid1 = '11111111-1111-4111-8111-111111111111';
+  const uuid2 = '22222222-2222-4222-8222-222222222222';
+
+  it('accepts a list of distinct exercises', () => {
+    const r = prescribedExercisesListSchema.safeParse([
+      { exerciseId: uuid1, customNote: null, repetitions: null, daysPerWeek: null },
+      { exerciseId: uuid2, customNote: 'note', repetitions: '5', daysPerWeek: '3' },
+    ]);
+    expect(r.success).toBe(true);
+  });
+
+  it('rejects duplicate exerciseIds in one payload', () => {
+    const r = prescribedExercisesListSchema.safeParse([
+      { exerciseId: uuid1, customNote: null, repetitions: null, daysPerWeek: null },
+      { exerciseId: uuid1, customNote: null, repetitions: null, daysPerWeek: null },
+    ]);
+    expect(r.success).toBe(false);
+  });
+
+  it('rejects an over-long customNote with a bilingual message', () => {
+    const r = prescribedExercisesListSchema.safeParse([
+      { exerciseId: uuid1, customNote: 'x'.repeat(501), repetitions: null, daysPerWeek: null },
+    ]);
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues[0].message).toMatch(/\//);
+    }
   });
 });

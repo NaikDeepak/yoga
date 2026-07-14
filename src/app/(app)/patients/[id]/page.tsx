@@ -17,6 +17,8 @@ import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
 import { addVisitAction } from '@/actions/visits';
 import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
+import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
+import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -399,10 +401,22 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
   const plan = await getTreatmentPlan(db, patientId);
   const visits = await listVisits(db, patientId);
   const today = getISTDateString();
+  const locale = await getLocale();
+
+  const allExercises = await listAllExercises(db);
+  const prescribedExercises = await getPrescribedExercises(db, patientId);
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <TreatmentPlanForm patientId={patientId} initialPlan={plan} />
+      <div className="space-y-6">
+        <TreatmentPlanForm patientId={patientId} initialPlan={plan} />
+        <PrescribedExercisesForm
+          patientId={patientId}
+          allExercises={allExercises}
+          initialPrescribed={prescribedExercises}
+          locale={locale}
+        />
+      </div>
 
       <div className="space-y-4">
         <Card className="rounded-2xl">
