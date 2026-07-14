@@ -1,0 +1,442 @@
+{
+  "exercises": [
+    {
+      "name": "Pendulum",
+      "nameMr": "लंबक व्यायाम (Pendulum)",
+      "category": "shoulder",
+      "repetitions": "2 sets of 10",
+      "repetitionsMr": "१० चे २ संच",
+      "daysPerWeek": "5 to 6",
+      "daysPerWeekMr": "आठवड्यातून ५ ते ६ दिवस",
+      "steps": [
+        "Lean forward and place one hand on a counter or table for support. Let your other arm hang freely at your side.",
+        "Gently swing your arm forward and back. Repeat the exercise moving your arm side-to-side, and repeat again in a circular motion.",
+        "Repeat the entire sequence with the other arm."
+      ],
+      "stepsMr": [
+        "आधार घेण्यासाठी एक हात काउंटर किंवा टेबलावर ठेवून पुढे झुका. तुमचा दुसरा हात बाजूला मोकळा सोडा.",
+        "तुमचा हात हळूवारपणे पुढे-मागे फिरवा. नंतर हात बाजूने-बाजूने हलवून व्यायाम पुन्हा करा आणि पुन्हा गोलाकार गतीने फिरवा.",
+        "दुसऱ्या हाताने हीच प्रक्रिया पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Deltoids, supraspinatus, infraspinatus, subscapularis.",
+      "descriptionMr": "मुख्य स्नायू: डेल्टॉइड्स, सुप्रास्पायनेटस, इन्फ्रास्पायनेटस, सबस्कॅप्युलरिस.",
+      "tip": "Do not round your back or lock your knees.",
+      "tipMr": "तुमची पाठ वाकवू नका किंवा गुडघे ताठ करू नका."
+    },
+    {
+      "name": "Crossover Arm Stretch",
+      "nameMr": "क्रॉसओव्हर आर्म स्ट्रेच (Crossover Arm Stretch)",
+      "category": "shoulder",
+      "repetitions": "4 each side",
+      "repetitionsMr": "प्रत्येक बाजूला ४ वेळा",
+      "daysPerWeek": "5 to 6",
+      "daysPerWeekMr": "आठवड्यातून ५ ते ६ दिवस",
+      "steps": [
+        "Relax your shoulders and gently pull one arm across your chest as far as possible, holding at your upper arm.",
+        "Hold the stretch for 30 seconds and then relax for 30 seconds.",
+        "Repeat with the other arm."
+      ],
+      "stepsMr": [
+        "तुमचे खांदे सैल सोडा आणि एक हात शक्य तितका छातीवरून हळूवारपणे ओढा, वरच्या हाताला धरून ठेवा.",
+        "३० सेकंद ताणून ठेवा आणि नंतर ३० सेकंद आराम करा.",
+        "दुसऱ्या हाताने पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Posterior deltoid. You should feel this stretch at the back of your shoulder.",
+      "descriptionMr": "मुख्य स्नायू: पाठीमागील डेल्टॉइड. तुम्हाला खांद्याच्या मागील बाजूस ताण जाणवला पाहिजे.",
+      "tip": "Do not pull or put pressure on your elbow.",
+      "tipMr": "तुमच्या कोपरावर ओढू नका किंवा दाब देऊ नका."
+    },
+    {
+      "name": "Passive Internal Rotation",
+      "nameMr": "निष्क्रिय अंतर्गत फिरवणे (Passive Internal Rotation)",
+      "category": "shoulder",
+      "repetitions": "4 each side",
+      "repetitionsMr": "प्रत्येक बाजूला ४ वेळा",
+      "daysPerWeek": "5 to 6",
+      "daysPerWeekMr": "आठवड्यातून ५ ते ६ दिवस",
+      "steps": [
+        "Hold a stick behind your back with one hand, and lightly grasp the other end of the stick with your other hand.",
+        "Pull the stick horizontally as shown so that your shoulder is passively stretched to the point of feeling a pull without pain.",
+        "Hold for 30 seconds and then relax for 30 seconds.",
+        "Repeat on the other side."
+      ],
+      "stepsMr": [
+        "एक हात पाठीमागे काठी धरून ठेवा आणि दुसऱ्या हाताने काठीचे दुसरे टोक हलकेच पकडा.",
+        "दाखवल्याप्रमाणे काठी आडवी ओढा, जेणेकरून तुमच्या खांद्याला वेदना न होता निष्क्रियपणे ताण जाणवेल.",
+        "३० सेकंद धरून ठेवा आणि नंतर ३० सेकंद आराम करा.",
+        "दुसऱ्या बाजूने पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Supraspinatus. You should feel this stretch at the front of your shoulder.",
+      "descriptionMr": "मुख्य स्नायू: सुप्रास्पायनेटस. तुम्हाला तुमच्या खांद्याच्या पुढील बाजूस ताण जाणवला पाहिजे.",
+      "tip": "Do not lean over or twist to side while pulling the stick.",
+      "tipMr": "काठी ओढताना पुढे वाकू नका किंवा बाजूला फिरू नका."
+    },
+    {
+      "name": "Passive External Rotation",
+      "nameMr": "निष्क्रिय बाह्य फिरवणे (Passive External Rotation)",
+      "category": "shoulder",
+      "repetitions": "4 each side",
+      "repetitionsMr": "प्रत्येक बाजूला ४ वेळा",
+      "daysPerWeek": "5 to 6",
+      "daysPerWeekMr": "आठवड्यातून ५ ते ६ दिवस",
+      "steps": [
+        "Grasp the stick with one hand and cup the other end of the stick with the other hand.",
+        "Keep the elbow of the shoulder you are stretching against the side of your body and push the stick horizontally as shown to the point of feeling a pull without pain.",
+        "Hold for 30 seconds and then relax for 30 seconds.",
+        "Repeat on the other side."
+      ],
+      "stepsMr": [
+        "एका हाताने काठी पकडा आणि दुसऱ्या हाताने काठीचे दुसरे टोक धरा.",
+        "ज्या खांद्याला ताण देत आहात, त्याचा कोपर शरीराच्या बाजूला ठेवा आणि दाखवल्याप्रमाणे काठी आडवी ढकला, जेणेकरून वेदना न होता ताण जाणवेल.",
+        "३० सेकंद धरून ठेवा आणि नंतर ३० सेकंद आराम करा.",
+        "दुसऱ्या बाजूने पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Infraspinatus, teres minor. You should feel this stretch in the back of your shoulder.",
+      "descriptionMr": "मुख्य स्नायू: इन्फ्रास्पायनेटस, टेरेस मायनर. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस ताण जाणवला पाहिजे.",
+      "tip": "Keep your hips facing forward and do not twist.",
+      "tipMr": "तुमचे नितंब पुढे ठेवा आणि शरीर फिरवू नका."
+    },
+    {
+      "name": "Sleeper Stretch",
+      "nameMr": "स्लीपर स्ट्रेच (Sleeper Stretch)",
+      "category": "shoulder",
+      "repetitions": "4 reps, 3x a day",
+      "repetitionsMr": "४ वेळा, दिवसातून ३ वेळा",
+      "daysPerWeek": "Daily",
+      "daysPerWeekMr": "दररोज",
+      "steps": [
+        "Lie on your side on a firm, flat surface with the affected shoulder under you and your arm bent, as shown. You can place your head on a pillow for comfort, if needed.",
+        "Use your unaffected arm to push your other arm down. Stop pressing down when you feel a stretch in the back of your affected shoulder.",
+        "Hold this position for 30 seconds, then relax your arm for 30 seconds."
+      ],
+      "stepsMr": [
+        "तुमच्या बाजूवर एका सपाट, मजबूत पृष्ठभागावर झोपा, प्रभावित खांदा तुमच्या खाली आणि हात वाकलेला असावा, जसे दाखवले आहे. आवश्यक असल्यास, आरामासाठी डोक्याखाली उशी ठेवू शकता.",
+        "तुमच्या अप्रभावित हाताने दुसऱ्या हाताला खाली ढकला. जेव्हा तुम्हाला प्रभावित खांद्याच्या मागील बाजूस ताण जाणवेल तेव्हा दाबणे थांबवा.",
+        "ही स्थिती ३० सेकंद धरून ठेवा, नंतर ३० सेकंद हाताला आराम द्या."
+      ],
+      "description": "Main muscles worked: Infraspinatus, teres minor. You should feel this stretch in your outer upper back, behind your shoulder.",
+      "descriptionMr": "मुख्य स्नायू: इन्फ्रास्पायनेटस, टेरेस मायनर. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस, वरच्या पाठीच्या बाहेरील बाजूस ताण जाणवला पाहिजे.",
+      "tip": "Do not bend your wrist or press down on your wrist.",
+      "tipMr": "तुमचे मनगट वाकवू नका किंवा मनगटावर दाब देऊ नका."
+    },
+    {
+      "name": "Standing Row",
+      "nameMr": "उभे राहून रो (Standing Row)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 8",
+      "repetitionsMr": "८ चे ३ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Make a 3-foot-long loop with the elastic band and tie the ends together. Attach the loop to a doorknob or other stable object.",
+        "Stand holding the band with your elbow bent and at your side, as shown in the start position.",
+        "Keep your arm close to your side and slowly pull your elbow straight back.",
+        "Slowly return to the start position and repeat."
+      ],
+      "stepsMr": [
+        "इलास्टिक बँडचा ३ फूट लांब लूप बनवा आणि टोके एकत्र बांधा. हा लूप दरवाजाच्या हँडलला किंवा इतर स्थिर वस्तूला जोडा.",
+        "दाखवल्याप्रमाणे, कोपर वाकवून आणि बाजूला ठेवून बँड धरून उभे रहा.",
+        "तुमचा हात शरीराच्या जवळ ठेवा आणि कोपर हळूवारपणे सरळ मागे ओढा.",
+        "हळूवारपणे सुरुवातीच्या स्थितीत परत या आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Middle and lower trapezius. You should feel this exercise at the back of your shoulder and into your upper back.",
+      "descriptionMr": "मुख्य स्नायू: मध्य आणि खालचे ट्रॅपेझियस. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस आणि वरच्या पाठीत हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Squeeze your shoulder blades together as you pull.",
+      "tipMr": "ओढताना तुमचे खांद्याचे ब्लेड (स्कॅप्युला) एकत्र पिळा."
+    },
+    {
+      "name": "External Rotation With Arm Abducted 90°",
+      "nameMr": "९०° हाताने बाह्य फिरवणे (External Rotation With Arm Abducted 90°)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 8",
+      "repetitionsMr": "८ चे ३ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Make a 3-foot-long loop with the elastic band and tie the ends together. Attach the loop to a doorknob or other stable object.",
+        "Stand holding the band with your elbow bent 90° and raised to shoulder-height, as shown in the start position.",
+        "Keeping your shoulder and elbow level, slowly raise your hand until it is in line with your head.",
+        "Slowly return to the start position and repeat."
+      ],
+      "stepsMr": [
+        "इलास्टिक बँडचा ३ फूट लांब लूप बनवा आणि टोके एकत्र बांधा. हा लूप दरवाजाच्या हँडलला किंवा इतर स्थिर वस्तूला जोडा.",
+        "दाखवल्याप्रमाणे, कोपर ९०° वाकवून आणि खांद्याच्या उंचीपर्यंत वर करून बँड धरून उभे रहा.",
+        "तुमचा खांदा आणि कोपर एका पातळीत ठेवून, तुमचा हात हळूवारपणे डोक्याच्या रेषेत येईपर्यंत वर करा.",
+        "हळूवारपणे सुरुवातीच्या स्थितीत परत या आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Infraspinatus and teres minor. You should feel this exercise at the back of your shoulder and into your upper back.",
+      "descriptionMr": "मुख्य स्नायू: इन्फ्रास्पायनेटस आणि टेरेस मायनर. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस आणि वरच्या पाठीत हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Make sure your elbow stays in line with your shoulder.",
+      "tipMr": "तुमचा कोपर खांद्याच्या रेषेत असल्याची खात्री करा."
+    },
+    {
+      "name": "Internal Rotation (Band)",
+      "nameMr": "अंतर्गत फिरवणे - बँड (Internal Rotation - Band)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 8",
+      "repetitionsMr": "८ चे ३ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Make a 3-foot-long loop with the elastic band and tie the ends together. Attach the loop to a doorknob or other stable object.",
+        "Stand holding the band with your elbow bent and at your side, as shown in the start position.",
+        "Keep your elbow close to your side and bring your arm across your body.",
+        "Slowly return to the start position and repeat."
+      ],
+      "stepsMr": [
+        "इलास्टिक बँडचा ३ फूट लांब लूप बनवा आणि टोके एकत्र बांधा. हा लूप दरवाजाच्या हँडलला किंवा इतर स्थिर वस्तूला जोडा.",
+        "दाखवल्याप्रमाणे, कोपर वाकवून आणि बाजूला ठेवून बँड धरून उभे रहा.",
+        "तुमचा कोपर शरीराच्या जवळ ठेवा आणि तुमचा हात शरीरावरुन आणा.",
+        "हळूवारपणे सुरुवातीच्या स्थितीत परत या आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Pectoralis, subscapularis. You should feel this exercise at your chest and shoulder.",
+      "descriptionMr": "मुख्य स्नायू: पेक्टोरॅलिस, सबस्कॅप्युलरिस. तुम्हाला तुमच्या छातीत आणि खांद्यात हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Keep your elbow pressed into your side.",
+      "tipMr": "तुमचा कोपर शरीराच्या बाजूला दाबून ठेवा."
+    },
+    {
+      "name": "External Rotation (Band)",
+      "nameMr": "बाह्य फिरवणे - बँड (External Rotation - Band)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 8",
+      "repetitionsMr": "८ चे ३ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Make a 3-foot-long loop with the elastic band and tie the ends together. Attach the loop to a doorknob or other stable object.",
+        "Stand holding the band with your elbow bent and at your side, as shown in the start position.",
+        "Keeping your elbow close to your side, slowly rotate your arm outward.",
+        "Slowly return to the start position and repeat."
+      ],
+      "stepsMr": [
+        "इलास्टिक बँडचा ३ फूट लांब लूप बनवा आणि टोके एकत्र बांधा. हा लूप दरवाजाच्या हँडलला किंवा इतर स्थिर वस्तूला जोडा.",
+        "दाखवल्याप्रमाणे, कोपर वाकवून आणि बाजूला ठेवून बँड धरून उभे रहा.",
+        "तुमचा कोपर शरीराच्या जवळ ठेवून, तुमचा हात हळूवारपणे बाहेरच्या दिशेने फिरवा.",
+        "हळूवारपणे सुरुवातीच्या स्थितीत परत या आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Infraspinatus, teres minor, posterior deltoid. You should feel this stretch in the back of your shoulder and upper back.",
+      "descriptionMr": "मुख्य स्नायू: इन्फ्रास्पायनेटस, टेरेस मायनर, पाठीमागील डेल्टॉइड. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस आणि वरच्या पाठीत हा ताण जाणवला पाहिजे.",
+      "tip": "Squeeze your shoulder blades together when you pull your elbow back.",
+      "tipMr": "तुमचा कोपर मागे ओढताना खांद्याचे ब्लेड एकत्र पिळा."
+    },
+    {
+      "name": "Elbow Flexion",
+      "nameMr": "कोपर वाकवणे (Elbow Flexion)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 8",
+      "repetitionsMr": "८ चे ३ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Stand tall with your weight evenly distributed over both feet.",
+        "Keep your elbow close to your side and slowly bring the weight up toward your shoulder as shown.",
+        "Hold for 2 seconds.",
+        "Slowly return to the starting position and repeat."
+      ],
+      "stepsMr": [
+        "तुमचे वजन दोन्ही पायांवर समान रीतीने ठेवून सरळ उभे रहा.",
+        "तुमचा कोपर शरीराच्या जवळ ठेवा आणि दाखवल्याप्रमाणे वजन हळूवारपणे खांद्याकडे वर आणा.",
+        "२ सेकंद धरून ठेवा.",
+        "हळूवारपणे सुरुवातीच्या स्थितीत परत या आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Biceps, brachialis. You should feel this exercise at the front of your upper arm.",
+      "descriptionMr": "मुख्य स्नायू: बायसेप्स, ब्रॅकिॲलिस. तुम्हाला तुमच्या वरच्या हाताच्या पुढील बाजूस हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Do not do the exercise too quickly or swing your arm.",
+      "tipMr": "व्यायाम खूप वेगाने करू नका किंवा तुमचा हात फिरवू नका."
+    },
+    {
+      "name": "Elbow Extension",
+      "nameMr": "कोपर सरळ करणे (Elbow Extension)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 8",
+      "repetitionsMr": "८ चे ३ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Stand tall with your weight evenly distributed over both feet.",
+        "Raise your arm and bend your elbow with the weight behind your head. Support your arm by placing your opposite hand on your upper arm.",
+        "Slowly straighten your elbow and bring the weight overhead.",
+        "Hold for 2 seconds.",
+        "Slowly lower your arm back down behind your head and repeat."
+      ],
+      "stepsMr": [
+        "तुमचे वजन दोन्ही पायांवर समान रीतीने ठेवून सरळ उभे रहा.",
+        "तुमचा हात वर करा आणि वजन डोक्यामागे ठेवा. कोपर वाकवा. तुमच्या दुसऱ्या हाताने वरच्या हाताला आधार द्या.",
+        "तुमचा कोपर हळूवारपणे सरळ करा आणि वजन डोक्याच्या वर आणा.",
+        "२ सेकंद धरून ठेवा.",
+        "तुमचा हात हळूवारपणे डोक्यामागे खाली आणा आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Triceps. You should feel this exercise at the back of your upper arm.",
+      "descriptionMr": "मुख्य स्नायू: ट्रायसेप्स. तुम्हाला तुमच्या वरच्या हाताच्या मागील बाजूस हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Keep your abdominal muscles tight and do not arch your back.",
+      "tipMr": "तुमचे पोटाचे स्नायू घट्ट ठेवा आणि तुमची पाठ वाकवू नका."
+    },
+    {
+      "name": "Trapezius Strengthening",
+      "nameMr": "ट्रॅपेझियस स्नायू बळकट करणे (Trapezius Strengthening)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 20",
+      "repetitionsMr": "२० चे ३ संच",
+      "daysPerWeek": "3 to 5",
+      "daysPerWeekMr": "आठवड्यातून ३ ते ५ दिवस",
+      "steps": [
+        "Place your knee on a bench or chair and lean forward so that your hand reaches the bench and helps support your weight. Your other hand is at your side, palm facing your body.",
+        "Slowly raise your arm, rotating your hand to the thumbs-up position and stopping when your hand is shoulder height, with your arm parallel to the floor.",
+        "Slowly lower your arm to the original position to a count of 5."
+      ],
+      "stepsMr": [
+        "तुमचा गुडघा बेंच किंवा खुर्चीवर ठेवा आणि पुढे झुका जेणेकरून तुमचा हात बेंचपर्यंत पोहोचेल आणि तुमच्या वजनाला आधार देईल. तुमचा दुसरा हात तुमच्या बाजूला असावा, तळहात शरीराकडे असावा.",
+        "तुमचा हात हळूवारपणे वर करा, तुमचा तळहात अंगठ्याच्या दिशेने फिरवा आणि तुमचा हात खांद्याच्या उंचीवर, जमिनीला समांतर असताना थांबवा.",
+        "तुमचा हात हळूवारपणे ५ च्या गणनेने मूळ स्थितीत खाली आणा."
+      ],
+      "description": "Main muscles worked: Middle and posterior deltoid, supraspinatus, middle trapezius. You should feel this exercise at the back of your shoulder and into your upper back.",
+      "descriptionMr": "मुख्य स्नायू: मध्य आणि पाठीमागील डेल्टॉइड, सुप्रास्पायनेटस, मध्य ट्रॅपेझियस. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस आणि वरच्या पाठीत हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Use a weight that makes the last few repetitions difficult, but pain-free.",
+      "tipMr": "असे वजन वापरा ज्यामुळे शेवटच्या काही पुनरावृत्ती कठीण वाटतील, पण वेदना होणार नाहीत."
+    },
+    {
+      "name": "Scapula Setting",
+      "nameMr": "स्कॅप्युला सेटिंग (Scapula Setting)",
+      "category": "shoulder",
+      "repetitions": "10",
+      "repetitionsMr": "१० वेळा",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Lie on your stomach with your arms by your sides. Place a pillow under your forehead for comfort, if required.",
+        "Gently draw your shoulder blades together and down your back as far as possible.",
+        "Ease about halfway off from this position and hold for 10 seconds.",
+        "Relax and repeat 10 times."
+      ],
+      "stepsMr": [
+        "तुमच्या पोटावर झोपा आणि तुमचे हात शरीराच्या बाजूला ठेवा. आवश्यक असल्यास, आरामासाठी तुमच्या कपाळाखाली उशी ठेवा.",
+        "तुमचे खांद्याचे ब्लेड शक्य तितके एकत्र आणि पाठीमागे खाली हळूवारपणे ओढा.",
+        "या स्थितीतून सुमारे अर्धे सैल सोडा आणि १० सेकंद धरून ठेवा.",
+        "आराम करा आणि १० वेळा पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Middle trapezius, serratus. You should feel this exercise in your upper back, at your shoulder blade.",
+      "descriptionMr": "मुख्य स्नायू: मध्य ट्रॅपेझियस, सेराटस. तुम्हाला तुमच्या वरच्या पाठीत, तुमच्या खांद्याच्या ब्लेडवर हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Do not tense up in your neck.",
+      "tipMr": "तुमच्या मानेमध्ये ताण येऊ देऊ नका."
+    },
+    {
+      "name": "Scapular Retraction/Protraction",
+      "nameMr": "स्कॅप्युलर रिट्रॅक्शन/प्रोट्रॅक्शन (Scapular Retraction/Protraction)",
+      "category": "shoulder",
+      "repetitions": "2 sets of 10",
+      "repetitionsMr": "१० चे २ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Lie on your stomach on a table or bed with your injured arm hanging over the side.",
+        "Keep your elbow straight and lift the weight slowly by squeezing your shoulder blade toward the opposite side as far as possible.",
+        "Return slowly to the starting position and repeat."
+      ],
+      "stepsMr": [
+        "तुमच्या पोटावर टेबल किंवा पलंगावर झोपा आणि तुमचा जखमी हात बाजूला लटकू द्या.",
+        "तुमचा कोपर सरळ ठेवा आणि तुमचा खांद्याचा ब्लेड शक्य तितका विरुद्ध बाजूला पिळून वजन हळूवारपणे वर उचला.",
+        "हळूवारपणे सुरुवातीच्या स्थितीत परत या आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Middle trapezius, serratus. You should feel this exercise in your upper back at your shoulder blade.",
+      "descriptionMr": "मुख्य स्नायू: मध्य ट्रॅपेझियस, सेराटस. तुम्हाला तुमच्या वरच्या पाठीत, तुमच्या खांद्याच्या ब्लेडवर हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Do not shrug your shoulder toward your ear.",
+      "tipMr": "तुमचा खांदा कानाजवळ वर करू नका."
+    },
+    {
+      "name": "Bent-Over Horizontal Abduction",
+      "nameMr": "वाकून आडवे अपहरण (Bent-Over Horizontal Abduction)",
+      "category": "shoulder",
+      "repetitions": "3 sets of 8",
+      "repetitionsMr": "८ चे ३ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Lie on your stomach on a table or bed with your injured arm hanging over the side.",
+        "Keep your arm straight and slowly raise it up to eye level.",
+        "Slowly lower it back to the starting position and repeat."
+      ],
+      "stepsMr": [
+        "तुमच्या पोटावर टेबल किंवा पलंगावर झोपा आणि तुमचा जखमी हात बाजूला लटकू द्या.",
+        "तुमचा हात सरळ ठेवा आणि हळूवारपणे डोळ्यांच्या पातळीपर्यंत वर उचला.",
+        "हळूवारपणे सुरुवातीच्या स्थितीत परत आणा आणि पुन्हा करा."
+      ],
+      "description": "Main muscles worked: Middle and lower trapezius, Infraspinatus, teres minor, posterior deltoid. You should feel this exercise at the back of your shoulder and into your upper back.",
+      "descriptionMr": "मुख्य स्नायू: मध्य आणि खालचे ट्रॅपेझियस, इन्फ्रास्पायनेटस, टेरेस मायनर, पाठीमागील डेल्टॉइड. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस आणि वरच्या पाठीत हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Control the movement as you lower the weight.",
+      "tipMr": "वजन खाली आणताना हालचालीवर नियंत्रण ठेवा."
+    },
+    {
+      "name": "Internal and External Rotation",
+      "nameMr": "अंतर्गत आणि बाह्य फिरवणे (Internal and External Rotation)",
+      "category": "shoulder",
+      "repetitions": "3 to 4 sets of 20",
+      "repetitionsMr": "२० चे ३ ते ४ संच",
+      "daysPerWeek": "3 to 5",
+      "daysPerWeekMr": "आठवड्यातून ३ ते ५ दिवस",
+      "steps": [
+        "Lie on your back on a flat surface.",
+        "Extend your arm straight out from the shoulder and bend the elbow 90° so that your fingers are pointed up.",
+        "Keeping your elbow bent and on the floor, slowly move your arm in the arc shown. Bring your elbow down to a 45° angle if you experience pain at 90°."
+      ],
+      "stepsMr": [
+        "तुमच्या पाठीवर सपाट पृष्ठभागावर झोपा.",
+        "तुमचा हात खांद्यापासून सरळ बाहेर पसरा आणि कोपर ९०° वाकवा जेणेकरून तुमची बोटे वरच्या देशाने असतील.",
+        "तुमचा कोपर वाकलेला आणि जमिनीवर ठेवून, दाखवल्याप्रमाणे तुमचा हात हळूवारपणे कमानीत फिरवा. जर ९०° वर वेदना होत असतील तर तुमचा कोपर ४५° कोनात खाली आणा."
+      ],
+      "description": "Main muscles worked: Internal rotation: anterior deltoid, pectoralis, subscapularis, latissimus. External rotation: posterior deltoid, infraspinatus, teres minor. You should feel this exercise in the front and back of your shoulder, your chest, and upper back.",
+      "descriptionMr": "मुख्य स्नायू: अंतर्गत फिरवणे: पुढील डेल्टॉइड, पेक्टोरॅलिस, सबस्कॅप्युलरिस, लॅटिसिमस. बाह्य फिरवणे: पाठीमागील डेल्टॉइड, इन्फ्रास्पायनेटस, टेरेस मायनर. तुम्हाला तुमच्या खांद्याच्या पुढील आणि मागील बाजूस, छातीत आणि वरच्या पाठीत हा व्यायाम जाणवला पाहिजे.",
+      "tip": "Use a weight that makes the last few repetitions difficult, but pain-free.",
+      "tipMr": "असे वजन वापरा ज्यामुळे शेवटच्या काही पुनरावृत्ती कठीण वाटतील, पण वेदना होणार नाहीत."
+    },
+    {
+      "name": "External Rotation (Dumbbell)",
+      "nameMr": "बाह्य फिरवणे - डंबेल (External Rotation - Dumbbell)",
+      "category": "shoulder",
+      "repetitions": "2 sets of 10",
+      "repetitionsMr": "१० चे २ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Lie on your side on a firm, flat surface with your unaffected arm under you, cradling your head.",
+        "Hold your injured arm against your side as shown, with your elbow bent at a 90° angle.",
+        "Keep your elbow against your side and slowly rotate your arm at the shoulder, raising the weight to a vertical position.",
+        "Slowly lower the weight to the starting position to a count of 5."
+      ],
+      "stepsMr": [
+        "तुमच्या बाजूवर एका सपाट, मजबूत पृष्ठभागावर झोपा, तुमचा अप्रभावित हात तुमच्या खाली ठेवा आणि डोक्याला आधार द्या.",
+        "तुमचा जखमी हात दाखवल्याप्रमाणे शरीराच्या बाजूला ठेवा, कोपर ९०° कोनात वाकलेला असावा.",
+        "तुमचा कोपर शरीराच्या बाजूला ठेवून, तुमचा हात खांद्यापासून हळूवारपणे बाहेरच्या दिशेने फिरवा, वजन उभ्या स्थितीत आणा.",
+        "५ च्या गणनेने वजन हळूवारपणे सुरुवातीच्या स्थितीत खाली आणा."
+      ],
+      "description": "Main muscles worked: Infraspinatus, teres minor, posterior deltoid. You should feel this stretch in the back of your shoulder and upper back.",
+      "descriptionMr": "मुख्य स्नायू: इन्फ्रास्पायनेटस, टेरेस मायनर, पाठीमागील डेल्टॉइड. तुम्हाला तुमच्या खांद्याच्या मागील बाजूस आणि वरच्या पाठीत हा ताण जाणवला पाहिजे.",
+      "tip": "Do not let your body roll back as you raise the weight.",
+      "tipMr": "वजन वर उचलताना तुमचे शरीर मागे फिरू देऊ नका."
+    },
+    {
+      "name": "Internal Rotation (Dumbbell)",
+      "nameMr": "अंतर्गत फिरवणे - डंबेल (Internal Rotation - Dumbbell)",
+      "category": "shoulder",
+      "repetitions": "2 sets of 10",
+      "repetitionsMr": "१० चे २ संच",
+      "daysPerWeek": "3",
+      "daysPerWeekMr": "आठवड्यातून ३ दिवस",
+      "steps": [
+        "Lie on a firm, flat surface on the side of your affected arm. Place a pillow or folded cloth under your head to keep your spine straight.",
+        "Hold your injured arm against your side as shown, with your elbow bent at a 90° angle.",
+        "Keep your elbow bent and against your body and slowly rotate your arm at the shoulder, raising the weight to a vertical position.",
+        "Slowly lower the weight to the starting position."
+      ],
+      "stepsMr": [
+        "तुमच्या प्रभावित हाताच्या बाजूवर एका सपाट, मजबूत पृष्ठभागावर झोपा. तुमची पाठ सरळ ठेवण्यासाठी डोक्याखाली उशी किंवा दुमडलेले कापड ठेवा.",
+        "तुमचा जखमी हात दाखवल्याप्रमाणे शरीराच्या बाजूला ठेवा, कोपर ९०° कोनात वाकलेला असावा.",
+        "तुमचा कोपर वाकलेला आणि शरीराच्या जवळ ठेवून, तुमचा हात खांद्यापासून हळूवारपणे फिरवा, वजन उभ्या स्थितीत आणा.",
+        "वजन हळूवारपणे सुरुवातीच्या स्थितीत खाली आणा."
+      ],
+      "description": "Main muscles worked: Subscapularis, teres major. You should feel this stretch in the front of your shoulder.",
+      "descriptionMr": "मुख्य स्नायू: सबस्कॅप्युलरिस, टेरेस मेजर. तुम्हाला तुमच्या खांद्याच्या पुढील बाजूस हा ताण जाणवला पाहिजे.",
+      "tip": "Do not let your body roll back as you raise the weight.",
+      "tipMr": "वजन वर उचलताना तुमचे शरीर मागे फिरू देऊ नका."
+    }
+  ]
+}

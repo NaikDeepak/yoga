@@ -80,12 +80,13 @@ export function PrescribedExercisesForm({
   };
 
   // Group exercises by category
-  const categories = ['neck', 'back', 'core', 'lower_body'] as const;
+  const categories = ['neck', 'back', 'core', 'lower_body', 'shoulder'] as const;
   const categoryLabels = {
     neck: { en: 'Neck Exercises', mr: 'मानेचे व्यायाम' },
     back: { en: 'Back Exercises', mr: 'पाठीचे व्यायाम' },
     core: { en: 'Core Exercises', mr: 'पोटाचे/गाभ्याचे व्यायाम' },
     lower_body: { en: 'Lower Body Exercises', mr: 'शरीराच्या खालच्या भागाचे व्यायाम' },
+    shoulder: { en: 'Shoulder Exercises', mr: 'खांद्याचे व्यायाम' },
   };
 
   // Convert selected map to JSON for hidden form field
