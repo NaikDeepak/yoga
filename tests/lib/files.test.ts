@@ -12,8 +12,8 @@ describe('presets', () => {
 
 describe('validateUpload', () => {
   it('accepts pdf, jpeg, png at the limit', () => {
-    expect(validateUpload({ type: 'application/pdf', size: 1024 })).toBeNull();
-    expect(validateUpload({ type: 'image/jpeg', size: 1024 })).toBeNull();
+    expect(validateUpload({ type: 'application/pdf', size: MAX_FILE_BYTES })).toBeNull();
+    expect(validateUpload({ type: 'image/jpeg', size: MAX_FILE_BYTES })).toBeNull();
     expect(validateUpload({ type: 'image/png', size: MAX_FILE_BYTES })).toBeNull();
   });
   it('rejects wrong type and oversize', () => {

@@ -8,12 +8,12 @@ type FileLike = { type: string; size: number };
 
 export function validateUpload(file: FileLike): string | null {
   if (!DOC_MIME.includes(file.type)) return 'Only PDF, JPG, PNG allowed / फक्त PDF, JPG, PNG';
-  if (file.size > MAX_FILE_BYTES) return 'File too large, max 4 MB / फाईल 4 MB पेक्षा लहान हवी';
+  if (file.size > MAX_FILE_BYTES) return 'File too large, max 4 MB / फाईल 4 MB पर्यंत असावी';
   return null;
 }
 
 export function validatePhoto(file: FileLike): string | null {
   if (!PHOTO_MIME.includes(file.type)) return 'Photo must be JPG or PNG / फोटो JPG किंवा PNG हवा';
-  if (file.size > MAX_FILE_BYTES) return 'File too large, max 4 MB / फाईल 4 MB पेक्षा लहान हवी';
+  if (file.size > MAX_FILE_BYTES) return 'File too large, max 4 MB / फाईल 4 MB पर्यंत असावी';
   return null;
 }
