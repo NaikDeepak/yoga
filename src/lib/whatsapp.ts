@@ -11,7 +11,7 @@ export type DigestEntry = {
 export function waMeUrl(mobile: string, text: string): string {
   const digits = mobile.replace(/\D/g, '');
   const withCountry = digits.length === 10 ? `91${digits}` : digits;
-  return `https://wa.me/${withCountry}?text=${encodeURIComponent(text)}`;
+  return `https://api.whatsapp.com/send?phone=${withCountry}&text=${encodeURIComponent(text)}`;
 }
 
 export function buildReminderMessage(fullName: string, nextVisitDate: string): string {

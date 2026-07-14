@@ -11,14 +11,14 @@ describe('presets', () => {
 });
 
 describe('validateUpload', () => {
-  it('accepts pdf, jpeg, png under 10MB', () => {
-    expect(validateUpload({ type: 'application/pdf', size: 1024 })).toBeNull();
-    expect(validateUpload({ type: 'image/jpeg', size: 1024 })).toBeNull();
+  it('accepts pdf, jpeg, png at the limit', () => {
+    expect(validateUpload({ type: 'application/pdf', size: MAX_FILE_BYTES })).toBeNull();
+    expect(validateUpload({ type: 'image/jpeg', size: MAX_FILE_BYTES })).toBeNull();
     expect(validateUpload({ type: 'image/png', size: MAX_FILE_BYTES })).toBeNull();
   });
   it('rejects wrong type and oversize', () => {
     expect(validateUpload({ type: 'application/zip', size: 10 })).toMatch(/PDF/);
-    expect(validateUpload({ type: 'image/png', size: MAX_FILE_BYTES + 1 })).toMatch(/10 MB/);
+    expect(validateUpload({ type: 'image/png', size: MAX_FILE_BYTES + 1 })).toMatch(/4 MB/);
   });
 });
 

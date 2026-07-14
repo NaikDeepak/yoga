@@ -61,7 +61,8 @@ export const mr: Translations = {
     sendReminders: 'रुग्णांना स्मरणपत्रे पाठवा',
     noFollowUps: 'या आठवड्यात फॉलो-अप नाहीत',
     birthdaysToday: 'आज आणि उद्याचे वाढदिवस',
-    birthdayWishMsg: 'प्रिय {name}, पावर योग थेरपीतर्फे आपल्याला वाढदिवसाच्या हार्दिक शुभेच्छा! आपले आगामी वर्ष आरोग्यदायी आणि आनंदी जावो. / Dear {name}, Pawar\'s Yog Therapy wishes you a very Happy Birthday! May you have a healthy and happy year ahead.',
+    birthdayWishMsg:
+      '🎂 प्रिय {name},\n\nपवार योग थेरपी सेंटरतर्फे आपल्याला वाढदिवसाच्या हार्दिक शुभेच्छा! 🎉\nआपले आगामी वर्ष उत्तम आरोग्य, आनंद आणि यशाने भरलेले जावो. 🌸\n\n🎁 आपल्या वाढदिवसानिमित्त खास भेट!\nआपले Birthday Special Gift मिळवण्यासाठी आजच आमच्याशी संपर्क साधा. 🎈\n\nआपला,\nआचार्य नारायण पवार\nPawar\'s Yog Therapy Center',
     sendWish: 'शुभेच्छा पाठवा',
     birthdayWishSubtext: 'त्यांचे वर्ष आरोग्यदायी जावो! / Wish them a healthy year!',
     noBirthdays: 'आज किंवा उद्या वाढदिवस नाहीत',
@@ -169,7 +170,7 @@ export const mr: Translations = {
     title: 'कागदपत्रे',
     deleteConfirmation: '{name} काढायची का?',
     typeLabel: 'प्रकार',
-    fileLabel: 'फाइल (PDF/JPG/PNG, जास्तीत जास्त 10MB)',
+    fileLabel: 'फाइल (PDF/JPG/PNG, जास्तीत जास्त 4MB)',
     uploadBtn: 'अपलोड करा',
     noDocs: 'कागदपत्रे नाहीत',
   },

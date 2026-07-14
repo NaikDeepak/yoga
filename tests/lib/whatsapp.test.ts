@@ -11,21 +11,21 @@ import { CLINIC } from '@/lib/clinic';
 
 describe('waMeUrl', () => {
   it('prefixes 91 to a 10-digit mobile', () => {
-    expect(waMeUrl('9876543210', 'hi')).toBe('https://wa.me/919876543210?text=hi');
+    expect(waMeUrl('9876543210', 'hi')).toBe('https://api.whatsapp.com/send?phone=919876543210&text=hi');
   });
 
   it('passes a 12-digit 91-prefixed number through unchanged', () => {
-    expect(waMeUrl('919876543210', 'hi')).toBe('https://wa.me/919876543210?text=hi');
+    expect(waMeUrl('919876543210', 'hi')).toBe('https://api.whatsapp.com/send?phone=919876543210&text=hi');
   });
 
   it('strips non-digit characters before prefixing', () => {
-    expect(waMeUrl('+91 98765 43210', 'hi')).toBe('https://wa.me/919876543210?text=hi');
-    expect(waMeUrl('98765-43210', 'hi')).toBe('https://wa.me/919876543210?text=hi');
+    expect(waMeUrl('+91 98765 43210', 'hi')).toBe('https://api.whatsapp.com/send?phone=919876543210&text=hi');
+    expect(waMeUrl('98765-43210', 'hi')).toBe('https://api.whatsapp.com/send?phone=919876543210&text=hi');
   });
 
   it('URL-encodes the text, including spaces, ampersands, newlines and Devanagari', () => {
     const url = waMeUrl('9876543210', 'a b&c\nनमस्कार');
-    expect(url).toBe(`https://wa.me/919876543210?text=${encodeURIComponent('a b&c\nनमस्कार')}`);
+    expect(url).toBe(`https://api.whatsapp.com/send?phone=919876543210&text=${encodeURIComponent('a b&c\nनमस्कार')}`);
     expect(url).not.toContain(' ');
     expect(url).not.toContain('&c');
   });
@@ -51,7 +51,7 @@ describe('reminderUrl', () => {
   it('equals the old dashboard whatsappUrl output verbatim', () => {
     const text = `Hello Sunita Patil, a reminder from Pawar's Yog Therapy — your next session is on 03 Jul. / नमस्कार Sunita Patil, आपल्या पुढील योग थेरपी भेटीची आठवण — 03 Jul रोजी आहे.`;
     expect(reminderUrl('9876543210', 'Sunita Patil', '2026-07-03')).toBe(
-      `https://wa.me/919876543210?text=${encodeURIComponent(text)}`
+      `https://api.whatsapp.com/send?phone=919876543210&text=${encodeURIComponent(text)}`
     );
   });
 });
@@ -100,11 +100,11 @@ describe('buildDigestMessage', () => {
 describe('digestUrl', () => {
   it('addresses the clinic own WhatsApp number when given as target', () => {
     const url = digestUrl([entry()], '2026-07-03', CLINIC.whatsappDigits);
-    expect(url.startsWith(`https://wa.me/${CLINIC.whatsappDigits}?text=`)).toBe(true);
+    expect(url.startsWith(`https://api.whatsapp.com/send?phone=${CLINIC.whatsappDigits}&text=`)).toBe(true);
   });
 
   it('addresses a configured 10-digit target with 91 prefix', () => {
     const url = digestUrl([entry()], '2026-07-03', '9812345678');
-    expect(url.startsWith('https://wa.me/919812345678?text=')).toBe(true);
+    expect(url.startsWith('https://api.whatsapp.com/send?phone=919812345678&text=')).toBe(true);
   });
 });

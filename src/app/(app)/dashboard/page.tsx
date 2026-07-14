@@ -492,5 +492,5 @@ function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: 
 
 function birthdayWhatsappUrl(mobile: string, fullName: string, t: Translations): string {
   const text = t.dashboard.birthdayWishMsg.replaceAll('{name}', fullName);
-  return `https://wa.me/91${mobile}?text=${encodeURIComponent(text)}`;
+  return `https://api.whatsapp.com/send?phone=91${mobile}&text=${encodeURIComponent(text)}`;
 }

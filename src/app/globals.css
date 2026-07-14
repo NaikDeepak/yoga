@@ -73,3 +73,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), var(--font-devanagari), ui-sans-serif, system-ui, sans-serif;
 }
+
+@media print {
+  /* Keep table rows (visit history, exercises, info tables) intact across page breaks */
+  tr {
+    break-inside: avoid;
+  }
+}

@@ -59,7 +59,8 @@ export const en = {
     sendReminders: 'Send reminders to patients',
     noFollowUps: 'No follow-ups this week',
     birthdaysToday: 'Birthdays Today & Tomorrow',
-    birthdayWishMsg: 'Dear {name}, Pawar\'s Yog Therapy wishes you a very Happy Birthday! May you have a healthy and happy year ahead. / प्रिय {name}, पावर योग थेरपीतर्फे आपल्याला वाढदिवसाच्या हार्दिक शुभेच्छा! आपले आगामी वर्ष आरोग्यदायी आणि आनंदी जावो.',
+    birthdayWishMsg:
+      '🎂 Dear {name},\n\nPawar\'s Yog Therapy Center wishes you a very Happy Birthday! 🎉\n\nMay this special day bring you good health, happiness, peace, and success. 🌸 Wishing you a wonderful year ahead filled with wellness and positivity. ✨\n\n🎁 A Special Birthday Gift Awaits You!\nContact us today to claim your Birthday Special Offer. 🎈\n\nWarm Regards,\nAcharya Narayan Pawar\nPawar\'s Yog Therapy Center',
     sendWish: 'Send Wish',
     birthdayWishSubtext: 'Wish them a healthy year! / त्यांचे वर्ष आरोग्यदायी जावो!',
     noBirthdays: 'No birthdays today or tomorrow',
@@ -167,7 +168,7 @@ export const en = {
     title: 'Documents',
     deleteConfirmation: 'Delete {name}?',
     typeLabel: 'Type',
-    fileLabel: 'File (PDF/JPG/PNG, max 10MB)',
+    fileLabel: 'File (PDF/JPG/PNG, max 4MB)',
     uploadBtn: 'Upload',
     noDocs: 'No documents',
   },
