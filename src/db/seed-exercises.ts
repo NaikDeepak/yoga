@@ -84,7 +84,12 @@ export async function seedExercises(db: Db, options: SeedOptions = {}): Promise<
         console.warn(`Seed JSON file not found at: ${jsonPath}`);
         continue;
       }
-      const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as { exercises: SeedExercise[] };
+      let data: { exercises: SeedExercise[] };
+      try {
+        data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as { exercises: SeedExercise[] };
+      } catch (parseError) {
+        throw new Error(`Invalid JSON in seed file ${file}: ${String(parseError)}`);
+      }
       seedItems.push(...data.exercises);
     }
 
@@ -93,37 +98,41 @@ export async function seedExercises(db: Db, options: SeedOptions = {}): Promise<
 
     let inserted = 0;
     let updated = 0;
-    for (const item of seedItems) {
-      const existing = existingByName.get(item.name);
-      const values = {
-        nameMr: item.nameMr,
-        category: item.category,
-        description: item.description ?? null,
-        descriptionMr: item.descriptionMr ?? null,
-        repetitions: item.repetitions,
-        repetitionsMr: item.repetitionsMr,
-        daysPerWeek: item.daysPerWeek,
-        daysPerWeekMr: item.daysPerWeekMr,
-        steps: item.steps,
-        stepsMr: item.stepsMr,
-        tip: item.tip ?? null,
-        tipMr: item.tipMr ?? null,
-        // Never null out an image the DB already has just because the map lacks an entry.
-        imagePath: imageMap[item.name] ?? existing?.imagePath ?? null,
-      };
+    // Transaction: a mid-loop failure must not leave the library half-synced
+    // (scripts/seed-db.ts runs this against the real database).
+    await db.transaction(async (tx) => {
+      for (const item of seedItems) {
+        const existing = existingByName.get(item.name);
+        const values = {
+          nameMr: item.nameMr,
+          category: item.category,
+          description: item.description ?? null,
+          descriptionMr: item.descriptionMr ?? null,
+          repetitions: item.repetitions,
+          repetitionsMr: item.repetitionsMr,
+          daysPerWeek: item.daysPerWeek,
+          daysPerWeekMr: item.daysPerWeekMr,
+          steps: item.steps,
+          stepsMr: item.stepsMr,
+          tip: item.tip ?? null,
+          tipMr: item.tipMr ?? null,
+          // Never null out an image the DB already has just because the map lacks an entry.
+          imagePath: imageMap[item.name] ?? existing?.imagePath ?? null,
+        };
 
-      if (!existing) {
-        await db.insert(exercises).values({ name: item.name, ...values });
-        inserted++;
-      } else if (
-        Object.entries(values).some(
-          ([key, value]) => !isSameValue(value, existing[key as keyof typeof existing]),
-        )
-      ) {
-        await db.update(exercises).set(values).where(eq(exercises.name, item.name));
-        updated++;
+        if (!existing) {
+          await tx.insert(exercises).values({ name: item.name, ...values });
+          inserted++;
+        } else if (
+          Object.entries(values).some(
+            ([key, value]) => !isSameValue(value, existing[key as keyof typeof existing]),
+          )
+        ) {
+          await tx.update(exercises).set(values).where(eq(exercises.name, item.name));
+          updated++;
+        }
       }
-    }
+    });
 
     // Rows are keyed by name: renaming an exercise in the seed JSON inserts a new
     // row and strands the old one (existing prescriptions keep pointing at it).

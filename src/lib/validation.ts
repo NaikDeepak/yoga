@@ -134,11 +134,14 @@ export type PaymentInput = z.infer<typeof paymentSchema>;
 
 export const prescribedExerciseSchema = z.object({
   exerciseId: z.string().uuid('Invalid exercise / अमान्य व्यायाम'),
-  customNote: opt(z.string().trim().max(500)).nullable(),
+  customNote: opt(z.string().trim().max(500, 'Note too long / टीप खूप मोठी आहे')).nullable(),
   repetitions: opt(z.string().trim().max(100, 'Too long / खूप मोठे')).nullable(),
   daysPerWeek: opt(z.string().trim().max(100, 'Too long / खूप मोठे')).nullable(),
 });
 
-export const prescribedExercisesListSchema = z.array(prescribedExerciseSchema);
+export const prescribedExercisesListSchema = z.array(prescribedExerciseSchema).refine(
+  (list) => new Set(list.map((item) => item.exerciseId)).size === list.length,
+  'Duplicate exercise in selection / निवडीत व्यायामाची पुनरावृत्ती',
+);
 export type PrescribedExerciseInput = z.infer<typeof prescribedExerciseSchema>;
 

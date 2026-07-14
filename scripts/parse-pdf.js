@@ -11,7 +11,7 @@ if (!process.env.GEMINI_API_KEY) {
     for (const line of envLines) {
       const match = line.match(/^\s*GEMINI_API_KEY\s*=\s*(.+)$/);
       if (match) {
-        process.env.GEMINI_API_KEY = match[1].trim();
+        process.env.GEMINI_API_KEY = match[1].trim().replace(/^['"]|['"]$/g, '');
         break;
       }
     }

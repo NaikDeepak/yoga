@@ -25,6 +25,16 @@ describe('Exercises data helpers', () => {
     expect(prescribed).toHaveLength(0);
   });
 
+  it('rejects duplicate exercise prescriptions for the same patient at the DB level', async () => {
+    const [ex] = await listAllExercises(db);
+    await expect(
+      savePrescribedExercises(db, patientId, [
+        { exerciseId: ex.id, customNote: null },
+        { exerciseId: ex.id, customNote: null },
+      ]),
+    ).rejects.toThrow();
+  });
+
   it('savePrescribedExercises saves exercise prescriptions and getPrescribedExercises returns them', async () => {
     const all = await listAllExercises(db);
     const ex1 = all[0];

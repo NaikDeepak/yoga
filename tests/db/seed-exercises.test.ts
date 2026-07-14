@@ -35,7 +35,7 @@ describe('seedExercises', () => {
   it('syncs drifted fields back to the seed JSON values on re-run', async () => {
     await db
       .update(exercises)
-      .set({ repetitions: 'drifted', category: 'wrong' })
+      .set({ repetitions: 'drifted', category: 'neck' })
       .where(eq(exercises.name, 'Plank'));
 
     await seedExercises(db);

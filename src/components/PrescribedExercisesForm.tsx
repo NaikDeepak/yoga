@@ -149,7 +149,7 @@ export function PrescribedExercisesForm({
                           key={ex.id} 
                           className={`rounded-xl border p-3.5 transition-all duration-200 ${
                             isSelected 
-                              ? 'border-primary/30 bg-primary/5/30' 
+                              ? 'border-primary/30 bg-primary/5'
                               : 'border-border/50 hover:border-border bg-card'
                           }`}
                         >

@@ -179,7 +179,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── PRESCRIBED EXERCISES ── */}
       {prescribedExercises.length > 0 && (
         <>
-          <SectionHeader>{locale === 'mr' ? 'नियमबाह्य व्यायाम मार्गदर्शिका (Prescribed Exercises)' : 'Prescribed Exercises / नियमबाह्य व्यायाम मार्गदर्शिका'}</SectionHeader>
+          <SectionHeader>{locale === 'mr' ? 'निर्धारित व्यायाम मार्गदर्शिका (Prescribed Exercises)' : 'Prescribed Exercises / निर्धारित व्यायाम मार्गदर्शिका'}</SectionHeader>
           <div className="mb-6">
             <table className="w-full text-sm border-collapse">
               <tbody>
