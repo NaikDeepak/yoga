@@ -4,6 +4,11 @@ export function formatDueDate(dateStr: string): string {
   return `${String(day).padStart(2, '0')} ${months[month - 1]}`;
 }
 
+export function formatFullDate(dateStr: string): string {
+  const [year] = dateStr.split('-').map(Number);
+  return `${formatDueDate(dateStr)} ${year}`;
+}
+
 export function getISTDateString(offsetDays = 0, baseDate: Date | number = Date.now()): string {
   const ms = (typeof baseDate === 'number' ? baseDate : baseDate.getTime()) + 330 * 60_000 + offsetDays * 86_400_000;
   const d = new Date(ms);

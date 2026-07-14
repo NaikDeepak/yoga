@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getISTDateString, formatDueDate } from '@/lib/dates';
+import { getISTDateString, formatDueDate, formatFullDate } from '@/lib/dates';
 
 describe('formatDueDate', () => {
   it('formats as zero-padded day + English month abbreviation', () => {
@@ -23,5 +23,15 @@ describe('getISTDateString', () => {
 
   it('applies the day offset', () => {
     expect(getISTDateString(1, Date.UTC(2026, 6, 2, 6, 0, 0))).toBe('2026-07-03');
+  });
+});
+
+describe('formatFullDate', () => {
+  it('formats an ISO date with year', () => {
+    expect(formatFullDate('2026-07-14')).toBe('14 Jul 2026');
+  });
+
+  it('pads single-digit days', () => {
+    expect(formatFullDate('2025-01-05')).toBe('05 Jan 2025');
   });
 });

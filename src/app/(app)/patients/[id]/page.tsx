@@ -11,7 +11,7 @@ import { listVisits, listVisitsWithData } from '@/data/visits';
 import { VisitLineChart } from '@/components/VisitLineChart';
 import { getStorage } from '@/lib/storage';
 import { computeBmi, bmiCategory } from '@/lib/bmi';
-import { getISTDateString } from '@/lib/dates';
+import { getISTDateString, formatFullDate } from '@/lib/dates';
 import { PRESET_PROBLEMS, DOC_TYPES } from '@/lib/presets';
 import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
@@ -25,8 +25,9 @@ import { DeleteButton } from '@/components/DeleteButton';
 import { InlineForm } from '@/components/InlineForm';
 import { PatientHeader } from '@/components/PatientHeader';
 import { TabDropdown } from '@/components/TabDropdown';
-import { Button } from '@/components/ui/button';
 import { SubmitButton } from '@/components/SubmitButton';
+import { PainScaleInput } from '@/components/PainScaleInput';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,8 +37,11 @@ import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
 import type { Translations } from '@/lib/i18n/en';
 
-const VALID_TABS = ['overview', 'problems', 'documents', 'treatment', 'progress', 'fees', 'assessment'] as const;
+const VALID_TABS = ['overview', 'treatment', 'documents', 'fees', 'assessment'] as const;
 type Tab = typeof VALID_TABS[number];
+
+// Old bookmarked/dashboard links may still use the pre-merge tab names.
+const LEGACY_TAB_MAP: Record<string, Tab> = { problems: 'overview', progress: 'treatment' };
 
 function painColor(scale: number) {
   if (scale <= 3) return 'bg-primary';
@@ -59,7 +63,7 @@ export default async function PatientPage({
   const t = getTranslations(await getLocale());
   const { id } = await params;
   const rawTab = (await searchParams).tab;
-  const tab: Tab = isValidTab(rawTab) ? rawTab : 'overview';
+  const tab: Tab = isValidTab(rawTab) ? rawTab : LEGACY_TAB_MAP[rawTab ?? ''] ?? 'overview';
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();
@@ -69,10 +73,8 @@ export default async function PatientPage({
 
   const TABS: [Tab, string][] = [
     ['overview', t.patientDetail.tabs.overview],
-    ['problems', t.patientDetail.tabs.problems],
-    ['documents', t.patientDetail.tabs.documents],
     ['treatment', t.patientDetail.tabs.treatment],
-    ['progress', t.patientDetail.tabs.progress],
+    ['documents', t.patientDetail.tabs.documents],
     ['fees', t.patientDetail.tabs.fees],
     ['assessment', t.patientDetail.tabs.assessment],
   ];
@@ -103,10 +105,16 @@ export default async function PatientPage({
       {/* Tab content — keyed by tab so it remounts and fades in on every switch */}
       <div key={tab} className="animate-in fade-in duration-200">
         {tab === 'overview' && <Overview patient={patient} t={t} />}
-        {tab === 'problems' && <Problems patientId={id} t={t} />}
         {tab === 'documents' && <Documents patientId={id} t={t} />}
-        {tab === 'treatment' && <Treatment patientId={id} t={t} />}
-        {tab === 'progress' && <Progress patientId={id} t={t} />}
+        {tab === 'treatment' && (
+          <div className="space-y-8">
+            <Treatment patientId={id} t={t} />
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold">{t.progress.title}</h2>
+              <Progress patientId={id} t={t} />
+            </div>
+          </div>
+        )}
         {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} t={t} />}
         {tab === 'assessment' && <Assessment patientId={id} t={t} />}
       </div>
@@ -122,7 +130,17 @@ async function Overview({
   t: Translations;
 }) {
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
-  const assessment = await getLifestyleAssessmentSnapshot(getDb(), patient.id);
+  const db = getDb();
+  const [assessment, visits] = await Promise.all([
+    getLifestyleAssessmentSnapshot(db, patient.id),
+    listVisits(db, patient.id),
+  ]);
+  const today = getISTDateString(0);
+  const lastVisit = visits[0]?.visitDate ?? null; // listVisits is ordered newest-first
+  const nextVisit = visits
+    .map((v) => v.nextVisitDate)
+    .filter((d): d is string => d !== null && d >= today)
+    .sort()[0] ?? null;
 
   function bmiClass() {
     if (bmi === null) return 'bg-muted text-muted-foreground';
@@ -173,6 +191,30 @@ async function Overview({
             >
               BMI: {bmi !== null ? `${bmi} — ${bmiCategory(bmi)}` : '—'}
             </span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Visits summary: the numbers the doctor checks first, without leaving Overview */}
+      <Card className="rounded-2xl sm:col-span-2">
+        <CardHeader className="pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-medium text-muted-foreground">{t.patientDetail.visitsTitle}</CardTitle>
+          <Link href={`/patients/${patient.id}?tab=treatment#add-visit`} className="text-xs text-primary hover:underline">
+            {t.patientDetail.logVisit}
+          </Link>
+        </CardHeader>
+        <CardContent className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <p className="text-muted-foreground">{t.patientDetail.lastVisit}</p>
+            <p className="font-medium">{lastVisit ? formatFullDate(lastVisit) : '—'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">{t.patientDetail.nextVisit}</p>
+            <p className="font-medium">{nextVisit ? formatFullDate(nextVisit) : '—'}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">{t.patientDetail.totalVisits}</p>
+            <p className="font-medium">{visits.length}</p>
           </div>
         </CardContent>
       </Card>
@@ -246,6 +288,12 @@ async function Overview({
           )}
         </CardContent>
       </Card>
+
+      {/* Problems — merged into Overview so the clinical picture is one screen */}
+      <div className="sm:col-span-2 space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground px-1">{t.patientDetail.tabs.problems}</h2>
+        <Problems patientId={patient.id} t={t} />
+      </div>
     </div>
   );
 }
@@ -282,17 +330,13 @@ async function Problems({ patientId, t }: { patientId: string; t: Translations }
           <InlineForm action={add} className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="problem-preset">{t.problems.presetLabel}</Label>
-              <select
-                id="problem-preset"
-                name="problem"
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-              >
+              <NativeSelect id="problem-preset" name="problem">
                 {PRESET_PROBLEMS.map((prob) => (
                   <option key={prob} value={prob}>
                     {prob}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="problem-note">{t.problems.noteLabel}</Label>
@@ -339,15 +383,11 @@ async function Documents({ patientId, t }: { patientId: string; t: Translations 
           >
             <div className="space-y-1.5">
               <Label htmlFor="doc-type">{t.documents.typeLabel}</Label>
-              <select
-                id="doc-type"
-                name="docType"
-                className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-              >
+              <NativeSelect id="doc-type" name="docType" className="w-auto">
                 {DOC_TYPES.map((docType) => (
                   <option key={docType}>{docType}</option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="doc-file">{t.documents.fileLabel}</Label>
@@ -419,7 +459,8 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
       </div>
 
       <div className="space-y-4">
-        <Card className="rounded-2xl">
+        {/* scroll-mt clears the sticky TopNav when the header's "+ Add Visit" anchor lands here */}
+        <Card id="add-visit" className="rounded-2xl scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-base">{t.treatment.addVisit}</CardTitle>
           </CardHeader>
@@ -428,7 +469,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
               action={addVisitAction.bind(null, patientId)}
               className="space-y-3"
             >
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="visitDate">{t.treatment.visitDate}</Label>
                   <Input id="visitDate" name="visitDate" type="date" defaultValue={today} />
@@ -437,10 +478,10 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
                   <Label htmlFor="visitWeight">{t.treatment.visitWeight}</Label>
                   <Input id="visitWeight" name="weightKg" type="number" step="0.1" placeholder="—" />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="visitPain">{t.treatment.visitPain}</Label>
-                  <Input id="visitPain" name="painScale" type="number" min="1" max="10" placeholder="—" />
-                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t.treatment.visitPain}</Label>
+                <PainScaleInput name="painScale" ariaLabel={t.treatment.visitPain} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="nextVisitDate">
@@ -467,7 +508,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
               <Card className="rounded-2xl">
                 <CardContent className="pb-3 pt-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{v.visitDate}</span>
+                    <span className="font-medium">{formatFullDate(v.visitDate)}</span>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       {v.weightKg != null && <span>{v.weightKg} kg</span>}
                       {v.painScale != null && (
@@ -570,11 +611,11 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
         <CardContent className="grid grid-cols-2 gap-4 pt-6 text-sm sm:grid-cols-4">
           <div>
             <p className="text-muted-foreground">{t.progress.firstVisit}</p>
-            <p className="font-medium">{firstDate ?? '—'}</p>
+            <p className="font-medium">{firstDate ? formatFullDate(firstDate) : '—'}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{t.progress.latest}</p>
-            <p className="font-medium">{latestDate ?? '—'}</p>
+            <p className="font-medium">{latestDate ? formatFullDate(latestDate) : '—'}</p>
           </div>
           <div>
             <p className="text-muted-foreground">{t.progress.visitsWithData}</p>
@@ -604,8 +645,6 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
 
 async function Assessment({ patientId, t }: { patientId: string; t: Translations }) {
   const existing = await getLifestyleAssessment(getDb(), patientId);
-  const selectClass =
-    'w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring';
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -714,46 +753,43 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="a-workType">{t.assessment.workType}</Label>
-                <select
+                <NativeSelect
                   id="a-workType"
                   name="workType"
                   defaultValue={existing?.workType ?? ''}
-                  className={selectClass}
                 >
                   <option value="">—</option>
                   <option value="desk">{t.assessment.workDesk}</option>
                   <option value="standing">{t.assessment.workStanding}</option>
                   <option value="physical">{t.assessment.workPhysical}</option>
-                </select>
+                </NativeSelect>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="a-dailySitting">{t.assessment.dailySitting}</Label>
-                <select
+                <NativeSelect
                   id="a-dailySitting"
                   name="dailySitting"
                   defaultValue={existing?.dailySitting ?? ''}
-                  className={selectClass}
                 >
                   <option value="">—</option>
                   <option value="<2h">{t.assessment.sittingOptions.under2}</option>
                   <option value="2-4h">{t.assessment.sittingOptions.twoToFour}</option>
                   <option value="4-8h">{t.assessment.sittingOptions.fourToEight}</option>
                   <option value="8+h">{t.assessment.sittingOptions.overEight}</option>
-                </select>
+                </NativeSelect>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="a-activityLevel">{t.assessment.activityLevel}</Label>
-                <select
+                <NativeSelect
                   id="a-activityLevel"
                   name="activityLevel"
                   defaultValue={existing?.activityLevel ?? ''}
-                  className={selectClass}
                 >
                   <option value="">—</option>
                   <option value="sedentary">{t.assessment.sedentary}</option>
                   <option value="light">{t.assessment.light}</option>
                   <option value="active">{t.assessment.active}</option>
-                </select>
+                </NativeSelect>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="a-sleepHours">{t.assessment.sleepHours}</Label>
@@ -818,17 +854,16 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="a-fitnessLevel">{t.assessment.fitnessLevel}</Label>
-              <select
+              <NativeSelect
                 id="a-fitnessLevel"
                 name="fitnessLevel"
                 defaultValue={existing?.fitnessLevel ?? ''}
-                className={selectClass}
               >
                 <option value="">—</option>
                 <option value="beginner">{t.assessment.fitnessBeginner}</option>
                 <option value="intermediate">{t.assessment.fitnessIntermediate}</option>
                 <option value="active">{t.assessment.fitnessActive}</option>
-              </select>
+              </NativeSelect>
             </div>
             <label className="flex items-center gap-2.5 text-sm cursor-pointer rounded-md border border-border px-3 py-2.5 hover:bg-muted/50">
               <input
@@ -904,7 +939,7 @@ function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: P
   return (
     <div className="space-y-6">
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="rounded-2xl">
           <CardContent className="pt-4 text-center">
             <p className="text-2xl font-bold">
@@ -995,7 +1030,7 @@ function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: P
                 <li key={p.id} className="flex items-center justify-between border-b border-border pb-2 text-sm last:border-0">
                   <div>
                     <span className="font-medium">₹{p.amount.toLocaleString('en-IN')}</span>
-                    <span className="ml-3 text-muted-foreground">{p.paymentDate}</span>
+                    <span className="ml-3 text-muted-foreground">{formatFullDate(p.paymentDate)}</span>
                     {p.description && <span className="ml-2 text-muted-foreground">— {p.description}</span>}
                   </div>
                   <DeleteButton

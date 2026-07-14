@@ -27,8 +27,9 @@ export function AppShell({ children, userEmail, patientCount, locale }: AppShell
 
   return (
     <LocaleProvider locale={locale}>
-      <div className="flex h-screen w-full overflow-hidden bg-muted/20">
-        <aside className="hidden lg:block w-64 shrink-0 shadow-sm z-30">
+      {/* print: variants undo the fixed-height scroll shell so the full page flows across print pages */}
+      <div className="flex h-screen w-full overflow-hidden bg-muted/20 print:h-auto print:overflow-visible print:bg-white">
+        <aside className="hidden lg:block w-64 shrink-0 shadow-sm z-30 print:hidden">
           <Sidebar patientCount={patientCount} />
         </aside>
 
@@ -42,7 +43,7 @@ export function AppShell({ children, userEmail, patientCount, locale }: AppShell
 
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out lg:hidden",
+            "fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out lg:hidden print:hidden",
             {
               "translate-x-0": isSidebarOpen,
               "-translate-x-full": !isSidebarOpen,
@@ -52,14 +53,14 @@ export function AppShell({ children, userEmail, patientCount, locale }: AppShell
           <Sidebar patientCount={patientCount} onClose={() => setIsSidebarOpen(false)} />
         </aside>
 
-        <div className="flex flex-1 flex-col overflow-hidden relative">
+        <div className="flex flex-1 flex-col overflow-hidden relative print:overflow-visible">
           <TopNav
             userEmail={userEmail}
             locale={locale}
             onMenuClick={() => setIsSidebarOpen(true)}
           />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-            <div className="mx-auto w-full max-w-6xl">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 print:overflow-visible print:p-0">
+            <div className="mx-auto w-full max-w-6xl print:max-w-none">
               {children}
             </div>
           </main>

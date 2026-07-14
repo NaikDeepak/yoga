@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getDb } from '@/db/client';
 import { getDashboardStats, getAilmentBreakdown, getRecentVisits, getPendingAssessments, getBirthdaysToday } from '@/data/dashboard';
 import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
+import { getOutstandingBalances } from '@/data/fees';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { WeeklyVisitsChart } from '@/components/WeeklyVisitsChart';
 import { BranchFilter } from '@/components/BranchFilter';
@@ -10,9 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BRANCHES, type BranchKey } from '@/lib/presets';
-import { formatDueDate } from '@/lib/dates';
+import { formatDueDate, formatFullDate } from '@/lib/dates';
 import { reminderUrl, digestUrl } from '@/lib/whatsapp';
-import { ArrowUpRight, Cake, MessageCircle, Plus, UploadCloud } from 'lucide-react';
+import { ArrowUpRight, Cake, MessageCircle, Plus } from 'lucide-react';
 import { cookies } from 'next/headers';
 import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
 import { getUserLanguage, getWhatsappNumber } from '@/data/preferences';
@@ -69,7 +70,7 @@ export default async function DashboardPage({
     : await getUserLanguage(db, user.id);
   const t = getTranslations(locale);
 
-  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, birthdaysToday, savedWhatsappNumber] = await Promise.all([
+  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, birthdaysToday, savedWhatsappNumber, outstandingBalances] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
     getRecentVisits(db, 5, branch),
@@ -77,6 +78,7 @@ export default async function DashboardPage({
     getPendingAssessments(db, 5, branch),
     getBirthdaysToday(db, branch),
     getWhatsappNumber(db, user.id),
+    getOutstandingBalances(db, 5),
   ]);
   const digestTarget = savedWhatsappNumber ?? CLINIC.whatsappDigits;
 
@@ -127,10 +129,10 @@ export default async function DashboardPage({
 
       {/* Birthday Alerts In-App Notification Banner */}
       {birthdaysToday.length > 0 && (
-        <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-2xl p-5 flex flex-col gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="bg-brand-accent/10 border border-brand-accent/30 rounded-2xl p-5 flex flex-col gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-pink-500/20 text-pink-700 rounded-full dark:text-pink-400">
-              <Cake className="h-6 w-6 animate-pulse" />
+            <div className="p-2 bg-brand-accent/20 text-brand-accent rounded-full">
+              <Cake className="h-6 w-6" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground">
@@ -143,9 +145,9 @@ export default async function DashboardPage({
           </div>
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {birthdaysToday.map((patient) => (
-              <li key={patient.id} className="bg-background/60 backdrop-blur-md rounded-xl p-3 border border-purple-500/10 flex items-center justify-between gap-3 shadow-xs">
+              <li key={patient.id} className="bg-card rounded-xl p-3 border border-brand-accent/20 flex items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="h-8 w-8 rounded-full bg-pink-100 dark:bg-pink-950/50 flex items-center justify-center text-pink-700 dark:text-pink-400 font-bold text-xs shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-brand-accent/15 flex items-center justify-center text-brand-accent font-bold text-xs shrink-0">
                     {patient.fullName.substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex flex-col min-w-0">
@@ -156,13 +158,13 @@ export default async function DashboardPage({
                       <span className="text-[10px] text-muted-foreground truncate">
                         {patient.patientCode}
                       </span>
-                      <Badge variant="secondary" className={`text-[9px] px-1 py-0 h-4 border-none shadow-none leading-none flex items-center ${patient.isTomorrow ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/50 dark:text-purple-400' : 'bg-pink-100 text-pink-800 dark:bg-pink-950/50 dark:text-pink-400'}`}>
+                      <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 h-4 border-none shadow-none leading-none flex items-center ${patient.isTomorrow ? 'bg-muted text-muted-foreground' : 'bg-brand-accent/15 text-brand-accent'}`}>
                         {patient.isTomorrow ? t.dashboard.tomorrow : t.dashboard.today}
                       </Badge>
                     </div>
                   </div>
                 </div>
-                <Button asChild size="sm" variant="outline" className="rounded-full h-8 px-3 text-xs border-pink-500/20 text-pink-700 hover:bg-pink-500/10 hover:text-pink-800 dark:text-pink-400 dark:border-pink-500/30">
+                <Button asChild size="sm" variant="outline" className="rounded-full h-9 px-3 text-xs border-brand-accent/30 text-brand-accent hover:bg-brand-accent/10 hover:text-brand-accent">
                   <a href={birthdayWhatsappUrl(patient.mobile, patient.fullName, t)} target="_blank" rel="noopener noreferrer">
                     {t.dashboard.sendWish}
                   </a>
@@ -187,10 +189,6 @@ export default async function DashboardPage({
           </CardHeader>
           <CardContent className="relative z-10">
             <p className="text-3xl sm:text-4xl font-bold tracking-tight truncate">{stats.totalPatients}</p>
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-primary-foreground/80 font-medium bg-black/10 w-fit px-2 py-1 rounded-md">
-              <ArrowUpRight className="h-3 w-3" />
-              <span>{t.dashboard.increasedLastMonth}</span>
-            </div>
           </CardContent>
           {/* Decorative shapes */}
           <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
@@ -198,24 +196,15 @@ export default async function DashboardPage({
         </Card>
 
         {/* Regular Stat Cards */}
-        <StatCard
-          title={t.dashboard.visitsThisMonth}
-          value={String(stats.visitsThisMonth)}
-          trend={t.dashboard.increasedLastMonth}
-          icon={<ArrowUpRight className="h-3.5 w-3.5" />}
-        />
+        <StatCard title={t.dashboard.visitsThisMonth} value={String(stats.visitsThisMonth)} />
 
         <RevenueStatCard value={stats.revenueThisMonth} />
 
-        <StatCard
-          title={t.dashboard.mostCommonAilment}
-          value={stats.mostCommonProblem ?? '—'}
-          trend={t.dashboard.highFrequency}
-        />
+        <StatCard title={t.dashboard.mostCommonAilment} value={stats.mostCommonProblem ?? '—'} />
       </div>
 
       {/* Analytics & Reminders Row */}
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <Card className="rounded-2xl shadow-sm border-border overflow-hidden flex flex-col">
           <CardHeader>
             <CardTitle className="text-xl font-semibold">{t.dashboard.weeklyVisits}</CardTitle>
@@ -227,9 +216,13 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl shadow-sm border-border">
+        {/* Week's Schedule — full follow-up list grouped by day, with per-patient WhatsApp reminders */}
+        <Card className="rounded-2xl shadow-sm border-border flex flex-col">
           <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <CardTitle className="text-xl font-semibold truncate">{t.dashboard.reminders}</CardTitle>
+            <div>
+              <CardTitle className="text-xl font-semibold truncate">{t.dashboard.weeksSchedule}</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">{t.dashboard.sendReminders}</p>
+            </div>
             {tomorrowFollowUps.length > 0 && (
               <Button asChild size="sm" variant="outline" className="rounded-full shrink-0 w-full sm:w-auto text-center justify-center">
                 <a href={digestUrl(tomorrowFollowUps, tomorrowStr, digestTarget)} target="_blank" rel="noopener noreferrer">
@@ -238,57 +231,9 @@ export default async function DashboardPage({
               </Button>
             )}
           </CardHeader>
-          <CardContent>
-            <div className="rounded-xl bg-accent/40 p-4 border border-border/50">
-              <h4 className="font-semibold text-sm mb-1 text-foreground">{t.dashboard.followUpsThisWeek}</h4>
-              <p className="text-xs text-muted-foreground mb-4">{t.dashboard.sendReminders}</p>
-              {followUps.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-sm text-muted-foreground">{t.dashboard.noFollowUps}</p>
-                </div>
-              ) : (
-                <ul className="space-y-4">
-                  {followUps.slice(0, 3).map((f) => (
-                    <li key={f.patientId} className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-sm">
-                          {f.fullName.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <Link href={`/patients/${f.patientId}`} className="text-sm font-semibold truncate hover:text-primary transition-colors">
-                            {f.fullName}
-                          </Link>
-                          <span className="text-xs text-muted-foreground truncate">
-                            {t.dashboard.due}: {formatDueDate(f.nextVisitDate)}
-                          </span>
-                        </div>
-                      </div>
-                      <Button asChild size="sm" className="rounded-full h-8 shrink-0 shadow-sm" variant="default">
-                        <a href={reminderUrl(f.mobile, f.fullName, f.nextVisitDate)} target="_blank" rel="noopener noreferrer">
-                          {t.dashboard.sendMsg}
-                        </a>
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {followUps.length > 3 && (
-                <Button variant="link" size="sm" className="mt-2 w-full text-xs text-primary" asChild>
-                  <Link href="/patients">{t.dashboard.viewAll.replace('{count}', String(followUps.length))}</Link>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Week's Schedule — full follow-up list grouped by day */}
-        <Card className="rounded-2xl shadow-sm border-border flex flex-col">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl font-semibold">{t.dashboard.weeksSchedule}</CardTitle>
-          </CardHeader>
           <CardContent className="flex-1 overflow-y-auto max-h-[340px] pr-1">
             {followUps.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noVisitsThisWeek}</p>
+              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noFollowUps}</p>
             ) : (
               <ul className="space-y-1">
                 {groupFollowUps(followUps, t).map((row, i) =>
@@ -298,21 +243,21 @@ export default async function DashboardPage({
                     </li>
                   ) : (
                     <li key={row.followUp.patientId + row.followUp.nextVisitDate} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-accent/40 transition-colors">
-                      <div className="h-7 w-7 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold">
+                      <div className="h-9 w-9 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
                         {row.followUp.fullName.substring(0, 2).toUpperCase()}
                       </div>
                       <Link href={`/patients/${row.followUp.patientId}`} className="text-sm font-medium truncate hover:text-primary transition-colors flex-1">
                         {row.followUp.fullName}
                       </Link>
-                      <span className="text-[10px] text-muted-foreground shrink-0">{formatDueDate(row.followUp.nextVisitDate)}</span>
-                      <Button asChild size="icon" variant="ghost" className="h-6 w-6 shrink-0">
+                      <span className="text-xs text-muted-foreground shrink-0">{formatDueDate(row.followUp.nextVisitDate)}</span>
+                      <Button asChild size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-primary hover:text-primary">
                         <a
                           href={reminderUrl(row.followUp.mobile, row.followUp.fullName, row.followUp.nextVisitDate)}
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label={t.dashboard.sendMsg}
                         >
-                          <MessageCircle className="h-3.5 w-3.5" />
+                          <MessageCircle className="h-4 w-4" />
                         </a>
                       </Button>
                     </li>
@@ -324,8 +269,8 @@ export default async function DashboardPage({
         </Card>
       </div>
 
-      {/* Bottom Row: Collaboration, Progress, Time Tracker */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* Bottom Row */}
+      <div className="grid gap-6 sm:grid-cols-2">
         {/* Pending Assessments */}
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -394,6 +339,43 @@ export default async function DashboardPage({
                 .replace('{current}', String(stats.visitsThisMonth))
                 .replace('{target}', String(MONTHLY_TARGET))}
             </p>
+            <p className="text-[10px] text-muted-foreground/80 mt-0.5">
+              {t.dashboard.goalTargetNote.replace('{target}', String(MONTHLY_TARGET))}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Outstanding Balances */}
+        <Card className="rounded-2xl shadow-sm border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold">{t.dashboard.outstandingBalances}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {outstandingBalances.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noOutstanding}</p>
+            ) : (
+              <ul className="space-y-4 mt-2">
+                {outstandingBalances.map((b) => (
+                  <li key={b.patientId} className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                      {initials(b.fullName)}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <Link href={`/patients/${b.patientId}?tab=fees`} className="text-sm font-medium truncate hover:text-primary transition-colors">
+                        {b.fullName}
+                      </Link>
+                      <span className="text-xs text-muted-foreground truncate">{b.patientCode}</span>
+                    </div>
+                    <div className="ml-auto text-right shrink-0">
+                      <p className="text-sm font-semibold text-destructive">₹{b.balance.toLocaleString('en-IN')}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {t.dashboard.ofCourseFee.replace('{fee}', b.courseFee.toLocaleString('en-IN'))}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -419,7 +401,7 @@ export default async function DashboardPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {recentVisits.map((v, i) => (
+                  {recentVisits.map((v) => (
                     <tr key={v.visitId} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-medium">
                         <Link href={`/patients/${v.patientId}`} className="hover:text-primary transition-colors">
@@ -429,7 +411,7 @@ export default async function DashboardPage({
                       <td className="px-4 py-3">
                         <Badge variant="outline" className="border-brand-accent/50 text-brand-accent bg-brand-accent/5 shadow-none">{v.patientCode}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{v.visitDate}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{formatFullDate(v.visitDate)}</td>
                       <td className="px-4 py-3 text-muted-foreground">{v.weightKg ? `${v.weightKg} kg` : '—'}</td>
                       <td className="px-4 py-3">
                         {v.painScale !== null ? (
@@ -451,29 +433,14 @@ export default async function DashboardPage({
   );
 }
 
-function StatCard({ title, value, trend, icon }: { title: string; value: string; trend?: string; icon?: React.ReactNode }) {
+function StatCard({ title, value }: { title: string; value: string }) {
   return (
     <Card className="rounded-2xl shadow-sm border-border min-w-0">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground truncate">{title}</CardTitle>
-          {icon && (
-            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground">
-              {icon}
-            </div>
-          )}
-        </div>
+        <CardTitle className="text-sm font-medium text-muted-foreground truncate">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-2xl sm:text-3xl font-bold tracking-tight truncate" title={value}>{value}</p>
-        {trend && (
-          <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-            <span className="text-green-600 bg-green-100 dark:bg-green-900/30 px-1 rounded inline-flex items-center">
-              <ArrowUpRight className="h-3 w-3" />
-            </span>
-            {trend}
-          </p>
-        )}
       </CardContent>
     </Card>
   );

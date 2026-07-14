@@ -55,8 +55,8 @@ export default async function PatientsPage({
         }
       />
 
-      <form method="get">
-        <div className="relative max-w-sm">
+      <form method="get" className="flex max-w-md items-center gap-2">
+        <div className="relative flex-1">
           <Search
             className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
@@ -69,6 +69,9 @@ export default async function PatientsPage({
             className="pl-9 rounded-full"
           />
         </div>
+        <Button type="submit" variant="outline" className="rounded-full px-5 shrink-0">
+          {t.common.search}
+        </Button>
       </form>
 
       {list.length === 0 ? (
@@ -103,7 +106,7 @@ export default async function PatientsPage({
             page={clampedPage}
             totalPages={totalPages}
             buildHref={(p) =>
-              `/patients?q=${encodeURIComponent(q ?? '')}&page=${p}`
+              q ? `/patients?q=${encodeURIComponent(q)}&page=${p}` : `/patients?page=${p}`
             }
           />
         </>
