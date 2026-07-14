@@ -13,7 +13,8 @@ export function wellnessMessageForDay(dateISO: string): WellnessMessage {
 }
 
 export function buildWellnessMessage(msg: WellnessMessage): string {
-  return `🌿 ${msg.en}\n\n${msg.mr}\n\n— ${CLINIC.name}`;
+  // BMP-safe emoji only (≤ U+FFFF): WhatsApp Desktop's wa.me handler mangles surrogate pairs.
+  return `☘ ${msg.en}\n\n${msg.mr}\n\n— ${CLINIC.name}`;
 }
 
 /** No phone number: WhatsApp opens its contact picker, so the doctor can pick a broadcast list or group. */
