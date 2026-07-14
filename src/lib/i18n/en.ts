@@ -60,7 +60,7 @@ export const en = {
     noFollowUps: 'No follow-ups this week',
     birthdaysToday: 'Birthdays Today & Tomorrow',
     birthdayWishMsg:
-      'Dear {name},\n\n🎉 Pawar\'s Yog Therapy Center wishes you a very Happy Birthday!\n\nMay this special day bring you good health, happiness, peace, and success. Wishing you a wonderful year ahead filled with wellness and positivity.\n\n🎁 A Special Birthday Gift Awaits You!\nContact us today to claim your Birthday Special Offer.\n\nWarm Regards,\nAcharya Narayan Pawar\nPawar\'s Yog Therapy Center',
+      'Dear {name},\n\n✨ Pawar\'s Yog Therapy Center wishes you a very Happy Birthday!\n\nMay this special day bring you good health, happiness, peace, and success. Wishing you a wonderful year ahead filled with wellness and positivity.\n\n⭐ A Special Birthday Gift Awaits You!\nContact us today to claim your Birthday Special Offer.\n\nWarm Regards,\nAcharya Narayan Pawar\nPawar\'s Yog Therapy Center',
     sendWish: 'Send Wish',
     birthdayWishSubtext: 'Wish them a healthy year! / त्यांचे वर्ष आरोग्यदायी जावो!',
     noBirthdays: 'No birthdays today or tomorrow',
