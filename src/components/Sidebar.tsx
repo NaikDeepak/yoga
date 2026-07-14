@@ -6,15 +6,14 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
-  BarChart,
   Settings,
-  HelpCircle,
   LogOut,
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { signOutAction } from '@/actions/auth';
 import { Button } from '@/components/ui/button';
+import { WellnessTipCard } from '@/components/WellnessTipCard';
 import { useTranslations } from '@/lib/i18n/context';
 
 interface SidebarProps {
@@ -32,12 +31,10 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
     { name: t.nav.dashboard, href: '/dashboard', icon: LayoutDashboard },
     { name: t.nav.patients, href: '/patients', icon: Users, badge: patientCount },
     { name: t.nav.calendar, href: '/calendar', icon: Calendar },
-    { name: t.nav.analytics, href: '#', icon: BarChart, disabled: true },
   ];
 
   const generalItems = [
     { name: t.nav.settings, href: '/settings', icon: Settings },
-    { name: t.nav.help, href: '#', icon: HelpCircle, disabled: true },
   ];
 
   return (
@@ -105,14 +102,10 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={cn(
-                    'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-accent/50 hover:text-foreground',
-                    item.disabled && 'opacity-50 cursor-not-allowed pointer-events-none'
-                  )}
+                  className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:bg-accent/50 hover:text-foreground"
                 >
                   <Icon className="h-5 w-5 text-muted-foreground group-hover:text-foreground" />
                   {item.name}
-                  {item.disabled && <span className="ml-auto text-[10px] uppercase bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.common.soon}</span>}
                 </Link>
               );
             })}
@@ -131,22 +124,9 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
         </div>
       </div>
 
-      {/* Bottom Card */}
+      {/* Bottom Card: shareable health tip of the day */}
       <div className="p-4 shrink-0">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/90 to-primary p-4 text-primary-foreground shadow-sm">
-          <div className="relative z-10">
-            <h4 className="font-semibold text-sm">{t.nav.needHelp}</h4>
-            <p className="mt-1 text-xs text-primary-foreground/80 leading-relaxed">
-              {t.nav.needHelpBody}
-            </p>
-            <Button variant="secondary" size="sm" className="mt-4 w-full text-xs font-medium bg-white text-primary hover:bg-white/90">
-              {t.nav.contactSupport}
-            </Button>
-          </div>
-          {/* Decorative circles */}
-          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-xl" />
-          <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-black/10 blur-xl" />
-        </div>
+        <WellnessTipCard />
       </div>
     </div>
   );

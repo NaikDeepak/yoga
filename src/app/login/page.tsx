@@ -1,5 +1,4 @@
 import { signInAction } from '@/actions/auth';
-import Link from 'next/link';
 import { Leaf } from 'lucide-react';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/input';
@@ -47,12 +46,6 @@ export default async function LoginPage({
               {t.auth.loginBtn}
             </SubmitButton>
           </form>
-          <p className="text-center text-sm text-muted-foreground">
-            {t.auth.noAccount}{' '}
-            <Link href="/register" className="font-medium text-primary hover:underline">
-              {t.auth.registerLink}
-            </Link>
-          </p>
         </CardContent>
       </Card>
     </main>

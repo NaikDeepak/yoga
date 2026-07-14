@@ -105,7 +105,7 @@ export function StopwatchWidget() {
       <button
         onClick={() => setExpanded(true)}
         className={cn(
-          'fixed bottom-6 right-6 z-50 flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-lg transition-all hover:shadow-xl',
+          'fixed bottom-6 right-6 z-50 flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-lg transition-all hover:shadow-xl print:hidden',
           mode === 'session' && sessionStatus === 'running' && 'text-primary',
         )}
       >
@@ -116,7 +116,7 @@ export function StopwatchWidget() {
 
   // --- Expanded state ---
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-72 rounded-2xl border border-border bg-card shadow-xl">
+    <div className="fixed bottom-6 right-6 z-50 w-72 rounded-2xl border border-border bg-card shadow-xl print:hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <span className="text-sm font-semibold">{t.stopwatch.title}</span>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Pencil, Printer, Receipt } from 'lucide-react';
+import { Pencil, Plus, Printer, Receipt } from 'lucide-react';
 import type { Patient } from '@/db/schema';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -55,7 +55,13 @@ export function PatientHeader({
           </div>
           <p className="text-sm text-muted-foreground">{patient.mobile}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" className="rounded-full shadow-sm" asChild>
+            <Link href={`/patients/${patient.id}?tab=treatment#add-visit`}>
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+              {t.treatment.addVisit}
+            </Link>
+          </Button>
           <Button variant="outline" size="sm" className="rounded-full" asChild>
             <Link href={`/patients/${patient.id}/edit`}>
               <Pencil className="mr-1.5 h-3.5 w-3.5" />
@@ -86,7 +92,8 @@ export function PatientHeader({
         data-testid="compact-header"
         aria-hidden={!isCompact}
         className={cn(
-          'sticky top-14 z-10 overflow-hidden bg-card transition-all duration-200',
+          // top-20 matches TopNav's h-20 so the compact bar docks right below it instead of underneath.
+          'sticky top-20 z-10 overflow-hidden bg-card transition-all duration-200',
           isCompact ? 'max-h-16 border-b border-border opacity-100' : 'max-h-0 opacity-0',
         )}
       >

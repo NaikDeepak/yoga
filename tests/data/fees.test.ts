@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { getPatientFees, setCourseFee, addPayment, deletePayment } from '@/data/fees';
+import { getPatientFees, setCourseFee, addPayment, deletePayment, getOutstandingBalances } from '@/data/fees';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
 
@@ -100,5 +100,42 @@ describe('deletePayment', () => {
     expect(result.totalPaid).toBe(0);
     expect(result.balance).toBe(2000);
     expect(result.payments).toHaveLength(0);
+  });
+});
+
+describe('getOutstandingBalances', () => {
+  it('returns only patients with positive balance, largest first', async () => {
+    const a = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    const b = await createPatient(db, { fullName: 'Baban Jadhav', mobile: '9876543211' });
+    const c = await createPatient(db, { fullName: 'Chhaya More', mobile: '9876543212' });
+    const d = await createPatient(db, { fullName: 'Dinesh Kale', mobile: '9876543213' });
+
+    await setCourseFee(db, a.id, 2000); // no payments → 2000 due
+    await setCourseFee(db, b.id, 3000);
+    await addPayment(db, b.id, 500, '2026-06-01', null); // 2500 due
+    await setCourseFee(db, c.id, 1000);
+    await addPayment(db, c.id, 1000, '2026-06-01', null); // fully paid
+    // d has no course fee at all → excluded
+
+    const rows = await getOutstandingBalances(db);
+    expect(rows.map((r) => r.fullName)).toEqual(['Baban Jadhav', 'Asha Pawar']);
+    expect(rows[0]).toMatchObject({ courseFee: 3000, totalPaid: 500, balance: 2500 });
+    expect(rows[1]).toMatchObject({ courseFee: 2000, totalPaid: 0, balance: 2000 });
+    expect(rows[0].patientCode).toMatch(/^PYT-/);
+    expect(rows[0].mobile).toBe('9876543211');
+  });
+
+  it('respects the limit', async () => {
+    for (let i = 0; i < 4; i++) {
+      const p = await createPatient(db, { fullName: `P ${i}`, mobile: `987654321${i}` });
+      await setCourseFee(db, p.id, 1000 + i);
+    }
+    const rows = await getOutstandingBalances(db, 2);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].balance).toBe(1003);
+  });
+
+  it('returns empty when nobody owes', async () => {
+    expect(await getOutstandingBalances(db)).toEqual([]);
   });
 });
