@@ -169,7 +169,7 @@ export const mr: Translations = {
     title: 'कागदपत्रे',
     deleteConfirmation: '{name} काढायची का?',
     typeLabel: 'प्रकार',
-    fileLabel: 'फाइल (PDF/JPG/PNG, जास्तीत जास्त 10MB)',
+    fileLabel: 'फाइल (PDF/JPG/PNG, जास्तीत जास्त 4MB)',
     uploadBtn: 'अपलोड करा',
     noDocs: 'कागदपत्रे नाहीत',
   },

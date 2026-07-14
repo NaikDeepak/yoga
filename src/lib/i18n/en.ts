@@ -167,7 +167,7 @@ export const en = {
     title: 'Documents',
     deleteConfirmation: 'Delete {name}?',
     typeLabel: 'Type',
-    fileLabel: 'File (PDF/JPG/PNG, max 10MB)',
+    fileLabel: 'File (PDF/JPG/PNG, max 4MB)',
     uploadBtn: 'Upload',
     noDocs: 'No documents',
   },
