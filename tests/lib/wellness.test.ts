@@ -52,7 +52,7 @@ describe('wellnessShareUrl', () => {
   it('builds a wa.me URL without a phone number so WhatsApp opens its contact picker', () => {
     const m = { en: 'Drink water.', mr: 'पाणी प्या.' };
     const url = wellnessShareUrl(m);
-    expect(url.startsWith('https://wa.me/?text=')).toBe(true);
+    expect(url.startsWith('https://api.whatsapp.com/send?text=')).toBe(true);
     expect(url).toContain(encodeURIComponent('Drink water.'));
   });
 });
