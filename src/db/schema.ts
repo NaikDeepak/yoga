@@ -156,7 +156,7 @@ export const exercises = pgTable('exercises', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   nameMr: text('name_mr').notNull(),
-  category: text('category').notNull(), // 'neck', 'back', 'core', 'lower_body'
+  category: text('category').notNull(), // 'neck', 'back', 'core', 'lower_body', 'shoulder'
   description: text('description'),
   descriptionMr: text('description_mr'),
   repetitions: text('repetitions').notNull(),
