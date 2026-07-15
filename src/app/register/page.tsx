@@ -1,6 +1,5 @@
 import { signUpAction } from '@/actions/auth';
 import Link from 'next/link';
-import { Leaf } from 'lucide-react';
 import { SubmitButton } from '@/components/SubmitButton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,8 +16,9 @@ export default async function RegisterPage({
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <Leaf className="h-6 w-6 text-primary" aria-hidden="true" />
+          <div className="mx-auto mb-2 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/pytc-logo.png" alt="PYTC Logo" width={48} height={48} className="object-contain" />
           </div>
           <CardTitle>{t.auth.registerTitle}</CardTitle>
           <CardDescription>{t.auth.registerSubtitle}</CardDescription>
