@@ -21,3 +21,4 @@ public/uploads/
 
 graphify-out/
 .tokensave
+scripts/create-admin.js
