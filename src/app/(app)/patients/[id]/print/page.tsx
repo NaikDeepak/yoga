@@ -204,9 +204,9 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                         </div>
                         {pe.imagePath && (
                           <div className="shrink-0 w-24 h-24 border border-gray-200 rounded p-1 bg-gray-50 flex items-center justify-center overflow-hidden">
-                            <img 
-                              src={pe.imagePath} 
-                              alt={locale === 'mr' ? pe.nameMr : pe.name} 
+                            <img
+                              src={pe.imagePath}
+                              alt={locale === 'mr' ? pe.nameMr : pe.name}
                               className="max-w-full max-h-full object-contain"
                             />
                           </div>
@@ -278,7 +278,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       <hr className="border-gray-200" />
       <div className="mt-8 flex justify-end">
         <div className="w-52 border-t-2 border-gray-400 pt-2 text-right">
-          <p className="text-sm font-bold">Aacharya Narayan Pawar</p>
+          <p className="text-sm font-bold">Aachary Narayan Pawar</p>
           <p className="text-xs text-gray-600">Founder &amp; Director of PYTC | Chief Medical Yoga Expert</p>
           <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center</p>
         </div>

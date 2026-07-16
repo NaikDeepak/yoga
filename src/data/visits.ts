@@ -1,4 +1,4 @@
-import { desc, eq, or, isNotNull, and, gte, lte } from 'drizzle-orm';
+import { desc, eq, or, isNotNull, and, gte, lte, gt } from 'drizzle-orm';
 import { visits, patients, type Visit } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { VisitInput } from '@/lib/validation';
@@ -38,14 +38,7 @@ export { getISTDateString };
 export async function getFollowUpsInRange(db: Db, start: string, end: string, branch?: string): Promise<FollowUp[]> {
   const cutoff = getISTDateString(0);
 
-  // Use the most recent *already-happened* visit per patient (visitDate <= cutoff) to
-  // read the follow-up date from. A new visit with no next-visit-date intentionally
-  // clears any earlier one (the patient came back, the old plan is moot) — but a
-  // future-dated visit row (not yet attended) must not be treated as "the latest
-  // visit", or it would mask a real, still-valid follow-up from an actual visit.
-  // `cutoff` is always real "today", independent of `start`/`end` — browsing a future
-  // month must not move this cutoff forward, or it would start treating not-yet-attended
-  // visits as the latest one.
+  // 1. Follow-ups based on the latest past/present visit's nextVisitDate
   const latestPerPatient = db
     .selectDistinctOn([visits.patientId], {
       patientId: visits.patientId,
@@ -56,7 +49,7 @@ export async function getFollowUpsInRange(db: Db, start: string, end: string, br
     .orderBy(visits.patientId, desc(visits.visitDate), desc(visits.createdAt))
     .as('latest');
 
-  const rows = await db
+  const rows1 = await db
     .select({
       patientId: patients.id,
       fullName: patients.fullName,
@@ -74,10 +67,47 @@ export async function getFollowUpsInRange(db: Db, start: string, end: string, br
         lte(latestPerPatient.nextVisitDate, end),
         branch ? eq(patients.branch, branch) : undefined,
       ),
-    )
-    .orderBy(latestPerPatient.nextVisitDate);
+    );
 
-  return rows.filter((r): r is FollowUp => r.nextVisitDate !== null);
+  // 2. Future visits explicitly logged with a future visitDate
+  const rows2 = await db
+    .select({
+      patientId: patients.id,
+      fullName: patients.fullName,
+      patientCode: patients.patientCode,
+      mobile: patients.mobile,
+      branch: patients.branch,
+      nextVisitDate: visits.visitDate,
+    })
+    .from(visits)
+    .innerJoin(patients, eq(visits.patientId, patients.id))
+    .where(
+      and(
+        gte(visits.visitDate, start),
+        lte(visits.visitDate, end),
+        gt(visits.visitDate, cutoff), // Only future visits
+        branch ? eq(patients.branch, branch) : undefined,
+      ),
+    );
+
+  const combined = [...rows1, ...rows2];
+  
+  // Deduplicate and normalize date objects to strings if needed
+  const uniqueMap = new Map<string, FollowUp>();
+  
+  for (const r of combined) {
+    if (!r.nextVisitDate) continue;
+    // Normalize in case the driver returns a Date object
+    const dateStr = r.nextVisitDate instanceof Date 
+      ? r.nextVisitDate.toISOString().substring(0, 10) 
+      : String(r.nextVisitDate).substring(0, 10);
+      
+    if (dateStr) {
+      uniqueMap.set(`${r.patientId}-${dateStr}`, { ...r, nextVisitDate: dateStr });
+    }
+  }
+
+  return Array.from(uniqueMap.values()).sort((a, b) => a.nextVisitDate.localeCompare(b.nextVisitDate));
 }
 
 export async function getFollowUpsThisWeek(db: Db, branch?: string): Promise<FollowUp[]> {

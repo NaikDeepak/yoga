@@ -57,5 +57,7 @@ export async function updatePatientAction(id: string, formData: FormData): Promi
     await setPhotoPath(db, id, path);
   }
   revalidatePath(`/patients/${id}`);
+  revalidatePath(`/patients/${id}/print`);
+  revalidatePath(`/patients/${id}/receipt`);
   return { ok: true };
 }

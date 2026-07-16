@@ -78,7 +78,7 @@ Pawar's Yog Therapy Center, Pune
 
 **New:**
 ```
-Aacharya Narayan Pawar
+Aachary Narayan Pawar
 Founder & Director of PYTC | Chief Medical Yoga Expert
 Pawar's Yog Therapy Center
 ```
@@ -109,7 +109,7 @@ No automated tests needed (UI-only print pages, covered by manual QA).
 - Patient WITHOUT a branch: letterhead shows "Pune, Maharashtra"
 - Operating hours line appears on both report and receipt
 - Tagline reads "LIVE PAIN-FREE · EMBRACE HEALTH AND HAPPINESS"
-- Footer reads "Aacharya Narayan Pawar / Founder & Director of PYTC | Chief Medical Yoga Expert / Pawar's Yog Therapy Center"
+- Footer reads "Aachary Narayan Pawar / Founder & Director of PYTC | Chief Medical Yoga Expert / Pawar's Yog Therapy Center"
 - Print preview looks clean (no nav header — already fixed)
 
 ---
