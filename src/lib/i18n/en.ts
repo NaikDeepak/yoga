@@ -183,6 +183,10 @@ export const en = {
     progressNote: 'Progress note',
     addVisitBtn: 'Add visit',
     noVisits: 'No visits yet',
+    chipBetter: 'Feeling better',
+    chipWorse: 'Pain increased',
+    chipSame: 'No change',
+    chipNew: 'Continuing same plan',
   },
   progress: {
     title: 'Progress',
