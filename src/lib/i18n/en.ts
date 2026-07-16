@@ -344,12 +344,12 @@ export const en = {
     allBranches: 'All branches',
   },
   globalSearch: {
-    placeholder: 'Search for a patient…',
+    placeholder: 'Search for a client…',
     noResults: 'No results',
   },
   form: {
     fullName: 'Full Name',
-    fullNamePlaceholder: 'Patient full name',
+    fullNamePlaceholder: 'Client full name',
     mobile: 'Mobile',
     mobilePlaceholder: '10-digit mobile',
     email: 'Email',
@@ -377,9 +377,9 @@ export const en = {
     ageYrs: '{age} yrs',
   },
   print: {
-    clientReport: 'Patient Report',
+    patientReport: 'Client Report',
     generatedOn: 'Generated on',
-    clientIdentification: 'PATIENT IDENTIFICATION',
+    patientIdentification: 'CLIENT IDENTIFICATION',
     personalInfo: 'PERSONAL INFORMATION',
     physicalMeasurements: 'PHYSICAL MEASUREMENTS',
     healthConditions: 'HEALTH CONDITIONS',
