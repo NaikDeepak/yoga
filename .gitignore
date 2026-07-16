@@ -18,3 +18,7 @@ skills-lock.json
 .local-db/
 public/uploads/
 *.dump
+
+# graphify knowledge-graph output (regenerable via /graphify docs)
+graphify-out/
+scratch/
