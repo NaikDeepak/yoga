@@ -17,3 +17,4 @@ skills-lock.json
 # local mock mode artifacts (PHI-like demo data + uploaded files)
 .local-db/
 public/uploads/
+*.dump
