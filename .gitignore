@@ -23,3 +23,6 @@ public/uploads/
 graphify-out/
 scratch/
 .tokensave/
+graphify-out/
+.tokensave
+scripts/create-admin.js

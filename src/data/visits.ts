@@ -98,8 +98,9 @@ export async function getFollowUpsInRange(db: Db, start: string, end: string, br
   for (const r of combined) {
     if (!r.nextVisitDate) continue;
     // Normalize in case the driver returns a Date object
-    const dateStr = r.nextVisitDate instanceof Date 
-      ? r.nextVisitDate.toISOString().substring(0, 10) 
+    const dateVal = r.nextVisitDate as unknown;
+    const dateStr = dateVal instanceof Date 
+      ? dateVal.toISOString().substring(0, 10) 
       : String(r.nextVisitDate).substring(0, 10);
       
     if (dateStr) {
