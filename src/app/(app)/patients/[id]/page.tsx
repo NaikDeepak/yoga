@@ -31,6 +31,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { VisitNoteInput } from '@/components/VisitNoteInput';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { getLocale } from '@/lib/i18n/server';
@@ -117,6 +118,29 @@ export default async function PatientPage({
         )}
         {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} t={t} />}
         {tab === 'assessment' && <Assessment patientId={id} t={t} />}
+      </div>
+
+      <div className="fixed bottom-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none animate-in slide-in-from-bottom-8 duration-500">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-card/95 p-2 shadow-lg backdrop-blur-md border border-border shadow-black/10">
+          <Link 
+            href={`/patients/${id}?tab=treatment#add-visit`} 
+            className="rounded-full bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold shadow-sm hover:bg-primary/90 transition-all active:scale-95 whitespace-nowrap"
+          >
+            + {t.treatment.addVisitBtn}
+          </Link>
+          <Link 
+            href={`/patients/${id}?tab=fees`} 
+            className="hidden sm:inline-flex rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"
+          >
+            + {t.fees.recordPayment}
+          </Link>
+          <Link 
+            href={`/patients/${id}/print`} 
+            className="rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"
+          >
+            🖨️ {t.patientDetail.report}
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -492,7 +516,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="progressNote">{t.treatment.progressNote}</Label>
-                <Textarea id="progressNote" name="progressNote" rows={2} />
+                <VisitNoteInput id="progressNote" name="progressNote" rows={2} chips={[t.treatment.chipBetter, t.treatment.chipWorse, t.treatment.chipSame, t.treatment.chipNew]} />
               </div>
               <SubmitButton size="sm" pendingLabel={`${t.treatment.addVisitBtn}...`}>{t.treatment.addVisitBtn}</SubmitButton>
             </InlineForm>
