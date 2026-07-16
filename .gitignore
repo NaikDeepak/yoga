@@ -18,3 +18,6 @@ skills-lock.json
 .local-db/
 public/uploads/
 *.dump
+
+graphify-out/
+.tokensave
