@@ -68,6 +68,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/app/(app)/calendar` | read-only month-grid view of upcoming follow-ups, branch filter, month navigation | — |
 | `src/app/(app)/patients/*` | list/new/detail/edit/print pages. Detail has 5 tabs (overview incl. problems + visit summary, treatment incl. progress charts, documents, fees, assessment); legacy `?tab=problems/progress` map to their new homes | — |
 | `src/middleware.ts` | session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
+| `src/app/manifest.ts` | PWA web-app manifest (installable on Android: standalone display, icons in `public/icons/`) | `manifest` (default) |
 
 ## Invariants (do not break)
 - BMI is never stored; always computed from weight/height.
