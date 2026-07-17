@@ -93,4 +93,4 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 ## Phase roadmap
 Spec: `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md`.
 Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups ✅; global search ✅; branch filter ✅; calendar month view ✅.
-Phase 3: fee tracking + receipts ✅; WhatsApp reminders via free wa.me deep links ✅ (spec `2026-07-02-whatsapp-reminders-design.md`; Cloud API/Twilio automation still future); CSV export, audit logs.
+Phase 3: fee tracking + receipts ✅; WhatsApp reminders via free wa.me deep links ✅ (spec `2026-07-02-whatsapp-reminders-design.md`; Cloud API/Twilio automation still future); exercise library + prescriptions ✅ (spec `2026-07-16-exercise-library-design.md`, retroactive); CSV export, audit logs.

@@ -19,6 +19,10 @@ skills-lock.json
 public/uploads/
 *.dump
 
+# graphify knowledge-graph output (regenerable via /graphify docs)
+graphify-out/
+scratch/
+.tokensave/
 graphify-out/
 .tokensave
 scripts/create-admin.js
