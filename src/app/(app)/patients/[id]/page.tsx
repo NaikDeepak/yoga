@@ -7,6 +7,9 @@ import { listDocuments } from '@/data/documents';
 import { getTreatmentPlan } from '@/data/treatment';
 import { getPatientFees, type PatientFees } from '@/data/fees';
 import { setCourseFeeAction, addPaymentAction, deletePaymentAction } from '@/actions/fees';
+import { listCharges, type ChargeRecord } from '@/data/charges';
+import { addChargeAction, deleteChargeAction } from '@/actions/charges';
+import { AddChargeForm } from '@/components/AddChargeForm';
 import { listVisits, listVisitsWithData } from '@/data/visits';
 import { VisitLineChart } from '@/components/VisitLineChart';
 import { getStorage } from '@/lib/storage';
@@ -70,6 +73,7 @@ export default async function PatientPage({
 
   const photoUrl = patient.photoPath ? await getStorage().createSignedUrl(patient.photoPath) : null;
   const patientFees = await getPatientFees(db, id);
+  const charges = await listCharges(db, id);
 
   const TABS: [Tab, string][] = [
     ['overview', t.patientDetail.tabs.overview],
@@ -115,7 +119,7 @@ export default async function PatientPage({
             </div>
           </div>
         )}
-        {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} t={t} />}
+        {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} charges={charges} today={getISTDateString()} t={t} />}
         {tab === 'assessment' && <Assessment patientId={id} t={t} />}
       </div>
     </div>
@@ -932,9 +936,18 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
   );
 }
 
-function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: PatientFees; t: Translations }) {
+function Fees({
+  patientId, patientFees, charges, today, t,
+}: {
+  patientId: string;
+  patientFees: PatientFees;
+  charges: ChargeRecord[];
+  today: string;
+  t: Translations;
+}) {
   const boundSetFee = setCourseFeeAction.bind(null, patientId, { ok: false, error: '' });
   const boundAddPayment = addPaymentAction.bind(null, patientId, { ok: false, error: '' });
+  const boundAddCharge = addChargeAction.bind(null, patientId, { ok: false, error: '' });
 
   return (
     <div className="space-y-6">
@@ -1038,6 +1051,53 @@ function Fees({ patientId, patientFees, t }: { patientId: string; patientFees: P
                     confirmText={t.fees.deletePaymentConfirmation.replace('{amount}', String(p.amount))}
                     label="×"
                   />
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Charges */}
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-base">{t.charges.addCharge}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AddChargeForm action={boundAddCharge} today={today} t={t} />
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-base">{t.charges.chargeHistory}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {charges.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t.charges.noCharges}</p>
+          ) : (
+            <ul className="space-y-2">
+              {charges.map((c) => (
+                <li key={c.id} className="flex items-center justify-between border-b border-border pb-2 text-sm last:border-0">
+                  <div>
+                    <span className="font-medium">₹{c.amount.toLocaleString('en-IN')}</span>
+                    <span className="ml-3 text-muted-foreground">{formatFullDate(c.chargeDate)}</span>
+                    <span className="ml-2 text-muted-foreground">— {c.label}</span>
+                    {c.note && <span className="ml-2 text-muted-foreground">({c.note})</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={`/patients/${patientId}/charges/${c.id}/receipt`}
+                      className="text-sm text-primary underline underline-offset-2"
+                    >
+                      {t.charges.printReceipt}
+                    </a>
+                    <DeleteButton
+                      action={deleteChargeAction.bind(null, patientId, c.id)}
+                      confirmText={t.charges.deleteChargeConfirmation.replace('{amount}', String(c.amount))}
+                      label="×"
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
