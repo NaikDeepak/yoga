@@ -14,6 +14,9 @@ export async function addChargeAction(
   formData: FormData,
 ): Promise<ActionResult> {
   await requireUser();
+  if (typeof patientId !== 'string' || !patientId) {
+    return { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
+  }
   const result = chargeSchema.safeParse(Object.fromEntries(formData));
   if (!result.success) return { ok: false, error: firstError(result.error) };
   const { feeType, customLabel, amount, chargeDate, note } = result.data;

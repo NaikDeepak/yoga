@@ -38,7 +38,7 @@ export function AddChargeForm({
   }
 
   return (
-    <InlineForm action={action}>
+    <InlineForm action={action} onReset={() => handleTypeChange('consultation')}>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor="feeType">{t.charges.feeType}</Label>

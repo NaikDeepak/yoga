@@ -60,6 +60,11 @@ describe('addChargeAction', () => {
     const r = await addChargeAction(p.id, prev, fd({ feeType: 'bogus', amount: '500', chargeDate: '2026-08-10' }));
     expect(r).toMatchObject({ ok: false });
   });
+
+  it('returns error when patientId is missing or empty', async () => {
+    const r = await addChargeAction('', prev, fd({ feeType: 'consultation', amount: '500', chargeDate: '2026-08-10' }));
+    expect(r).toMatchObject({ ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' });
+  });
 });
 
 describe('deleteChargeAction', () => {
