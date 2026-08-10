@@ -48,6 +48,7 @@ Request flow: page (server component) â†’ `src/actions/*` ('use server': auth â†
 | `src/data/treatment.ts` | one plan per patient (upsert) | `getTreatmentPlan`, `upsertTreatmentPlan` |
 | `src/data/dashboard.ts` | aggregate queries for global stats | `getDashboardStats`, `getAilmentBreakdown`, `getRecentVisits` |
 | `src/data/fees.ts` | course fee + payments per patient; clinic-wide unpaid list for dashboard | `getPatientFees`, `setCourseFee`, `addPayment`, `deletePayment`, `getOutstandingBalances` |
+| `src/data/charges.ts` | standalone typed charges per patient (Consultation, Monthly Yoga Fee, Package, Other), independent of course-fee balance | `addCharge`, `listCharges`, `getCharge`, `deleteCharge` |
 | `src/data/visits.ts` | visit log | `addVisit`, `listVisits`, `listVisitsWithData`, `getISTDateString`, `getFollowUpsThisWeek`, `getFollowUpsInRange` |
 | `src/data/lifestyle.ts` | one assessment per patient (upsert) | `getLifestyleAssessment`, `upsertLifestyleAssessment` |
 | `src/data/preferences.ts` | per-user prefs (language, WhatsApp digest number; upserts never clobber each other) | `getUserLanguage`, `setUserLanguage`, `getWhatsappNumber`, `setWhatsappNumber` |
