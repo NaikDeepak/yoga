@@ -85,4 +85,12 @@ describe('deleteCharge', () => {
     await deletePatient(db, p.id);
     expect(await listCharges(db, p.id)).toEqual([]);
   });
+
+  it('does not delete a charge belonging to a different patient', async () => {
+    const p1 = await createPatient(db, PATIENT);
+    const p2 = await createPatient(db, { fullName: 'Other Patient', mobile: '9876500000' });
+    const created = await addCharge(db, p1.id, 'consultation', 'Consultation Fee / सल्ला शुल्क', 500, '2026-08-10', null);
+    await deleteCharge(db, p2.id, created.id);
+    expect(await listCharges(db, p1.id)).toHaveLength(1);
+  });
 });

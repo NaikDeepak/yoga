@@ -1064,7 +1064,7 @@ function Fees({
           <CardTitle className="text-base">{t.charges.addCharge}</CardTitle>
         </CardHeader>
         <CardContent>
-          <AddChargeForm action={boundAddCharge} today={today} t={t} />
+          <AddChargeForm action={boundAddCharge} today={today} />
         </CardContent>
       </Card>
 
@@ -1086,12 +1086,12 @@ function Fees({
                     {c.note && <span className="ml-2 text-muted-foreground">({c.note})</span>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <a
+                    <Link
                       href={`/patients/${patientId}/charges/${c.id}/receipt`}
                       className="text-sm text-primary underline underline-offset-2"
                     >
                       {t.charges.printReceipt}
-                    </a>
+                    </Link>
                     <DeleteButton
                       action={deleteChargeAction.bind(null, patientId, c.id)}
                       confirmText={t.charges.deleteChargeConfirmation.replace('{amount}', String(c.amount))}

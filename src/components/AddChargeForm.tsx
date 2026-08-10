@@ -9,6 +9,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { FEE_TYPES, type FeeTypeKey } from '@/lib/feeTypes';
 import type { ActionResult } from '@/actions/patients';
 import type { Translations } from '@/lib/i18n/en';
+import { useTranslations } from '@/lib/i18n/context';
 
 const FEE_TYPE_UI_LABEL: Record<FeeTypeKey, keyof Translations['charges']> = {
   consultation: 'feeTypeConsultation',
@@ -18,14 +19,17 @@ const FEE_TYPE_UI_LABEL: Record<FeeTypeKey, keyof Translations['charges']> = {
 };
 
 export function AddChargeForm({
-  action, today, t,
+  action, today,
 }: {
   action: (formData: FormData) => Promise<ActionResult>;
   today: string;
-  t: Translations;
 }) {
+  const t = useTranslations();
   const [feeType, setFeeType] = useState<FeeTypeKey>('consultation');
-  const [amount, setAmount] = useState(String(FEE_TYPES[0].defaultAmount ?? ''));
+  const [amount, setAmount] = useState(() => {
+    const preset = FEE_TYPES.find((f) => f.key === 'consultation')!;
+    return preset.defaultAmount !== null ? String(preset.defaultAmount) : '';
+  });
 
   function handleTypeChange(next: FeeTypeKey) {
     setFeeType(next);
@@ -56,9 +60,9 @@ export function AddChargeForm({
           </div>
         )}
         <div className="space-y-1">
-          <Label htmlFor="amount">{t.charges.amount}</Label>
+          <Label htmlFor="chargeAmount">{t.charges.amount}</Label>
           <Input
-            id="amount"
+            id="chargeAmount"
             name="amount"
             type="number"
             step="0.01"

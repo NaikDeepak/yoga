@@ -216,7 +216,6 @@ export const mr: Translations = {
     noPayments: 'कोणतेही देयक नोंदवले नाही',
   },
   charges: {
-    title: 'शुल्क नोंदी',
     addCharge: 'शुल्क जोडा',
     feeType: 'शुल्क प्रकार',
     feeTypeConsultation: 'सल्ला शुल्क',

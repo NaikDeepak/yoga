@@ -214,7 +214,6 @@ export const en = {
     noPayments: 'No payments recorded',
   },
   charges: {
-    title: 'Charges',
     addCharge: 'Add Charge',
     feeType: 'Fee Type',
     feeTypeConsultation: 'Consultation Fee',
