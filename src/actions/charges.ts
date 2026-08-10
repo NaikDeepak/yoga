@@ -1,0 +1,44 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { getDb } from '@/db/client';
+import { requireUser } from '@/lib/auth';
+import { chargeSchema, firstError } from '@/lib/validation';
+import { addCharge, deleteCharge } from '@/data/charges';
+import { feeTypeLabel } from '@/lib/feeTypes';
+import type { ActionResult } from '@/actions/patients';
+
+export async function addChargeAction(
+  patientId: string,
+  _prevState: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireUser();
+  const result = chargeSchema.safeParse(Object.fromEntries(formData));
+  if (!result.success) return { ok: false, error: firstError(result.error) };
+  const { feeType, customLabel, amount, chargeDate, note } = result.data;
+  const label = feeType === 'other' ? customLabel! : feeTypeLabel(feeType);
+  const db = getDb();
+  try {
+    await addCharge(db, patientId, feeType, label, amount, chargeDate, note ?? null);
+  } catch {
+    return { ok: false, error: 'Could not record charge / शुल्क नोंदवता आले नाही' };
+  }
+  revalidatePath(`/patients/${patientId}`);
+  return { ok: true };
+}
+
+export async function deleteChargeAction(patientId: string, chargeId: string): Promise<ActionResult> {
+  await requireUser();
+  if (typeof patientId !== 'string' || typeof chargeId !== 'string' || !patientId || !chargeId) {
+    return { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
+  }
+  const db = getDb();
+  try {
+    await deleteCharge(db, patientId, chargeId);
+  } catch {
+    return { ok: false, error: 'Could not delete charge / शुल्क हटवता आले नाही' };
+  }
+  revalidatePath(`/patients/${patientId}`);
+  return { ok: true };
+}
