@@ -8,7 +8,7 @@ const notoSansDevanagari = Noto_Sans_Devanagari({ subsets: ['devanagari'], varia
 
 export const metadata: Metadata = { title: "Pawar's Yog Therapy" };
 
-export const viewport: Viewport = { themeColor: '#F9F6F0' };
+export const viewport: Viewport = { themeColor: '#3B6954' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
