@@ -1,11 +1,23 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { addVisit, getFollowUpsThisWeek, getFollowUpsInRange, getISTDateString } from '@/data/visits';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
 
 let db: Db;
-beforeEach(async () => { db = await createTestDb(); });
+beforeEach(async () => {
+  db = await createTestDb();
+  // Determinism hygiene, matching tests/data/clinical.test.ts: pin "now" so every
+  // getISTDateString(n) call in a test resolves against the same instant instead of
+  // real wall-clock. This does NOT fix a diagnosed bug — a one-off failure here
+  // (assertion off by several days) could not be reproduced after 25+ isolated runs
+  // and 1+ full-suite runs, and instrumenting getFollowUpsInRange showed correct
+  // rows/types every time. Root cause is unknown; treat any recurrence as a fresh
+  // investigation, not confirmation this pin was "the fix".
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-06-14T00:00:00.000Z'));
+});
+afterEach(() => vi.useRealTimers());
 
 describe('getFollowUpsThisWeek', () => {
   it('includes a follow-up scheduled for today', async () => {
