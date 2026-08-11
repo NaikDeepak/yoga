@@ -12,6 +12,7 @@ skills-lock.json
 .vercel
 .superpowers/
 .worktrees/
+.claude/worktrees/
 .DS_Store
 
 # local mock mode artifacts (PHI-like demo data + uploaded files)
