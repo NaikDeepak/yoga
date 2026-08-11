@@ -12,7 +12,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "prod": "./scripts/run-prod.sh",
-    "db:prod": "./scripts/connect-prod.sh"
+    "db:prod": "./scripts/connect-prod.sh",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down -v",
+    "docker:migrate": "DATABASE_URL=postgresql://postgres@localhost:5433/yoga_local drizzle-kit migrate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",

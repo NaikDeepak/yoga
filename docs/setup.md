@@ -14,6 +14,26 @@ treatment draft (set `GEMINI_API_KEY` to use the real API). Both dirs are gitign
 Reset everything by deleting `.local-db/` and `public/uploads/`.
 Mock mode refuses to run in production (`isLocalMock()` throws).
 
+## Dockerized local Postgres (pooler parity with prod)
+
+Native local Postgres has no pooler in front of it; prod (Neon) does — a transaction-mode
+PgBouncer, which is why `src/db/client.ts` sets `prepare:false`. This stack reproduces that
+locally instead of just avoiding it:
+
+1. `npm run docker:up` — starts `postgres:18-alpine` (direct, port `5433`, migrations only) +
+   `pgbouncer` in transaction mode (port `6432`, the app connects here).
+2. `npm run docker:migrate` — applies migrations via the direct port (`5433`), mirroring the
+   "direct/session connection for migrate, pooled connection for the app" split used for real
+   Supabase below.
+3. Point `.env` `DATABASE_URL` at `postgresql://postgres@localhost:6432/yoga_local` to run the
+   app through the pooler.
+4. `npm run docker:down` to stop, `npm run docker:reset` to wipe the volume and start clean.
+
+Runs alongside a native Homebrew Postgres without conflict (different ports). Catches
+pooler-specific bugs (session state, `SET`, temp tables, LISTEN/NOTIFY) that a direct local
+connection can't — those are broken by Neon in prod regardless of what `prepare:false` avoids
+at the prepared-statement level.
+
 ## Real Supabase setup
 
 1. Create a Supabase project (free tier, region ap-south-1).
