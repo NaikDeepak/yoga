@@ -10,7 +10,8 @@ services:
       # Direct connection — migrations only, bypasses the pooler.
       # Mirrors the "session pooler for migrate, transaction pooler for app" split
       # docs/setup.md already uses for real Supabase.
-      - '5433:5432'
+      # Loopback-only: trust auth means anyone who can reach this port has no-password access.
+      - '127.0.0.1:5433:5432'
     volumes:
       - yoga_pgdata:/var/lib/postgresql
     healthcheck:
@@ -38,7 +39,8 @@ services:
       DEFAULT_POOL_SIZE: 20
     ports:
       # App connects here — transaction-mode pooler, mimics Neon's pooled DATABASE_URL.
-      - '6432:5432'
+      # Loopback-only: trust auth means anyone who can reach this port has no-password access.
+      - '127.0.0.1:6432:5432'
 
 volumes:
   yoga_pgdata:
