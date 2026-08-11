@@ -7,13 +7,14 @@ import { useTranslations } from '@/lib/i18n/context';
 import { cn } from '@/lib/utils';
 
 export function InlineForm({
-  action, children, className, resetOnSuccess = true,
+  action, children, className, resetOnSuccess = true, onReset,
 }: {
   action: (formData: FormData) => Promise<ActionResult>;
   children: React.ReactNode;
   className?: string;
   // false for edit-in-place fields: reset() restores mount-time defaultValue, not the saved value
   resetOnSuccess?: boolean;
+  onReset?: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const t = useTranslations();
   const genericError = t.inlineForm.genericError;
@@ -25,6 +26,7 @@ export function InlineForm({
     <form
       ref={ref}
       className={className}
+      onReset={onReset}
       action={async (formData) => {
         setPending(true);
         setSaved(false);

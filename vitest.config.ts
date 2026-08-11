@@ -11,7 +11,7 @@ export default defineConfig({
     // createTestDb() runs in beforeEach and hits the same coverage-load slowdown
     hookTimeout: 30_000,
     setupFiles: ['tests/setup.ts'],
-    exclude: [...configDefaults.exclude, '**/.worktrees/**'],
+    exclude: [...configDefaults.exclude, '**/.worktrees/**', '**/.claude/**'],
     coverage: {
       provider: 'v8',
       include: ['src/lib/**', 'src/data/**', 'src/actions/**'],

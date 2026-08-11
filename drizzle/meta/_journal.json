@@ -78,6 +78,13 @@
       "when": 1784020047362,
       "tag": "0010_square_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786383886713,
+      "tag": "0011_melted_leper_queen",
+      "breakpoints": true
     }
   ]
 }
