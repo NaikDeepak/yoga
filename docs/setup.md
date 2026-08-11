@@ -72,3 +72,6 @@ Mock mode refuses to run in production (`isLocalMock()` throws).
 - [ ] Print view → Save as PDF produces clean A4
 - [ ] Logged-out user hitting /patients is redirected to /login
 - [ ] With signups disabled, /register shows an error instead of creating a user
+- [ ] PWA: on Android Chrome, the deployed site offers "Add to Home Screen" / install prompt
+- [ ] PWA: installed icon renders the logo correctly (including the maskable circle/squircle shape)
+- [ ] PWA: launching from the home-screen icon opens standalone (no browser chrome) and the status bar matches the app background

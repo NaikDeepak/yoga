@@ -140,6 +140,22 @@ export const feePayments = pgTable('fee_payments', {
 export type FeeRow = typeof fees.$inferSelect;
 export type FeePayment = typeof feePayments.$inferSelect;
 
+export const charges = pgTable('charges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  feeType: text('fee_type').notNull(), // 'consultation' | 'monthly_yoga' | 'package' | 'other'
+  label: text('label').notNull(),
+  amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+  chargeDate: date('charge_date').notNull(),
+  note: text('note'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('charges_patient_history_idx').on(table.patientId, table.chargeDate, table.createdAt)
+]).enableRLS();
+
+export type Charge = typeof charges.$inferSelect;
+
 export const userPreferences = pgTable('user_preferences', {
   userId: text('user_id').primaryKey(),
   language: text('language').notNull().default('en'),

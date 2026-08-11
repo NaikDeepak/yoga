@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { BRANCHES, DOC_TYPES } from './presets';
 import { getISTDateString } from './dates';
+import { FEE_TYPE_KEYS } from './feeTypes';
 
 const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
@@ -131,6 +132,20 @@ export const paymentSchema = z.object({
   description: opt(z.string().trim().max(200, 'Description too long / तपशील खूप मोठा आहे')),
 });
 export type PaymentInput = z.infer<typeof paymentSchema>;
+
+export const chargeSchema = z.object({
+  feeType: z.enum(FEE_TYPE_KEYS, { message: 'Invalid fee type / अवैध शुल्क प्रकार' }),
+  customLabel: opt(z.string().trim().max(100, 'Label too long / लेबल खूप मोठे')),
+  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे'),
+  chargeDate: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / अवैध तारीख')
+    .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
+  note: opt(z.string().trim().max(200, 'Note too long / टीप खूप मोठी आहे')),
+}).refine((data) => data.feeType !== 'other' || !!data.customLabel, {
+  message: 'Label required / लेबल आवश्यक आहे',
+  path: ['customLabel'],
+});
+export type ChargeInput = z.infer<typeof chargeSchema>;
 
 export const prescribedExerciseSchema = z.object({
   exerciseId: z.string().uuid('Invalid exercise / अमान्य व्यायाम'),

@@ -59,7 +59,7 @@ describe('getFollowUpsThisWeek', () => {
     });
     // Dated further in the future than today — hasn't happened yet.
     await addVisit(db, p.id, {
-      visitDate: getISTDateString(4),
+      visitDate: getISTDateString(10),
       progressNote: 'future-dated visit with no follow-up',
     });
 

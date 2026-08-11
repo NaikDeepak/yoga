@@ -113,7 +113,7 @@ export function PrescribedExercisesForm({
               {locale === 'mr' ? 'व्यायाम मार्गदर्शिका (Exercise Library)' : 'Exercise Library / व्यायाम मार्गदर्शिका'}
             </CardTitle>
             <CardDescription className="text-xs">
-              {locale === 'mr' ? 'रुग्णासाठी योग्य असणारे व्यायाम निवडा आणि सानुकूल सूचना जोडा.' : 'Select exercises and add custom instructions for the patient.'}
+              {locale === 'mr' ? 'साधकासाठी योग्य असणारे व्यायाम निवडा आणि सानुकूल सूचना जोडा.' : 'Select exercises and add custom instructions for the client.'}
             </CardDescription>
           </div>
         </div>
@@ -199,7 +199,7 @@ export function PrescribedExercisesForm({
                                     htmlFor={`reps-${ex.id}`}
                                     className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5"
                                   >
-                                    {locale === 'mr' ? 'वेळा (रुग्णासाठी):' : 'Reps (for this patient):'}
+                                    {locale === 'mr' ? 'वेळा (साधकासाठी):' : 'Reps (for this client):'}
                                   </Label>
                                   <Input
                                     id={`reps-${ex.id}`}
@@ -214,7 +214,7 @@ export function PrescribedExercisesForm({
                                     htmlFor={`days-${ex.id}`}
                                     className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5"
                                   >
-                                    {locale === 'mr' ? 'वारंवारता (रुग्णासाठी):' : 'Freq (for this patient):'}
+                                    {locale === 'mr' ? 'वारंवारता (साधकासाठी):' : 'Freq (for this client):'}
                                   </Label>
                                   <Input
                                     id={`days-${ex.id}`}

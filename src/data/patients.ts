@@ -68,3 +68,7 @@ export async function countPatients(db: Db, branch?: string, q?: string): Promis
   const [{ value }] = await db.select({ value: count() }).from(patients).where(where);
   return value;
 }
+
+export async function deletePatient(db: Db, id: string): Promise<void> {
+  await db.delete(patients).where(eq(patients.id, id));
+}

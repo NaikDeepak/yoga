@@ -30,6 +30,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/bmi.ts` | BMI math | `computeBmi`, `bmiCategory` |
 | `src/lib/patient-code.ts` | PYT-0001 sequence | `nextPatientCode`, `formatPatientCode` |
 | `src/lib/presets.ts` | 18 Marathi ailments, doc types | `PRESET_PROBLEMS`, `DOC_TYPES` |
+| `src/lib/feeTypes.ts` | preset fee types (Consultation, Monthly Yoga Fee, Package, Other) for standalone charges | `FEE_TYPES`, `FeeTypeKey`, `FEE_TYPE_KEYS`, `feeTypeLabel` |
 | `src/lib/calendar.ts` | pure month-grid date math | `buildMonthGrid`, `shiftMonth`, `parseMonth`, `monthRange` |
 | `src/lib/dates.ts` | IST date strings + display formats (`formatDueDate` = "14 Jul" for near-term, `formatFullDate` = "14 Jul 2026" for histories) | `getISTDateString`, `formatDueDate`, `formatFullDate` |
 | `src/lib/wellness.ts` | bilingual health-tip library (`wellness-messages.json`) + wa.me share URL without number (opens WhatsApp contact/broadcast picker) | `WELLNESS_MESSAGES`, `wellnessMessageForDay`, `buildWellnessMessage`, `wellnessShareUrl` |
@@ -48,6 +49,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/data/treatment.ts` | one plan per patient (upsert) | `getTreatmentPlan`, `upsertTreatmentPlan` |
 | `src/data/dashboard.ts` | aggregate queries for global stats | `getDashboardStats`, `getAilmentBreakdown`, `getRecentVisits` |
 | `src/data/fees.ts` | course fee + payments per patient; clinic-wide unpaid list for dashboard | `getPatientFees`, `setCourseFee`, `addPayment`, `deletePayment`, `getOutstandingBalances` |
+| `src/data/charges.ts` | standalone typed charges per patient (Consultation, Monthly Yoga Fee, Package, Other), independent of course-fee balance | `addCharge`, `listCharges`, `getCharge`, `deleteCharge` |
 | `src/data/visits.ts` | visit log | `addVisit`, `listVisits`, `listVisitsWithData`, `getISTDateString`, `getFollowUpsThisWeek`, `getFollowUpsInRange` |
 | `src/data/lifestyle.ts` | one assessment per patient (upsert) | `getLifestyleAssessment`, `upsertLifestyleAssessment` |
 | `src/data/preferences.ts` | per-user prefs (language, WhatsApp digest number; upserts never clobber each other) | `getUserLanguage`, `setUserLanguage`, `getWhatsappNumber`, `setWhatsappNumber` |
@@ -57,7 +59,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/actions/preferences.ts` | save language (+ lang cookie) / WhatsApp digest number | `saveLanguageAction`, `saveWhatsappNumberAction` |
 | `src/actions/exercises.ts` | save a patient's prescribed-exercise set (JSON payload from the picker form) | `savePrescribedExercisesAction` |
 | `src/actions/*` (rest) | server actions per domain; all return `ActionResult` | `*Action` functions |
-| `src/components/*` | Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm), PrintButton, AilmentBarChart (Recharts horizontal bar), VisitLineChart (Recharts line), TreatmentPlanForm (AI treatment builder), PatientHeader (sticky compact header via IntersectionObserver), TabDropdown (mobile tab select), GlobalSearch (debounced live patient search dropdown in top nav), BranchFilter (branch-scoped dashboard filter), CalendarMonthGrid (read-only month-grid follow-up view with day-click dialog), PrescribedExercisesForm (exercise-library picker with per-patient reps/frequency overrides + custom note), WellnessTipCard (sidebar health tip of the day + WhatsApp share via contact picker), PainScaleInput (segmented 1–10 pain picker, hidden input for server forms) | — |
+| `src/components/*` | Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm), PrintButton, AilmentBarChart (Recharts horizontal bar), VisitLineChart (Recharts line), TreatmentPlanForm (AI treatment builder), AddChargeForm (typed charge entry with fee-type presets and default-amount prefill), PatientHeader (sticky compact header via IntersectionObserver), TabDropdown (mobile tab select), GlobalSearch (debounced live patient search dropdown in top nav), BranchFilter (branch-scoped dashboard filter), CalendarMonthGrid (read-only month-grid follow-up view with day-click dialog), PrescribedExercisesForm (exercise-library picker with per-patient reps/frequency overrides + custom note), WellnessTipCard (sidebar health tip of the day + WhatsApp share via contact picker), PainScaleInput (segmented 1–10 pain picker, hidden input for server forms) | — |
 | `src/components/ui/native-select.tsx` | styled native `<select>` for server-rendered forms (Input-matched look; used by problems/documents/assessment forms) | `NativeSelect` |
 | `src/components/ui/*` | shadcn/ui generated components (Button, Input, Label, Card, Badge, AlertDialog, Dialog, Avatar, Separator, Tabs, Textarea, Select) | — |
 | `src/lib/utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge) | `cn` |
@@ -68,6 +70,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/app/(app)/calendar` | read-only month-grid view of upcoming follow-ups, branch filter, month navigation | — |
 | `src/app/(app)/patients/*` | list/new/detail/edit/print pages. Detail has 5 tabs (overview incl. problems + visit summary, treatment incl. progress charts, documents, fees, assessment); legacy `?tab=problems/progress` map to their new homes | — |
 | `src/middleware.ts` | session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
+| `src/app/manifest.ts` | PWA web-app manifest (installable on Android: standalone display, icons in `public/icons/`) | `manifest` (default) |
 
 ## Invariants (do not break)
 - BMI is never stored; always computed from weight/height.
@@ -93,4 +96,4 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 ## Phase roadmap
 Spec: `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md`.
 Phase 2: dashboard + charts ✅; lifestyle assessment form ✅; follow-ups ✅; global search ✅; branch filter ✅; calendar month view ✅.
-Phase 3: fee tracking + receipts ✅; WhatsApp reminders via free wa.me deep links ✅ (spec `2026-07-02-whatsapp-reminders-design.md`; Cloud API/Twilio automation still future); CSV export, audit logs.
+Phase 3: fee tracking + receipts ✅; WhatsApp reminders via free wa.me deep links ✅ (spec `2026-07-02-whatsapp-reminders-design.md`; Cloud API/Twilio automation still future); exercise library + prescriptions ✅ (spec `2026-07-16-exercise-library-design.md`, retroactive); CSV export, audit logs.

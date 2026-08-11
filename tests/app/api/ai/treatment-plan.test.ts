@@ -85,7 +85,7 @@ describe('GET /api/ai/treatment-plan/[patientId]', () => {
     vi.mocked(getPatient).mockResolvedValue(undefined);
     const res = await GET(makeRequest(), makeParams());
     expect(res.status).toBe(404);
-    expect(await res.json()).toMatchObject({ error: 'Patient not found / रुग्ण सापडला नाही' });
+    expect(await res.json()).toMatchObject({ error: 'Client not found / साधक सापडला नाही' });
   });
 
   it('returns 500 JSON when Gemini throws', async () => {
