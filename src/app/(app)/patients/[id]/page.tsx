@@ -85,7 +85,7 @@ export default async function PatientPage({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <PatientHeader patient={patient} photoUrl={photoUrl} hasCourseFee={patientFees.courseFee !== null} />
 
       <TabDropdown patientId={id} activeTab={tab} tabs={TABS} />
