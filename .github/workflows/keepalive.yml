@@ -1,0 +1,23 @@
+name: Keepalive Cron
+
+# Backup keepalive, independent of Vercel's own cron (see vercel.json, daily 03:00 UTC).
+# Vercel's free-tier cron has been known to silently skip runs; this GH Actions schedule
+# is a second, differently-timed trigger against the same /api/ping endpoint so a single
+# missed Vercel run doesn't let the Supabase project auto-pause.
+on:
+  schedule:
+    # Runs every 2 days at 04:00 UTC
+    - cron: '0 4 */2 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Keepalive Endpoint
+        # If CRON_SECRET is set on Vercel, add a matching CRON_SECRET repo secret here too —
+        # otherwise the route's auth check (route.ts) will 401 this request.
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -f -sS -m 10 -H "Authorization: Bearer ${CRON_SECRET}" "https://yoga-ten-tau.vercel.app/api/ping"
