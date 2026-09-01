@@ -23,21 +23,58 @@ export async function GET(req: Request) {
     console.error('Database keepalive query failed:', dbErr);
   }
 
-  // 2. Keep Supabase Auth project active — attempted even if the DB ping failed,
-  // so one outage doesn't stop the other keepalive.
+  // 2. Keep Supabase Auth & PostgREST DB active — prevent 7-day auto-pause.
   let authOk = true;
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`, {
-      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (supabaseUrl) {
+    // 2a. Ping Auth settings
+    if (anonKey) {
+      try {
+        const res = await fetch(`${supabaseUrl}/auth/v1/settings`, {
+          headers: { apikey: anonKey },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) {
+          authOk = false;
+          console.error('Supabase Auth keepalive failed with status:', res.status);
+        }
+      } catch (authErr) {
+        authOk = false;
+        console.error('Supabase Auth keepalive failed:', authErr);
+      }
+    } else {
       authOk = false;
-      console.error('Auth keepalive failed with status:', res.status);
+      console.error('Supabase Auth keepalive skipped: missing anon/publishable key env var');
     }
-  } catch (authErr) {
+
+    // 2b. Ping PostgREST with service key to register Postgres schema / DB query activity on Supabase
+    if (serviceKey) {
+      try {
+        const res = await fetch(`${supabaseUrl}/rest/v1/`, {
+          headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (!res.ok) {
+          authOk = false;
+          console.error('Supabase PostgREST keepalive failed with status:', res.status);
+        }
+      } catch (restErr) {
+        authOk = false;
+        console.error('Supabase PostgREST keepalive failed:', restErr);
+      }
+    } else {
+      authOk = false;
+      console.error('Supabase PostgREST keepalive skipped: missing SUPABASE_SERVICE_ROLE_KEY env var');
+    }
+  } else {
     authOk = false;
-    console.error('Auth keepalive failed:', authErr);
+    console.error('Supabase keepalive skipped: missing NEXT_PUBLIC_SUPABASE_URL env var');
   }
 
   const ok = dbOk && authOk;
