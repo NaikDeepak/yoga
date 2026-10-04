@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOverlay, type OverlayLine } from '@/lib/posture-overlay';
+import { buildOverlay, editablePoints, type OverlayLine } from '@/lib/posture-overlay';
 import { alignedLandmarks, POSTURE_W, POSTURE_H } from '../helpers/posture';
 import { LM } from '@/lib/posture';
 
@@ -60,5 +60,24 @@ describe('buildOverlay — side views', () => {
   it('adds a horizontal reference at shoulder height for the CVA', () => {
     const o = buildOverlay('right', alignedLandmarks('right'), POSTURE_W, POSTURE_H);
     expect(refs(o.lines)).toContainEqual(expect.objectContaining({ y1: 500, y2: 500 }));
+  });
+});
+
+describe('editablePoints', () => {
+  it('lists every point the view measures, including undetected ones, flagged and kept inside the photo', () => {
+    const lms = alignedLandmarks('front');
+    lms[LM.LEFT_EAR] = { x: 1.3, y: -0.2, visibility: 0.1 }; // missed, guessed off-frame
+    const pts = editablePoints('front', lms, POSTURE_W, POSTURE_H);
+    const ear = pts.find((p) => p.index === LM.LEFT_EAR)!;
+    expect(ear).toMatchObject({ detected: false, x: POSTURE_W, y: 0 });
+    expect(pts.find((p) => p.index === LM.LEFT_SHOULDER)).toMatchObject({ detected: true, x: 600, y: 500 });
+    expect(pts.some((p) => p.index === LM.LEFT_ELBOW)).toBe(true);
+  });
+
+  it('uses the near side plus the nose in side views', () => {
+    const pts = editablePoints('left', alignedLandmarks('left'), POSTURE_W, POSTURE_H).map((p) => p.index);
+    expect(pts).toContain(LM.LEFT_EAR);
+    expect(pts).toContain(LM.NOSE);
+    expect(pts).not.toContain(LM.RIGHT_EAR);
   });
 });

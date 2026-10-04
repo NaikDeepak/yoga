@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { buildOverlay } from '@/lib/posture-overlay';
+import { buildOverlay, editablePoints } from '@/lib/posture-overlay';
 import { computeViewMetrics, type Landmark, type PostureView } from '@/lib/posture';
 import { OverlaySvg } from './PostureFigure';
 import { DragHandles } from './DragHandles';
@@ -32,7 +32,8 @@ export function LandmarkEditor({
       <img src={imageUrl} alt="" className="absolute inset-0 h-full w-full object-contain" />
       <OverlaySvg overlay={overlay} metrics={metrics} showPoints={false} className="touch-none">
         <DragHandles
-          handles={overlay.points.map((p) => ({ id: p.index, x: p.x, y: p.y }))}
+          // Every point this view uses — missed ones too, so the therapist can place them.
+          handles={editablePoints(view, landmarks, width, height).map((p) => ({ id: p.index, x: p.x, y: p.y, missed: !p.detected }))}
           radius={width / 140}
           color="#ffffff"
           onMove={(index, x, y) => {
