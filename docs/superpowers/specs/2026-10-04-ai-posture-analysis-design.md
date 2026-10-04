@@ -214,6 +214,6 @@ Report page accepts `?compare=<otherAssessmentId>`: per view, two `PostureFigure
   - Residual roll is **recorded only**, not auto-corrected; revisit after verifying sensor sign conventions on real devices.
 - **Models load from CDN**, not `public/mediapipe/`: the heavy model is ~30 MB, too large for the repo. WASM from jsdelivr (pinned to the npm version), models from `storage.googleapis.com`. Only model files are downloaded; images stay on the device until saved to our storage.
 - Side views: "right" = client's right side to the camera, i.e. facing image-right; checked via toe direction (fallback nose vs ear).
-- Front vs back is checked from MediaPipe's left/right label order — needs validation on real captures.
+- Front view checks MediaPipe's left/right label order; the back view does not (it failed on a real MacBook capture) — it only requires the client square to the camera, and accepts weak face points or room above the shoulders for the head.
 - `npm run dev:phone` (`scripts/dev-phone.sh`) serves HTTPS on the LAN with a self-signed cert for phone testing.
 - The "Add posture assessment" button landed in step 5 (needed for phone testing); the assessment history list remains step 6.

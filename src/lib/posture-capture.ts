@@ -60,6 +60,9 @@ const FRONTAL_REQUIRED = [
   LM.LEFT_ANKLE, LM.RIGHT_ANKLE, LM.LEFT_HEEL, LM.RIGHT_HEEL,
 ];
 const HEAD = [LM.NOSE, LM.LEFT_EAR, LM.RIGHT_EAR];
+const BACK_HEAD = [LM.NOSE, LM.LEFT_EYE, LM.RIGHT_EYE, LM.LEFT_EAR, LM.RIGHT_EAR];
+const BACK_HEAD_VISIBILITY = 0.3;
+const HEAD_ROOM = 0.1; // shoulders at least 10% down the frame leave room for the head
 
 export function checkFrame(view: PostureView, lms: Landmark[], size: { width: number; height: number }): FrameChecks {
   const vis = (i: number) => lms[i].visibility >= MIN_VISIBILITY;
@@ -76,13 +79,20 @@ export function checkFrame(view: PostureView, lms: Landmark[], size: { width: nu
   const headOk = HEAD.some((i) => vis(i) && inside(i));
 
   if (view === 'front' || view === 'back') {
-    const inFrame = headOk && FRONTAL_REQUIRED.every((i) => vis(i) && inside(i));
+    // From behind the face is hidden, so head points come back weak or missing: accept a weaker
+    // detection, or failing that, enough room above the shoulders for the head.
+    const backHeadOk = () =>
+      BACK_HEAD.some((i) => lms[i].visibility >= BACK_HEAD_VISIBILITY && inside(i))
+      || (vis(LM.LEFT_SHOULDER) && vis(LM.RIGHT_SHOULDER)
+        && (lms[LM.LEFT_SHOULDER].y + lms[LM.RIGHT_SHOULDER].y) / 2 >= HEAD_ROOM);
+    const inFrame = (view === 'front' ? headOk : backHeadOk()) && FRONTAL_REQUIRED.every((i) => vis(i) && inside(i));
     const ratio = vis(LM.RIGHT_SHOULDER) ? shoulderRatio(LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, LM.LEFT_HIP) : null;
-    // MediaPipe labels a camera-facing person's left on image-right, and a back-facing person's on image-left.
-    const labelsMatch = view === 'front'
-      ? lms[LM.LEFT_SHOULDER].x > lms[LM.RIGHT_SHOULDER].x
-      : lms[LM.LEFT_SHOULDER].x < lms[LM.RIGHT_SHOULDER].x;
-    return { inFrame, facing: ratio !== null && ratio >= FRONTAL_MIN_WIDTH_RATIO && labelsMatch };
+    const square = ratio !== null && ratio >= FRONTAL_MIN_WIDTH_RATIO;
+    // Facing the camera, MediaPipe puts the LEFT labels on image-right. From behind its labelling is
+    // unreliable (the back view failed on a real device), so it only needs the client square to the camera —
+    // metrics assign sides by image position, not by these labels.
+    if (view === 'back') return { inFrame, facing: square };
+    return { inFrame, facing: square && lms[LM.LEFT_SHOULDER].x > lms[LM.RIGHT_SHOULDER].x };
   }
 
   const s = sagittalLandmarks(lms);

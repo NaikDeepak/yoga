@@ -90,9 +90,27 @@ describe('checkFrame', () => {
     expect(checkFrame('back', back(), size)).toEqual({ inFrame: true, facing: true });
   });
 
-  it('rejects front vs back confusion using the left/right label order', () => {
-    expect(checkFrame('back', front(), size).facing).toBe(false);
+  it('rejects a back-labelled pose in the front view', () => {
     expect(checkFrame('front', back(), size).facing).toBe(false);
+  });
+
+  it('accepts the back view whichever way MediaPipe labels left/right (it cannot see the face)', () => {
+    expect(checkFrame('back', front(), size)).toEqual({ inFrame: true, facing: true });
+  });
+
+  it('accepts the back view when face points are only weakly detected', () => {
+    const weakHead = back();
+    for (const i of [LM.NOSE, LM.LEFT_EYE, LM.RIGHT_EYE]) weakHead[i].visibility = 0.1;
+    for (const i of [LM.LEFT_EAR, LM.RIGHT_EAR]) weakHead[i].visibility = 0.35;
+    expect(checkFrame('back', weakHead, size).inFrame).toBe(true);
+    const noHead = back();
+    for (const i of [LM.NOSE, LM.LEFT_EYE, LM.RIGHT_EYE, LM.LEFT_EAR, LM.RIGHT_EAR]) noHead[i].visibility = 0;
+    expect(checkFrame('back', noHead, size).inFrame).toBe(true); // shoulders at 25% height leave room for the head
+    const headCut = back();
+    for (const i of [LM.NOSE, LM.LEFT_EYE, LM.RIGHT_EYE, LM.LEFT_EAR, LM.RIGHT_EAR]) headCut[i].visibility = 0;
+    headCut[LM.LEFT_SHOULDER] = { ...headCut[LM.LEFT_SHOULDER], y: 0.05 };
+    headCut[LM.RIGHT_SHOULDER] = { ...headCut[LM.RIGHT_SHOULDER], y: 0.05 };
+    expect(checkFrame('back', headCut, size).inFrame).toBe(false);
   });
 
   it('rejects a side-on body in a frontal view', () => {
