@@ -229,16 +229,25 @@ const SAGITTAL_KEYS: [MetricKey, MetricUnit][] = [
   ['pelvicShift', 'cm'], ['pelvicTilt', 'deg'], ['kneeSagittal', 'deg'],
 ];
 
+const sagittalIdx = (s: 'LEFT' | 'RIGHT') => ({
+  ear: LM[`${s}_EAR`], shoulder: LM[`${s}_SHOULDER`], elbow: LM[`${s}_ELBOW`], wrist: LM[`${s}_WRIST`],
+  hip: LM[`${s}_HIP`], knee: LM[`${s}_KNEE`], ankle: LM[`${s}_ANKLE`], heel: LM[`${s}_HEEL`], foot: LM[`${s}_FOOT_INDEX`],
+});
+
+/** Side of the body facing the camera in a side view (higher total visibility). */
+export function sagittalNearSide(landmarks: Landmark[]): 'LEFT' | 'RIGHT' {
+  const score = (s: 'LEFT' | 'RIGHT') => {
+    const i = sagittalIdx(s);
+    return [i.ear, i.shoulder, i.hip, i.knee, i.ankle].reduce((sum, idx) => sum + landmarks[idx].visibility, 0);
+  };
+  return score('LEFT') >= score('RIGHT') ? 'LEFT' : 'RIGHT';
+}
+
+/** Landmark indices of the near side in a side view. */
+export const sagittalLandmarks = (landmarks: Landmark[]) => sagittalIdx(sagittalNearSide(landmarks));
+
 function sagittalMetrics(pts: Pt[], raw: Landmark[], scale: Scale): Metric[] {
-  // Use whichever side of the body faces the camera (higher total visibility).
-  const sideIdx = (s: 'LEFT' | 'RIGHT') => ({
-    ear: LM[`${s}_EAR`], shoulder: LM[`${s}_SHOULDER`], hip: LM[`${s}_HIP`], knee: LM[`${s}_KNEE`],
-    ankle: LM[`${s}_ANKLE`], heel: LM[`${s}_HEEL`], foot: LM[`${s}_FOOT_INDEX`],
-  });
-  const score = (s: ReturnType<typeof sideIdx>) =>
-    [s.ear, s.shoulder, s.hip, s.knee, s.ankle].reduce((sum, i) => sum + raw[i].visibility, 0);
-  const L = sideIdx('LEFT'), R = sideIdx('RIGHT');
-  const s = score(L) >= score(R) ? L : R;
+  const s = sagittalLandmarks(raw);
   const [ear, shoulder, hip, knee, ankle, heel, foot] =
     [s.ear, s.shoulder, s.hip, s.knee, s.ankle, s.heel, s.foot].map((i) => pts[i]);
   const nose = pts[LM.NOSE];
