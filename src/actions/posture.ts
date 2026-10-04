@@ -210,7 +210,9 @@ export async function generatePostureAiAction(patientId: string, assessmentId: s
   let report;
   try {
     report = await generatePostureAnalysis(context);
-  } catch {
+  } catch (err) {
+    // Message only (HTTP status / validation issue) — never the context, which holds health data.
+    console.error('[posture-ai] generation failed:', err instanceof Error ? err.message : 'unknown error');
     return { ok: false, error: 'AI analysis failed. Please try again. / AI विश्लेषण अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.' };
   }
   await saveAiReport(db, patientId, assessmentId, report, { approved: false });

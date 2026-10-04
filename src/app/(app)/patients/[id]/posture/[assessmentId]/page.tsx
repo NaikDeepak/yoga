@@ -30,6 +30,9 @@ import {
 
 const EXERCISES_PER_CATEGORY = 3;
 
+// The AI analysis action (up to ~30 s for Gemini) runs in this route's function on Vercel.
+export const maxDuration = 60;
+
 export default async function PostureReportPage({
   params,
 }: {
