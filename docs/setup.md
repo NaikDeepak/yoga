@@ -70,6 +70,12 @@ at the prepared-statement level.
 4. When `R2_ACCOUNT_ID` is set, the app automatically uses R2; Supabase Storage is ignored.
 5. Migrate existing files: `rclone copy supabase-remote:patient-files r2-remote:patient-files`
 
+## Feature flag: AI posture analysis
+Posture analysis is a premium feature still in development. The "Posture Assessment" card (add button +
+history) on a client's Assessment tab shows in local dev and is **hidden in production** unless
+`FEATURE_POSTURE=true` is set (e.g. in Vercel env vars). `FEATURE_POSTURE=false` hides it locally.
+Only the entry point is hidden; posture URLs still work for signed-in staff.
+
 ## Testing posture capture on a phone (HTTPS on the local network)
 Browsers only allow camera access on HTTPS pages (or `localhost`), so a phone needs HTTPS.
 
