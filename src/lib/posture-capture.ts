@@ -66,18 +66,18 @@ export function checkFrame(view: PostureView, lms: Landmark[], size: { width: nu
   const inside = (i: number) => lms[i].x >= EDGE && lms[i].x <= 1 - EDGE && lms[i].y >= EDGE && lms[i].y <= 1 - EDGE;
   const px = (i: number) => ({ x: lms[i].x * size.width, y: lms[i].y * size.height });
 
-  const shoulderRatio = () => {
-    if (!vis(LM.LEFT_SHOULDER) || !vis(LM.LEFT_HIP)) return null;
-    const ls = px(LM.LEFT_SHOULDER), rs = px(LM.RIGHT_SHOULDER), lh = px(LM.LEFT_HIP);
-    const width = vis(LM.RIGHT_SHOULDER) ? Math.abs(ls.x - rs.x) : 0;
-    const torso = Math.abs(lh.y - ls.y);
+  /** Apparent shoulder width ÷ torso height: large when square to the camera, small when side-on. */
+  const shoulderRatio = (near: number, far: number, nearHip: number) => {
+    if (!vis(near) || !vis(nearHip)) return null;
+    const width = vis(far) ? Math.abs(px(near).x - px(far).x) : 0; // hidden far shoulder ⇒ fully side-on
+    const torso = Math.abs(px(nearHip).y - px(near).y);
     return torso > 0 ? width / torso : null;
   };
   const headOk = HEAD.some((i) => vis(i) && inside(i));
 
   if (view === 'front' || view === 'back') {
     const inFrame = headOk && FRONTAL_REQUIRED.every((i) => vis(i) && inside(i));
-    const ratio = vis(LM.RIGHT_SHOULDER) ? shoulderRatio() : null;
+    const ratio = vis(LM.RIGHT_SHOULDER) ? shoulderRatio(LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, LM.LEFT_HIP) : null;
     // MediaPipe labels a camera-facing person's left on image-right, and a back-facing person's on image-left.
     const labelsMatch = view === 'front'
       ? lms[LM.LEFT_SHOULDER].x > lms[LM.RIGHT_SHOULDER].x
@@ -92,20 +92,59 @@ export function checkFrame(view: PostureView, lms: Landmark[], size: { width: nu
   let facingDir = 0;
   if (vis(s.foot) && vis(s.heel)) facingDir = Math.sign(lms[s.foot].x - lms[s.heel].x);
   else if (vis(LM.NOSE) && vis(s.ear)) facingDir = Math.sign(lms[LM.NOSE].x - lms[s.ear].x);
-  const ratio = shoulderRatio();
+  // Measure from the near side: the far side is occluded and its visibility flickers around the threshold.
+  const farShoulder = s.shoulder === LM.LEFT_SHOULDER ? LM.RIGHT_SHOULDER : LM.LEFT_SHOULDER;
+  const ratio = shoulderRatio(s.shoulder, farShoulder, s.hip);
   const expected = view === 'right' ? 1 : -1;
   return { inFrame, facing: facingDir === expected && ratio !== null && ratio <= SAGITTAL_MAX_WIDTH_RATIO };
 }
 
-const STILL_KEYPOINTS = [LM.NOSE, LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, LM.LEFT_HIP, LM.RIGHT_HIP, LM.LEFT_ANKLE, LM.RIGHT_ANKLE];
+const FRONTAL_STILL_KEYPOINTS = [LM.NOSE, LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, LM.LEFT_HIP, LM.RIGHT_HIP, LM.LEFT_ANKLE, LM.RIGHT_ANKLE];
 export const STILL_MIN_FRAMES = 15; // ≈0.5–1 s of video
 const STILL_MAX_SHIFT = 0.006;      // normalised image units
 
-/** True when key points have stayed within a small radius across the recent frames (oldest first). */
-export function isStill(frames: Landmark[][], minFrames = STILL_MIN_FRAMES, maxShift = STILL_MAX_SHIFT): boolean {
+/** Points to watch for stillness — side views use only the near side (the far side jitters while occluded). */
+export function stillKeypoints(view: PostureView, lms: Landmark[]): number[] {
+  if (view === 'front' || view === 'back') return FRONTAL_STILL_KEYPOINTS;
+  const s = sagittalLandmarks(lms);
+  return [LM.NOSE, s.ear, s.shoulder, s.hip, s.knee, s.ankle];
+}
+
+/** True when the given points have stayed within a small radius across the recent frames (oldest first). */
+export function isStill(
+  frames: Landmark[][],
+  keypoints: number[],
+  minFrames = STILL_MIN_FRAMES,
+  maxShift = STILL_MAX_SHIFT,
+): boolean {
   if (frames.length < minFrames) return false;
   const recent = frames.slice(-minFrames);
   const first = recent[0];
-  return recent.every((f) => STILL_KEYPOINTS.every((i) =>
+  return recent.every((f) => keypoints.every((i) =>
     Math.hypot(f[i].x - first[i].x, f[i].y - first[i].y) <= maxShift));
+}
+
+export interface CountdownState { okSince: number | null; lastOk: number | null }
+export const COUNTDOWN_SECONDS = 3;
+const COUNTDOWN_GRACE_MS = 500; // single bad frames (detector noise) don't restart the countdown
+
+/**
+ * Auto-capture countdown, advanced once per video frame. Counts from when all checks started
+ * passing; brief failures (≤ 500 ms) are ignored, longer ones reset it. `fire` = take the photo now.
+ */
+export function advanceCountdown(
+  state: CountdownState,
+  ok: boolean,
+  now: number,
+): { state: CountdownState; remaining: number | null; fire: boolean } {
+  const idle: CountdownState = { okSince: null, lastOk: null };
+  let next: CountdownState;
+  if (ok) next = { okSince: state.okSince ?? now, lastOk: now };
+  else if (state.lastOk !== null && now - state.lastOk <= COUNTDOWN_GRACE_MS) next = state;
+  else next = idle;
+
+  if (next.okSince === null) return { state: next, remaining: null, fire: false };
+  const elapsed = now - next.okSince;
+  if (elapsed >= COUNTDOWN_SECONDS * 1000) return { state: idle, remaining: null, fire: true };
+  return { state: next, remaining: COUNTDOWN_SECONDS - Math.floor(elapsed / 1000), fire: false };
 }

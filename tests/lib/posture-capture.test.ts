@@ -5,7 +5,10 @@ import {
   rollFromReferenceLine,
   checkFrame,
   isStill,
+  stillKeypoints,
+  advanceCountdown,
   LEVEL_TOLERANCE,
+  type CountdownState,
 } from '@/lib/posture-capture';
 import { LM, type Landmark } from '@/lib/posture';
 import { alignedLandmarks, POSTURE_W, POSTURE_H } from '../helpers/posture';
@@ -115,6 +118,20 @@ describe('checkFrame', () => {
     expect(checkFrame('left', facingRight, size).facing).toBe(false);
   });
 
+  it('measures side views from the near side even when the far side is hidden', () => {
+    // Right side to camera: only RIGHT_* landmarks are visible; the hidden left side flickers below threshold.
+    const rightSide = alignedLandmarks('left').map((l) => ({ ...l }));
+    const near: [keyof typeof LM, keyof typeof LM][] = [
+      ['LEFT_EAR', 'RIGHT_EAR'], ['LEFT_SHOULDER', 'RIGHT_SHOULDER'], ['LEFT_HIP', 'RIGHT_HIP'], ['LEFT_KNEE', 'RIGHT_KNEE'],
+      ['LEFT_ANKLE', 'RIGHT_ANKLE'], ['LEFT_HEEL', 'RIGHT_HEEL'], ['LEFT_FOOT_INDEX', 'RIGHT_FOOT_INDEX'], ['LEFT_EYE', 'RIGHT_EYE'],
+    ];
+    for (const [l, r] of near) {
+      rightSide[LM[r]] = rightSide[LM[l]];
+      rightSide[LM[l]] = { ...rightSide[LM[l]], visibility: 0.45 };
+    }
+    expect(checkFrame('right', rightSide, size)).toEqual({ inFrame: true, facing: true });
+  });
+
   it('rejects a front-on body in a side view', () => {
     expect(checkFrame('right', front(), size).facing).toBe(false);
   });
@@ -130,13 +147,66 @@ describe('isStill', () => {
   const frame = (dx = 0) => alignedLandmarks('front').map((l) => ({ ...l, x: l.x + dx }));
 
   it('needs enough frames before it can say the client is still', () => {
-    expect(isStill(Array.from({ length: 5 }, () => frame()))).toBe(false);
+    expect(isStill(Array.from({ length: 5 }, () => frame()), stillKeypoints('front', frame()))).toBe(false);
   });
 
   it('accepts tiny jitter and rejects movement', () => {
+    const keys = stillKeypoints('front', frame());
     const steady = Array.from({ length: 15 }, (_, i) => frame((i % 2) * 0.002));
-    expect(isStill(steady)).toBe(true);
+    expect(isStill(steady, keys)).toBe(true);
     const swaying = Array.from({ length: 15 }, (_, i) => frame(i * 0.002));
-    expect(isStill(swaying)).toBe(false);
+    expect(isStill(swaying, keys)).toBe(false);
+  });
+});
+
+describe('stillKeypoints', () => {
+  it('uses both sides from the front/back and only the near side from the side', () => {
+    expect(stillKeypoints('front', alignedLandmarks('front'))).toContain(LM.RIGHT_SHOULDER);
+    const side = stillKeypoints('left', alignedLandmarks('left'));
+    expect(side).toContain(LM.LEFT_SHOULDER);
+    expect(side).not.toContain(LM.RIGHT_SHOULDER);
+  });
+
+  it('ignores jitter on hidden far-side points in a side view', () => {
+    const frames = Array.from({ length: 15 }, (_, i) => {
+      const f = alignedLandmarks('left');
+      f[LM.RIGHT_SHOULDER] = { x: 0.3 + (i % 2) * 0.1, y: 0.25, visibility: 0.3 };
+      return f;
+    });
+    expect(isStill(frames, stillKeypoints('left', frames[0]))).toBe(true);
+  });
+});
+
+describe('advanceCountdown', () => {
+  const start: CountdownState = { okSince: null, lastOk: null };
+  const run = (steps: [number, boolean][]) => {
+    let state = start;
+    let last = { remaining: null as number | null, fire: false };
+    for (const [now, ok] of steps) {
+      const r = advanceCountdown(state, ok, now);
+      state = r.state;
+      last = { remaining: r.remaining, fire: r.fire };
+    }
+    return last;
+  };
+
+  it('counts down 3-2-1 and fires after 3 s of all checks passing', () => {
+    expect(run([[0, true]])).toEqual({ remaining: 3, fire: false });
+    expect(run([[0, true], [1100, true]])).toEqual({ remaining: 2, fire: false });
+    expect(run([[0, true], [2100, true]])).toEqual({ remaining: 1, fire: false });
+    expect(run([[0, true], [3000, true]])).toEqual({ remaining: null, fire: true });
+  });
+
+  it('rides out brief dropouts (single bad frames) without restarting', () => {
+    expect(run([[0, true], [900, true], [1000, false], [1300, true], [3000, true]])).toEqual({ remaining: null, fire: true });
+  });
+
+  it('restarts after a sustained failure', () => {
+    expect(run([[0, true], [900, true], [1000, false], [1500, false]])).toEqual({ remaining: null, fire: false });
+    expect(run([[0, true], [900, true], [1000, false], [1500, false], [1600, true]])).toEqual({ remaining: 3, fire: false });
+  });
+
+  it('stays idle while checks fail', () => {
+    expect(run([[0, false], [500, false]])).toEqual({ remaining: null, fire: false });
   });
 });

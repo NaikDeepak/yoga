@@ -11,7 +11,8 @@ import { savePostureAssessmentAction } from '@/actions/posture';
 import { buildOverlay } from '@/lib/posture-overlay';
 import { POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
 import {
-  checkFrame, isLevel, isStill, rollFromReferenceLine, type CameraCheck, type FrameChecks,
+  advanceCountdown, checkFrame, isLevel, isStill, rollFromReferenceLine, stillKeypoints,
+  type CameraCheck, type CountdownState, type FrameChecks,
 } from '@/lib/posture-capture';
 import { createPoseDetector, toLandmarks } from './pose-detector';
 import { requestMotionPermission, useCamera, useDeviceLevel } from './hooks';
@@ -34,7 +35,6 @@ interface Capture {
 
 const MAX_EDGE = 1280;       // px; keeps four JPEGs well under the 4 MB upload cap
 const JPEG_QUALITY = 0.85;
-const COUNTDOWN_SECONDS = 3;
 const HISTORY_FRAMES = 30;
 
 /** Sizes a media box to its aspect ratio while fitting within 70% of the viewport height. */
@@ -94,10 +94,19 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
   });
   const history = useRef<Landmark[][]>([]);
 
+  const levelOk = sensorMode ? !!sensor.level && isLevel(sensor.level) : referenceRoll !== null;
+
+  // The loop reads these through refs so it isn't torn down and restarted every render.
+  const levelOkRef = useRef(levelOk);
+  levelOkRef.current = levelOk;
+  const captureRef = useRef<() => void>(() => {});
+  const [countdown, setCountdown] = useState<number | null>(null);
+
   useEffect(() => {
-    if (!cameraOn || !size || !modelReady || needsCalibration || busy) return;
+    if (!cameraOn || !size || !modelReady || needsCalibration || busy) { setCountdown(null); return; }
     let raf = 0;
     let lastTs = 0;
+    let cd: CountdownState = { okSince: null, lastOk: null };
     const loop = () => {
       const video = videoRef.current;
       const det = liveDetector.current;
@@ -105,22 +114,28 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
         const ts = Math.max(performance.now(), lastTs + 1); // timestamps must strictly increase
         lastTs = ts;
         const lms = toLandmarks(det.detectForVideo(video, ts));
+        let frame: FrameChecks = { inFrame: false, facing: false };
+        let still = false;
         if (lms) {
           history.current = [...history.current.slice(-(HISTORY_FRAMES - 1)), lms];
-          setLive({ landmarks: lms, frame: checkFrame(view, lms, size), still: isStill(history.current) });
+          frame = checkFrame(view, lms, size);
+          still = isStill(history.current, stillKeypoints(view, lms));
         } else {
           history.current = [];
-          setLive({ landmarks: null, frame: { inFrame: false, facing: false }, still: false });
         }
+        setLive({ landmarks: lms, frame, still });
+        const step = advanceCountdown(cd, frame.inFrame && frame.facing && still && levelOkRef.current, ts);
+        cd = step.state;
+        setCountdown(step.remaining);
+        // capture() sets busy, which pauses this loop; if it bails out (e.g. camera moved) the loop keeps
+        // running and the countdown needs a fresh 3 s before firing again.
+        if (step.fire) captureRef.current();
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [cameraOn, size, modelReady, needsCalibration, busy, view, videoRef]);
-
-  const levelOk = sensorMode ? !!sensor.level && isLevel(sensor.level) : referenceRoll !== null;
-  const allOk = live.frame.inFrame && live.frame.facing && live.still && levelOk;
 
   // ── capture ──
   const capture = useCallback(async () => {
@@ -154,14 +169,7 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
     }
   }, [videoRef, size, busy, sensorMode, sensor.level, referenceRoll, c.notLevel, c.noPerson]);
 
-  const [countdown, setCountdown] = useState<number | null>(null);
-  useEffect(() => {
-    if (!allOk || busy || step !== 'live') { setCountdown(null); return; }
-    setCountdown(COUNTDOWN_SECONDS);
-    const id = window.setInterval(() => setCountdown((n) => (n === null ? null : n - 1)), 1000);
-    return () => window.clearInterval(id);
-  }, [allOk, busy, step]);
-  useEffect(() => { if (countdown === 0) void capture(); }, [countdown, capture]);
+  captureRef.current = () => void capture();
 
   // Free photo memory when leaving the page.
   const urls = useRef<string[]>([]);
