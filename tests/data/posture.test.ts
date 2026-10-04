@@ -108,9 +108,11 @@ describe('listPostureAssessments', () => {
     expect(await listPostureAssessments(db, patientId)).toEqual([]);
   });
 
-  it('lists newest first with mild/marked finding counts, for that client only', async () => {
+  it('lists newest first with score and averaged mild/marked counts, for that client only', async () => {
     const views = allViews();
-    views[0] = view('front', { RIGHT_SHOULDER: [400, 535], LEFT_HIP: [560, 1008] }); // marked + mild
+    // Same imbalance seen from front and back (sides by image position): right shoulder low, left hip low.
+    views[0] = view('front', { RIGHT_SHOULDER: [400, 535], LEFT_HIP: [560, 1008] });
+    views[2] = view('back', { LEFT_SHOULDER: [600, 535], RIGHT_HIP: [440, 1008] });
     await addPostureAssessment(db, storage, input({ assessedOn: '2026-09-01' }));
     const latest = await addPostureAssessment(db, storage, input({ assessedOn: '2026-10-04', views }));
     const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
@@ -118,8 +120,9 @@ describe('listPostureAssessments', () => {
 
     const list = await listPostureAssessments(db, patientId);
     expect(list.map((a) => a.assessedOn)).toEqual(['2026-10-04', '2026-09-01']);
-    expect(list[0]).toMatchObject({ id: latest.id, markedCount: 1, mildCount: 1 });
-    expect(list[1]).toMatchObject({ markedCount: 0, mildCount: 0 });
+    // shoulders 9.9° marked (65), pelvis 3.8° mild (85), other regions 100 → 90
+    expect(list[0]).toMatchObject({ id: latest.id, markedCount: 1, mildCount: 1, score: 90, grade: 'good' });
+    expect(list[1]).toMatchObject({ markedCount: 0, mildCount: 0, score: 100 });
   });
 });
 

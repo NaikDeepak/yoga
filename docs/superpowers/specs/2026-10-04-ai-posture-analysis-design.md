@@ -244,3 +244,7 @@ Open question: when front and back disagree on a frontal-plane measure (e.g. pel
 ### Decisions (2026-10-04, after v2 review)
 - **Clinical pattern text is English-only**, also in the Marathi UI (the physio explains it in the client's language — avoids translation errors in clinical wording). Section labels stay bilingual.
 - **Front/back and left/right readings are averaged** (signed: opposite sides cancel) for the score and patterns; per-view values stay under each photo. A measure is flagged **low confidence** only when the two views would rate it differently *and* differ by > 2.5° (2 cm). The report lists these and offers **Retake** for the views involved; every photo also has a "Retake this photo" link. Retakes update the existing assessment (`replacePostureViews`).
+
+### Step 6 — history & comparison (2026-10-04)
+- Assessment tab lists posture assessments (newest first) with score chip, marked/mild counts (combined findings), View report, Compare with previous, and Compare first vs latest (when ≥3).
+- Comparison is its own page, `/patients/[id]/posture/compare?a=&b=` (not `?compare=` on the report): scores before/after/change, every rated measure with trend (Improved / Worse / No change — changes ≤0.5° or 0.5 cm are "No change" even across a band boundary), and the four views side by side. Printable on the letterhead.

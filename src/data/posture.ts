@@ -6,6 +6,7 @@ import type { Db } from '@/db/types';
 import type { FileStorage } from '@/lib/storage';
 import { computeViewMetrics, POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
 import type { CameraCheck } from '@/lib/posture-capture';
+import { combineViews, scorePosture, type Grade } from '@/lib/posture-insights';
 
 export interface PostureViewInput {
   view: PostureView;
@@ -27,7 +28,13 @@ export interface PostureAssessmentInput {
 }
 
 export type PostureAssessment = PostureAssessmentRow & { views: PostureViewRow[] };
-export type PostureAssessmentSummary = PostureAssessmentRow & { mildCount: number; markedCount: number };
+/** List row: score and counts use the averaged (combined) findings, the same as the report. */
+export type PostureAssessmentSummary = PostureAssessmentRow & {
+  mildCount: number;
+  markedCount: number;
+  score: number | null;
+  grade: Grade | null;
+};
 
 /** Storage key for a view photo; retakes get a `version` suffix so the old file can be removed after commit. */
 export const posturePhotoPath = (patientId: string, assessmentId: string, view: PostureView, version?: string) =>
@@ -104,11 +111,15 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
     .where(inArray(postureViews.assessmentId, assessments.map((a) => a.id)));
 
   return assessments.map((a) => {
-    const metrics = views.filter((v) => v.assessmentId === a.id).flatMap((v) => currentMetrics(v, a.heightCm));
+    const combined = combineViews(views.filter((v) => v.assessmentId === a.id)
+      .map((v) => ({ view: v.view as PostureView, metrics: currentMetrics(v, a.heightCm) })));
+    const { overall, grade } = scorePosture(combined);
     return {
       ...a,
-      mildCount: metrics.filter((m) => m.severity === 'mild').length,
-      markedCount: metrics.filter((m) => m.severity === 'marked').length,
+      mildCount: combined.filter((m) => m.severity === 'mild').length,
+      markedCount: combined.filter((m) => m.severity === 'marked').length,
+      score: overall,
+      grade,
     };
   });
 }
