@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   patientSchema, problemSchema, treatmentSchema, visitSchema, docTypeSchema,
-  prescribedExercisesListSchema,
+  prescribedExercisesListSchema, postureAssessmentSchema,
 } from '@/lib/validation';
+import { alignedLandmarks } from '../helpers/posture';
 import { getISTDateString } from '@/lib/dates';
 
 describe('patientSchema', () => {
@@ -133,5 +134,56 @@ describe('prescribedExercisesListSchema', () => {
     if (!r.success) {
       expect(r.error.issues[0].message).toMatch(/\//);
     }
+  });
+});
+
+describe('postureAssessmentSchema', () => {
+  const view = (v: 'front' | 'back' | 'left' | 'right') => ({
+    view: v, imageWidth: 1000, imageHeight: 2000, landmarks: alignedLandmarks(v), landmarksEdited: false,
+  });
+  const valid = () => ({
+    consent: true, assessedOn: '2026-10-04', note: 'Baseline',
+    views: [view('front'), view('right'), view('back'), view('left')],
+  });
+  const err = (input: unknown) => {
+    const r = postureAssessmentSchema.safeParse(input);
+    return r.success ? null : r.error.issues[0].message;
+  };
+
+  it('accepts four distinct views with 33 landmarks each', () => {
+    expect(postureAssessmentSchema.parse(valid()).views).toHaveLength(4);
+  });
+
+  it('defaults the date to today (IST) and drops a blank note', () => {
+    const parsed = postureAssessmentSchema.parse({ ...valid(), assessedOn: '', note: '  ' });
+    expect(parsed.assessedOn).toBe(getISTDateString());
+    expect(parsed.note).toBeUndefined();
+  });
+
+  it('requires photo consent', () => {
+    expect(err({ ...valid(), consent: false })).toBe('Photo consent required / फोटोसाठी संमती आवश्यक');
+  });
+
+  it('requires all four views, each once', () => {
+    const msg = 'All four views required (front, back, left, right) / चारही बाजूंचे फोटो आवश्यक (समोर, मागे, डावी, उजवी)';
+    expect(err({ ...valid(), views: valid().views.slice(0, 3) })).toBe(msg);
+    expect(err({ ...valid(), views: [view('front'), view('front'), view('back'), view('left')] })).toBe(msg);
+  });
+
+  it('rejects malformed landmark data', () => {
+    const msg = 'Invalid posture data / चुकीची पोश्चर माहिती';
+    const short = valid(); short.views[0].landmarks = short.views[0].landmarks.slice(0, 32);
+    expect(err(short)).toBe(msg);
+    const nan = valid(); nan.views[0].landmarks[0] = { x: NaN, y: 0.5, visibility: 1 };
+    expect(err(nan)).toBe(msg);
+    const vis = valid(); vis.views[0].landmarks[0] = { x: 0.5, y: 0.5, visibility: 2 };
+    expect(err(vis)).toBe(msg);
+    expect(err({ ...valid(), views: [{ ...view('front'), view: 'top' }, view('right'), view('back'), view('left')] })).toBe(msg);
+    expect(err({ ...valid(), views: [{ ...view('front'), imageWidth: 0 }, view('right'), view('back'), view('left')] })).toBe(msg);
+  });
+
+  it('rejects a bad date and an over-long note', () => {
+    expect(err({ ...valid(), assessedOn: '2026-02-30' })).toBe('Invalid date / चुकीची तारीख');
+    expect(err({ ...valid(), note: 'x'.repeat(1001) })).toBe('Note too long / टीप खूप मोठी आहे');
   });
 });

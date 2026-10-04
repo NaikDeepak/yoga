@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import {
   postureAssessments, postureViews, type PostureAssessmentRow, type PostureViewRow,
 } from '@/db/schema';
@@ -27,6 +27,9 @@ export interface PostureAssessmentInput {
 export type PostureAssessment = PostureAssessmentRow & { views: PostureViewRow[] };
 export type PostureAssessmentSummary = PostureAssessmentRow & { mildCount: number; markedCount: number };
 
+export const posturePhotoPath = (patientId: string, assessmentId: string, view: PostureView) =>
+  `patients/${patientId}/posture/${assessmentId}/${view}.jpg`;
+
 const byCaptureOrder = (a: PostureViewRow, b: PostureViewRow) =>
   POSTURE_VIEWS.indexOf(a.view as PostureView) - POSTURE_VIEWS.indexOf(b.view as PostureView);
 
@@ -41,7 +44,7 @@ export async function addPostureAssessment(
   input: PostureAssessmentInput,
 ): Promise<PostureAssessment> {
   const assessmentId = crypto.randomUUID();
-  const pathFor = (v: PostureView) => `patients/${input.patientId}/posture/${assessmentId}/${v}.jpg`;
+  const pathFor = (v: PostureView) => posturePhotoPath(input.patientId, assessmentId, v);
   const uploaded: string[] = [];
   const cleanup = () => Promise.all(uploaded.map((p) => storage.remove(p)));
 
@@ -107,9 +110,15 @@ export async function getPostureAssessment(db: Db, id: string): Promise<PostureA
   return { ...assessment, views: views.sort(byCaptureOrder) };
 }
 
-export async function deletePostureAssessment(db: Db, storage: FileStorage, id: string): Promise<void> {
-  const views = await db.select({ filePath: postureViews.filePath }).from(postureViews)
-    .where(eq(postureViews.assessmentId, id));
-  await db.delete(postureAssessments).where(eq(postureAssessments.id, id)); // cascades to views
-  await Promise.all(views.map((v) => storage.remove(v.filePath)));
+export async function deletePostureAssessment(
+  db: Db,
+  storage: FileStorage,
+  patientId: string,
+  id: string,
+): Promise<void> {
+  const deleted = await db.delete(postureAssessments) // cascades to views
+    .where(and(eq(postureAssessments.id, id), eq(postureAssessments.patientId, patientId)))
+    .returning({ id: postureAssessments.id });
+  if (!deleted.length) return;
+  await Promise.all(POSTURE_VIEWS.map((v) => storage.remove(posturePhotoPath(patientId, id, v))));
 }

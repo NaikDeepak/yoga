@@ -38,7 +38,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/whatsapp.ts` | free wa.me deep-link reminders: URL + bilingual message builders (no API) | `waMeUrl`, `reminderUrl`, `buildReminderMessage`, `buildDigestMessage`, `digestUrl` |
 | `src/lib/posture.ts` | posture metrics from 33 MediaPipe landmarks: frontal (front/back — anatomical sides by image x) + sagittal (left/right — near side by visibility) angles/offsets, cm via client height, severity bands | `computeViewMetrics`, `severity`, `THRESHOLDS`, `LM`, `POSTURE_VIEWS` |
 | `src/lib/files.ts` | upload rules (4MB — Vercel body limit, pdf/jpg/png) | `validateUpload`, `validatePhoto` |
-| `src/lib/validation.ts` | zod schemas, bilingual messages | `patientSchema`, `problemSchema`, `treatmentSchema`, `visitSchema`, `lifestyleSchema`, `docTypeSchema`, `firstError` |
+| `src/lib/validation.ts` | zod schemas, bilingual messages | `patientSchema`, `problemSchema`, `treatmentSchema`, `visitSchema`, `lifestyleSchema`, `docTypeSchema`, `postureAssessmentSchema` (consent + 4 distinct views × 33 landmarks), `firstError` |
 | `src/lib/storage.ts` | file storage abstraction (Supabase / R2 / local-mock fs) | `FileStorage`, `getStorage()`, `localFileStorage`, `BUCKET` |
 | `src/lib/r2-storage.ts` | Cloudflare R2 storage implementation | `r2Storage` |
 | `src/lib/gemini.ts` | Gemini 2.5 Flash REST client wrapper | `generateTreatmentDraft` |
@@ -46,7 +46,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/supabase/*` | vendor cookie glue (coverage-exempt) | `createSupabaseServerClient`, `updateSession` |
 | `src/data/patients.ts` | CRUD + search + code assignment (transaction) | `createPatient`, `getPatient`, `updatePatient`, `setPhotoPath`, `searchPatients` |
 | `src/data/problems.ts` | ailment rows | `addProblem`, `listProblems`, `removeProblem`, `problemsForPatients` |
-| `src/data/posture.ts` | posture assessments: upload all view photos → one transaction for assessment + views; metrics always recomputed from landmarks (never caller-supplied); any failure removes uploaded photos | `addPostureAssessment`, `listPostureAssessments` (with mild/marked counts), `getPostureAssessment`, `deletePostureAssessment` |
+| `src/data/posture.ts` | posture assessments: upload all view photos → one transaction for assessment + views; metrics always recomputed from landmarks (never caller-supplied); any failure removes uploaded photos | `addPostureAssessment`, `listPostureAssessments` (with mild/marked counts), `getPostureAssessment`, `deletePostureAssessment` (scoped to client), `posturePhotoPath` |
 | `src/data/documents.ts` | upload-then-insert, cleanup on failure | `addDocument`, `listDocuments`, `deleteDocument` |
 | `src/data/treatment.ts` | one plan per patient (upsert) | `getTreatmentPlan`, `upsertTreatmentPlan` |
 | `src/data/dashboard.ts` | aggregate queries for global stats | `getDashboardStats`, `getAilmentBreakdown`, `getRecentVisits` |
@@ -60,6 +60,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/actions/auth.ts` | sign in / sign out / sign up (Supabase Auth) | `signInAction`, `signOutAction`, `signUpAction` |
 | `src/actions/preferences.ts` | save language (+ lang cookie) / WhatsApp digest number | `saveLanguageAction`, `saveWhatsappNumberAction` |
 | `src/actions/exercises.ts` | save a patient's prescribed-exercise set (JSON payload from the picker form) | `savePrescribedExercisesAction` |
+| `src/actions/posture.ts` | save a posture assessment (`payload` JSON + `photo_<view>` files, ≤4 MB combined; height snapshot from client; redirects to report) / delete one (scoped to client) | `savePostureAssessmentAction`, `deletePostureAssessmentAction` |
 | `src/actions/*` (rest) | server actions per domain; all return `ActionResult` | `*Action` functions |
 | `src/components/*` | Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm), PrintButton, AilmentBarChart (Recharts horizontal bar), VisitLineChart (Recharts line), TreatmentPlanForm (AI treatment builder), AddChargeForm (typed charge entry with fee-type presets and default-amount prefill), PatientHeader (sticky compact header via IntersectionObserver), TabDropdown (mobile tab select), GlobalSearch (debounced live patient search dropdown in top nav), BranchFilter (branch-scoped dashboard filter), CalendarMonthGrid (read-only month-grid follow-up view with day-click dialog), PrescribedExercisesForm (exercise-library picker with per-patient reps/frequency overrides + custom note), WellnessTipCard (sidebar health tip of the day + WhatsApp share via contact picker), PainScaleInput (segmented 1–10 pain picker, hidden input for server forms) | — |
 | `src/components/ui/native-select.tsx` | styled native `<select>` for server-rendered forms (Input-matched look; used by problems/documents/assessment forms) | `NativeSelect` |

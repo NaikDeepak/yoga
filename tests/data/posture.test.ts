@@ -129,14 +129,22 @@ describe('getPostureAssessment', () => {
 describe('deletePostureAssessment', () => {
   it('deletes the assessment, its views and photos', async () => {
     const { id } = await addPostureAssessment(db, storage, input());
-    await deletePostureAssessment(db, storage, id);
+    await deletePostureAssessment(db, storage, patientId, id);
     expect(await db.select().from(postureAssessments)).toHaveLength(0);
     expect(await db.select().from(postureViews)).toHaveLength(0);
     expect(storage.files.size).toBe(0);
   });
 
   it('ignores an unknown id', async () => {
-    await expect(deletePostureAssessment(db, storage, '00000000-0000-0000-0000-000000000000')).resolves.toBeUndefined();
+    await expect(deletePostureAssessment(db, storage, patientId, '00000000-0000-0000-0000-000000000000')).resolves.toBeUndefined();
+  });
+
+  it("does not delete another client's assessment", async () => {
+    const { id } = await addPostureAssessment(db, storage, input());
+    const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
+    await deletePostureAssessment(db, storage, otherId, id);
+    expect(await getPostureAssessment(db, id)).not.toBeNull();
+    expect(storage.files.size).toBe(4);
   });
 
   it('is removed with the client (cascade)', async () => {
