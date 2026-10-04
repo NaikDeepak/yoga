@@ -234,9 +234,12 @@ describe('computeViewMetrics — side views', () => {
     expect(get(run('left', noFeet), 'forwardHead').value).toBe(45);
   });
 
-  it('reports nothing measurable when facing cannot be determined', () => {
-    const blind = { ...SIDE, LEFT_HEEL: [470, 1880, 0], LEFT_FOOT_INDEX: [560, 1900, 0], NOSE: [540, 300, 0] } as PxPoints;
-    expect(run('left', blind).every((m) => m.value === null)).toBe(true);
+  it('falls back to the view\'s expected facing when feet and nose are hidden', () => {
+    // Right side to camera ⇒ client faces image-right (+x); left side ⇒ image-left.
+    const blind = { ...SIDE, LEFT_EAR: [550, 290], LEFT_HEEL: [470, 1880, 0], LEFT_FOOT_INDEX: [560, 1900, 0], NOSE: [540, 300, 0] } as PxPoints;
+    expect(get(run('right', blind), 'forwardHead')).toMatchObject({ value: 13.4, direction: 'forward' });
+    expect(get(run('left', blind), 'forwardHead')).toMatchObject({ value: 13.4, direction: 'backward' });
+    expect(run('right', blind).every((m) => m.key === 'headForward' || m.value !== null)).toBe(true);
   });
 
   it('picks the more visible side of the body', () => {

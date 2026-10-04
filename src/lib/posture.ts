@@ -260,7 +260,7 @@ export function sagittalNearSide(landmarks: Landmark[]): 'LEFT' | 'RIGHT' {
 /** Landmark indices of the near side in a side view. */
 export const sagittalLandmarks = (landmarks: Landmark[]) => sagittalIdx(sagittalNearSide(landmarks));
 
-function sagittalMetrics(pts: Pt[], raw: Landmark[], scale: Scale): Metric[] {
+function sagittalMetrics(view: 'left' | 'right', pts: Pt[], raw: Landmark[], scale: Scale): Metric[] {
   const s = sagittalLandmarks(raw);
   const [ear, shoulder, hip, knee, ankle, heel, foot] =
     [s.ear, s.shoulder, s.hip, s.knee, s.ankle, s.heel, s.foot].map((i) => pts[i]);
@@ -270,7 +270,9 @@ function sagittalMetrics(pts: Pt[], raw: Landmark[], scale: Scale): Metric[] {
   let facing = 0;
   if (visible(heel, foot) && foot.x !== heel.x) facing = Math.sign(foot.x - heel.x);
   else if (visible(nose, ear) && nose.x !== ear.x) facing = Math.sign(nose.x - ear.x);
-  if (facing === 0) return SAGITTAL_KEYS.map(([key, unit]) => metric(key, null, unit));
+  // Neither toes nor nose readable (dark floor, loose clothing): use the direction this view implies —
+  // right side to the camera means facing image-right.
+  if (facing === 0) facing = view === 'right' ? 1 : -1;
 
   const ahead = (a: Pt, b: Pt) => (a.x - b.x) * facing; // + when a is in front of b
   const dir = (d: number): Direction => (d > 0 ? 'forward' : 'backward');
@@ -319,5 +321,5 @@ export function computeViewMetrics(view: PostureView, landmarks: Landmark[], ima
   const scale = makeScale(landmarks, image.height, image.heightCm);
   return view === 'front' || view === 'back'
     ? frontalMetrics(view, pts, scale)
-    : sagittalMetrics(pts, landmarks, scale);
+    : sagittalMetrics(view, pts, landmarks, scale);
 }

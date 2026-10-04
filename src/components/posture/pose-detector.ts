@@ -19,16 +19,22 @@ let fileset: ReturnType<typeof import('@mediapipe/tasks-vision').FilesetResolver
  */
 export async function createPoseDetector(kind: 'live' | 'still'): Promise<PoseLandmarker> {
   const { FilesetResolver, PoseLandmarker } = await import('@mediapipe/tasks-vision');
-  fileset ??= FilesetResolver.forVisionTasks(WASM_BASE);
+  try {
+    fileset ??= FilesetResolver.forVisionTasks(WASM_BASE);
+    await fileset;
+  } catch (err) {
+    fileset = undefined; // don't cache a failed load — the next attempt retries instead of failing until reload
+    throw err;
+  }
   const options = (delegate: 'GPU' | 'CPU') => ({
     baseOptions: { modelAssetPath: MODEL_URL[kind === 'live' ? 'lite' : 'heavy'], delegate },
     runningMode: kind === 'live' ? ('VIDEO' as const) : ('IMAGE' as const),
     numPoses: 1,
   });
   try {
-    return await PoseLandmarker.createFromOptions(await fileset, options('GPU'));
+    return await PoseLandmarker.createFromOptions(await fileset!, options('GPU'));
   } catch {
-    return PoseLandmarker.createFromOptions(await fileset, options('CPU')); // some phones lack WebGL2
+    return PoseLandmarker.createFromOptions(await fileset!, options('CPU')); // some phones lack WebGL2
   }
 }
 

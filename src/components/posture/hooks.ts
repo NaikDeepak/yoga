@@ -22,8 +22,13 @@ export function useCamera(facingMode: 'environment' | 'user', enabled: boolean) 
           video: { facingMode, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false,
         });
-        if (cancelled) return;
-        const video = videoRef.current!;
+        // Unmounted / switched camera while permission or startup was pending: release the camera,
+        // otherwise it stays on (privacy indicator lit) with nothing using it.
+        if (cancelled || !videoRef.current) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        const video = videoRef.current;
         video.srcObject = stream;
         await video.play();
         setSize({ width: video.videoWidth, height: video.videoHeight });

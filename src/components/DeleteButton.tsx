@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,16 +19,12 @@ export function DeleteButton({
   action,
   confirmText,
   label,
-  redirectTo,
 }: {
   action: () => Promise<{ ok: boolean; error?: string }>;
   confirmText: string;
   label?: string;
-  /** Navigate here after a successful delete (e.g. when the current page shows the deleted record). */
-  redirectTo?: string;
 }) {
   const t = useTranslations();
-  const router = useRouter();
   const displayLabel = label ?? t.deleteButton.deleteBtn;
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -40,7 +35,6 @@ export function DeleteButton({
         const result = await action();
         if (result && result.ok) {
           setOpen(false);
-          if (redirectTo) router.push(redirectTo);
         } else {
           console.error(result?.error || 'Action failed');
         }
