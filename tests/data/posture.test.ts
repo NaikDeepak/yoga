@@ -59,9 +59,9 @@ describe('addPostureAssessment', () => {
     const a = await addPostureAssessment(db, storage, input({ views }));
     const front = a.views.find((v) => v.view === 'front')!;
     expect(front.metrics.find((m) => m.key === 'shoulderLevel')).toMatchObject({ value: 9.9, side: 'right', severity: 'marked' });
-    expect(front.metrics.find((m) => m.key === 'trunkShift')?.unit).toBe('cm');
+    expect(front.metrics.find((m) => m.key === 'armHang')?.unit).toBe('cm');
     const left = a.views.find((v) => v.view === 'left')!;
-    expect(left.metrics.find((m) => m.key === 'cva')?.value).toBe(90);
+    expect(left.metrics.find((m) => m.key === 'forwardHead')?.value).toBe(0);
   });
 
   it('keeps the landmarksEdited flag per view', async () => {
@@ -128,6 +128,19 @@ describe('getPostureAssessment', () => {
     const { id } = await addPostureAssessment(db, storage, input({ views: shuffled }));
     const a = await getPostureAssessment(db, id);
     expect(a?.views.map((v) => v.view)).toEqual(['front', 'right', 'back', 'left']);
+  });
+
+  it('recomputes metrics from the stored landmarks with the current formulas', async () => {
+    const { id } = await addPostureAssessment(db, storage, input());
+    await db.update(postureViews).set({ metrics: [] }).where(eq(postureViews.assessmentId, id)); // simulate stale snapshot
+    const a = await getPostureAssessment(db, id);
+    expect(a!.views[0].metrics.find((m) => m.key === 'shoulderLevel')).toMatchObject({ value: 0, severity: 'normal' });
+    const views = allViews();
+    views[0] = view('front', { RIGHT_SHOULDER: [400, 535] });
+    const marked = await addPostureAssessment(db, storage, input({ views }));
+    await db.update(postureViews).set({ metrics: [] }).where(eq(postureViews.assessmentId, marked.id));
+    const [summary] = await listPostureAssessments(db, patientId);
+    expect(summary).toMatchObject({ id: marked.id, markedCount: 1 });
   });
 
   it('returns null for an unknown id', async () => {

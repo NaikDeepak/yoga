@@ -87,7 +87,8 @@ describe('computeViewMetrics — front view', () => {
     for (const key of ['headTilt', 'shoulderLevel', 'pelvicLevel'] as const) {
       expect(get(m, key)).toMatchObject({ value: 0, side: null, severity: 'normal' });
     }
-    expect(get(m, 'trunkShift')).toMatchObject({ value: 0, unit: 'cm', side: null, severity: 'normal' });
+    expect(get(m, 'trunkShift')).toMatchObject({ value: 0, unit: 'deg', side: null, severity: 'normal' });
+    expect(get(m, 'headShift')).toMatchObject({ value: 0, unit: 'deg', side: null, severity: 'normal' });
     expect(get(m, 'kneeAlignment', 'left')).toMatchObject({ value: 0, direction: null, severity: 'normal' });
     expect(get(m, 'kneeAlignment', 'right')).toMatchObject({ value: 0, direction: null, severity: 'normal' });
   });
@@ -118,25 +119,18 @@ describe('computeViewMetrics — front view', () => {
     expect(m).toMatchObject({ value: 3.8, side: 'left', severity: 'mild', approx: true });
   });
 
-  it('converts trunk shift to cm using the client height', () => {
-    // stature px = (1880 - 280) / 0.936 = 1709.4; 30px → 30/1709.4×170 = 2.98 cm
+  it('measures trunk shift as the lean of hips→shoulders from vertical', () => {
+    // mid-shoulder 30px right of mid-hip over 500px → atan(30/500) = 3.4°, toward image-right = anatomical left
     const shifted = { ...FRONT, LEFT_SHOULDER: [630, 500], RIGHT_SHOULDER: [430, 500] } as PxPoints;
     expect(get(run('front', shifted), 'trunkShift')).toMatchObject({
-      value: 3, unit: 'cm', side: 'left', severity: 'marked',
+      value: 3.4, unit: 'deg', side: 'left', severity: 'mild',
     });
   });
 
-  it('falls back to % of height without severity when height is unknown', () => {
-    const shifted = { ...FRONT, LEFT_SHOULDER: [630, 500], RIGHT_SHOULDER: [430, 500] } as PxPoints;
-    expect(get(run('front', shifted, null), 'trunkShift')).toMatchObject({
-      value: 1.8, unit: 'pct', side: 'left', severity: null,
-    });
-  });
-
-  it('reports head shift relative to the feet', () => {
+  it('measures head shift as the lean of shoulders→head from vertical', () => {
     const m = run('front', { ...FRONT, LEFT_EYE: [500, 280], RIGHT_EYE: [460, 280] });
-    // eye midpoint 480 vs ankle midpoint 500 → 20px toward image-left = anatomical right
-    expect(get(m, 'headShift')).toMatchObject({ value: 2, unit: 'cm', side: 'right' });
+    // eye midpoint 480 vs shoulder midpoint 500, 220px above → atan(20/220) = 5.2°, image-left = anatomical right
+    expect(get(m, 'headShift')).toMatchObject({ value: 5.2, unit: 'deg', side: 'right', severity: 'marked' });
   });
 
   it('detects knee valgus and varus per leg', () => {
@@ -166,7 +160,7 @@ describe('computeViewMetrics — front view', () => {
 
   it('marks distance metrics as not measurable when stature cannot be estimated', () => {
     const m = run('front', { ...FRONT, LEFT_HEEL: [560, 1880, 0], RIGHT_HEEL: [440, 1880, 0], LEFT_ANKLE: [560, 1850, 0], RIGHT_ANKLE: [440, 1850, 0] });
-    expect(get(m, 'trunkShift').value).toBeNull();
+    expect(get(m, 'armHang').value).toBeNull();
   });
 
   it('does not report hindfoot alignment from the front', () => {
@@ -208,29 +202,34 @@ describe('computeViewMetrics — back view', () => {
 describe('computeViewMetrics — side views', () => {
   it('reports an upright body as aligned', () => {
     const m = run('left', SIDE);
-    expect(get(m, 'cva')).toMatchObject({ value: 90, severity: 'normal', approx: true });
+    expect(get(m, 'forwardHead')).toMatchObject({ value: 0, direction: null, severity: 'normal', approx: true });
     expect(get(m, 'trunkLean')).toMatchObject({ value: 0, direction: null, severity: 'normal' });
     expect(get(m, 'kneeSagittal')).toMatchObject({ value: 0, severity: 'normal' });
     expect(get(m, 'headForward')).toMatchObject({ value: 0, unit: 'cm' });
   });
 
-  it('measures forward head posture via the craniovertebral angle', () => {
-    // ear 210px ahead and 210px above shoulder → 45° (mild); 220px ahead → 43.7° (marked)
-    expect(get(run('left', { ...SIDE, LEFT_EAR: [710, 290] }), 'cva')).toMatchObject({ value: 45, severity: 'mild' });
-    const marked = run('left', { ...SIDE, LEFT_EAR: [720, 290] });
-    expect(get(marked, 'cva')).toMatchObject({ value: 43.7, severity: 'marked' });
+  it('measures forward head as the shoulder→ear angle from vertical', () => {
+    // ear 50px ahead over 210px → 13.4° (mild); 90px ahead → 23.2° (marked)
+    expect(get(run('left', { ...SIDE, LEFT_EAR: [550, 290] }), 'forwardHead'))
+      .toMatchObject({ value: 13.4, direction: 'forward', severity: 'mild' });
+    const marked = run('left', { ...SIDE, LEFT_EAR: [590, 290] });
+    expect(get(marked, 'forwardHead')).toMatchObject({ value: 23.2, severity: 'marked' });
     expect(get(marked, 'headForward')).toMatchObject({ direction: 'forward' });
+  });
+
+  it('reports a head held behind the shoulder as backward', () => {
+    expect(get(run('left', { ...SIDE, LEFT_EAR: [470, 290] }), 'forwardHead')).toMatchObject({ direction: 'backward' });
   });
 
   it('works when the client faces the other way', () => {
     const m = run('right', mirror({ ...SIDE, LEFT_EAR: [710, 290] }));
-    expect(get(m, 'cva').value).toBe(45);
+    expect(get(m, 'forwardHead').value).toBe(45);
     expect(get(m, 'headForward').direction).toBe('forward');
   });
 
   it('falls back to nose vs ear for facing when the feet are hidden', () => {
     const noFeet = { ...SIDE, LEFT_HEEL: [470, 1880, 0], LEFT_FOOT_INDEX: [560, 1900, 0], LEFT_EAR: [710, 290], NOSE: [760, 300] } as PxPoints;
-    expect(get(run('left', noFeet), 'cva').value).toBe(45);
+    expect(get(run('left', noFeet), 'forwardHead').value).toBe(45);
   });
 
   it('reports nothing measurable when facing cannot be determined', () => {
@@ -247,7 +246,7 @@ describe('computeViewMetrics — side views', () => {
       RIGHT_EYE: [520, 280],
       LEFT_EAR: [100, 100, 0.2], LEFT_SHOULDER: [100, 100, 0.2],
     };
-    expect(get(run('right', flipped), 'cva').value).toBe(45);
+    expect(get(run('right', flipped), 'forwardHead').value).toBe(45);
   });
 
   it('measures trunk lean in degrees with direction', () => {
@@ -284,16 +283,16 @@ describe('severity', () => {
     expect(severity('shoulderLevel', 4.1, 'deg')).toBe('marked');
   });
 
-  it('bands CVA where a smaller angle is worse', () => {
-    expect(severity('cva', 50, 'deg')).toBe('normal');
-    expect(severity('cva', 49.9, 'deg')).toBe('mild');
-    expect(severity('cva', 45, 'deg')).toBe('mild');
-    expect(severity('cva', 44.9, 'deg')).toBe('marked');
+  it('bands forward head at 10° and 20°', () => {
+    expect(severity('forwardHead', 9.9, 'deg')).toBe('normal');
+    expect(severity('forwardHead', 10, 'deg')).toBe('mild');
+    expect(severity('forwardHead', 20, 'deg')).toBe('mild');
+    expect(severity('forwardHead', 20.1, 'deg')).toBe('marked');
   });
 
-  it('returns null for unmeasured values, informational metrics and cm limits without cm', () => {
+  it('returns null for unmeasured values and informational metrics', () => {
     expect(severity('shoulderLevel', null, 'deg')).toBeNull();
     expect(severity('armHang', 5, 'cm')).toBeNull();
-    expect(severity('trunkShift', 5, 'pct')).toBeNull();
+    expect(severity('headForward', 5, 'pct')).toBeNull();
   });
 });

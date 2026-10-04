@@ -16,12 +16,14 @@ describe('formatMetric', () => {
   });
 
   it('formats shifts, limbs and directions', () => {
-    expect(formatMetric(m({ key: 'trunkShift', value: 2.1, unit: 'cm', side: 'left', severity: 'mild' }), en.posture))
-      .toMatchObject({ value: '2.1 cm', detail: 'Shifted to left' });
+    expect(formatMetric(m({ key: 'trunkShift', value: 2.1, unit: 'deg', side: 'left', severity: 'mild' }), en.posture))
+      .toMatchObject({ value: '2.1°', detail: 'Shifted to left' });
+    expect(formatMetric(m({ key: 'pelvicShift', value: 2.1, unit: 'cm', side: null, direction: 'forward', severity: null }), en.posture))
+      .toMatchObject({ value: '2.1 cm' });
     expect(formatMetric(m({ key: 'kneeAlignment', value: 8.1, side: 'left', direction: 'valgus', approx: true }), en.posture))
       .toMatchObject({ detail: 'Left · Valgus (inward)', approx: true });
-    expect(formatMetric(m({ key: 'cva', value: 44, side: null, severity: 'marked' }), en.posture))
-      .toMatchObject({ value: '44°', detail: '', status: 'Marked' });
+    expect(formatMetric(m({ key: 'forwardHead', value: 24, side: null, severity: 'marked' }), en.posture))
+      .toMatchObject({ value: '24°', detail: '', status: 'Marked' });
     expect(formatMetric(m({ key: 'kneeSagittal', value: 8, side: null, direction: 'backward' }), en.posture))
       .toMatchObject({ detail: 'Backward' });
     expect(formatMetric(m({ key: 'headForward', value: 1.5, unit: 'pct', side: null, direction: 'forward', severity: null }), en.posture))
@@ -44,7 +46,7 @@ describe('summarizeFindings', () => {
   it('counts mild/marked findings and lists marked ones first', () => {
     const views = [
       { view: 'front' as const, metrics: [m({}), m({ key: 'pelvicLevel', severity: 'marked', value: 5 })] },
-      { view: 'left' as const, metrics: [m({ key: 'cva', severity: 'normal', side: null })] },
+      { view: 'left' as const, metrics: [m({ key: 'forwardHead', severity: 'normal', side: null })] },
     ];
     const s = summarizeFindings(views);
     expect(s).toMatchObject({ mild: 1, marked: 1 });

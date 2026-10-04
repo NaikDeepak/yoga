@@ -30,7 +30,7 @@ export type MetricUnit = 'deg' | 'cm' | 'pct';
 export type MetricKey =
   | 'headTilt' | 'shoulderLevel' | 'pelvicLevel' | 'trunkShift' | 'headShift'
   | 'kneeAlignment' | 'armHang' | 'hindfoot'
-  | 'cva' | 'headForward' | 'shoulderForward' | 'trunkLean' | 'pelvicShift' | 'pelvicTilt' | 'kneeSagittal';
+  | 'forwardHead' | 'headForward' | 'shoulderForward' | 'trunkLean' | 'pelvicShift' | 'pelvicTilt' | 'kneeSagittal';
 
 export interface Metric {
   key: MetricKey;
@@ -52,28 +52,25 @@ export const MIN_VISIBILITY = 0.5;
 // Eye level sits at ~93.6% of standing height (Drillis & Contini).
 const EYE_LEVEL_STATURE_RATIO = 0.936;
 
-const APPROX = new Set<MetricKey>(['pelvicLevel', 'kneeAlignment', 'hindfoot', 'cva', 'pelvicTilt']);
+const APPROX = new Set<MetricKey>(['pelvicLevel', 'kneeAlignment', 'hindfoot', 'forwardHead', 'pelvicTilt']);
 
-interface Threshold { mild: number; marked: number; lowerIsWorse?: boolean; cmOnly?: boolean }
+interface Threshold { mild: number; marked: number }
 // Starting limits from photogrammetry literature; see spec "Severity bands".
 export const THRESHOLDS: Partial<Record<MetricKey, Threshold>> = {
   headTilt: { mild: 2, marked: 4 },
   shoulderLevel: { mild: 2, marked: 4 },
   pelvicLevel: { mild: 2, marked: 4 },
-  trunkShift: { mild: 1, marked: 2.5, cmOnly: true },
+  trunkShift: { mild: 2, marked: 4 },
+  headShift: { mild: 2.5, marked: 5 },
   trunkLean: { mild: 2, marked: 4 },
   kneeAlignment: { mild: 5, marked: 10 },
   kneeSagittal: { mild: 5, marked: 10 },
-  cva: { mild: 50, marked: 45, lowerIsWorse: true },
+  forwardHead: { mild: 10, marked: 20 },
 };
 
-export function severity(key: MetricKey, value: number | null, unit: MetricUnit): Severity | null {
+export function severity(key: MetricKey, value: number | null, _unit?: MetricUnit): Severity | null {
   const t = THRESHOLDS[key];
-  if (value === null || !t || (t.cmOnly && unit !== 'cm')) return null;
-  if (t.lowerIsWorse) {
-    if (value >= t.mild) return 'normal';
-    return value >= t.marked ? 'mild' : 'marked';
-  }
+  if (value === null || !t) return null;
   if (value < t.mild) return 'normal';
   return value <= t.marked ? 'mild' : 'marked';
 }
@@ -175,17 +172,19 @@ function frontalMetrics(view: 'front' | 'back', pts: Pt[], scale: Scale): Metric
   const wrists = pair(LM.LEFT_WRIST, LM.RIGHT_WRIST);
   const midline = mid(hips.left, hips.right).x;
 
-  const offset = (key: MetricKey, upper: Pt, lower: Pt) => {
-    const dx = visible(upper, lower) ? upper.x - lower.x : null;
-    return distance(key, scale, dx, { side: dx === null ? null : shiftSide(dx) });
-  };
+  // Lateral lean of the line lower→upper from vertical, in degrees (FlexifyMe-style "shift ~N°"),
+  // which unlike a cm offset doesn't depend on knowing the client's height.
+  const shiftAngle = (key: MetricKey, upper: Pt, lower: Pt) =>
+    visible(upper, lower)
+      ? metric(key, angleFromVertical(lower, upper), 'deg', { side: shiftSide(upper.x - lower.x) })
+      : metric(key, null, 'deg');
 
   const out: Metric[] = [
     level('headTilt', head),
     level('shoulderLevel', shoulders),
     level('pelvicLevel', hips),
-    offset('trunkShift', mid(shoulders.left, shoulders.right), mid(hips.left, hips.right)),
-    offset('headShift', mid(head.left, head.right), mid(ankles.left, ankles.right)),
+    shiftAngle('trunkShift', mid(shoulders.left, shoulders.right), mid(hips.left, hips.right)),
+    shiftAngle('headShift', mid(head.left, head.right), mid(shoulders.left, shoulders.right)),
   ];
 
   for (const side of ['left', 'right'] as const) {
@@ -225,7 +224,7 @@ function frontalMetrics(view: 'front' | 'back', pts: Pt[], scale: Scale): Metric
 // ── sagittal plane (left / right) ───────────────────────────────────────────
 
 const SAGITTAL_KEYS: [MetricKey, MetricUnit][] = [
-  ['cva', 'deg'], ['headForward', 'cm'], ['shoulderForward', 'cm'], ['trunkLean', 'deg'],
+  ['forwardHead', 'deg'], ['headForward', 'cm'], ['shoulderForward', 'cm'], ['trunkLean', 'deg'],
   ['pelvicShift', 'cm'], ['pelvicTilt', 'deg'], ['kneeSagittal', 'deg'],
 ];
 
@@ -278,9 +277,9 @@ function sagittalMetrics(pts: Pt[], raw: Landmark[], scale: Scale): Metric[] {
   }
 
   return [
-    visible(ear, shoulder)
-      ? metric('cva', Math.atan2(shoulder.y - ear.y, ahead(ear, shoulder)) * DEG, 'deg')
-      : metric('cva', null, 'deg'),
+    // Forward head: shoulder→ear line from vertical (0° = ear stacked over shoulder). The shoulder
+    // landmark stands in for C7, so this is not the clinical craniovertebral angle.
+    leanFromVertical('forwardHead', ear, shoulder),
     vsPlumb('headForward', ear),
     vsPlumb('shoulderForward', shoulder),
     leanFromVertical('trunkLean', shoulder, hip),

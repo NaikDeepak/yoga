@@ -71,7 +71,7 @@ export function buildOverlay(view: PostureView, landmarks: Landmark[], width: nu
       const p = px(s.shoulder);
       lines.push({ x1: p.x - CVA_REF_LENGTH / 2, y1: p.y, x2: p.x + CVA_REF_LENGTH / 2, y2: p.y, kind: 'reference' });
     }
-    if (shown(s.shoulder, s.ear)) lines.push(line(s.shoulder, s.ear, 'measure', 'cva'));
+    if (shown(s.shoulder, s.ear)) lines.push(line(s.shoulder, s.ear, 'measure', 'forwardHead'));
     if (shown(s.hip, s.shoulder)) lines.push(line(s.hip, s.shoulder, 'measure', 'trunkLean'));
   }
 

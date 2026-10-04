@@ -51,7 +51,7 @@ describe('buildOverlay — side views', () => {
     const lms = alignedLandmarks('left', { LEFT_EAR: [710, 290] });
     lms[LM.RIGHT_KNEE] = { x: 0.1, y: 0.1, visibility: 0.6 }; // far side, visible but not drawn
     const o = buildOverlay('left', lms, POSTURE_W, POSTURE_H);
-    expect(measure(o.lines, 'cva')).toMatchObject({ x1: 500, y1: 500, x2: 710, y2: 290 });
+    expect(measure(o.lines, 'forwardHead')).toMatchObject({ x1: 500, y1: 500, x2: 710, y2: 290 });
     expect(measure(o.lines, 'trunkLean')).toMatchObject({ x1: 500, y1: 1000, x2: 500, y2: 500 });
     expect(refs(o.lines)).toContainEqual(expect.objectContaining({ x1: 500, y1: 0, x2: 500, y2: POSTURE_H }));
     expect(o.points).not.toContainEqual(expect.objectContaining({ x: 100, y: 200 }));

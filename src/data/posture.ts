@@ -32,6 +32,13 @@ export type PostureAssessmentSummary = PostureAssessmentRow & { mildCount: numbe
 export const posturePhotoPath = (patientId: string, assessmentId: string, view: PostureView) =>
   `patients/${patientId}/posture/${assessmentId}/${view}.jpg`;
 
+/**
+ * Reads always recompute metrics from the stored landmarks, so every report (and every before/after
+ * comparison) uses the current formulas. The `metrics` column is the snapshot taken at save time.
+ */
+const currentMetrics = (v: PostureViewRow, heightCm: number | null) =>
+  computeViewMetrics(v.view as PostureView, v.landmarks, { width: v.imageWidth, height: v.imageHeight, heightCm });
+
 const byCaptureOrder = (a: PostureViewRow, b: PostureViewRow) =>
   POSTURE_VIEWS.indexOf(a.view as PostureView) - POSTURE_VIEWS.indexOf(b.view as PostureView);
 
@@ -92,12 +99,11 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
     .orderBy(desc(postureAssessments.assessedOn), desc(postureAssessments.createdAt));
   if (!assessments.length) return [];
 
-  const views = await db.select({ assessmentId: postureViews.assessmentId, metrics: postureViews.metrics })
-    .from(postureViews)
+  const views = await db.select().from(postureViews)
     .where(inArray(postureViews.assessmentId, assessments.map((a) => a.id)));
 
   return assessments.map((a) => {
-    const metrics = views.filter((v) => v.assessmentId === a.id).flatMap((v) => v.metrics);
+    const metrics = views.filter((v) => v.assessmentId === a.id).flatMap((v) => currentMetrics(v, a.heightCm));
     return {
       ...a,
       mildCount: metrics.filter((m) => m.severity === 'mild').length,
@@ -110,7 +116,10 @@ export async function getPostureAssessment(db: Db, id: string): Promise<PostureA
   const [assessment] = await db.select().from(postureAssessments).where(eq(postureAssessments.id, id));
   if (!assessment) return null;
   const views = await db.select().from(postureViews).where(eq(postureViews.assessmentId, id));
-  return { ...assessment, views: views.sort(byCaptureOrder) };
+  return {
+    ...assessment,
+    views: views.map((v) => ({ ...v, metrics: currentMetrics(v, assessment.heightCm) })).sort(byCaptureOrder),
+  };
 }
 
 export async function deletePostureAssessment(

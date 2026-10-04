@@ -11,8 +11,8 @@ import { savePostureAssessmentAction } from '@/actions/posture';
 import { buildOverlay } from '@/lib/posture-overlay';
 import { POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
 import {
-  advanceCountdown, checkFrame, isLevel, isStill, rollFromReferenceLine, stillKeypoints,
-  type CameraCheck, type CountdownState, type FrameChecks,
+  advanceCountdown, bodyCropRect, bodyFill, BODY_FILL_TARGET, checkFrame, isLevel, isStill, medianLandmarks,
+  remapToCrop, rollFromReferenceLine, stillKeypoints, type CameraCheck, type CountdownState, type FrameChecks,
 } from '@/lib/posture-capture';
 import { createPoseDetector, toLandmarks } from './pose-detector';
 import { requestMotionPermission, useCamera, useDeviceLevel } from './hooks';
@@ -33,7 +33,9 @@ interface Capture {
   cameraCheck: CameraCheck;
 }
 
-const MAX_EDGE = 1280;       // px; keeps four JPEGs well under the 4 MB upload cap
+const MAX_EDGE = 1600;       // px, long edge of the saved crop; four JPEGs stay well under the 4 MB upload cap
+const DETECTIONS = 3;        // still-photo detections combined by per-point median
+const DETECTION_GAP_MS = 120;
 const JPEG_QUALITY = 0.85;
 const HISTORY_FRAMES = 30;
 
@@ -89,8 +91,8 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
   }, []);
 
   // ── live analysis loop ──
-  const [live, setLive] = useState<{ landmarks: Landmark[] | null; frame: FrameChecks; still: boolean }>({
-    landmarks: null, frame: { inFrame: false, facing: false }, still: false,
+  const [live, setLive] = useState<{ landmarks: Landmark[] | null; frame: FrameChecks; still: boolean; fill: number | null }>({
+    landmarks: null, frame: { inFrame: false, facing: false }, still: false, fill: null,
   });
   const history = useRef<Landmark[][]>([]);
 
@@ -123,7 +125,7 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
         } else {
           history.current = [];
         }
-        setLive({ landmarks: lms, frame, still });
+        setLive({ landmarks: lms, frame, still, fill: lms ? bodyFill(lms) : null });
         const step = advanceCountdown(cd, frame.inFrame && frame.facing && still && levelOkRef.current, ts);
         cd = step.state;
         setCountdown(step.remaining);
@@ -149,14 +151,30 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
     setBusy(true);
     setError(null);
     try {
-      const scale = Math.min(1, MAX_EDGE / Math.max(size.width, size.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(size.width * scale);
-      canvas.height = Math.round(size.height * scale);
-      canvas.getContext('2d')!.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Analyse at full camera resolution: several detections a moment apart, combined by median.
+      const frame = document.createElement('canvas');
+      frame.width = size.width;
+      frame.height = size.height;
+      const ctx = frame.getContext('2d')!;
       const det = await stillDetector.current!;
-      const landmarks = toLandmarks(det.detect(canvas));
-      if (!landmarks) { setError(c.noPerson); return; }
+      const detections: Landmark[][] = [];
+      for (let i = 0; i < DETECTIONS; i++) {
+        if (i > 0) await new Promise((r) => setTimeout(r, DETECTION_GAP_MS));
+        ctx.drawImage(video, 0, 0, size.width, size.height);
+        const found = toLandmarks(det.detect(frame));
+        if (found) detections.push(found);
+      }
+      if (!detections.length) { setError(c.noPerson); return; }
+      const full = medianLandmarks(detections);
+
+      // Save a crop around the body (laptop frames are mostly background), capped at MAX_EDGE.
+      const rect = bodyCropRect(full, size.width, size.height);
+      const scale = Math.min(1, MAX_EDGE / Math.max(rect.w, rect.h));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(rect.w * scale);
+      canvas.height = Math.round(rect.h * scale);
+      canvas.getContext('2d')!.drawImage(frame, rect.x, rect.y, rect.w, rect.h, 0, 0, canvas.width, canvas.height);
+      const landmarks = remapToCrop(full, size.width, size.height, rect);
       const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
       if (!blob) { setError(c.noPerson); return; }
       setDraft({
@@ -289,7 +307,9 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
                 <CheckChip ok={live.frame.facing} label={c.checks.facing} />
                 <CheckChip ok={live.still} label={c.checks.still} />
                 <CheckChip ok={levelOk} label={c.checks.level} />
+                {live.fill !== null && <CheckChip ok={live.fill >= BODY_FILL_TARGET} label={c.checks.fill} advisory />}
               </div>
+              {live.fill !== null && live.fill < BODY_FILL_TARGET && <p className="text-xs text-muted-foreground">{c.moveCloser}</p>}
               <div className="flex flex-wrap gap-2">
                 <Button onClick={() => void capture()} disabled={busy || !modelReady || !levelOk || !live.frame.inFrame}>
                   <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
@@ -364,9 +384,11 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
   );
 }
 
-function CheckChip({ ok, label }: { ok: boolean; label: string }) {
+/** `advisory` chips are guidance only — they don't block auto-capture. */
+function CheckChip({ ok, label, advisory = false }: { ok: boolean; label: string; advisory?: boolean }) {
+  const off = advisory ? 'bg-yellow-100 text-yellow-800' : 'bg-muted text-muted-foreground';
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${ok ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${ok ? 'bg-primary/10 text-primary' : off}`}>
       {ok ? <Check className="h-3 w-3" aria-hidden="true" /> : <X className="h-3 w-3" aria-hidden="true" />}
       {label}
     </span>
@@ -386,9 +408,13 @@ function Calibration({
   c: ReturnType<typeof useTranslations>['posture']['capture'];
 }) {
   const [ends, setEnds] = useState([{ x: width * 0.5, y: height * 0.15 }, { x: width * 0.5, y: height * 0.85 }]);
+  // The line starts perfectly vertical, so it must be moved onto a real edge before it means anything.
+  const [moved, setMoved] = useState(false);
   const roll = useMemo(() => rollFromReferenceLine(ends[0], ends[1]), [ends]);
-  const ok = roll !== null && isLevel({ rollDeg: roll, pitchDeg: null });
-  const message = roll === null
+  const ok = moved && roll !== null && isLevel({ rollDeg: roll, pitchDeg: null });
+  const message = !moved
+    ? c.calibrateMove
+    : roll === null
     ? c.calibrateInvalid
     : ok ? c.calibrateOk.replace('{deg}', roll.toFixed(1)) : c.calibrateTilted.replace('{deg}', Math.abs(roll).toFixed(1));
 
@@ -400,7 +426,7 @@ function Calibration({
         <DragHandles
           handles={ends.map((e, id) => ({ id, ...e }))}
           radius={width / 90}
-          onMove={(id, x, y) => setEnds((prev) => prev.map((e, i) => (i === id ? { x, y } : e)))}
+          onMove={(id, x, y) => { setMoved(true); setEnds((prev) => prev.map((e, i) => (i === id ? { x, y } : e))); }}
         />
       </OverlaySvg>
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-2 bg-black/60 p-3 text-center text-sm text-white">

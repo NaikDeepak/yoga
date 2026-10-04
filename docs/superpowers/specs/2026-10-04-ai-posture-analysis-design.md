@@ -217,3 +217,26 @@ Report page accepts `?compare=<otherAssessmentId>`: per view, two `PostureFigure
 - Front view checks MediaPipe's left/right label order; the back view does not (it failed on a real MacBook capture) — it only requires the client square to the camera, and accepts weak face points or room above the shoulders for the head.
 - `npm run dev:phone` (`scripts/dev-phone.sh`) serves HTTPS on the LAN with a self-signed cert for phone testing.
 - The "Add posture assessment" button landed in step 5 (needed for phone testing); the assessment history list remains step 6.
+
+## Report v2: score, patterns, FlexifyMe comparison (2026-10-04)
+
+Benchmarked against a FlexifyMe report for the same person (same day, different camera/room):
+
+| Finding | FlexifyMe | Ours (MacBook, landscape, body ≈70% of frame) |
+|---|---|---|
+| Head lateral (front) | ~5° right | 3.4–3.5° right |
+| Head lateral (back) | ~3° right | 1.4° right |
+| Shoulders | left elevated ~2° (front) / level (back) | right lower 1.0° (front) / 3.3° (back) |
+| Trunk shift (back) | ~1° right | 2.3° right |
+| Pelvis | level (front) / right elevated ~1° (back) | 0.1° (front) / **4.1° right lower (back)** |
+| Forward head (side) | ~19° from plumb | 11–13.6° from vertical |
+| Knees (side) | hyperextended −5° | 1.5–1.8° backward (hyperextension) |
+
+Direction agrees on head, shoulders, trunk, forward head and knees. The back-view pelvis disagrees: hip baseline was ~60 px, so 1 px ≈ 1°. Changes made:
+
+- **Metrics moved to FlexifyMe-comparable angles**: `headShift` (shoulders→head from vertical, mild 2.5° / marked 5°), `trunkShift` (hips→shoulders from vertical, 2° / 4°), `forwardHead` replaces `cva` (shoulder→ear from vertical, 10° / 20°). Clinician to confirm thresholds.
+- **Capture precision**: analysis at full camera resolution; 3 detections combined by per-point median; photo saved as a crop around the body (≤1600 px); advisory "body fills frame" chip (target ≥75% of frame height). Door-frame calibration now requires the line to be moved.
+- **Reads recompute metrics** from landmarks with current formulas.
+- **Report v2**: posture score (5 body regions), overall pattern headline, per-pattern cards (evidence, likely causes, long-term effects — rule-based text in i18n, needs therapist review), focus areas with exercises from our library, 4-view photo grid with per-view findings, collapsible detailed table. Clinic palette (#1B3A2E / #C8962E / #E5D5B5).
+
+Open question: when front and back disagree on a frontal-plane measure (e.g. pelvis 0.1° vs 4.1°), should the report average them or flag low confidence?

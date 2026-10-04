@@ -158,3 +158,68 @@ export function advanceCountdown(
   if (elapsed >= COUNTDOWN_SECONDS * 1000) return { state: idle, remaining: null, fire: true };
   return { state: next, remaining: COUNTDOWN_SECONDS - Math.floor(elapsed / 1000), fire: false };
 }
+
+// ── still-photo processing ──────────────────────────────────────────────────
+
+const median = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+};
+
+/** Per-point median of several detections of the same still pose; damps single-frame jitter/outliers. */
+export function medianLandmarks(frames: Landmark[][]): Landmark[] {
+  return frames[0].map((_, i) => ({
+    x: median(frames.map((f) => f[i].x)),
+    y: median(frames.map((f) => f[i].y)),
+    visibility: median(frames.map((f) => f[i].visibility)),
+  }));
+}
+
+export interface CropRect { x: number; y: number; w: number; h: number }
+
+const HEAD_ABOVE_EYES = 0.08; // of eye-to-heel span: crown of the head sits above the eye/ear landmarks
+const CROP_PAD_Y = 0.05;
+const CROP_PAD_X = 0.15;
+const MIN_ASPECT = 0.5;       // crop at least half as wide as tall, so arms and stance fit
+
+/**
+ * Crop rectangle (image pixels) around the body with margins, clamped to the frame. Keeps the photo
+ * at full camera resolution where it matters while dropping empty background (laptop cameras are wide).
+ */
+export function bodyCropRect(lms: Landmark[], width: number, height: number): CropRect {
+  const pts = lms.filter((l) => l.visibility >= MIN_VISIBILITY).map((l) => ({ x: l.x * width, y: l.y * height }));
+  if (pts.length < 3) return { x: 0, y: 0, w: width, h: height };
+  const minX = Math.min(...pts.map((p) => p.x)), maxX = Math.max(...pts.map((p) => p.x));
+  const minY = Math.min(...pts.map((p) => p.y)), maxY = Math.max(...pts.map((p) => p.y));
+  const span = maxY - minY;
+  const top = minY - span * (HEAD_ABOVE_EYES + CROP_PAD_Y);
+  const bottom = maxY + span * CROP_PAD_Y;
+  const h = bottom - top;
+  const w = Math.max((maxX - minX) * (1 + 2 * CROP_PAD_X), h * MIN_ASPECT);
+  const cx = (minX + maxX) / 2;
+  const x0 = Math.max(0, Math.round(cx - w / 2));
+  const y0 = Math.max(0, Math.round(top));
+  const x1 = Math.min(width, Math.round(cx + w / 2));
+  const y1 = Math.min(height, Math.round(bottom));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+/** Re-expresses normalised landmarks relative to a crop of the original frame. */
+export function remapToCrop(lms: Landmark[], width: number, height: number, r: CropRect): Landmark[] {
+  return lms.map((l) => ({ x: (l.x * width - r.x) / r.w, y: (l.y * height - r.y) / r.h, visibility: l.visibility }));
+}
+
+const EYE_LEVEL_RATIO = 0.936; // eye level ≈ 93.6% of standing height
+/** Recommended minimum: body should fill this much of the frame height for precise angles. */
+export const BODY_FILL_TARGET = 0.75;
+
+/** Estimated standing height as a fraction of the frame height, or null if head/feet aren't visible. */
+export function bodyFill(lms: Landmark[]): number | null {
+  const vis = (i: number) => lms[i].visibility >= MIN_VISIBILITY;
+  const tops = [LM.LEFT_EYE, LM.RIGHT_EYE, LM.LEFT_EAR, LM.RIGHT_EAR].filter(vis).map((i) => lms[i].y);
+  let bottoms = [LM.LEFT_HEEL, LM.RIGHT_HEEL].filter(vis).map((i) => lms[i].y);
+  if (!bottoms.length) bottoms = [LM.LEFT_ANKLE, LM.RIGHT_ANKLE].filter(vis).map((i) => lms[i].y);
+  if (!tops.length || !bottoms.length) return null;
+  return (Math.max(...bottoms) - Math.min(...tops)) / EYE_LEVEL_RATIO;
+}

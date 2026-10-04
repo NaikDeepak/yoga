@@ -7,6 +7,10 @@ import {
   isStill,
   stillKeypoints,
   advanceCountdown,
+  medianLandmarks,
+  bodyCropRect,
+  remapToCrop,
+  bodyFill,
   LEVEL_TOLERANCE,
   type CountdownState,
 } from '@/lib/posture-capture';
@@ -226,5 +230,67 @@ describe('advanceCountdown', () => {
 
   it('stays idle while checks fail', () => {
     expect(run([[0, false], [500, false]])).toEqual({ remaining: null, fire: false });
+  });
+});
+
+describe('medianLandmarks', () => {
+  it('takes the per-point median, rejecting a single outlier detection', () => {
+    const a = alignedLandmarks('front');
+    const b = alignedLandmarks('front', { RIGHT_SHOULDER: [404, 500] });
+    const outlier = alignedLandmarks('front', { RIGHT_SHOULDER: [480, 560] });
+    const m = medianLandmarks([a, outlier, b]);
+    expect(m[LM.RIGHT_SHOULDER].x * POSTURE_W).toBeCloseTo(404, 5);
+    expect(m[LM.RIGHT_SHOULDER].y * POSTURE_H).toBeCloseTo(500, 5);
+    expect(m).toHaveLength(33);
+  });
+});
+
+describe('bodyCropRect / remapToCrop', () => {
+  // Small figure in a wide frame, like a laptop camera.
+  const W = 2000;
+  const H = 2000;
+  const lms = alignedLandmarks('front'); // body spans x 370–630, y 280–1900 on a 1000×2000 layout
+
+  it('crops around the body with margins, staying inside the frame', () => {
+    const r = bodyCropRect(lms, W, H);
+    expect(r.x).toBeGreaterThanOrEqual(0);
+    expect(r.y).toBeGreaterThanOrEqual(0);
+    expect(r.x + r.w).toBeLessThanOrEqual(W);
+    expect(r.y + r.h).toBeLessThanOrEqual(H);
+    expect(r.w).toBeLessThan(W); // narrower than the frame
+    // contains every visible landmark
+    for (const l of lms.filter((p) => p.visibility >= 0.5)) {
+      expect(l.x * W).toBeGreaterThanOrEqual(r.x);
+      expect(l.x * W).toBeLessThanOrEqual(r.x + r.w);
+      expect(l.y * H).toBeGreaterThanOrEqual(r.y);
+      expect(l.y * H).toBeLessThanOrEqual(r.y + r.h);
+    }
+  });
+
+  it('remaps landmarks into the crop so pixel positions are unchanged', () => {
+    const r = bodyCropRect(lms, W, H);
+    const mapped = remapToCrop(lms, W, H, r);
+    const i = LM.LEFT_SHOULDER;
+    expect(mapped[i].x * r.w + r.x).toBeCloseTo(lms[i].x * W, 6);
+    expect(mapped[i].y * r.h + r.y).toBeCloseTo(lms[i].y * H, 6);
+    expect(mapped[i].visibility).toBe(lms[i].visibility);
+  });
+
+  it('falls back to the full frame when too little of the body is visible', () => {
+    const empty = lms.map((l) => ({ ...l, visibility: 0 }));
+    expect(bodyCropRect(empty, W, H)).toEqual({ x: 0, y: 0, w: W, h: H });
+  });
+});
+
+describe('bodyFill', () => {
+  it('estimates standing height as a fraction of the frame height', () => {
+    // eyes at 280, heels at 1880 → (1600 / 0.936) / 2000 = 0.855
+    expect(bodyFill(alignedLandmarks('front'))).toBeCloseTo(0.855, 3);
+  });
+
+  it('returns null when the head or feet are not visible', () => {
+    const noFeet = alignedLandmarks('front');
+    for (const i of [LM.LEFT_HEEL, LM.RIGHT_HEEL, LM.LEFT_ANKLE, LM.RIGHT_ANKLE]) noFeet[i].visibility = 0;
+    expect(bodyFill(noFeet)).toBeNull();
   });
 });
