@@ -6,14 +6,44 @@ import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { getStorage } from '@/lib/storage';
 import { MAX_FILE_BYTES, validatePhoto } from '@/lib/files';
-import { firstError, postureAssessmentSchema } from '@/lib/validation';
-import { POSTURE_VIEWS } from '@/lib/posture';
+import { firstError, postureAssessmentSchema, postureRetakeSchema } from '@/lib/validation';
+import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { getPatient } from '@/data/patients';
-import { addPostureAssessment, deletePostureAssessment, type PostureViewInput } from '@/data/posture';
+import {
+  addPostureAssessment, deletePostureAssessment, replacePostureViews, type PostureViewInput,
+} from '@/data/posture';
 import type { ActionResult } from '@/actions/patients';
 
 const INVALID_PARAMS: ActionResult = { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
 const INVALID_DATA: ActionResult = { ok: false, error: 'Invalid posture data / चुकीची पोश्चर माहिती' };
+const SAVE_FAILED: ActionResult = { ok: false, error: 'Could not save posture assessment / पोश्चर मूल्यांकन जतन करता आले नाही' };
+
+function parsePayload(formData: FormData): unknown {
+  try {
+    return JSON.parse(String(formData.get('payload') ?? ''));
+  } catch {
+    return undefined;
+  }
+}
+
+/** `photo_<view>` files for the given views: JPG/PNG, non-empty, ≤4 MB combined (Vercel body cap). */
+function collectPhotos(formData: FormData, views: PostureView[]): Map<PostureView, File> | ActionResult {
+  const photos = new Map<PostureView, File>();
+  for (const view of views) {
+    const photo = formData.get(`photo_${view}`);
+    if (!(photo instanceof File) || photo.size === 0) {
+      return { ok: false, error: 'Photo for each view required / प्रत्येक बाजूचा फोटो आवश्यक' };
+    }
+    const err = validatePhoto(photo);
+    if (err) return { ok: false, error: err };
+    photos.set(view, photo);
+  }
+  const total = [...photos.values()].reduce((sum, p) => sum + p.size, 0);
+  if (total > MAX_FILE_BYTES) {
+    return { ok: false, error: 'Photos too large, max 4 MB total / फोटो खूप मोठे, एकूण 4 MB पर्यंत' };
+  }
+  return photos;
+}
 
 /**
  * Form fields: `payload` (JSON: consent, assessedOn, note, views[] with landmarks) and
@@ -25,30 +55,12 @@ export async function savePostureAssessmentAction(patientId: string, formData: F
   await requireUser();
   if (typeof patientId !== 'string' || !patientId) return INVALID_PARAMS;
 
-  let raw: unknown;
-  try {
-    raw = JSON.parse(String(formData.get('payload') ?? ''));
-  } catch {
-    return INVALID_DATA;
-  }
+  const raw = parsePayload(formData);
+  if (raw === undefined) return INVALID_DATA;
   const parsed = postureAssessmentSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
-
-  const photos = new Map<string, File>();
-  for (const view of POSTURE_VIEWS) {
-    const photo = formData.get(`photo_${view}`);
-    if (!(photo instanceof File) || photo.size === 0) {
-      return { ok: false, error: 'Photo for each view required / प्रत्येक बाजूचा फोटो आवश्यक' };
-    }
-    const err = validatePhoto(photo);
-    if (err) return { ok: false, error: err };
-    photos.set(view, photo);
-  }
-  // Vercel rejects request bodies over ~4.5 MB, so the four photos share the single-file cap.
-  const total = [...photos.values()].reduce((sum, p) => sum + p.size, 0);
-  if (total > MAX_FILE_BYTES) {
-    return { ok: false, error: 'Photos too large, max 4 MB total / फोटो खूप मोठे, एकूण 4 MB पर्यंत' };
-  }
+  const photos = collectPhotos(formData, [...POSTURE_VIEWS]);
+  if (!(photos instanceof Map)) return photos;
 
   const db = getDb();
   const patient = await getPatient(db, patientId);
@@ -75,8 +87,48 @@ export async function savePostureAssessmentAction(patientId: string, formData: F
     });
     assessmentId = assessment.id;
   } catch {
-    return { ok: false, error: 'Could not save posture assessment / पोश्चर मूल्यांकन जतन करता आले नाही' };
+    return SAVE_FAILED;
   }
+
+  revalidatePath(`/patients/${patientId}`);
+  redirect(`/patients/${patientId}/posture/${assessmentId}`);
+}
+
+/**
+ * Retake some views of an existing assessment. Form: `payload` (JSON `{ views: [...] }`) and
+ * `photo_<view>` for each. Redirects back to the report on success.
+ */
+export async function replacePostureViewsAction(
+  patientId: string,
+  assessmentId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireUser();
+  if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
+    return INVALID_PARAMS;
+  }
+  const raw = parsePayload(formData);
+  if (raw === undefined) return INVALID_DATA;
+  const parsed = postureRetakeSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  const photos = collectPhotos(formData, parsed.data.views.map((v) => v.view));
+  if (!(photos instanceof Map)) return photos;
+
+  let updated;
+  try {
+    updated = await replacePostureViews(getDb(), getStorage(), patientId, assessmentId, parsed.data.views.map((v) => ({
+      view: v.view,
+      photo: photos.get(v.view)!,
+      imageWidth: v.imageWidth,
+      imageHeight: v.imageHeight,
+      landmarks: v.landmarks,
+      landmarksEdited: v.landmarksEdited,
+      cameraCheck: v.cameraCheck,
+    })));
+  } catch {
+    return SAVE_FAILED;
+  }
+  if (!updated) return { ok: false, error: 'Assessment not found / मूल्यांकन सापडले नाही' };
 
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);

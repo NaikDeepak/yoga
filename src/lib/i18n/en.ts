@@ -484,6 +484,7 @@ export const en = {
     directions: { forward: 'Forward', backward: 'Backward', valgus: 'Valgus (inward)', varus: 'Varus (outward)' },
     capture: {
       title: 'New posture assessment',
+      retakeTitle: 'Retake posture photos',
       consent: 'Client consents to posture photos being taken and stored with their record',
       tipsTitle: 'Before you start',
       tips: [
@@ -508,7 +509,7 @@ export const en = {
       calibrateOk: 'Camera is level ({deg}°).',
       confirmCalibration: 'Camera is level — continue',
       recalibrate: 'Re-calibrate',
-      step: 'View {n} of 4',
+      step: 'View {n} of {total}',
       instructions: {
         front: 'Client faces the camera, arms relaxed by the sides',
         right: 'Client turns so their RIGHT side faces the camera',
@@ -531,6 +532,12 @@ export const en = {
       cameraLevelReference: 'Level verified by door frame (roll only)',
     },
     insights: {
+      confidenceTitle: 'Measurement confidence',
+      lowConfidence: 'Low confidence',
+      averaged: 'Front/back and left/right readings are averaged for the score and patterns.',
+      disagree: '{measure}: {a} vs {b} — the average {avg} is used.',
+      retakeViews: 'Retake {views}',
+      retakePhoto: 'Retake this photo',
       scoreTitle: 'Posture score',
       scoreOutOf: '/100',
       grades: { good: 'Good', fair: 'Fair', needsAttention: 'Needs attention' },

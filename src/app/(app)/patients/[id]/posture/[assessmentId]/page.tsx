@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Camera } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { getPostureAssessment } from '@/data/posture';
@@ -10,8 +10,10 @@ import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
 import { buildOverlay } from '@/lib/posture-overlay';
 import { formatMetric } from '@/lib/posture-format';
-import { scorePosture, detectPatterns, focusCategories, REGIONS } from '@/lib/posture-insights';
-import type { Metric, PostureView } from '@/lib/posture';
+import {
+  combineViews, scorePosture, detectPatterns, focusCategories, REGIONS, type CombinedMetric,
+} from '@/lib/posture-insights';
+import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { formatFullDate, getISTDateString } from '@/lib/dates';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
@@ -55,16 +57,24 @@ export default async function PostureReportPage({
     photoUrl: await storage.createSignedUrl(v.filePath).catch(() => null),
   })));
 
-  const score = scorePosture(views);
-  const patterns = detectPatterns(views);
+  // Front/back and left/right readings of the same measure are averaged for scoring and patterns.
+  const combined = combineViews(views);
+  const score = scorePosture(combined);
+  const patterns = detectPatterns(combined);
+  const disagreements = combined.filter((m) => m.lowConfidence);
+  const retakeViews = POSTURE_VIEWS.filter((v) => disagreements.some((m) => m.sources.some((s) => s.view === v)));
+  const retakeHref = (vs: readonly PostureView[]) => `/patients/${id}/posture/${assessmentId}/retake?views=${vs.join(',')}`;
   const focus = focusCategories(patterns);
   const library = focus.length ? await listAllExercises(db) : [];
   const exercisesFor = (category: string) =>
     library.filter((e) => e.category === category).slice(0, EXERCISES_PER_CATEGORY);
 
-  const evidenceText = (view: PostureView, metric: Metric) => {
-    const f = formatMetric(metric, p);
-    return [ins.viewNames[view], f.value, f.detail].filter(Boolean).join(' · ');
+  const reading = (view: PostureView, value: string) => `${ins.viewNames[view]} ${value}`;
+  const evidenceText = (m: CombinedMetric) => {
+    const f = formatMetric(m, p);
+    const perView = m.sources.map((s) => reading(s.view, formatMetric(s.metric, p).value)).join(' · ');
+    return [f.value, f.detail, m.sources.length > 1 ? `(${perView})` : perView, m.lowConfidence ? ins.lowConfidence : '']
+      .filter(Boolean).join(' · ');
   };
   const headline = patterns.map((pt) => ins.patterns[pt.key].title).join(' · ');
 
@@ -108,6 +118,7 @@ export default async function PostureReportPage({
         <div>
           <p className="mb-3 text-xs font-bold uppercase tracking-widest text-gray-600">{ins.regionsTitle}</p>
           <RegionBars rows={REGIONS.map((r) => ({ label: ins.regions[r], region: score.regions[r] }))} notMeasured={ins.notMeasured} />
+          <p className="mt-3 text-[11px] text-gray-500">{ins.averaged}</p>
         </div>
       </section>
 
@@ -128,7 +139,7 @@ export default async function PostureReportPage({
                   severity={pt.severity}
                   severityLabel={p.severity[pt.severity]}
                   summary={text.summary}
-                  evidence={pt.evidence.map((e) => evidenceText(e.view, e.metric))}
+                  evidence={pt.evidence.map(evidenceText)}
                   causesTitle={ins.likelyCauses}
                   causes={text.causes}
                   effectsTitle={ins.longTermEffects}
@@ -139,6 +150,37 @@ export default async function PostureReportPage({
           </div>
         </>
       )}
+      {/* ── CONFIDENCE ── */}
+      {disagreements.length > 0 && (
+        <>
+          <SectionHeader>{ins.confidenceTitle}</SectionHeader>
+          <div className="rounded-lg border p-4 print:break-inside-avoid" style={{ borderColor: BRAND.saffron, backgroundColor: BRAND.sandLight }}>
+            <ul className="list-disc space-y-1 pl-4 text-sm text-gray-700">
+              {disagreements.map((m) => {
+                const [a, b] = m.sources;
+                return (
+                  <li key={`${m.key}-${m.side ?? ''}`}>
+                    {ins.disagree
+                      .replace('{measure}', `${p.metrics[m.key]}${m.side && (m.key === 'kneeAlignment' || m.key === 'hindfoot') ? ` (${p.sides[m.side]})` : ''}`)
+                      .replace('{a}', reading(a.view, formatMetric(a.metric, p).value))
+                      .replace('{b}', reading(b.view, formatMetric(b.metric, p).value))
+                      .replace('{avg}', formatMetric(m, p).value)}
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-3 print:hidden">
+              <Button asChild size="sm" variant="outline">
+                <Link href={retakeHref(retakeViews)}>
+                  <Camera className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                  {ins.retakeViews.replace('{views}', retakeViews.map((v) => ins.viewNames[v]).join(' & '))}
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
       {assessment.note && (
         <p className="mt-4 rounded-md border p-3 text-sm" style={{ borderColor: BRAND.sand }}>
           <span className="font-medium">{p.note}:</span> {assessment.note}
@@ -202,6 +244,9 @@ export default async function PostureReportPage({
                 </p>
               )}
               {v.edited && <p className="text-[10px] text-gray-500">{p.edited}</p>}
+              <Link href={retakeHref([v.view])} className="mt-1 inline-block text-[11px] font-medium underline print:hidden" style={{ color: BRAND.green }}>
+                {ins.retakePhoto}
+              </Link>
             </figcaption>
           </figure>
         ))}

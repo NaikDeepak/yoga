@@ -29,8 +29,9 @@ export interface PostureAssessmentInput {
 export type PostureAssessment = PostureAssessmentRow & { views: PostureViewRow[] };
 export type PostureAssessmentSummary = PostureAssessmentRow & { mildCount: number; markedCount: number };
 
-export const posturePhotoPath = (patientId: string, assessmentId: string, view: PostureView) =>
-  `patients/${patientId}/posture/${assessmentId}/${view}.jpg`;
+/** Storage key for a view photo; retakes get a `version` suffix so the old file can be removed after commit. */
+export const posturePhotoPath = (patientId: string, assessmentId: string, view: PostureView, version?: string) =>
+  `patients/${patientId}/posture/${assessmentId}/${view}${version ? `-${version}` : ''}.jpg`;
 
 /**
  * Reads always recompute metrics from the stored landmarks, so every report (and every before/after
@@ -128,9 +129,62 @@ export async function deletePostureAssessment(
   patientId: string,
   id: string,
 ): Promise<void> {
-  const deleted = await db.delete(postureAssessments) // cascades to views
-    .where(and(eq(postureAssessments.id, id), eq(postureAssessments.patientId, patientId)))
-    .returning({ id: postureAssessments.id });
-  if (!deleted.length) return;
-  await Promise.all(POSTURE_VIEWS.map((v) => storage.remove(posturePhotoPath(patientId, id, v))));
+  const [owned] = await db.select({ id: postureAssessments.id }).from(postureAssessments)
+    .where(and(eq(postureAssessments.id, id), eq(postureAssessments.patientId, patientId)));
+  if (!owned) return;
+  const views = await db.select({ filePath: postureViews.filePath }).from(postureViews)
+    .where(eq(postureViews.assessmentId, id));
+  await db.delete(postureAssessments).where(eq(postureAssessments.id, id)); // cascades to views
+  await Promise.all(views.map((v) => storage.remove(v.filePath)));
+}
+
+/**
+ * Retakes some views of an existing assessment (e.g. when front and back disagree). Uploads the new
+ * photos under versioned keys, updates those view rows in one transaction, then removes the replaced
+ * photos. Any failure leaves the assessment as it was. Returns null if the assessment isn't this client's.
+ */
+export async function replacePostureViews(
+  db: Db,
+  storage: FileStorage,
+  patientId: string,
+  assessmentId: string,
+  views: PostureViewInput[],
+): Promise<PostureAssessment | null> {
+  const [assessment] = await db.select().from(postureAssessments)
+    .where(and(eq(postureAssessments.id, assessmentId), eq(postureAssessments.patientId, patientId)));
+  if (!assessment) return null;
+
+  const existing = await db.select({ view: postureViews.view, filePath: postureViews.filePath }).from(postureViews)
+    .where(and(eq(postureViews.assessmentId, assessmentId), inArray(postureViews.view, views.map((v) => v.view))));
+  const version = crypto.randomUUID().slice(0, 8);
+  const pathFor = (v: PostureView) => posturePhotoPath(patientId, assessmentId, v, version);
+  const uploaded: string[] = [];
+  try {
+    for (const v of views) {
+      await storage.upload(pathFor(v.view), v.photo);
+      uploaded.push(pathFor(v.view));
+    }
+    await db.transaction(async (tx) => {
+      for (const v of views) {
+        const [row] = await tx.update(postureViews).set({
+          filePath: pathFor(v.view),
+          imageWidth: v.imageWidth,
+          imageHeight: v.imageHeight,
+          landmarks: v.landmarks,
+          landmarksEdited: v.landmarksEdited,
+          cameraCheck: v.cameraCheck,
+          metrics: computeViewMetrics(v.view, v.landmarks, {
+            width: v.imageWidth, height: v.imageHeight, heightCm: assessment.heightCm,
+          }),
+        }).where(and(eq(postureViews.assessmentId, assessmentId), eq(postureViews.view, v.view)))
+          .returning({ id: postureViews.id });
+        if (!row) throw new Error(`No ${v.view} view to replace`);
+      }
+    });
+  } catch (err) {
+    await Promise.all(uploaded.map((p) => storage.remove(p)));
+    throw err;
+  }
+  await Promise.all(existing.map((e) => storage.remove(e.filePath))); // only after the rows point at the new photos
+  return getPostureAssessment(db, assessmentId);
 }

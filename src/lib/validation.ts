@@ -204,3 +204,11 @@ export const postureAssessmentSchema = z.object({
 });
 
 export type PostureAssessmentPayload = z.infer<typeof postureAssessmentSchema>;
+
+/** Retaking some views of an existing assessment (consent was recorded with the original). */
+export const postureRetakeSchema = z.object({
+  views: z.array(postureViewSchema, POSTURE_DATA_ERR)
+    .min(1, POSTURE_DATA_ERR)
+    .max(POSTURE_VIEWS.length, POSTURE_DATA_ERR)
+    .refine((views) => new Set(views.map((v) => v.view)).size === views.length, POSTURE_DATA_ERR),
+});

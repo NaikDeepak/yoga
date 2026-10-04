@@ -9,6 +9,7 @@ import {
   listPostureAssessments,
   getPostureAssessment,
   deletePostureAssessment,
+  replacePostureViews,
   type PostureViewInput,
 } from '@/data/posture';
 import { patients, postureAssessments, postureViews } from '@/db/schema';
@@ -173,5 +174,52 @@ describe('deletePostureAssessment', () => {
     await addPostureAssessment(db, storage, input());
     await db.delete(patients).where(eq(patients.id, patientId));
     expect(await db.select().from(postureViews)).toHaveLength(0);
+  });
+});
+
+describe('replacePostureViews', () => {
+  it('replaces only the retaken views: new photo, landmarks, metrics and camera check', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    const oldBack = a.views.find((v) => v.view === 'back')!;
+    const oldFront = a.views.find((v) => v.view === 'front')!;
+    const retake = { ...view('back', { RIGHT_SHOULDER: [400, 535] }), cameraCheck: { method: 'sensor' as const, rollDeg: -0.3, pitchDeg: 0.5 } };
+
+    const updated = await replacePostureViews(db, storage, patientId, a.id, [retake]);
+    const back = updated!.views.find((v) => v.view === 'back')!;
+    expect(back.filePath).not.toBe(oldBack.filePath);
+    expect(back.filePath).toMatch(new RegExp(`^patients/${patientId}/posture/${a.id}/back-[a-z0-9]+\\.jpg$`));
+    expect(storage.files.has(back.filePath)).toBe(true);
+    expect(storage.files.has(oldBack.filePath)).toBe(false);
+    expect(back.cameraCheck).toEqual({ method: 'sensor', rollDeg: -0.3, pitchDeg: 0.5 });
+    expect(back.metrics.find((m) => m.key === 'shoulderLevel')?.value).toBeGreaterThan(0);
+    expect(updated!.views.find((v) => v.view === 'front')).toMatchObject({ filePath: oldFront.filePath });
+    expect(storage.files.size).toBe(4);
+  });
+
+  it("returns null and changes nothing for another client's assessment", async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
+    expect(await replacePostureViews(db, storage, otherId, a.id, [view('back')])).toBeNull();
+    expect(storage.files.size).toBe(4);
+    expect((await getPostureAssessment(db, a.id))!.views.map((v) => v.filePath)).toEqual(a.views.map((v) => v.filePath));
+  });
+
+  it('keeps the old photos and removes new uploads when an upload fails', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    let uploads = 0;
+    const realUpload = storage.upload.bind(storage);
+    storage.upload = async (path, file) => {
+      if (++uploads === 2) throw new Error('storage down');
+      return realUpload(path, file);
+    };
+    await expect(replacePostureViews(db, storage, patientId, a.id, [view('front'), view('back')])).rejects.toThrow('storage down');
+    expect([...storage.files.keys()].sort()).toEqual(a.views.map((v) => v.filePath).sort());
+  });
+
+  it('deletes retaken photos along with the assessment', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    await replacePostureViews(db, storage, patientId, a.id, [view('left')]);
+    await deletePostureAssessment(db, storage, patientId, a.id);
+    expect(storage.files.size).toBe(0);
   });
 });

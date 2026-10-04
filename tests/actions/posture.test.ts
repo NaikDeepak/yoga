@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb, storage } from '../helpers/action-mocks';
 import { alignedLandmarks, jpeg } from '../helpers/posture';
-import { savePostureAssessmentAction, deletePostureAssessmentAction } from '@/actions/posture';
+import { savePostureAssessmentAction, deletePostureAssessmentAction, replacePostureViewsAction } from '@/actions/posture';
 import { createPatient } from '@/data/patients';
 import { addPostureAssessment, listPostureAssessments, getPostureAssessment } from '@/data/posture';
 import { requireUser } from '@/lib/auth';
@@ -162,5 +162,65 @@ describe('deletePostureAssessmentAction', () => {
       ok: false, error: 'Could not delete posture assessment / पोश्चर मूल्यांकन हटवता आले नाही',
     });
     remove.mockRestore();
+  });
+});
+
+describe('replacePostureViewsAction', () => {
+  const addOne = (id = patientId) => addPostureAssessment(db, storage, {
+    patientId: id, assessedOn: '2026-10-04', heightCm: 160, note: null, consentAt: new Date(),
+    views: POSTURE_VIEWS.map((v) => ({ ...viewPayload(v), photo: jpeg() })),
+  });
+  const retakeForm = (views: PostureView[], photos: Partial<Record<PostureView, File | null>> = {}) => {
+    const f = new FormData();
+    f.set('payload', JSON.stringify({ views: views.map(viewPayload) }));
+    for (const v of views) {
+      const photo = v in photos ? photos[v] : jpeg(`${v}.jpg`);
+      if (photo) f.set(`photo_${v}`, photo);
+    }
+    return f;
+  };
+  const retake = async (fd: FormData, aid: string, pid = patientId) => {
+    try {
+      return await replacePostureViewsAction(pid, aid, fd);
+    } catch (e) {
+      return { redirect: (e as Error).message.replace('REDIRECT:', '') };
+    }
+  };
+
+  it('replaces the retaken views and returns to the report', async () => {
+    const a = await addOne();
+    const oldBack = a.views.find((v) => v.view === 'back')!.filePath;
+    expect(await retake(retakeForm(['front', 'back']), a.id)).toEqual({ redirect: `/patients/${patientId}/posture/${a.id}` });
+    const after = await getPostureAssessment(db, a.id);
+    expect(after!.views.find((v) => v.view === 'back')!.filePath).not.toBe(oldBack);
+    expect(storage.files.size).toBe(4);
+    expect(revalidatePath).toHaveBeenCalledWith(`/patients/${patientId}`);
+  });
+
+  it('rejects bad parameters, payloads and missing photos', async () => {
+    const a = await addOne();
+    expect(await retake(retakeForm(['back']), '')).toEqual({ ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' });
+    const broken = retakeForm(['back']); broken.set('payload', 'nope');
+    expect(await retake(broken, a.id)).toEqual({ ok: false, error: 'Invalid posture data / चुकीची पोश्चर माहिती' });
+    expect(await retake(retakeForm(['back'], { back: null }), a.id)).toEqual({
+      ok: false, error: 'Photo for each view required / प्रत्येक बाजूचा फोटो आवश्यक',
+    });
+  });
+
+  it("refuses another client's assessment", async () => {
+    const a = await addOne();
+    const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
+    expect(await retake(retakeForm(['back']), a.id, otherId)).toEqual({
+      ok: false, error: 'Assessment not found / मूल्यांकन सापडले नाही',
+    });
+  });
+
+  it('reports a storage failure and keeps the old photos', async () => {
+    const a = await addOne();
+    storage.failNextUpload = true;
+    expect(await retake(retakeForm(['back']), a.id)).toEqual({
+      ok: false, error: 'Could not save posture assessment / पोश्चर मूल्यांकन जतन करता आले नाही',
+    });
+    expect(storage.files.size).toBe(4);
   });
 });

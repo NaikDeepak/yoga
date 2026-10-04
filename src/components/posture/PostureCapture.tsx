@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useTranslations } from '@/lib/i18n/context';
-import { savePostureAssessmentAction } from '@/actions/posture';
+import { replacePostureViewsAction, savePostureAssessmentAction } from '@/actions/posture';
 import { buildOverlay } from '@/lib/posture-overlay';
 import { POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
 import {
@@ -45,16 +45,26 @@ const stageStyle = (w: number, h: number) => ({
   width: `min(100%, calc(70vh * ${w} / ${h}))`,
 });
 
-export function PostureCapture({ patientId, patientName }: { patientId: string; patientName: string }) {
+export function PostureCapture({
+  patientId,
+  patientName,
+  retake,
+}: {
+  patientId: string;
+  patientName: string;
+  /** Retake mode: capture only these views of an existing assessment (consent was given originally). */
+  retake?: { assessmentId: string; views: PostureView[] };
+}) {
   const t = useTranslations();
   const p = t.posture;
   const c = p.capture;
 
   const [step, setStep] = useState<Step>('setup');
-  const [consent, setConsent] = useState(false);
+  const order: readonly PostureView[] = retake?.views ?? POSTURE_VIEWS;
+  const [consent, setConsent] = useState(!!retake);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [viewIdx, setViewIdx] = useState(0);
-  const view = POSTURE_VIEWS[viewIdx];
+  const view = order[viewIdx];
   const [captures, setCaptures] = useState<Partial<Record<PostureView, Capture>>>({});
   const [draft, setDraft] = useState<Capture | null>(null);
   const [referenceRoll, setReferenceRoll] = useState<number | null>(null);
@@ -199,7 +209,7 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
     const next = { ...captures, [view]: draft };
     setCaptures(next);
     setDraft(null);
-    const missing = POSTURE_VIEWS.findIndex((v) => !next[v]);
+    const missing = order.findIndex((v) => !next[v]);
     if (missing === -1) setStep('summary');
     else { setViewIdx(missing); setStep('live'); }
     history.current = [];
@@ -214,21 +224,21 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
 
   function save() {
     const fd = new FormData();
-    fd.set('payload', JSON.stringify({
-      consent: true,
-      note,
-      views: POSTURE_VIEWS.map((v) => {
-        const cap = captures[v]!;
-        return {
-          view: v, imageWidth: cap.width, imageHeight: cap.height,
-          landmarks: cap.landmarks, landmarksEdited: cap.edited, cameraCheck: cap.cameraCheck,
-        };
-      }),
-    }));
-    for (const v of POSTURE_VIEWS) fd.set(`photo_${v}`, new File([captures[v]!.blob], `${v}.jpg`, { type: 'image/jpeg' }));
+    const views = order.map((v) => {
+      const cap = captures[v]!;
+      return {
+        view: v, imageWidth: cap.width, imageHeight: cap.height,
+        landmarks: cap.landmarks, landmarksEdited: cap.edited, cameraCheck: cap.cameraCheck,
+      };
+    });
+    fd.set('payload', JSON.stringify(retake ? { views } : { consent: true, note, views }));
+    for (const v of order) fd.set(`photo_${v}`, new File([captures[v]!.blob], `${v}.jpg`, { type: 'image/jpeg' }));
     setError(null);
     startSaving(async () => {
-      const result = await savePostureAssessmentAction(patientId, fd); // redirects to the report on success
+      // Both actions redirect to the report on success.
+      const result = retake
+        ? await replacePostureViewsAction(patientId, retake.assessmentId, fd)
+        : await savePostureAssessmentAction(patientId, fd);
       if (result && !result.ok) setError(result.error);
     });
   }
@@ -237,7 +247,7 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
   return (
     <div className="mx-auto max-w-3xl space-y-4 pb-24">
       <div>
-        <h1 className="text-xl font-semibold">{c.title}</h1>
+        <h1 className="text-xl font-semibold">{retake ? c.retakeTitle : c.title}</h1>
         <p className="text-sm text-muted-foreground">{patientName}</p>
       </div>
 
@@ -249,10 +259,12 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             {c.tips.map((tip) => <li key={tip}>{tip}</li>)}
           </ul>
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" className="mt-0.5 h-4 w-4" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-            <span>{c.consent}</span>
-          </label>
+          {!retake && (
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-0.5 h-4 w-4" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+              <span>{c.consent}</span>
+            </label>
+          )}
           <Button disabled={!consent} onClick={startCapture}>
             <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
             {c.start}
@@ -264,7 +276,7 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
         <div className="space-y-3">
           {!needsCalibration && (
             <div className="flex items-baseline justify-between gap-2">
-              <p className="font-medium">{p.views[view]} <span className="text-sm font-normal text-muted-foreground">· {c.step.replace('{n}', String(viewIdx + 1))}</span></p>
+              <p className="font-medium">{p.views[view]} <span className="text-sm font-normal text-muted-foreground">· {c.step.replace('{n}', String(viewIdx + 1)).replace('{total}', String(order.length))}</span></p>
             </div>
           )}
           <p className="text-sm">{needsCalibration ? c.calibrateHelp : c.instructions[view]}</p>
@@ -356,7 +368,7 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
         <div className="space-y-4">
           <h2 className="font-medium">{c.summaryTitle}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {POSTURE_VIEWS.map((v, i) => {
+            {order.map((v, i) => {
               const cap = captures[v]!;
               return (
                 <button key={v} type="button" onClick={() => retakeView(i)} className="space-y-1 text-left">
@@ -373,10 +385,12 @@ export function PostureCapture({ patientId, patientName }: { patientId: string; 
               );
             })}
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="posture-note">{p.note}</Label>
-            <Textarea id="posture-note" value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
-          </div>
+          {!retake && (
+            <div className="space-y-2">
+              <Label htmlFor="posture-note">{p.note}</Label>
+              <Textarea id="posture-note" value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />
+            </div>
+          )}
           <Button onClick={save} disabled={saving}>{saving ? c.saving : c.save}</Button>
         </div>
       )}

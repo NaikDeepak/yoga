@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   patientSchema, problemSchema, treatmentSchema, visitSchema, docTypeSchema,
-  prescribedExercisesListSchema, postureAssessmentSchema,
+  prescribedExercisesListSchema, postureAssessmentSchema, postureRetakeSchema,
 } from '@/lib/validation';
 import { alignedLandmarks } from '../helpers/posture';
 import { getISTDateString } from '@/lib/dates';
@@ -195,5 +195,22 @@ describe('postureAssessmentSchema', () => {
   it('rejects a bad date and an over-long note', () => {
     expect(err({ ...valid(), assessedOn: '2026-02-30' })).toBe('Invalid date / चुकीची तारीख');
     expect(err({ ...valid(), note: 'x'.repeat(1001) })).toBe('Note too long / टीप खूप मोठी आहे');
+  });
+});
+
+describe('postureRetakeSchema', () => {
+  const view = (v: 'front' | 'back' | 'left' | 'right') => ({
+    view: v, imageWidth: 1000, imageHeight: 2000, landmarks: alignedLandmarks(v), landmarksEdited: false,
+    cameraCheck: { method: 'sensor' as const, rollDeg: 0, pitchDeg: 0 },
+  });
+
+  it('accepts one to four distinct views', () => {
+    expect(postureRetakeSchema.safeParse({ views: [view('back')] }).success).toBe(true);
+    expect(postureRetakeSchema.safeParse({ views: [view('front'), view('back')] }).success).toBe(true);
+  });
+
+  it('rejects no views or a repeated view', () => {
+    expect(postureRetakeSchema.safeParse({ views: [] }).success).toBe(false);
+    expect(postureRetakeSchema.safeParse({ views: [view('back'), view('back')] }).success).toBe(false);
   });
 });

@@ -240,3 +240,7 @@ Direction agrees on head, shoulders, trunk, forward head and knees. The back-vie
 - **Report v2**: posture score (5 body regions), overall pattern headline, per-pattern cards (evidence, likely causes, long-term effects — rule-based text in i18n, needs therapist review), focus areas with exercises from our library, 4-view photo grid with per-view findings, collapsible detailed table. Clinic palette (#1B3A2E / #C8962E / #E5D5B5).
 
 Open question: when front and back disagree on a frontal-plane measure (e.g. pelvis 0.1° vs 4.1°), should the report average them or flag low confidence?
+
+### Decisions (2026-10-04, after v2 review)
+- **Clinical pattern text is English-only**, also in the Marathi UI (the physio explains it in the client's language — avoids translation errors in clinical wording). Section labels stay bilingual.
+- **Front/back and left/right readings are averaged** (signed: opposite sides cancel) for the score and patterns; per-view values stay under each photo. A measure is flagged **low confidence** only when the two views would rate it differently *and* differ by > 2.5° (2 cm). The report lists these and offers **Retake** for the views involved; every photo also has a "Retake this photo" link. Retakes update the existing assessment (`replacePostureViews`).
