@@ -14,8 +14,12 @@ type AudioCtor = typeof AudioContext;
 export interface VoiceGuide {
   /** Call from a tap (Start camera): iOS/Safari only allow audio + speech after a user gesture. */
   unlock(): void;
-  /** Speaks the text for the current locale (falls back to English when no suitable voice exists). */
-  say(text: { en: string; mr: string }): void;
+  /**
+   * Speaks the text for the current locale (falls back to English when no suitable voice exists).
+   * `interrupt` (instructions) replaces anything being said; otherwise (hints) it's skipped while
+   * something is still being spoken, so a hint never cuts off an instruction.
+   */
+  say(text: { en: string; mr: string }, opts?: { interrupt?: boolean }): void;
   beep(kind: Beep): void;
   setMuted(muted: boolean): void;
   stop(): void;
@@ -31,7 +35,7 @@ export function createVoiceGuide(locale: 'en' | 'mr', initiallyMuted: boolean): 
       try {
         const Ctor = (window.AudioContext ?? (window as unknown as { webkitAudioContext?: AudioCtor }).webkitAudioContext);
         if (Ctor && !audio) audio = new Ctor();
-        void audio?.resume();
+        audio?.resume().catch(() => {}); // audio refused: beeps stay silent, speech may still work
         // A silent utterance inside the gesture primes speech on iOS.
         if (synth) synth.speak(new SpeechSynthesisUtterance(''));
       } catch {
@@ -39,8 +43,9 @@ export function createVoiceGuide(locale: 'en' | 'mr', initiallyMuted: boolean): 
       }
     },
 
-    say(text) {
+    say(text, { interrupt = false } = {}) {
       if (muted || !synth) return;
+      if (!interrupt && (synth.speaking || synth.pending)) return;
       const { voice, useMarathiText } = pickVoice(synth.getVoices(), locale);
       const utterance = new SpeechSynthesisUtterance(useMarathiText ? text.mr : text.en);
       if (voice) {
@@ -50,7 +55,7 @@ export function createVoiceGuide(locale: 'en' | 'mr', initiallyMuted: boolean): 
         utterance.lang = useMarathiText ? 'mr-IN' : 'en-IN';
       }
       utterance.rate = 0.95;
-      synth.cancel(); // never queue up stale instructions
+      synth.cancel(); // never queue stale speech behind the new utterance
       synth.speak(utterance);
     },
 

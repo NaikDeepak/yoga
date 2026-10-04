@@ -514,8 +514,8 @@ export const en = {
         still: 'Please hold still.',
       },
       captured: 'Thank you.',
-      on: 'Voice guidance on',
-      off: 'Voice guidance off',
+      on: 'Voice guidance: On',
+      off: 'Voice guidance: Off',
     },
     capture: {
       title: 'New posture assessment',

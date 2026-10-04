@@ -186,7 +186,7 @@ export function PostureCapture({
 
   useEffect(() => {
     if (step === 'live' && !needsCalibration) {
-      voice.current?.say({ en: en.posture.voice.instructions[view], mr: mr.posture.voice.instructions[view] });
+      voice.current?.say({ en: en.posture.voice.instructions[view], mr: mr.posture.voice.instructions[view] }, { interrupt: true });
     }
   }, [step, view, needsCalibration]);
 
@@ -240,7 +240,7 @@ export function PostureCapture({
         blob, url: URL.createObjectURL(blob), width: canvas.width, height: canvas.height,
         landmarks, edited: false, cameraCheck,
       });
-      voice.current?.say({ en: en.posture.voice.captured, mr: mr.posture.voice.captured });
+      voice.current?.say({ en: en.posture.voice.captured, mr: mr.posture.voice.captured }, { interrupt: true });
       setStep('review');
     } finally {
       setBusy(false);

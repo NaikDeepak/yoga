@@ -39,7 +39,8 @@ const langOf = (v: Pick<SpeechSynthesisVoice, 'lang'>) => v.lang.toLowerCase().r
 
 /**
  * Voice for the app locale. Marathi: a Marathi voice, else a Hindi voice reading the Marathi text
- * (same Devanagari script, broadly understood), else English text. English: Indian English first.
+ * (same Devanagari script, broadly understood — though Hindi voices mispronounce some Marathi sounds
+ * such as ळ; still clearer to most clients than English), else English text. English: Indian English first.
  */
 export function pickVoice(
   voices: SpeechSynthesisVoice[],
