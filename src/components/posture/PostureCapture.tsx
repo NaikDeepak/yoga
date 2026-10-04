@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import type { PoseLandmarker } from '@mediapipe/tasks-vision';
-import { Camera, Check, RefreshCw, SwitchCamera, X } from 'lucide-react';
+import { Camera, Check, RefreshCw, SwitchCamera, Volume2, VolumeX, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { useTranslations } from '@/lib/i18n/context';
+import { useLocale, useTranslations } from '@/lib/i18n/context';
+import { en } from '@/lib/i18n/en';
+import { mr } from '@/lib/i18n/mr';
+import { advanceHint, firstFailingCheck, type HintKey, type HintState } from '@/lib/posture-voice';
 import { replacePostureViewsAction, savePostureAssessmentAction } from '@/actions/posture';
 import { buildOverlay } from '@/lib/posture-overlay';
 import { POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
@@ -20,6 +23,7 @@ import { OverlaySvg } from './PostureFigure';
 import { DragHandles } from './DragHandles';
 import { LandmarkEditor } from './LandmarkEditor';
 import { LevelIndicator } from './LevelIndicator';
+import { createVoiceGuide, loadMuted, saveMuted, type VoiceGuide } from './voice';
 
 type Step = 'setup' | 'live' | 'review' | 'summary';
 
@@ -58,6 +62,23 @@ export function PostureCapture({
   const t = useTranslations();
   const p = t.posture;
   const c = p.capture;
+  const locale = useLocale();
+
+  // ── voice guidance ──
+  const voice = useRef<VoiceGuide | null>(null);
+  const [muted, setMuted] = useState(false);
+  useEffect(() => {
+    const initiallyMuted = loadMuted();
+    setMuted(initiallyMuted);
+    voice.current = createVoiceGuide(locale, initiallyMuted);
+    return () => voice.current?.stop();
+  }, [locale]);
+  const toggleMuted = () => {
+    const next = !muted;
+    setMuted(next);
+    saveMuted(next);
+    voice.current?.setMuted(next);
+  };
 
   const [step, setStep] = useState<Step>('setup');
   const order: readonly PostureView[] = retake?.views ?? POSTURE_VIEWS;
@@ -86,6 +107,7 @@ export function PostureCapture({
   const [modelReady, setModelReady] = useState(false);
 
   const startCapture = useCallback(async () => {
+    voice.current?.unlock(); // audio + speech also need the tap on iOS
     await requestMotionPermission(); // must run inside the tap on iOS; harmless elsewhere
     setStep('live');
     if (!liveDetector.current) {
@@ -119,6 +141,12 @@ export function PostureCapture({
     let raf = 0;
     let lastTs = 0;
     let cd: CountdownState = { okSince: null, lastOk: null };
+    let lastRemaining: number | null = null;
+    // The view instruction is spoken as this loop starts, so hints wait their turn after it.
+    let hint: HintState = { failing: null, since: null, lastSpokenAt: performance.now() };
+    const hintText = (key: HintKey) => key === 'facing'
+      ? { en: en.posture.voice.instructions[view], mr: mr.posture.voice.instructions[view] }
+      : { en: en.posture.voice.hints[key], mr: mr.posture.voice.hints[key] };
     const loop = () => {
       const video = videoRef.current;
       const det = liveDetector.current;
@@ -139,6 +167,13 @@ export function PostureCapture({
         const step = advanceCountdown(cd, frame.inFrame && frame.facing && still && levelOkRef.current, ts);
         cd = step.state;
         setCountdown(step.remaining);
+        if (step.remaining !== null && step.remaining !== lastRemaining) voice.current?.beep('tick');
+        lastRemaining = step.remaining;
+        if (step.fire) voice.current?.beep('shutter');
+
+        const h = advanceHint(hint, firstFailingCheck({ inFrame: frame.inFrame, facing: frame.facing, still }), ts);
+        hint = h.state;
+        if (h.speak) voice.current?.say(hintText(h.speak));
         // capture() sets busy, which pauses this loop; if it bails out (e.g. camera moved) the loop keeps
         // running and the countdown needs a fresh 3 s before firing again.
         if (step.fire) captureRef.current();
@@ -148,6 +183,12 @@ export function PostureCapture({
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [cameraOn, size, modelReady, needsCalibration, busy, view, videoRef]);
+
+  useEffect(() => {
+    if (step === 'live' && !needsCalibration) {
+      voice.current?.say({ en: en.posture.voice.instructions[view], mr: mr.posture.voice.instructions[view] }, { interrupt: true });
+    }
+  }, [step, view, needsCalibration]);
 
   // ── capture ──
   const capture = useCallback(async () => {
@@ -199,6 +240,7 @@ export function PostureCapture({
         blob, url: URL.createObjectURL(blob), width: canvas.width, height: canvas.height,
         landmarks, edited: false, cameraCheck,
       });
+      voice.current?.say({ en: en.posture.voice.captured, mr: mr.posture.voice.captured }, { interrupt: true });
       setStep('review');
     } finally {
       setBusy(false);
@@ -251,6 +293,14 @@ export function PostureCapture({
     });
   }
 
+  // Physio's switch: off when they'd rather instruct the client themselves. Remembered per device.
+  const voiceToggle = (
+    <Button variant="outline" onClick={toggleMuted} aria-pressed={!muted}>
+      {muted ? <VolumeX className="mr-2 h-4 w-4" aria-hidden="true" /> : <Volume2 className="mr-2 h-4 w-4" aria-hidden="true" />}
+      {muted ? p.voice.off : p.voice.on}
+    </Button>
+  );
+
   // ── render ──
   return (
     <div className="mx-auto max-w-3xl space-y-4 pb-24">
@@ -273,10 +323,13 @@ export function PostureCapture({
               <span>{c.consent}</span>
             </label>
           )}
-          <Button disabled={!consent} onClick={startCapture}>
-            <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
-            {c.start}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={!consent} onClick={startCapture}>
+              <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
+              {c.start}
+            </Button>
+            {voiceToggle}
+          </div>
         </div>
       )}
 
@@ -335,6 +388,7 @@ export function PostureCapture({
                   <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
                   {c.capture}
                 </Button>
+                {voiceToggle}
                 <Button variant="outline" onClick={() => setFacingMode((m) => (m === 'environment' ? 'user' : 'environment'))}>
                   <SwitchCamera className="mr-2 h-4 w-4" aria-hidden="true" />
                   {c.switchCamera}

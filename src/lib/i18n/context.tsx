@@ -7,6 +7,7 @@ import type { Locale } from './translations';
 import { getTranslations } from './translations';
 
 const LocaleContext = createContext<Translations>(en);
+const LocaleNameContext = createContext<Locale>('en');
 
 export function LocaleProvider({
   locale,
@@ -16,12 +17,19 @@ export function LocaleProvider({
   children: React.ReactNode;
 }) {
   return (
-    <LocaleContext.Provider value={getTranslations(locale)}>
-      {children}
-    </LocaleContext.Provider>
+    <LocaleNameContext.Provider value={locale}>
+      <LocaleContext.Provider value={getTranslations(locale)}>
+        {children}
+      </LocaleContext.Provider>
+    </LocaleNameContext.Provider>
   );
 }
 
 export function useTranslations(): Translations {
   return useContext(LocaleContext);
+}
+
+/** The active locale code ('en' | 'mr'), e.g. to pick a speech voice. */
+export function useLocale(): Locale {
+  return useContext(LocaleNameContext);
 }
