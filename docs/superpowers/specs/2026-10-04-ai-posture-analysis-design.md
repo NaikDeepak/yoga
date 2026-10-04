@@ -212,7 +212,7 @@ Report page accepts `?compare=<otherAssessmentId>`: per view, two `PostureFigure
   - Laptops (no sensor): **door-frame calibration** — therapist drags a line onto a true vertical; roll must be within ±1.5° to continue; pitch is recorded as `null` and the report says "roll only".
   - Server rejects any view whose camera check is outside tolerance.
   - Residual roll is **recorded only**, not auto-corrected; revisit after verifying sensor sign conventions on real devices.
-- **Models load from CDN**, not `public/mediapipe/`: the heavy model is ~30 MB, too large for the repo. WASM from jsdelivr (pinned to the npm version), models from `storage.googleapis.com`. Only model files are downloaded; images stay on the device until saved to our storage.
+- **Model files load from Google's CDN** (`storage.googleapis.com`; the heavy model is ~30 MB, too large for the repo). The **WASM runtime is self-hosted** at `/mediapipe` (copied from node_modules on postinstall, gitignored) so no third-party JS runs on pages with client data (PHI review). Images stay on the device until saved to our storage.
 - Side views: "right" = client's right side to the camera, i.e. facing image-right; checked via toe direction (fallback nose vs ear).
 - Front view checks MediaPipe's left/right label order; the back view does not (it failed on a real MacBook capture) — it only requires the client square to the camera, and accepts weak face points or room above the shoulders for the head.
 - `npm run dev:phone` (`scripts/dev-phone.sh`) serves HTTPS on the LAN with a self-signed cert for phone testing.

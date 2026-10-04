@@ -3,6 +3,15 @@
 # (browsers only allow camera access on HTTPS pages). Self-signed cert: accept the warning once
 # per device. Dev only — never use this to serve real client data outside the clinic network.
 set -euo pipefail
+# Exposing the dev server to the network is only safe with demo data. Refuse unless mock mode is on
+# (env or .env), or DEV_PHONE_ALLOW_REAL_DB=1 is set deliberately.
+if [[ "${LOCAL_MOCK:-}" != "true" ]] && ! grep -qE '^LOCAL_MOCK=["'"'"']?true' .env 2>/dev/null; then
+  if [[ "${DEV_PHONE_ALLOW_REAL_DB:-}" != "1" ]]; then
+    echo "Refusing: LOCAL_MOCK is not true, so this would expose real client data on the local network." >&2
+    echo "Run with LOCAL_MOCK=true, or set DEV_PHONE_ALLOW_REAL_DB=1 if you really mean it." >&2
+    exit 1
+  fi
+fi
 PORT="${PORT:-3000}"
 IP="$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}')"
 mkdir -p certificates

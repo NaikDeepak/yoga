@@ -32,3 +32,6 @@ scripts/create-admin.js
 
 # self-signed dev HTTPS certs (scripts/dev-phone.sh)
 certificates/
+
+# MediaPipe WASM runtime, copied from node_modules on install (scripts/copy-mediapipe.mjs)
+public/mediapipe/

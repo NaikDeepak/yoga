@@ -74,7 +74,8 @@ at the prepared-statement level.
 Browsers only allow camera access on HTTPS pages (or `localhost`), so a phone needs HTTPS.
 
 1. Mac and phone on the same Wi-Fi.
-2. `npm run dev:phone` (add `LOCAL_MOCK=true` for demo data) — prints `https://<mac-ip>:3000`.
+2. `LOCAL_MOCK=true npm run dev:phone` — prints `https://<mac-ip>:3000`. It refuses to run without mock mode
+   (it exposes the dev server to the whole network); `DEV_PHONE_ALLOW_REAL_DB=1` overrides deliberately.
    It creates a 30-day self-signed cert in `certificates/` (gitignored) for localhost + the Mac's current IP;
    rerun if the IP changes.
 3. Open the printed URL on the phone, accept the certificate warning, sign in.
@@ -83,7 +84,8 @@ Browsers only allow camera access on HTTPS pages (or `localhost`), so a phone ne
 Camera level: phones use the gravity sensor (iPhone asks for "Motion & Orientation" permission when you tap
 *Start camera*). Laptops have no tilt sensor, so the app asks you to drag a line onto a door frame or wall corner
 to measure camera roll; pitch (lid lean) cannot be measured there and the report says so.
-Pose models (~6 MB live, ~30 MB accurate) download from Google's CDN on first use and are then cached.
+Pose models (~6 MB live, ~30 MB accurate) download from Google's CDN on first use and are then cached. The MediaPipe
+WASM runtime is served from our own origin (`public/mediapipe/`, copied from node_modules on `npm install`; gitignored).
 
 ## Manual pre-handover checklist
 - [ ] Register patient with photo on a phone-sized viewport

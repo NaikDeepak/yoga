@@ -1,10 +1,11 @@
-// Browser-only MediaPipe Pose Landmarker loader. Models and WASM are fetched from CDNs (the heavy
-// model is ~30 MB — too big for the repo) and cached by the browser; images never leave the device.
+// Browser-only MediaPipe Pose Landmarker loader. The WASM runtime is self-hosted from /mediapipe
+// (copied from node_modules by scripts/copy-mediapipe.mjs) so no third-party code runs on pages with
+// client data. Model files (data, not code; heavy is ~30 MB) come from Google's CDN and are cached
+// by the browser. Images never leave the device.
 import type { PoseLandmarker, PoseLandmarkerResult } from '@mediapipe/tasks-vision';
 import type { Landmark } from '@/lib/posture';
 
-// Keep in step with the @mediapipe/tasks-vision version in package.json.
-const WASM_BASE = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm';
+const WASM_BASE = '/mediapipe';
 const MODEL_URL = {
   lite: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task',
   heavy: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task',
