@@ -298,6 +298,19 @@ describe('bodyCropRect / remapToCrop', () => {
     expect(mapped[i].visibility).toBe(lms[i].visibility);
   });
 
+  it('clamps far out-of-frame points so they stay within the accepted range', () => {
+    const withStray = lms.map((l) => ({ ...l }));
+    withStray[LM.LEFT_WRIST] = { x: -0.1, y: 0.5, visibility: 0.1 }; // hidden wrist guessed off-frame
+    const r = bodyCropRect(withStray, W, H);
+    const mapped = remapToCrop(withStray, W, H, r);
+    for (const p of mapped) {
+      expect(p.x).toBeGreaterThanOrEqual(-0.5);
+      expect(p.x).toBeLessThanOrEqual(1.5);
+      expect(p.y).toBeGreaterThanOrEqual(-0.5);
+      expect(p.y).toBeLessThanOrEqual(1.5);
+    }
+  });
+
   it('falls back to the full frame when too little of the body is visible', () => {
     const empty = lms.map((l) => ({ ...l, visibility: 0 }));
     expect(bodyCropRect(empty, W, H)).toEqual({ x: 0, y: 0, w: W, h: H });

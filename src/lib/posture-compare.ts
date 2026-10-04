@@ -1,5 +1,5 @@
 // Before/after comparison of two posture assessments, on the combined (averaged) findings.
-import { THRESHOLDS, type MetricKey, type MetricUnit, type Severity, type Side } from './posture';
+import { LIMB_METRICS as LIMB, round1, SEVERITY_RANK as RANK, THRESHOLDS, type MetricKey, type MetricUnit, type Side } from './posture';
 import { REGIONS, type CombinedMetric, type PostureScore, type Region } from './posture-insights';
 
 export type Trend = 'better' | 'worse' | 'same';
@@ -15,11 +15,8 @@ export interface CompareRow {
   trend: Trend | null;
 }
 
-const RANK: Record<Severity, number> = { normal: 0, mild: 1, marked: 2 };
 /** Changes up to this size are measurement noise, not progress. */
 const NOISE: Record<MetricUnit, number> = { deg: 0.5, cm: 0.5, pct: 0.3 };
-const LIMB = new Set<MetricKey>(['kneeAlignment', 'hindfoot']);
-const round1 = (n: number) => Math.round(n * 10) / 10;
 
 const idOf = (m: CombinedMetric) => `${m.key}:${LIMB.has(m.key) ? m.side ?? '' : ''}`;
 

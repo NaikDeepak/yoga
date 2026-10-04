@@ -135,9 +135,17 @@ describe('deletePostureAssessmentAction', () => {
     views: POSTURE_VIEWS.map((v) => ({ ...viewPayload(v), photo: jpeg() })),
   });
 
-  it('deletes the assessment and its photos', async () => {
+  const del = async (pid: string, aid: string) => {
+    try {
+      return await deletePostureAssessmentAction(pid, aid);
+    } catch (e) {
+      return { redirect: (e as Error).message.replace('REDIRECT:', '') };
+    }
+  };
+
+  it('deletes the assessment and its photos, then returns to the client (server-side redirect)', async () => {
     const { id } = await addOne();
-    expect(await deletePostureAssessmentAction(patientId, id)).toEqual({ ok: true });
+    expect(await del(patientId, id)).toEqual({ redirect: `/patients/${patientId}?tab=assessment` });
     expect(await listPostureAssessments(db, patientId)).toEqual([]);
     expect(storage.files.size).toBe(0);
     expect(revalidatePath).toHaveBeenCalledWith(`/patients/${patientId}`);
@@ -146,7 +154,7 @@ describe('deletePostureAssessmentAction', () => {
   it("leaves another client's assessment alone", async () => {
     const { id } = await addOne();
     const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
-    expect(await deletePostureAssessmentAction(otherId, id)).toEqual({ ok: true });
+    expect(await del(otherId, id)).toEqual({ redirect: `/patients/${otherId}?tab=assessment` });
     expect(await getPostureAssessment(db, id)).not.toBeNull();
   });
 
@@ -155,12 +163,11 @@ describe('deletePostureAssessmentAction', () => {
     expect(await deletePostureAssessmentAction(patientId, '')).toEqual({ ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' });
   });
 
-  it('reports a delete failure', async () => {
+  it('still succeeds when removing a photo fails after the rows are deleted', async () => {
     const { id } = await addOne();
     const remove = vi.spyOn(storage, 'remove').mockRejectedValueOnce(new Error('storage down'));
-    expect(await deletePostureAssessmentAction(patientId, id)).toEqual({
-      ok: false, error: 'Could not delete posture assessment / पोश्चर मूल्यांकन हटवता आले नाही',
-    });
+    expect(await del(patientId, id)).toEqual({ redirect: `/patients/${patientId}?tab=assessment` });
+    expect(await getPostureAssessment(db, id)).toBeNull();
     remove.mockRestore();
   });
 });

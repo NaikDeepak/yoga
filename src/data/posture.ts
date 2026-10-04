@@ -63,7 +63,7 @@ export async function addPostureAssessment(
   const assessmentId = crypto.randomUUID();
   const pathFor = (v: PostureView) => posturePhotoPath(input.patientId, assessmentId, v);
   const uploaded: string[] = [];
-  const cleanup = () => Promise.all(uploaded.map((p) => storage.remove(p)));
+  const cleanup = () => Promise.allSettled(uploaded.map((p) => storage.remove(p)));
 
   try {
     for (const v of input.views) {
@@ -146,7 +146,8 @@ export async function deletePostureAssessment(
   const views = await db.select({ filePath: postureViews.filePath }).from(postureViews)
     .where(eq(postureViews.assessmentId, id));
   await db.delete(postureAssessments).where(eq(postureAssessments.id, id)); // cascades to views
-  await Promise.all(views.map((v) => storage.remove(v.filePath)));
+  // Best effort: the record is already gone, so a storage hiccup must not report the delete as failed.
+  await Promise.allSettled(views.map((v) => storage.remove(v.filePath)));
 }
 
 /**
@@ -193,9 +194,10 @@ export async function replacePostureViews(
       }
     });
   } catch (err) {
-    await Promise.all(uploaded.map((p) => storage.remove(p)));
+    await Promise.allSettled(uploaded.map((p) => storage.remove(p)));
     throw err;
   }
-  await Promise.all(existing.map((e) => storage.remove(e.filePath))); // only after the rows point at the new photos
+  // Only after the rows point at the new photos; best effort, the retake itself has succeeded.
+  await Promise.allSettled(existing.map((e) => storage.remove(e.filePath)));
   return getPostureAssessment(db, assessmentId);
 }

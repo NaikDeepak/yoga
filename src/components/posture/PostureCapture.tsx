@@ -166,7 +166,15 @@ export function PostureCapture({
       frame.width = size.width;
       frame.height = size.height;
       const ctx = frame.getContext('2d')!;
-      const det = await stillDetector.current!;
+      let det: PoseLandmarker;
+      try {
+        det = await stillDetector.current!;
+      } catch {
+        // Model download failed (offline / CDN blocked): say so, and retry the load on the next capture.
+        stillDetector.current = createPoseDetector('still');
+        setError(c.modelError);
+        return;
+      }
       const detections: Landmark[][] = [];
       for (let i = 0; i < DETECTIONS; i++) {
         if (i > 0) await new Promise((r) => setTimeout(r, DETECTION_GAP_MS));
@@ -195,7 +203,7 @@ export function PostureCapture({
     } finally {
       setBusy(false);
     }
-  }, [videoRef, size, busy, sensorMode, sensor.level, referenceRoll, c.notLevel, c.noPerson]);
+  }, [videoRef, size, busy, sensorMode, sensor.level, referenceRoll, c.notLevel, c.noPerson, c.modelError]);
 
   captureRef.current = () => void capture();
 

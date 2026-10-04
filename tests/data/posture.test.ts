@@ -226,3 +226,19 @@ describe('replacePostureViews', () => {
     expect(storage.files.size).toBe(0);
   });
 });
+
+describe('best-effort photo cleanup', () => {
+  it('a retake still succeeds if removing the replaced photo fails', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    storage.remove = async () => { throw new Error('storage down'); };
+    const updated = await replacePostureViews(db, storage, patientId, a.id, [view('back')]);
+    expect(updated!.views.find((v) => v.view === 'back')!.filePath).toMatch(/back-/);
+  });
+
+  it('a delete still succeeds if removing a photo fails', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    storage.remove = async () => { throw new Error('storage down'); };
+    await expect(deletePostureAssessment(db, storage, patientId, a.id)).resolves.toBeUndefined();
+    expect(await getPostureAssessment(db, a.id)).toBeNull();
+  });
+});

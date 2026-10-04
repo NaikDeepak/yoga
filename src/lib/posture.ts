@@ -50,7 +50,26 @@ export interface ImageInfo { width: number; height: number; heightCm?: number | 
 
 export const MIN_VISIBILITY = 0.5;
 // Eye level sits at ~93.6% of standing height (Drillis & Contini).
-const EYE_LEVEL_STATURE_RATIO = 0.936;
+export const EYE_LEVEL_STATURE_RATIO = 0.936;
+
+/** Per-leg measures: `side` names the leg (kept even when not measurable), `direction` the deviation. */
+export const LIMB_METRICS: ReadonlySet<MetricKey> = new Set<MetricKey>(['kneeAlignment', 'hindfoot']);
+export const SEVERITY_RANK: Record<Severity, number> = { normal: 0, mild: 1, marked: 2 };
+export const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/**
+ * Vertical span from the highest visible eye/ear to the lowest visible heel (ankle as fallback),
+ * in normalised image units — the basis for estimating standing height. Null if head or feet are hidden.
+ */
+export function eyeToHeelSpan(landmarks: Landmark[]): number | null {
+  const vis = (i: number) => landmarks[i].visibility >= MIN_VISIBILITY;
+  const tops = [LM.LEFT_EYE, LM.RIGHT_EYE, LM.LEFT_EAR, LM.RIGHT_EAR].filter(vis).map((i) => landmarks[i].y);
+  let bottoms = [LM.LEFT_HEEL, LM.RIGHT_HEEL].filter(vis).map((i) => landmarks[i].y);
+  if (!bottoms.length) bottoms = [LM.LEFT_ANKLE, LM.RIGHT_ANKLE].filter(vis).map((i) => landmarks[i].y);
+  if (!tops.length || !bottoms.length) return null;
+  const span = Math.max(...bottoms) - Math.min(...tops);
+  return span > 0 ? span : null;
+}
 
 const APPROX = new Set<MetricKey>(['pelvicLevel', 'kneeAlignment', 'hindfoot', 'forwardHead', 'pelvicTilt']);
 
@@ -80,7 +99,6 @@ export function severity(key: MetricKey, value: number | null, _unit?: MetricUni
 interface Pt { x: number; y: number; visible: boolean }
 
 const DEG = 180 / Math.PI;
-const round1 = (n: number) => Math.round(n * 10) / 10;
 const mid = (a: Pt, b: Pt): Pt => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, visible: a.visible && b.visible });
 const visible = (...pts: Pt[]) => pts.every((p) => p.visible);
 
@@ -112,7 +130,7 @@ function metric(
     key,
     value,
     unit,
-    side: value === null ? null : opts.side ?? null,
+    side: value === null && !LIMB_METRICS.has(key) ? null : opts.side ?? null,
     direction: value === null || value === 0 ? null : opts.direction ?? null,
     severity: severity(key, value, unit),
     approx: APPROX.has(key),
@@ -122,13 +140,10 @@ function metric(
 type Scale = ((px: number) => { value: number; unit: MetricUnit }) | null;
 
 /** Converts pixel distances to cm (with known height) or % of stature. */
-function makeScale(pts: Pt[], heightCm: number | null | undefined): Scale {
-  const tops = [LM.LEFT_EYE, LM.RIGHT_EYE, LM.LEFT_EAR, LM.RIGHT_EAR].map((i) => pts[i]).filter((p) => p.visible);
-  let bottoms = [LM.LEFT_HEEL, LM.RIGHT_HEEL].map((i) => pts[i]).filter((p) => p.visible);
-  if (!bottoms.length) bottoms = [LM.LEFT_ANKLE, LM.RIGHT_ANKLE].map((i) => pts[i]).filter((p) => p.visible);
-  if (!tops.length || !bottoms.length) return null;
-  const stature = (Math.max(...bottoms.map((p) => p.y)) - Math.min(...tops.map((p) => p.y))) / EYE_LEVEL_STATURE_RATIO;
-  if (stature <= 0) return null;
+function makeScale(landmarks: Landmark[], imageHeight: number, heightCm: number | null | undefined): Scale {
+  const span = eyeToHeelSpan(landmarks);
+  if (span === null) return null;
+  const stature = (span * imageHeight) / EYE_LEVEL_STATURE_RATIO;
   return heightCm && heightCm > 0
     ? (px) => ({ value: (px / stature) * heightCm, unit: 'cm' })
     : (px) => ({ value: (px / stature) * 100, unit: 'pct' });
@@ -190,7 +205,7 @@ function frontalMetrics(view: 'front' | 'back', pts: Pt[], scale: Scale): Metric
   for (const side of ['left', 'right'] as const) {
     const hip = hips[side], knee = knees[side], ankle = ankles[side];
     if (!visible(hip, knee, ankle, hips.left, hips.right)) {
-      out.push(metric('kneeAlignment', null, 'deg'));
+      out.push(metric('kneeAlignment', null, 'deg', { side }));
       continue;
     }
     const inside = Math.abs(knee.x - midline) < Math.abs(lineXAt(hip, ankle, knee.y) - midline);
@@ -210,7 +225,7 @@ function frontalMetrics(view: 'front' | 'back', pts: Pt[], scale: Scale): Metric
     for (const side of ['left', 'right'] as const) {
       const heel = heels[side], ankle = ankles[side];
       if (!visible(heel, ankle, hips.left, hips.right)) {
-        out.push(metric('hindfoot', null, 'deg'));
+        out.push(metric('hindfoot', null, 'deg', { side }));
         continue;
       }
       const medial = Math.abs(ankle.x - midline) < Math.abs(heel.x - midline);
@@ -301,7 +316,7 @@ export function computeViewMetrics(view: PostureView, landmarks: Landmark[], ima
     y: l.y * image.height,
     visible: l.visibility >= MIN_VISIBILITY,
   }));
-  const scale = makeScale(pts, image.heightCm);
+  const scale = makeScale(landmarks, image.height, image.heightCm);
   return view === 'front' || view === 'back'
     ? frontalMetrics(view, pts, scale)
     : sagittalMetrics(pts, landmarks, scale);

@@ -154,7 +154,9 @@ describe('computeViewMetrics — front view', () => {
   it('marks knee and arm metrics as not measurable when knees/wrists are hidden (e.g. under a saree)', () => {
     const m = run('front', { ...FRONT, LEFT_KNEE: [560, 1450, 0.2], RIGHT_WRIST: [370, 950, 0.1] });
     expect(get(m, 'kneeAlignment', 'right').value).toBe(0);
+    // the unmeasurable leg keeps its label, so views can still be matched up per leg
     expect(m.filter((x) => x.key === 'kneeAlignment' && x.value === null)).toHaveLength(1);
+    expect(m.find((x) => x.key === 'kneeAlignment' && x.value === null)!.side).not.toBeNull();
     expect(get(m, 'armHang')).toMatchObject({ value: null, severity: null });
   });
 

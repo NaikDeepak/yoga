@@ -1,7 +1,8 @@
 // Posture score and pattern detection from computed metrics. Deterministic, rule-based and
 // clinician-reviewable: patterns map to i18n text (causes / long-term effects) and to exercise
 // library categories. Not a diagnosis — see the report disclaimer.
-import { severity, type Direction, type Metric, type MetricKey, type MetricUnit, type PostureView, type Severity, type Side } from './posture';
+import {
+  LIMB_METRICS as LIMB, round1, SEVERITY_RANK as RANK, severity, type Direction, type Metric, type MetricKey, type MetricUnit, type PostureView, type Severity, type Side } from './posture';
 
 export type Region = 'headNeck' | 'shoulders' | 'trunk' | 'pelvis' | 'legs';
 export const REGIONS: readonly Region[] = ['headNeck', 'shoulders', 'trunk', 'pelvis', 'legs'];
@@ -31,13 +32,10 @@ export interface CombinedMetric extends Metric {
   lowConfidence: boolean;
 }
 
-/** Per-leg measures: `side` names the leg, `direction` the deviation. */
-const LIMB = new Set<MetricKey>(['kneeAlignment', 'hindfoot']);
 /** Measures whose `side` is the direction of the deviation (lower side / shifted-to side). */
 const SIDED = new Set<MetricKey>(['headTilt', 'shoulderLevel', 'pelvicLevel', 'trunkShift', 'headShift', 'armHang']);
 export const DISAGREE_TOLERANCE: Record<MetricUnit, number> = { deg: 2.5, cm: 2, pct: 1.2 };
 
-const round1 = (n: number) => Math.round(n * 10) / 10;
 
 /** Deviation as a signed number, so readings on opposite sides average towards zero. */
 function signed(m: Metric): number {
@@ -89,7 +87,6 @@ export function combineViews(views: ViewMetrics): CombinedMetric[] {
 }
 
 const PENALTY: Record<Severity, number> = { normal: 0, mild: 15, marked: 35 };
-const RANK: Record<Severity, number> = { normal: 0, mild: 1, marked: 2 };
 
 export function gradeFor(score: number): Grade {
   if (score >= 85) return 'good';

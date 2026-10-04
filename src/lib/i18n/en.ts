@@ -540,6 +540,7 @@ export const en = {
       moveCloser: 'Tip: bring the camera closer so the body fills most of the frame — angles are more precise.',
       capture: 'Capture now',
       processing: 'Measuring…',
+      modelError: 'Could not load the pose model — check the internet connection and try again.',
       noPerson: 'No person detected in the photo — please retake.',
       notLevel: 'Camera is not level — straighten it before capturing.',
       reviewHelp: 'Check the points — drag any that are misplaced.',

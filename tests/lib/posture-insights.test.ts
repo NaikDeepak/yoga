@@ -104,6 +104,16 @@ describe('combineViews', () => {
     expect(find(c, 'hindfoot', 'left')).toMatchObject({ value: 6, direction: 'valgus' });
   });
 
+  it('matches an unmeasurable leg to the same leg in the other view (no unlabelled row)', () => {
+    const hiddenLeft: Metric = { ...mk('kneeAlignment', null), side: 'left' };
+    const c = combineViews(views({
+      front: [hiddenLeft, mk('kneeAlignment', 1, { side: 'right', direction: 'valgus' })],
+      back: [mk('kneeAlignment', 6, { side: 'left', direction: 'valgus' }), mk('kneeAlignment', 1, { side: 'right', direction: 'valgus' })],
+    }));
+    expect(c.filter((m) => m.key === 'kneeAlignment').map((m) => m.side).sort()).toEqual(['left', 'right']);
+    expect(find(c, 'kneeAlignment', 'left')).toMatchObject({ value: 6, severity: 'mild' });
+  });
+
   it('reports not measurable when no view could measure it', () => {
     const c = combineViews(views({ front: [mk('pelvicLevel', null)], back: [mk('pelvicLevel', null)] }));
     expect(find(c, 'pelvicLevel')).toMatchObject({ value: null, severity: null, sources: [], lowConfidence: false });

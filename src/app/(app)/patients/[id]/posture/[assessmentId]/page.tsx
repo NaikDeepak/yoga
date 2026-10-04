@@ -91,7 +91,6 @@ export default async function PostureReportPage({
           <DeleteButton
             action={deletePostureAssessmentAction.bind(null, id, assessmentId)}
             confirmText={p.deleteConfirm}
-            redirectTo={`/patients/${id}?tab=assessment`}
           />
           <PrintButton />
         </div>

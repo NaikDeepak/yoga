@@ -1,6 +1,8 @@
 // Pure checks used by the live posture capture screen: camera level (phone gravity sensor or a
 // door-frame reference line), framing, facing direction and stillness. No camera/DOM access here.
-import { LM, MIN_VISIBILITY, sagittalLandmarks, type Landmark, type PostureView } from './posture';
+import {
+  EYE_LEVEL_STATURE_RATIO, eyeToHeelSpan, LM, MIN_VISIBILITY, sagittalLandmarks, type Landmark, type PostureView,
+} from './posture';
 
 /** Shoulder level is flagged from 2°, so the camera itself must be within 1.5° of roll. */
 export const LEVEL_TOLERANCE = { rollDeg: 1.5, pitchDeg: 3 } as const;
@@ -218,20 +220,24 @@ export function bodyCropRect(lms: Landmark[], width: number, height: number): Cr
 }
 
 /** Re-expresses normalised landmarks relative to a crop of the original frame. */
+// Hidden points MediaPipe guesses far off-frame would otherwise land outside the range the server
+// accepts and fail the whole save. They're low-visibility, so clamping doesn't affect any metric.
+const CROP_CLAMP = { min: -0.5, max: 1.5 };
+const clampCrop = (v: number) => Math.min(CROP_CLAMP.max, Math.max(CROP_CLAMP.min, v));
+
 export function remapToCrop(lms: Landmark[], width: number, height: number, r: CropRect): Landmark[] {
-  return lms.map((l) => ({ x: (l.x * width - r.x) / r.w, y: (l.y * height - r.y) / r.h, visibility: l.visibility }));
+  return lms.map((l) => ({
+    x: clampCrop((l.x * width - r.x) / r.w),
+    y: clampCrop((l.y * height - r.y) / r.h),
+    visibility: l.visibility,
+  }));
 }
 
-const EYE_LEVEL_RATIO = 0.936; // eye level ≈ 93.6% of standing height
 /** Recommended minimum: body should fill this much of the frame height for precise angles. */
 export const BODY_FILL_TARGET = 0.75;
 
 /** Estimated standing height as a fraction of the frame height, or null if head/feet aren't visible. */
 export function bodyFill(lms: Landmark[]): number | null {
-  const vis = (i: number) => lms[i].visibility >= MIN_VISIBILITY;
-  const tops = [LM.LEFT_EYE, LM.RIGHT_EYE, LM.LEFT_EAR, LM.RIGHT_EAR].filter(vis).map((i) => lms[i].y);
-  let bottoms = [LM.LEFT_HEEL, LM.RIGHT_HEEL].filter(vis).map((i) => lms[i].y);
-  if (!bottoms.length) bottoms = [LM.LEFT_ANKLE, LM.RIGHT_ANKLE].filter(vis).map((i) => lms[i].y);
-  if (!tops.length || !bottoms.length) return null;
-  return (Math.max(...bottoms) - Math.min(...tops)) / EYE_LEVEL_RATIO;
+  const span = eyeToHeelSpan(lms);
+  return span === null ? null : span / EYE_LEVEL_STATURE_RATIO;
 }

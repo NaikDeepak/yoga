@@ -145,5 +145,6 @@ export async function deletePostureAssessmentAction(patientId: string, assessmen
     return { ok: false, error: 'Could not delete posture assessment / पोश्चर मूल्यांकन हटवता आले नाही' };
   }
   revalidatePath(`/patients/${patientId}`);
-  return { ok: true };
+  // Redirect server-side: the caller is the report page of the record that no longer exists.
+  redirect(`/patients/${patientId}?tab=assessment`);
 }
