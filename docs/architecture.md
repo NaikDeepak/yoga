@@ -36,6 +36,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/wellness.ts` | bilingual health-tip library (`wellness-messages.json`) + wa.me share URL without number (opens WhatsApp contact/broadcast picker) | `WELLNESS_MESSAGES`, `wellnessMessageForDay`, `buildWellnessMessage`, `wellnessShareUrl` |
 | `src/lib/clinic.ts` | clinic identity constant (name, phone, wa.me digits; used by letterhead + digest) | `CLINIC` |
 | `src/lib/whatsapp.ts` | free wa.me deep-link reminders: URL + bilingual message builders (no API) | `waMeUrl`, `reminderUrl`, `buildReminderMessage`, `buildDigestMessage`, `digestUrl` |
+| `src/lib/posture.ts` | posture metrics from 33 MediaPipe landmarks: frontal (front/back — anatomical sides by image x) + sagittal (left/right — near side by visibility) angles/offsets, cm via client height, severity bands | `computeViewMetrics`, `severity`, `THRESHOLDS`, `LM`, `POSTURE_VIEWS` |
 | `src/lib/files.ts` | upload rules (4MB — Vercel body limit, pdf/jpg/png) | `validateUpload`, `validatePhoto` |
 | `src/lib/validation.ts` | zod schemas, bilingual messages | `patientSchema`, `problemSchema`, `treatmentSchema`, `visitSchema`, `lifestyleSchema`, `docTypeSchema`, `firstError` |
 | `src/lib/storage.ts` | file storage abstraction (Supabase / R2 / local-mock fs) | `FileStorage`, `getStorage()`, `localFileStorage`, `BUCKET` |
