@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { BRANCHES, DOC_TYPES } from './presets';
 import { getISTDateString } from './dates';
 import { FEE_TYPE_KEYS } from './feeTypes';
+import { POSE_LANDMARK_COUNT, POSTURE_VIEWS } from './posture';
+import { isLevel } from './posture-capture';
 
 const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
@@ -160,3 +162,54 @@ export const prescribedExercisesListSchema = z.array(prescribedExerciseSchema).r
 );
 export type PrescribedExerciseInput = z.infer<typeof prescribedExerciseSchema>;
 
+
+// Posture assessment payload (JSON part of the capture form; photos are sent as separate files).
+const POSTURE_DATA_ERR = { error: 'Invalid posture data / चुकीची पोश्चर माहिती' };
+// MediaPipe reports out-of-frame points outside 0–1 (with low visibility); the capture screen clamps
+// them to this range when cropping (remapToCrop), so anything beyond it is malformed.
+const landmarkCoord = z.number(POSTURE_DATA_ERR).min(-0.5, POSTURE_DATA_ERR).max(1.5, POSTURE_DATA_ERR);
+
+const postureViewSchema = z.object({
+  view: z.enum(POSTURE_VIEWS, POSTURE_DATA_ERR),
+  imageWidth: z.number(POSTURE_DATA_ERR).int(POSTURE_DATA_ERR).min(1, POSTURE_DATA_ERR).max(4096, POSTURE_DATA_ERR),
+  imageHeight: z.number(POSTURE_DATA_ERR).int(POSTURE_DATA_ERR).min(1, POSTURE_DATA_ERR).max(4096, POSTURE_DATA_ERR),
+  landmarks: z.array(z.object({
+    x: landmarkCoord,
+    y: landmarkCoord,
+    visibility: z.number(POSTURE_DATA_ERR).min(0, POSTURE_DATA_ERR).max(1, POSTURE_DATA_ERR),
+  }, POSTURE_DATA_ERR), POSTURE_DATA_ERR).length(POSE_LANDMARK_COUNT, POSTURE_DATA_ERR),
+  landmarksEdited: z.boolean(POSTURE_DATA_ERR),
+  cameraCheck: z.object({
+    method: z.enum(['sensor', 'reference'], POSTURE_DATA_ERR),
+    rollDeg: z.number(POSTURE_DATA_ERR).min(-45, POSTURE_DATA_ERR).max(45, POSTURE_DATA_ERR),
+    pitchDeg: z.number(POSTURE_DATA_ERR).min(-90, POSTURE_DATA_ERR).max(90, POSTURE_DATA_ERR).nullable(),
+  }, POSTURE_DATA_ERR).refine(
+    (c) => isLevel(c),
+    'Camera was not level — retake the photo / कॅमेरा सरळ नव्हता — फोटो पुन्हा घ्या',
+  ),
+}, POSTURE_DATA_ERR);
+
+export const postureAssessmentSchema = z.object({
+  consent: z.literal(true, { error: 'Photo consent required / फोटोसाठी संमती आवश्यक' }),
+  assessedOn: z.preprocess(
+    (v) => blankToUndef(v) ?? getISTDateString(),
+    z.string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')
+      .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
+  ),
+  note: opt(z.string().trim().max(1000, 'Note too long / टीप खूप मोठी आहे')),
+  views: z.array(postureViewSchema, POSTURE_DATA_ERR).refine(
+    (views) => views.length === POSTURE_VIEWS.length && new Set(views.map((v) => v.view)).size === POSTURE_VIEWS.length,
+    'All four views required (front, back, left, right) / चारही बाजूंचे फोटो आवश्यक (समोर, मागे, डावी, उजवी)',
+  ),
+});
+
+export type PostureAssessmentPayload = z.infer<typeof postureAssessmentSchema>;
+
+/** Retaking some views of an existing assessment (consent was recorded with the original). */
+export const postureRetakeSchema = z.object({
+  views: z.array(postureViewSchema, POSTURE_DATA_ERR)
+    .min(1, POSTURE_DATA_ERR)
+    .max(POSTURE_VIEWS.length, POSTURE_DATA_ERR)
+    .refine((views) => new Set(views.map((v) => v.view)).size === views.length, POSTURE_DATA_ERR),
+});

@@ -70,6 +70,23 @@ at the prepared-statement level.
 4. When `R2_ACCOUNT_ID` is set, the app automatically uses R2; Supabase Storage is ignored.
 5. Migrate existing files: `rclone copy supabase-remote:patient-files r2-remote:patient-files`
 
+## Testing posture capture on a phone (HTTPS on the local network)
+Browsers only allow camera access on HTTPS pages (or `localhost`), so a phone needs HTTPS.
+
+1. Mac and phone on the same Wi-Fi.
+2. `LOCAL_MOCK=true npm run dev:phone` — prints `https://<mac-ip>:3000`. It refuses to run without mock mode
+   (it exposes the dev server to the whole network); `DEV_PHONE_ALLOW_REAL_DB=1` overrides deliberately.
+   It creates a 30-day self-signed cert in `certificates/` (gitignored) for localhost + the Mac's current IP;
+   rerun if the IP changes.
+3. Open the printed URL on the phone, accept the certificate warning, sign in.
+4. Client → Assessment tab → **Add posture assessment**.
+
+Camera level: phones use the gravity sensor (iPhone asks for "Motion & Orientation" permission when you tap
+*Start camera*). Laptops have no tilt sensor, so the app asks you to drag a line onto a door frame or wall corner
+to measure camera roll; pitch (lid lean) cannot be measured there and the report says so.
+Pose models (~6 MB live, ~30 MB accurate) download from Google's CDN on first use and are then cached. The MediaPipe
+WASM runtime is served from our own origin (`public/mediapipe/`, copied from node_modules on `npm install`; gitignored).
+
 ## Manual pre-handover checklist
 - [ ] Register patient with photo on a phone-sized viewport
 - [ ] Each tab works: add/remove problem, upload/view/delete document, save plan, add visit
@@ -95,3 +112,6 @@ at the prepared-statement level.
 - [ ] PWA: on Android Chrome, the deployed site offers "Add to Home Screen" / install prompt
 - [ ] PWA: installed icon renders the logo correctly (including the maskable circle/squircle shape)
 - [ ] PWA: launching from the home-screen icon opens standalone (no browser chrome) and the status bar matches the app background
+- [ ] Posture (phone): Add posture assessment → consent → level bubble turns green only when phone is upright → all four checks go green → 3-2-1 auto-capture for each of the 4 views → drag a misplaced point → save → report shows "Level verified by sensor" per view
+- [ ] Posture (laptop): no-sensor path shows door-frame calibration; continue is blocked while the line reads > 1.5°; report shows "door frame (roll only)"
+- [ ] Posture: wrong facing (e.g. back to camera on the Front step) keeps "Facing correctly" red; manual "Capture now" still works

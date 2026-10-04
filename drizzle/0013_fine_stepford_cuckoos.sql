@@ -1,0 +1,1 @@
+ALTER TABLE "posture_views" ADD COLUMN "camera_check" jsonb;

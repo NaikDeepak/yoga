@@ -3,6 +3,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:phone": "./scripts/dev-phone.sh",
+    "postinstall": "node scripts/copy-mediapipe.mjs",
+    "prebuild": "node scripts/copy-mediapipe.mjs",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
@@ -20,8 +23,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
-    "@electric-sql/pglite": "^0.5.2",
     "@aws-sdk/s3-request-presigner": "^3.1068.0",
+    "@electric-sql/pglite": "^0.5.2",
+    "@mediapipe/tasks-vision": "^1.0.1",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.1",
     "class-variance-authority": "^0.7.1",

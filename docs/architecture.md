@@ -19,7 +19,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 ## Module map
 | Path | Responsibility | Key exports |
 |---|---|---|
-| `src/db/schema.ts` | 9 tables: patients, patient_problems, documents, treatment_plans, visits, lifestyle_assessments, fees, fee_payments, user_preferences | table objects + row types |
+| `src/db/schema.ts` | 14 tables: patients, patient_problems, documents, treatment_plans, visits, lifestyle_assessments, fees, fee_payments, charges, user_preferences, exercises, prescribed_exercises, posture_assessments, posture_views (landmarks + metrics + camera_check as jsonb) | table objects + row types |
 | `src/db/client.ts` | prod DB singleton; local-mock branch reads the PGlite cache | `getDb()` |
 | `src/db/types.ts` | DB type shared by prod/test | `Db` |
 | `src/db/local-cache.ts` | globalThis handle for the mock PGlite db (HMR-safe, no PGlite import) | `getLocalDbCache`, `setLocalDbCache` |
@@ -36,8 +36,14 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/wellness.ts` | bilingual health-tip library (`wellness-messages.json`) + wa.me share URL without number (opens WhatsApp contact/broadcast picker) | `WELLNESS_MESSAGES`, `wellnessMessageForDay`, `buildWellnessMessage`, `wellnessShareUrl` |
 | `src/lib/clinic.ts` | clinic identity constant (name, phone, wa.me digits; used by letterhead + digest) | `CLINIC` |
 | `src/lib/whatsapp.ts` | free wa.me deep-link reminders: URL + bilingual message builders (no API) | `waMeUrl`, `reminderUrl`, `buildReminderMessage`, `buildDigestMessage`, `digestUrl` |
+| `src/lib/posture.ts` | posture metrics from 33 MediaPipe landmarks (shared helpers: `eyeToHeelSpan` stature basis, `LIMB_METRICS`, `SEVERITY_RANK`, `round1`): frontal (front/back — anatomical sides by image x) + sagittal (left/right — near side by visibility) angles/offsets, cm via client height, severity bands | `computeViewMetrics`, `severity`, `THRESHOLDS`, `LM`, `POSTURE_VIEWS` |
+| `src/lib/posture-overlay.ts` | what to draw on a posture photo (pixels): skeleton bones, plumb + level references, severity-coloured measure lines; side views draw the near side only | `buildOverlay`, `Overlay`, `OverlayLine` |
+| `src/lib/posture-format.ts` | metric → display strings (value+unit, side/direction, status) from `t.posture`; summary counts + mild/marked list | `formatMetric`, `summarizeFindings` |
+| `src/lib/posture-capture.ts` | live-capture checks: camera level from gravity (`levelFromGravity`, ±1.5° roll / ±3° pitch) or a door-frame line (`rollFromReferenceLine`), framing/facing (`checkFrame`), stillness (`isStill`); `CameraCheck` stored per view | `levelFromGravity`, `isLevel`, `rollFromReferenceLine`, `checkFrame`, `isStill`, `stillKeypoints`, `advanceCountdown`, `medianLandmarks`, `bodyCropRect`, `remapToCrop`, `bodyFill`, `CameraCheck`, `LEVEL_TOLERANCE` |
+| `src/lib/posture-insights.ts` | `combineViews` averages each measure over front+back / left+right (signed, so opposite sides cancel) and flags low confidence when views fall in different severity bands and differ > 2.5° / 2 cm; rule-based posture score over the combined measures (5 regions: 100 − 15/mild − 35/marked; each measure counted once after averaging its views; overall = mean of measured regions, grade good ≥85 / fair ≥65) + pattern detection (10 patterns → i18n causes/effects in `t.posture.insights.patterns`) + exercise-library focus categories | `combineViews`, `CombinedMetric`, `scorePosture`, `detectPatterns`, `focusCategories`, `REGION_OF` |
+| `src/lib/posture-compare.ts` | before/after on combined findings: per rated measure (per leg for knee/heel) change + trend (≤0.5° / 0.5 cm = same, else band change or direction of change); score deltas overall + per region | `compareMetrics`, `compareScores`, `Trend` |
 | `src/lib/files.ts` | upload rules (4MB — Vercel body limit, pdf/jpg/png) | `validateUpload`, `validatePhoto` |
-| `src/lib/validation.ts` | zod schemas, bilingual messages | `patientSchema`, `problemSchema`, `treatmentSchema`, `visitSchema`, `lifestyleSchema`, `docTypeSchema`, `firstError` |
+| `src/lib/validation.ts` | zod schemas, bilingual messages | `patientSchema`, `problemSchema`, `treatmentSchema`, `visitSchema`, `lifestyleSchema`, `docTypeSchema`, `postureAssessmentSchema` (consent + 4 distinct views × 33 landmarks + camera check), `postureRetakeSchema` (1–4 distinct views), `firstError` |
 | `src/lib/storage.ts` | file storage abstraction (Supabase / R2 / local-mock fs) | `FileStorage`, `getStorage()`, `localFileStorage`, `BUCKET` |
 | `src/lib/r2-storage.ts` | Cloudflare R2 storage implementation | `r2Storage` |
 | `src/lib/gemini.ts` | Gemini 2.5 Flash REST client wrapper | `generateTreatmentDraft` |
@@ -45,6 +51,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/supabase/*` | vendor cookie glue (coverage-exempt) | `createSupabaseServerClient`, `updateSession` |
 | `src/data/patients.ts` | CRUD + search + code assignment (transaction) | `createPatient`, `getPatient`, `updatePatient`, `setPhotoPath`, `searchPatients` |
 | `src/data/problems.ts` | ailment rows | `addProblem`, `listProblems`, `removeProblem`, `problemsForPatients` |
+| `src/data/posture.ts` | posture assessments: upload all view photos → one transaction for assessment + views; metrics always recomputed from landmarks (never caller-supplied); any failure removes uploaded photos | `addPostureAssessment`, `listPostureAssessments` (score/grade + mild/marked counts on combined findings), `getPostureAssessment`, `deletePostureAssessment` (scoped to client; deletes files listed on the rows, best-effort after the DB delete), `replacePostureViews` (retake: versioned photo keys, one transaction, old photos removed after commit), `posturePhotoPath` |
 | `src/data/documents.ts` | upload-then-insert, cleanup on failure | `addDocument`, `listDocuments`, `deleteDocument` |
 | `src/data/treatment.ts` | one plan per patient (upsert) | `getTreatmentPlan`, `upsertTreatmentPlan` |
 | `src/data/dashboard.ts` | aggregate queries for global stats | `getDashboardStats`, `getAilmentBreakdown`, `getRecentVisits` |
@@ -58,8 +65,10 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/actions/auth.ts` | sign in / sign out / sign up (Supabase Auth) | `signInAction`, `signOutAction`, `signUpAction` |
 | `src/actions/preferences.ts` | save language (+ lang cookie) / WhatsApp digest number | `saveLanguageAction`, `saveWhatsappNumberAction` |
 | `src/actions/exercises.ts` | save a patient's prescribed-exercise set (JSON payload from the picker form) | `savePrescribedExercisesAction` |
+| `src/actions/posture.ts` | save a posture assessment (`payload` JSON + `photo_<view>` files, ≤4 MB combined; height snapshot from client; redirects to report) / delete one (scoped to client) | `savePostureAssessmentAction`, `replacePostureViewsAction` (retake some views), `deletePostureAssessmentAction` (redirects to the Assessment tab) |
 | `src/actions/*` (rest) | server actions per domain; all return `ActionResult` | `*Action` functions |
 | `src/components/*` | Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm), PrintButton, AilmentBarChart (Recharts horizontal bar), VisitLineChart (Recharts line), TreatmentPlanForm (AI treatment builder), AddChargeForm (typed charge entry with fee-type presets and default-amount prefill), PatientHeader (sticky compact header via IntersectionObserver), TabDropdown (mobile tab select), GlobalSearch (debounced live patient search dropdown in top nav), BranchFilter (branch-scoped dashboard filter), CalendarMonthGrid (read-only month-grid follow-up view with day-click dialog), PrescribedExercisesForm (exercise-library picker with per-patient reps/frequency overrides + custom note), WellnessTipCard (sidebar health tip of the day + WhatsApp share via contact picker), PainScaleInput (segmented 1–10 pain picker, hidden input for server forms) | — |
+| `src/components/posture/*` | Report (server): ReportParts (BRAND palette, ScoreRing, RegionBars, PatternCard), PostureFigure/OverlaySvg (photo + SVG overlay from `buildOverlay`), PostureFindings + SeverityChip. Capture (client): PostureCapture (setup → door-frame calibration if no sensor → live guide with 4 checks + 3 s auto-capture → LandmarkEditor review → summary/save), `pose-detector.ts` (MediaPipe: WASM runtime self-hosted at `/mediapipe` — copied from node_modules by `scripts/copy-mediapipe.mjs` on postinstall; model files from Google's CDN; lite for live video, heavy for stills), `hooks.ts` (`useCamera`, `useDeviceLevel`, `requestMotionPermission`), LevelIndicator, DragHandles | `PostureCapture`, `PostureFigure`, `OverlaySvg`, `PostureFindings` |
 | `src/components/ui/native-select.tsx` | styled native `<select>` for server-rendered forms (Input-matched look; used by problems/documents/assessment forms) | `NativeSelect` |
 | `src/components/ui/*` | shadcn/ui generated components (Button, Input, Label, Card, Badge, AlertDialog, Dialog, Avatar, Separator, Tabs, Textarea, Select) | — |
 | `src/lib/utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge) | `cn` |
@@ -68,7 +77,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/app/api/patients/search` | API GET route handler backing the global search dropdown | — |
 | `src/app/(app)/dashboard` | clinic-wide stats, ailment bar chart, recent visits, day-grouped follow-up agenda, branch filter, quick-add patient | — |
 | `src/app/(app)/calendar` | read-only month-grid view of upcoming follow-ups, branch filter, month navigation | — |
-| `src/app/(app)/patients/*` | list/new/detail/edit/print pages. Detail has 5 tabs (overview incl. problems + visit summary, treatment incl. progress charts, documents, fees, assessment); legacy `?tab=problems/progress` map to their new homes | — |
+| `src/app/(app)/patients/*` | list/new/detail/edit/print pages. Detail has 5 tabs (overview incl. problems + visit summary, treatment incl. progress charts, documents, fees, assessment incl. posture history + compare links); legacy `?tab=problems/progress` map to their new homes. `posture/new` = camera capture (PostureCapture); `posture/compare?a=&b=` = before/after progress report (scores, measurements, photos side by side); `posture/[assessmentId]/retake?views=front,back` = retake those views (PostureCapture retake mode); `posture/[assessmentId]` = printable posture report (letterhead, summary, per-view `PostureFigure` + `PostureFindings`) | — |
 | `src/middleware.ts` | session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
 | `src/app/manifest.ts` | PWA web-app manifest (installable on Android: standalone display, icons in `public/icons/`) | `manifest` (default) |
 
@@ -76,6 +85,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 - BMI is never stored; always computed from weight/height.
 - Patient codes are assigned only inside `createPatient`'s transaction.
 - Document rows exist only if the file upload succeeded (and vice-versa cleanup).
+- Posture metrics are computed server-side from stored landmarks; client-computed numbers are display-only. Reads (`getPostureAssessment`, `listPostureAssessments`) recompute with the current formulas so reports and comparisons stay consistent; `posture_views.metrics` is the save-time snapshot.
 - All file access via signed URLs; bucket is private; service-role key server-only.
 - Every mutation goes through a server action that calls `requireUser()` first (auth actions excepted — they create/end the session itself).
 - Mock mode never runs in production: `isLocalMock()` throws when `LOCAL_MOCK=true` under `NODE_ENV=production`; never read `process.env.LOCAL_MOCK` directly.
@@ -89,6 +99,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 ## Testing
 - `tests/helpers/db.ts` — in-memory PGlite running real migrations.
 - `tests/helpers/fake-storage.ts` — `FileStorage` fake with failure injection.
+- `tests/helpers/posture.ts` — `alignedLandmarks(view, overrides)` (33-point upright body on 1000×2000, pixel overrides) + `jpeg()` file stub.
 - `tests/helpers/action-mocks.ts` — vi.mocks for db client, storage, auth, next/cache, next/navigation.
 - Auth/storage glue is unit-tested with mocked Supabase clients (`tests/actions/auth.test.ts`, `tests/lib/auth.test.ts`, `tests/lib/storage.test.ts`).
 - Coverage: 80% enforced on lib/data/actions. UI = component test (PatientForm) + `next build` + manual checklist in `docs/setup.md`.

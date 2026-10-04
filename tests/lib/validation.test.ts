@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   patientSchema, problemSchema, treatmentSchema, visitSchema, docTypeSchema,
-  prescribedExercisesListSchema,
+  prescribedExercisesListSchema, postureAssessmentSchema, postureRetakeSchema,
 } from '@/lib/validation';
+import { alignedLandmarks } from '../helpers/posture';
 import { getISTDateString } from '@/lib/dates';
 
 describe('patientSchema', () => {
@@ -133,5 +134,87 @@ describe('prescribedExercisesListSchema', () => {
     if (!r.success) {
       expect(r.error.issues[0].message).toMatch(/\//);
     }
+  });
+});
+
+describe('postureAssessmentSchema', () => {
+  const view = (v: 'front' | 'back' | 'left' | 'right') => ({
+    view: v, imageWidth: 1000, imageHeight: 2000, landmarks: alignedLandmarks(v), landmarksEdited: false,
+    cameraCheck: { method: 'sensor' as 'sensor' | 'reference', rollDeg: 0.4, pitchDeg: 1 as number | null },
+  });
+  const valid = () => ({
+    consent: true, assessedOn: '2026-10-04', note: 'Baseline',
+    views: [view('front'), view('right'), view('back'), view('left')],
+  });
+  const err = (input: unknown) => {
+    const r = postureAssessmentSchema.safeParse(input);
+    return r.success ? null : r.error.issues[0].message;
+  };
+
+  it('accepts four distinct views with 33 landmarks each', () => {
+    expect(postureAssessmentSchema.parse(valid()).views).toHaveLength(4);
+  });
+
+  it('defaults the date to today (IST) and drops a blank note', () => {
+    const parsed = postureAssessmentSchema.parse({ ...valid(), assessedOn: '', note: '  ' });
+    expect(parsed.assessedOn).toBe(getISTDateString());
+    expect(parsed.note).toBeUndefined();
+  });
+
+  it('requires photo consent', () => {
+    expect(err({ ...valid(), consent: false })).toBe('Photo consent required / फोटोसाठी संमती आवश्यक');
+  });
+
+  it('requires all four views, each once', () => {
+    const msg = 'All four views required (front, back, left, right) / चारही बाजूंचे फोटो आवश्यक (समोर, मागे, डावी, उजवी)';
+    expect(err({ ...valid(), views: valid().views.slice(0, 3) })).toBe(msg);
+    expect(err({ ...valid(), views: [view('front'), view('front'), view('back'), view('left')] })).toBe(msg);
+  });
+
+  it('rejects malformed landmark data', () => {
+    const msg = 'Invalid posture data / चुकीची पोश्चर माहिती';
+    const short = valid(); short.views[0].landmarks = short.views[0].landmarks.slice(0, 32);
+    expect(err(short)).toBe(msg);
+    const nan = valid(); nan.views[0].landmarks[0] = { x: NaN, y: 0.5, visibility: 1 };
+    expect(err(nan)).toBe(msg);
+    const far = valid(); far.views[0].landmarks[0] = { x: 1.6, y: 0.5, visibility: 0.1 };
+    expect(err(far)).toBe(msg);
+    const edge = valid(); edge.views[0].landmarks[0] = { x: 1.5, y: -0.5, visibility: 0.1 };
+    expect(postureAssessmentSchema.safeParse(edge).success).toBe(true);
+    const vis = valid(); vis.views[0].landmarks[0] = { x: 0.5, y: 0.5, visibility: 2 };
+    expect(err(vis)).toBe(msg);
+    expect(err({ ...valid(), views: [{ ...view('front'), view: 'top' }, view('right'), view('back'), view('left')] })).toBe(msg);
+    expect(err({ ...valid(), views: [{ ...view('front'), imageWidth: 0 }, view('right'), view('back'), view('left')] })).toBe(msg);
+  });
+
+  it('requires a level camera check for every view', () => {
+    const tilted = valid(); tilted.views[0].cameraCheck = { method: 'sensor', rollDeg: 2, pitchDeg: 0 };
+    expect(err(tilted)).toBe('Camera was not level — retake the photo / कॅमेरा सरळ नव्हता — फोटो पुन्हा घ्या');
+    const doorFrame = valid(); doorFrame.views[0].cameraCheck = { method: 'reference', rollDeg: 1, pitchDeg: null };
+    expect(postureAssessmentSchema.safeParse(doorFrame).success).toBe(true);
+    const missing = valid() as { views: Record<string, unknown>[] }; delete missing.views[0].cameraCheck;
+    expect(err(missing)).toBe('Invalid posture data / चुकीची पोश्चर माहिती');
+  });
+
+  it('rejects a bad date and an over-long note', () => {
+    expect(err({ ...valid(), assessedOn: '2026-02-30' })).toBe('Invalid date / चुकीची तारीख');
+    expect(err({ ...valid(), note: 'x'.repeat(1001) })).toBe('Note too long / टीप खूप मोठी आहे');
+  });
+});
+
+describe('postureRetakeSchema', () => {
+  const view = (v: 'front' | 'back' | 'left' | 'right') => ({
+    view: v, imageWidth: 1000, imageHeight: 2000, landmarks: alignedLandmarks(v), landmarksEdited: false,
+    cameraCheck: { method: 'sensor' as const, rollDeg: 0, pitchDeg: 0 },
+  });
+
+  it('accepts one to four distinct views', () => {
+    expect(postureRetakeSchema.safeParse({ views: [view('back')] }).success).toBe(true);
+    expect(postureRetakeSchema.safeParse({ views: [view('front'), view('back')] }).success).toBe(true);
+  });
+
+  it('rejects no views or a repeated view', () => {
+    expect(postureRetakeSchema.safeParse({ views: [] }).success).toBe(false);
+    expect(postureRetakeSchema.safeParse({ views: [view('back'), view('back')] }).success).toBe(false);
   });
 });
