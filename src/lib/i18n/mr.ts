@@ -324,6 +324,7 @@ export const mr: Translations = {
     saved: 'प्राधान्यक्रम जतन केले',
     whatsappTitle: 'WhatsApp यादी क्रमांक',
     whatsappDescription: 'उद्याच्या भेटींची यादी या क्रमांकावर WhatsApp मध्ये उघडेल. रिकामे ठेवल्यास क्लिनिक क्रमांक ({phone}) वापरला जाईल.',
+    whatsappLabel: 'WhatsApp क्रमांक',
     languages: {
       en: 'English',
       mr: 'मराठी',

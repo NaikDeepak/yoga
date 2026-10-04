@@ -322,6 +322,7 @@ export const en = {
     saved: 'Preferences saved',
     whatsappTitle: 'WhatsApp Digest Number',
     whatsappDescription: "Tomorrow's appointment list opens in WhatsApp addressed to this number. Leave blank to use the clinic number ({phone}).",
+    whatsappLabel: 'WhatsApp number',
     languages: {
       en: 'English',
       mr: 'मराठी',

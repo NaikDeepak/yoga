@@ -135,14 +135,14 @@ export function CalendarMonthGrid({ year, month, todayISO, followUpsByDate }: Ca
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">{f.patientCode}</span>
                     <span className="text-xs text-muted-foreground">{f.mobile}</span>
-                    <Button asChild size="icon" variant="ghost" className="h-6 w-6 shrink-0">
+                    <Button asChild size="icon" variant="ghost" className="h-8 w-8 -my-1 shrink-0">
                       <a
                         href={reminderUrl(f.mobile, f.fullName, f.nextVisitDate)}
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label={t.dashboard.sendMsg}
                       >
-                        <MessageCircle className="h-3.5 w-3.5" />
+                        <MessageCircle className="h-4 w-4" />
                       </a>
                     </Button>
                   </div>

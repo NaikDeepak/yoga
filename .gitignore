@@ -27,3 +27,5 @@ scratch/
 graphify-out/
 .tokensave
 scripts/create-admin.js
+.env*
+!.env.example

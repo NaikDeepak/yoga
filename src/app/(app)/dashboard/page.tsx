@@ -226,6 +226,7 @@ export default async function DashboardPage({
             {tomorrowFollowUps.length > 0 && (
               <Button asChild size="sm" variant="outline" className="rounded-full shrink-0 w-full sm:w-auto text-center justify-center">
                 <a href={digestUrl(tomorrowFollowUps, tomorrowStr, digestTarget)} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="h-3.5 w-3.5" />
                   {t.dashboard.whatsappDigest.replace('{count}', String(tomorrowFollowUps.length))}
                 </a>
               </Button>

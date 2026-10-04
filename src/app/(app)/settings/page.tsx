@@ -70,7 +70,7 @@ export default async function SettingsPage() {
         <CardContent>
           <InlineForm action={saveWhatsappNumberAction} resetOnSuccess={false} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="whatsappNumber">{t.form.mobile}</Label>
+              <Label htmlFor="whatsappNumber">{t.settings.whatsappLabel}</Label>
               <Input
                 id="whatsappNumber"
                 name="whatsappNumber"
