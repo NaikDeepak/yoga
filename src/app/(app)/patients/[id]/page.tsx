@@ -24,6 +24,7 @@ import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
 import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { listPostureAssessments } from '@/data/posture';
+import { isPostureEnabled } from '@/lib/features';
 import { scoreColor } from '@/components/posture/ReportParts';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -677,63 +678,66 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
 
 async function Assessment({ patientId, t }: { patientId: string; t: Translations }) {
   const existing = await getLifestyleAssessment(getDb(), patientId);
-  const postures = await listPostureAssessments(getDb(), patientId); // newest first
+  const showPosture = isPostureEnabled();
+  const postures = showPosture ? await listPostureAssessments(getDb(), patientId) : []; // newest first
   const compareHref = (beforeId: string, afterId: string) =>
     `/patients/${patientId}/posture/compare?a=${beforeId}&b=${afterId}`;
 
   return (
     <div className="max-w-2xl space-y-6">
-      <Card className="rounded-2xl border-l-4 border-l-primary/40">
-        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
-          <CardTitle className="text-base">{t.posture.title}</CardTitle>
-          <Button asChild size="sm">
-            <Link href={`/patients/${patientId}/posture/new`}>
-              <ScanLine className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              {t.posture.add}
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {postures.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t.posture.history.empty}</p>
-          ) : (
-            <ul className="divide-y">
-              {postures.map((a, i) => (
-                <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
-                  <span
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
-                    style={{ backgroundColor: a.score === null ? '#9ca3af' : scoreColor(a.score) }}
-                    title={a.grade ? t.posture.insights.grades[a.grade] : undefined}
-                  >
-                    {a.score ?? '—'}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium">{formatFullDate(a.assessedOn)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.posture.history.counts.replace('{marked}', String(a.markedCount)).replace('{mild}', String(a.mildCount))}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    <Button asChild size="sm" variant="ghost">
-                      <Link href={`/patients/${patientId}/posture/${a.id}`}>{t.posture.history.viewReport}</Link>
-                    </Button>
-                    {i < postures.length - 1 && (
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={compareHref(postures[i + 1].id, a.id)}>{t.posture.history.compareWithPrevious}</Link>
-                      </Button>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          {postures.length > 2 && (
-            <Button asChild size="sm" variant="outline">
-              <Link href={compareHref(postures[postures.length - 1].id, postures[0].id)}>{t.posture.history.compareFirstLatest}</Link>
+      {showPosture && (
+        <Card className="rounded-2xl border-l-4 border-l-primary/40">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
+            <CardTitle className="text-base">{t.posture.title}</CardTitle>
+            <Button asChild size="sm">
+              <Link href={`/patients/${patientId}/posture/new`}>
+                <ScanLine className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                {t.posture.add}
+              </Link>
             </Button>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {postures.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t.posture.history.empty}</p>
+            ) : (
+              <ul className="divide-y">
+                {postures.map((a, i) => (
+                  <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
+                    <span
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white"
+                      style={{ backgroundColor: a.score === null ? '#9ca3af' : scoreColor(a.score) }}
+                      title={a.grade ? t.posture.insights.grades[a.grade] : undefined}
+                    >
+                      {a.score ?? '—'}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{formatFullDate(a.assessedOn)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.posture.history.counts.replace('{marked}', String(a.markedCount)).replace('{mild}', String(a.mildCount))}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      <Button asChild size="sm" variant="ghost">
+                        <Link href={`/patients/${patientId}/posture/${a.id}`}>{t.posture.history.viewReport}</Link>
+                      </Button>
+                      {i < postures.length - 1 && (
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href={compareHref(postures[i + 1].id, a.id)}>{t.posture.history.compareWithPrevious}</Link>
+                        </Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {postures.length > 2 && (
+              <Button asChild size="sm" variant="outline">
+                <Link href={compareHref(postures[postures.length - 1].id, postures[0].id)}>{t.posture.history.compareFirstLatest}</Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
       <InlineForm
         action={saveLifestyleAssessmentAction.bind(null, patientId)}
         className="space-y-6"
