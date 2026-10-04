@@ -3,7 +3,10 @@
 import { useRef, useState } from 'react';
 import { svgPoint } from './hooks';
 
-export interface Handle { id: number; x: number; y: number }
+/** `missed`: a point the detector didn't find — drawn hollow and dashed until the therapist places it. */
+const MISSED_COLOR = '#f97316';
+
+export interface Handle { id: number; x: number; y: number; missed?: boolean }
 
 /**
  * Draggable circles inside an <svg> (rendered as children of OverlaySvg). Pointer events work for
@@ -51,9 +54,10 @@ export function DragHandles({
             cx={h.x}
             cy={h.y}
             r={active === h.id ? radius * 1.5 : radius}
-            fill={color}
-            stroke="#ffffff"
-            strokeWidth={radius / 3}
+            fill={h.missed ? 'rgba(249,115,22,0.25)' : color}
+            stroke={h.missed ? MISSED_COLOR : '#ffffff'}
+            strokeWidth={h.missed ? radius / 2 : radius / 3}
+            strokeDasharray={h.missed ? `${radius / 1.5} ${radius / 2}` : undefined}
             style={{ pointerEvents: 'none' }}
           />
         </g>

@@ -559,6 +559,7 @@ export const en = {
       noPerson: 'No person detected in the photo — please retake.',
       notLevel: 'Camera is not level — straighten it before capturing.',
       reviewHelp: 'Check the points — drag any that are misplaced.',
+      missedPointsHelp: 'Dashed orange points were not detected — drag each onto its joint to include it in the measurements.',
       retake: 'Retake',
       usePhoto: 'Use photo',
       summaryTitle: 'Review and save',

@@ -29,6 +29,32 @@ const FRONTAL_BONES: [number, number][] = (['LEFT', 'RIGHT'] as const).flatMap((
   [LM[`${s}_ANKLE`], LM[`${s}_HEEL`]], [LM[`${s}_HEEL`], LM[`${s}_FOOT_INDEX`]], [LM[`${s}_ANKLE`], LM[`${s}_FOOT_INDEX`]],
 ] as [number, number][]);
 
+/** Landmarks a view draws and measures: both sides from front/back, near side + nose from the side. */
+function pointIndices(view: PostureView, landmarks: Landmark[]): number[] {
+  if (view === 'front' || view === 'back') return FRONTAL_POINTS;
+  const s = sagittalLandmarks(landmarks);
+  return [LM.NOSE, s.ear, s.shoulder, s.elbow, s.wrist, s.hip, s.knee, s.ankle, s.heel, s.foot];
+}
+
+export interface EditablePoint extends OverlayPoint {
+  /** false = the detector missed it (visibility < threshold); shown so the therapist can place it. */
+  detected: boolean;
+}
+
+/**
+ * Every point the view uses, for the review editor — including missed ones, positioned at the
+ * detector's guess but kept inside the photo so the handle is always reachable.
+ */
+export function editablePoints(view: PostureView, landmarks: Landmark[], width: number, height: number): EditablePoint[] {
+  const clamp = (v: number, max: number) => Math.min(max, Math.max(0, v));
+  return pointIndices(view, landmarks).map((i) => ({
+    index: i,
+    x: clamp(landmarks[i].x * width, width),
+    y: clamp(landmarks[i].y * height, height),
+    detected: landmarks[i].visibility >= MIN_VISIBILITY,
+  }));
+}
+
 export function buildOverlay(view: PostureView, landmarks: Landmark[], width: number, height: number): Overlay {
   const px = (i: number) => ({ x: landmarks[i].x * width, y: landmarks[i].y * height });
   const shown = (...idx: number[]) => idx.every((i) => landmarks[i].visibility >= MIN_VISIBILITY);
@@ -43,7 +69,7 @@ export function buildOverlay(view: PostureView, landmarks: Landmark[], width: nu
   const bones: [number, number][] = [];
 
   if (view === 'front' || view === 'back') {
-    pointIdx = FRONTAL_POINTS;
+    pointIdx = pointIndices(view, landmarks);
     bones.push(...FRONTAL_BONES);
     if (shown(LM.LEFT_ANKLE, LM.RIGHT_ANKLE)) {
       lines.push(plumbAt((px(LM.LEFT_ANKLE).x + px(LM.RIGHT_ANKLE).x) / 2));
@@ -61,7 +87,7 @@ export function buildOverlay(view: PostureView, landmarks: Landmark[], width: nu
     }
   } else {
     const s = sagittalLandmarks(landmarks);
-    pointIdx = [LM.NOSE, s.ear, s.shoulder, s.elbow, s.wrist, s.hip, s.knee, s.ankle, s.heel, s.foot];
+    pointIdx = pointIndices(view, landmarks);
     bones.push(
       [s.shoulder, s.elbow], [s.elbow, s.wrist], [s.hip, s.knee], [s.knee, s.ankle],
       [s.ankle, s.heel], [s.heel, s.foot], [s.ankle, s.foot],

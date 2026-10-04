@@ -11,7 +11,7 @@ import { en } from '@/lib/i18n/en';
 import { mr } from '@/lib/i18n/mr';
 import { advanceHint, firstFailingCheck, type HintKey, type HintState } from '@/lib/posture-voice';
 import { replacePostureViewsAction, savePostureAssessmentAction } from '@/actions/posture';
-import { buildOverlay } from '@/lib/posture-overlay';
+import { buildOverlay, editablePoints } from '@/lib/posture-overlay';
 import { POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
 import {
   advanceCountdown, bodyCropRect, bodyFill, BODY_FILL_TARGET, checkFrame, isLevel, isStill, medianLandmarks,
@@ -409,6 +409,9 @@ export function PostureCapture({
         <div className="space-y-3">
           <p className="font-medium">{p.views[view]}</p>
           <p className="text-sm text-muted-foreground">{c.reviewHelp}</p>
+          {editablePoints(view, draft.landmarks, draft.width, draft.height).some((pt) => !pt.detected) && (
+            <p className="text-sm text-orange-700">{c.missedPointsHelp}</p>
+          )}
           <div className="mx-auto" style={stageStyle(draft.width, draft.height)}>
             <LandmarkEditor
               imageUrl={draft.url}

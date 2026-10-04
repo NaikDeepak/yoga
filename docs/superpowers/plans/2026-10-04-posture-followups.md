@@ -57,8 +57,7 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 ### Phase 1 — before clinic rollout (≈2–3 days)
 1. **A1–A4** (people/ops). Thresholds live in `THRESHOLDS` in `src/lib/posture.ts`; clinical text in `src/lib/i18n/en.ts` → `posture.insights.patterns`.
 2. ✅ **B1 Audible guidance** (done — branch `feat/posture-voice-guidance`) — Web Speech API (`speechSynthesis`) + short beep on 3-2-1 and on capture; spoken view instruction ("turn your back to the camera"), en/mr voices with beep fallback. Mute toggle. Pure: none; UI only.
-3. **B2 Place missed points** — editor shows handles for every landmark used by that view's metrics; low-visibility ones in a distinct colour at their guessed position (clamped into frame), labelled; dragging sets visibility 1. Test: `computeViewMetrics` measures a previously hidden point after edit.
-4. **B3 Render throttling** — keep landmarks in a ref; draw the live overlay via a ref'd SVG/canvas each frame; `setState` only when check results or countdown change. Measure FPS before/after on a mid-range Android.
+3. ✅ **B2 Place missed points** (done — branch `feat/posture-place-missed-points`) — editor shows handles for every landmark used by that view's metrics; low-visibility ones in a distinct colour at their guessed position (clamped into frame), labelled; dragging sets visibility 1. Test: `computeViewMetrics` measures a previously hidden point after edit.
 
 ### Phase 2 — workflow (≈3–4 days)
 5. **C1 Prescribe from report** — "Add to prescription" per focus category (pre-selects library exercises of that category in the existing prescription form / `savePrescribedExercisesAction`).
@@ -76,6 +75,9 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 ### Phase 4 — scope expansion (separate spec each)
 14. **D1 Flexibility tests** — new capture mode per pose with MediaPipe angles (e.g. hip-flexion angle in forward fold, knee height in butterfly, shoulder extension angle), 0–100 score bands, combined "overall /300"-style score next to posture.
 15. **D3 AI narrative** (optional, therapist-editable) and **D2 gait** — scope separately.
+
+### Low priority
+- **B3 Render throttling** (deprioritised 2026-10-04: the clinic uses recent phones) — keep landmarks in a ref; draw the live overlay via a ref'd SVG/canvas each frame; `setState` only when check results or countdown change. Revisit only if a device shows lag or heat.
 
 ### Ongoing
 - **E4** add lightweight counters (capture attempts, blocks by check, model load failures) — no images, no PHI.
