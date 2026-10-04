@@ -23,6 +23,7 @@ import { DeleteButton } from '@/components/DeleteButton';
 import { Button } from '@/components/ui/button';
 import { PostureFigure } from '@/components/posture/PostureFigure';
 import { PostureFindings } from '@/components/posture/PostureFindings';
+import { PostureAiPanel } from '@/components/posture/PostureAiPanel';
 import {
   BRAND, PatternCard, RegionBars, ScoreRing, SectionHeader, SeverityDot,
 } from '@/components/posture/ReportParts';
@@ -120,6 +121,17 @@ export default async function PostureReportPage({
           <p className="mt-3 text-[11px] text-gray-500">{ins.averaged}</p>
         </div>
       </section>
+
+      {/* ── AI ANALYSIS ── (hidden in print until one exists) */}
+      <div className={assessment.aiReport ? '' : 'print:hidden'}>
+        <SectionHeader>{p.ai.title}</SectionHeader>
+        <PostureAiPanel
+          patientId={id}
+          assessmentId={assessmentId}
+          report={assessment.aiReport ?? null}
+          approvedAt={assessment.aiApprovedAt ? assessment.aiApprovedAt.toISOString().slice(0, 10) : null}
+        />
+      </div>
 
       {/* ── PATTERN ── */}
       <SectionHeader>{ins.overallPattern}</SectionHeader>

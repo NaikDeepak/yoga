@@ -10,8 +10,16 @@ import { firstError, postureAssessmentSchema, postureRetakeSchema } from '@/lib/
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { getPatient } from '@/data/patients';
 import {
-  addPostureAssessment, deletePostureAssessment, replacePostureViews, type PostureViewInput,
+  addPostureAssessment, deletePostureAssessment, getPostureAssessment, replacePostureViews, saveAiReport,
+  type PostureViewInput,
 } from '@/data/posture';
+import { listProblems } from '@/data/problems';
+import { getLifestyleAssessment } from '@/data/lifestyle';
+import { listAllExercises } from '@/data/exercises';
+import { computeBmi } from '@/lib/bmi';
+import { generatePostureAnalysis } from '@/lib/gemini';
+import { postureAiReportSchema, type PostureAiContext } from '@/lib/posture-ai';
+import { combineViews, detectPatterns, scorePosture } from '@/lib/posture-insights';
 import type { ActionResult } from '@/actions/patients';
 
 const INVALID_PARAMS: ActionResult = { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
@@ -128,7 +136,7 @@ export async function replacePostureViewsAction(
   } catch {
     return SAVE_FAILED;
   }
-  if (!updated) return { ok: false, error: 'Assessment not found / मूल्यांकन सापडले नाही' };
+  if (!updated) return NOT_FOUND;
 
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);
@@ -147,4 +155,104 @@ export async function deletePostureAssessmentAction(patientId: string, assessmen
   revalidatePath(`/patients/${patientId}`);
   // Redirect server-side: the caller is the report page of the record that no longer exists.
   redirect(`/patients/${patientId}?tab=assessment`);
+}
+
+const NOT_FOUND: ActionResult = { ok: false, error: 'Assessment not found / मूल्यांकन सापडले नाही' };
+
+/**
+ * Generates the AI analysis for an assessment and saves it as a draft. Sends measurements and a
+ * de-identified profile (age, gender, body size, ailments, posture-relevant lifestyle) — never the
+ * name, contact details or photos.
+ */
+export async function generatePostureAiAction(patientId: string, assessmentId: string): Promise<ActionResult> {
+  await requireUser();
+  if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
+    return INVALID_PARAMS;
+  }
+  const db = getDb();
+  const [patient, assessment] = await Promise.all([getPatient(db, patientId), getPostureAssessment(db, assessmentId)]);
+  if (!patient || !assessment || assessment.patientId !== patientId) return NOT_FOUND;
+  const [problems, lifestyle, library] = await Promise.all([
+    listProblems(db, patientId), getLifestyleAssessment(db, patientId), listAllExercises(db),
+  ]);
+
+  const measures = combineViews(assessment.views.map((v) => ({ view: v.view as PostureView, metrics: v.metrics })));
+  const context: PostureAiContext = {
+    client: {
+      age: patient.age ?? null,
+      gender: patient.gender ?? null,
+      heightCm: assessment.heightCm ?? patient.heightCm ?? null,
+      weightKg: patient.weightKg ?? null,
+      bmi: computeBmi(patient.weightKg, patient.heightCm),
+    },
+    ailments: problems.map((p) => p.problem),
+    lifestyle: lifestyle ? {
+      chiefComplaint: lifestyle.chiefComplaint ?? null,
+      duration: lifestyle.duration ?? null,
+      workType: lifestyle.workType ?? null,
+      dailySitting: lifestyle.dailySitting ?? null,
+      screenTime: lifestyle.screenTime ?? null,
+      activityLevel: lifestyle.activityLevel ?? null,
+      primaryGoal: lifestyle.primaryGoal ?? null,
+      doctorRestrictions: lifestyle.doctorRestrictions ?? null,
+      contraindications: lifestyle.hasContraindications ? (lifestyle.contraindicationDetails ?? 'yes') : null,
+    } : null,
+    assessment: {
+      assessedOn: assessment.assessedOn,
+      score: scorePosture(measures),
+      patterns: detectPatterns(measures),
+      measures,
+      cameraLevel: assessment.views.find((v) => v.cameraCheck)?.cameraCheck?.method ?? null,
+    },
+    library: library.map((e) => ({ name: e.name, category: e.category })),
+  };
+
+  let report;
+  try {
+    report = await generatePostureAnalysis(context);
+  } catch {
+    return { ok: false, error: 'AI analysis failed. Please try again. / AI विश्लेषण अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.' };
+  }
+  await saveAiReport(db, patientId, assessmentId, report, { approved: false });
+  revalidatePath(`/patients/${patientId}/posture/${assessmentId}`);
+  return { ok: true };
+}
+
+const lines = (formData: FormData, key: string) =>
+  String(formData.get(key) ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
+
+/** The physio's reviewed/edited analysis (one item per line; findings as "Title: explanation"). Marks it approved. */
+export async function savePostureAiAction(
+  patientId: string,
+  assessmentId: string,
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireUser();
+  if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
+    return INVALID_PARAMS;
+  }
+  const parsed = postureAiReportSchema.safeParse({
+    summary: String(formData.get('summary') ?? ''),
+    keyFindings: lines(formData, 'keyFindings').map((l) => {
+      const at = l.indexOf(':');
+      return at > 0 ? { title: l.slice(0, at).trim(), explanation: l.slice(at + 1).trim() } : { title: l, explanation: l };
+    }),
+    lifestyleLinks: lines(formData, 'lifestyleLinks'),
+    likelyCauses: lines(formData, 'likelyCauses'),
+    risks: lines(formData, 'risks'),
+    recommendations: {
+      exercises: lines(formData, 'exercises'),
+      ergonomics: lines(formData, 'ergonomics'),
+      yogaAndBreathing: lines(formData, 'yogaAndBreathing'),
+    },
+    followUp: String(formData.get('followUp') ?? ''),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: 'Summary, at least one finding and follow-up are required / सारांश, किमान एक निष्कर्ष आणि पुढील तपासणी आवश्यक' };
+  }
+  const saved = await saveAiReport(getDb(), patientId, assessmentId, parsed.data, { approved: true });
+  if (!saved) return NOT_FOUND;
+  revalidatePath(`/patients/${patientId}/posture/${assessmentId}`);
+  return { ok: true };
 }

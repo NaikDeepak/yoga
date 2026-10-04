@@ -1,4 +1,8 @@
 import { isLocalMock } from './local-mock';
+import {
+  buildPostureAiPrompt, parseAiReport, MOCK_POSTURE_AI_REPORT, POSTURE_AI_RESPONSE_SCHEMA, POSTURE_AI_SYSTEM_PROMPT,
+  type PostureAiContext, type PostureAiReport,
+} from './posture-ai';
 
 export type TreatmentDraftFields = {
   yogaProgram: string;
@@ -150,23 +154,26 @@ const MOCK_TREATMENT_DRAFT: TreatmentDraftFields = {
   panchkarma: '',
 };
 
-export async function generateTreatmentDraft(context: TreatmentContext): Promise<TreatmentDraftFields> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey && isLocalMock()) return { ...MOCK_TREATMENT_DRAFT };
-  if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
-
+/** POSTs one structured-output request to Gemini and returns the parsed JSON. */
+async function callGeminiJson(
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string,
+  responseSchema: unknown,
+  timeoutMs: number,
+): Promise<unknown> {
   const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents: [{ parts: [{ text: buildPrompt(context) }] }],
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ parts: [{ text: userPrompt }] }],
       generationConfig: {
         responseMimeType: 'application/json',
-        responseSchema: RESPONSE_SCHEMA,
+        responseSchema,
       },
     }),
-    signal: AbortSignal.timeout(15_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   if (!res.ok) {
@@ -179,8 +186,15 @@ export async function generateTreatmentDraft(context: TreatmentContext): Promise
   };
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Gemini returned empty response');
+  return JSON.parse(text);
+}
 
-  const parsed = JSON.parse(text) as Record<string, unknown>;
+export async function generateTreatmentDraft(context: TreatmentContext): Promise<TreatmentDraftFields> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey && isLocalMock()) return { ...MOCK_TREATMENT_DRAFT };
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
+
+  const parsed = await callGeminiJson(apiKey, SYSTEM_PROMPT, buildPrompt(context), RESPONSE_SCHEMA, 15_000) as Record<string, unknown>;
   const EXPECTED_KEYS: Array<keyof TreatmentDraftFields> = [
     'yogaProgram', 'pranayam', 'massage', 'yogaTherapy', 'dietPlan', 'medicines', 'panchkarma',
   ];
@@ -190,4 +204,17 @@ export async function generateTreatmentDraft(context: TreatmentContext): Promise
     }
   }
   return parsed as TreatmentDraftFields;
+}
+
+/** AI-written posture analysis from measurements + profile (no name, no photos). See lib/posture-ai.ts. */
+export async function generatePostureAnalysis(context: PostureAiContext): Promise<PostureAiReport> {
+  const libraryNames = context.library.map((e) => e.name);
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey && isLocalMock()) return parseAiReport(MOCK_POSTURE_AI_REPORT, libraryNames);
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
+
+  const raw = await callGeminiJson(
+    apiKey, POSTURE_AI_SYSTEM_PROMPT, buildPostureAiPrompt(context), POSTURE_AI_RESPONSE_SCHEMA, 30_000,
+  );
+  return parseAiReport(raw, libraryNames);
 }

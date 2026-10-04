@@ -76,6 +76,12 @@ history) on a client's Assessment tab shows in local dev and is **hidden in prod
 `FEATURE_POSTURE=true` is set (e.g. in Vercel env vars). `FEATURE_POSTURE=false` hides it locally.
 Only the entry point is hidden; posture URLs still work for signed-in staff.
 
+## AI posture analysis (Gemini)
+"Generate AI analysis" on a posture report uses the same `GEMINI_API_KEY` as AI treatment drafts. It sends the
+measurements, score/patterns and a de-identified profile (age, gender, height, weight, BMI, ailments, posture-relevant
+lifestyle answers) — **no name, contact details or photos**. Without a key in local mock mode it returns a canned analysis.
+The result is a draft until the physio clicks "Edit & approve".
+
 ## Testing posture capture on a phone (HTTPS on the local network)
 Browsers only allow camera access on HTTPS pages (or `localhost`), so a phone needs HTTPS.
 
@@ -122,4 +128,5 @@ WASM runtime is served from our own origin (`public/mediapipe/`, copied from nod
 - [ ] Posture (laptop): no-sensor path shows door-frame calibration; continue is blocked while the line reads > 1.5°; report shows "door frame (roll only)"
 - [ ] Posture voice: instruction spoken at each view, 3 beeps + shutter on capture, "Please hold still" after ~2.5 s of movement; the Voice guidance toggle silences it immediately and is remembered on the device; Marathi UI speaks Marathi (or Hindi voice) where available
 - [ ] Posture review: a point the detector missed shows as a dashed orange handle with a hint; dragging it onto the joint fills in the measures that needed it
+- [ ] Posture AI: Generate → draft badge + sections; Edit & approve → "Reviewed by the therapist on …"; Regenerate resets to draft; print shows "AI draft — not yet reviewed" for drafts
 - [ ] Posture: wrong facing (e.g. back to camera on the Front step) keeps "Facing correctly" red; manual "Capture now" still works

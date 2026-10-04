@@ -7,6 +7,7 @@ import type { FileStorage } from '@/lib/storage';
 import { computeViewMetrics, POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
 import type { CameraCheck } from '@/lib/posture-capture';
 import { combineViews, scorePosture, type Grade } from '@/lib/posture-insights';
+import type { PostureAiReport } from '@/lib/posture-ai';
 
 export interface PostureViewInput {
   view: PostureView;
@@ -200,4 +201,26 @@ export async function replacePostureViews(
   // Only after the rows point at the new photos; best effort, the retake itself has succeeded.
   await Promise.allSettled(existing.map((e) => storage.remove(e.filePath)));
   return getPostureAssessment(db, assessmentId);
+}
+
+/**
+ * Stores the AI analysis. `approved: false` = a freshly generated draft (stamps ai_generated_at,
+ * clears approval); `approved: true` = the physio's reviewed/edited version (stamps ai_approved_at).
+ * Returns false if the assessment isn't this client's.
+ */
+export async function saveAiReport(
+  db: Db,
+  patientId: string,
+  assessmentId: string,
+  report: PostureAiReport,
+  { approved }: { approved: boolean },
+): Promise<boolean> {
+  const now = new Date();
+  const updated = await db.update(postureAssessments)
+    .set(approved
+      ? { aiReport: report, aiApprovedAt: now }
+      : { aiReport: report, aiGeneratedAt: now, aiApprovedAt: null })
+    .where(and(eq(postureAssessments.id, assessmentId), eq(postureAssessments.patientId, patientId)))
+    .returning({ id: postureAssessments.id });
+  return updated.length > 0;
 }
