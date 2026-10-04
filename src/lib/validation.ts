@@ -3,6 +3,7 @@ import { BRANCHES, DOC_TYPES } from './presets';
 import { getISTDateString } from './dates';
 import { FEE_TYPE_KEYS } from './feeTypes';
 import { POSE_LANDMARK_COUNT, POSTURE_VIEWS } from './posture';
+import { isLevel } from './posture-capture';
 
 const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
@@ -177,6 +178,14 @@ const postureViewSchema = z.object({
     visibility: z.number(POSTURE_DATA_ERR).min(0, POSTURE_DATA_ERR).max(1, POSTURE_DATA_ERR),
   }, POSTURE_DATA_ERR), POSTURE_DATA_ERR).length(POSE_LANDMARK_COUNT, POSTURE_DATA_ERR),
   landmarksEdited: z.boolean(POSTURE_DATA_ERR),
+  cameraCheck: z.object({
+    method: z.enum(['sensor', 'reference'], POSTURE_DATA_ERR),
+    rollDeg: z.number(POSTURE_DATA_ERR).min(-45, POSTURE_DATA_ERR).max(45, POSTURE_DATA_ERR),
+    pitchDeg: z.number(POSTURE_DATA_ERR).min(-90, POSTURE_DATA_ERR).max(90, POSTURE_DATA_ERR).nullable(),
+  }, POSTURE_DATA_ERR).refine(
+    (c) => isLevel(c),
+    'Camera was not level — retake the photo / कॅमेरा सरळ नव्हता — फोटो पुन्हा घ्या',
+  ),
 }, POSTURE_DATA_ERR);
 
 export const postureAssessmentSchema = z.object({

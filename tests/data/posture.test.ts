@@ -25,6 +25,7 @@ function view(v: PostureView, overrides: Parameters<typeof alignedLandmarks>[1] 
   return {
     view: v, photo: jpeg(), imageWidth: POSTURE_W, imageHeight: POSTURE_H,
     landmarks: alignedLandmarks(v, overrides), landmarksEdited: false,
+    cameraCheck: { method: 'sensor', rollDeg: 0.4, pitchDeg: -1.2 },
   };
 }
 
@@ -69,6 +70,14 @@ describe('addPostureAssessment', () => {
     const a = await addPostureAssessment(db, storage, input({ views }));
     expect(a.views.find((v) => v.view === 'back')?.landmarksEdited).toBe(true);
     expect(a.views.find((v) => v.view === 'front')?.landmarksEdited).toBe(false);
+  });
+
+  it('stores how the camera level was verified', async () => {
+    const views = allViews();
+    views[1] = { ...views[1], cameraCheck: { method: 'reference', rollDeg: -0.8, pitchDeg: null } };
+    const a = await addPostureAssessment(db, storage, input({ views }));
+    expect(a.views.find((v) => v.view === 'front')?.cameraCheck).toEqual({ method: 'sensor', rollDeg: 0.4, pitchDeg: -1.2 });
+    expect(a.views.find((v) => v.view === 'right')?.cameraCheck).toEqual({ method: 'reference', rollDeg: -0.8, pitchDeg: null });
   });
 
   it('removes already-uploaded photos and inserts nothing when an upload fails part-way', async () => {

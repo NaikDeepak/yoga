@@ -2,7 +2,8 @@
 // and the measured lines, in image-pixel coordinates. Pure — rendered by PostureFigure.
 import { LM, MIN_VISIBILITY, sagittalLandmarks, type Landmark, type MetricKey, type PostureView } from './posture';
 
-export interface OverlayPoint { x: number; y: number }
+/** `index` is the MediaPipe landmark index (for editing). */
+export interface OverlayPoint { x: number; y: number; index: number }
 export interface OverlayLine {
   x1: number; y1: number; x2: number; y2: number;
   kind: 'bone' | 'reference' | 'measure';
@@ -75,6 +76,6 @@ export function buildOverlay(view: PostureView, landmarks: Landmark[], width: nu
   }
 
   for (const [a, b] of bones) if (shown(a, b)) lines.push(line(a, b, 'bone'));
-  const points = pointIdx.filter((i) => shown(i)).map(px);
+  const points = pointIdx.filter((i) => shown(i)).map((i) => ({ ...px(i), index: i }));
   return { width, height, points, lines };
 }

@@ -21,6 +21,7 @@ beforeEach(async () => {
 
 const viewPayload = (v: PostureView) => ({
   view: v, imageWidth: 1000, imageHeight: 2000, landmarks: alignedLandmarks(v), landmarksEdited: false,
+  cameraCheck: { method: 'sensor' as const, rollDeg: 0.4, pitchDeg: -1 },
 });
 
 function form(

@@ -140,6 +140,7 @@ describe('prescribedExercisesListSchema', () => {
 describe('postureAssessmentSchema', () => {
   const view = (v: 'front' | 'back' | 'left' | 'right') => ({
     view: v, imageWidth: 1000, imageHeight: 2000, landmarks: alignedLandmarks(v), landmarksEdited: false,
+    cameraCheck: { method: 'sensor' as 'sensor' | 'reference', rollDeg: 0.4, pitchDeg: 1 as number | null },
   });
   const valid = () => ({
     consent: true, assessedOn: '2026-10-04', note: 'Baseline',
@@ -180,6 +181,15 @@ describe('postureAssessmentSchema', () => {
     expect(err(vis)).toBe(msg);
     expect(err({ ...valid(), views: [{ ...view('front'), view: 'top' }, view('right'), view('back'), view('left')] })).toBe(msg);
     expect(err({ ...valid(), views: [{ ...view('front'), imageWidth: 0 }, view('right'), view('back'), view('left')] })).toBe(msg);
+  });
+
+  it('requires a level camera check for every view', () => {
+    const tilted = valid(); tilted.views[0].cameraCheck = { method: 'sensor', rollDeg: 2, pitchDeg: 0 };
+    expect(err(tilted)).toBe('Camera was not level — retake the photo / कॅमेरा सरळ नव्हता — फोटो पुन्हा घ्या');
+    const doorFrame = valid(); doorFrame.views[0].cameraCheck = { method: 'reference', rollDeg: 1, pitchDeg: null };
+    expect(postureAssessmentSchema.safeParse(doorFrame).success).toBe(true);
+    const missing = valid() as { views: Record<string, unknown>[] }; delete missing.views[0].cameraCheck;
+    expect(err(missing)).toBe('Invalid posture data / चुकीची पोश्चर माहिती');
   });
 
   it('rejects a bad date and an over-long note', () => {

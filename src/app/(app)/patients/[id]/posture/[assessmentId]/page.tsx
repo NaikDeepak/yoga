@@ -43,6 +43,7 @@ export default async function PostureReportPage({
     view: v.view as PostureView,
     metrics: v.metrics,
     edited: v.landmarksEdited,
+    cameraCheck: v.cameraCheck,
     overlay: buildOverlay(v.view as PostureView, v.landmarks, v.imageWidth, v.imageHeight),
     photoUrl: await storage.createSignedUrl(v.filePath).catch(() => null),
   })));
@@ -125,6 +126,17 @@ export default async function PostureReportPage({
             <div className="mx-auto w-full max-w-[300px]">
               <h3 className="mb-2 text-sm font-semibold">{p.views[v.view]}</h3>
               <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={p.views[v.view]} noPhotoLabel={p.noPhoto} />
+              {v.cameraCheck && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {v.cameraCheck.method === 'sensor' ? p.capture.cameraLevelSensor : p.capture.cameraLevelReference}
+                  {' · '}
+                  {v.cameraCheck.pitchDeg === null
+                    ? p.capture.rollOnly.replace('{roll}', v.cameraCheck.rollDeg.toFixed(1))
+                    : p.capture.sensorReading
+                      .replace('{roll}', v.cameraCheck.rollDeg.toFixed(1))
+                      .replace('{pitch}', v.cameraCheck.pitchDeg.toFixed(1))}
+                </p>
+              )}
               {v.edited && <p className="mt-1 text-xs text-muted-foreground">{p.edited}</p>}
             </div>
             <div className="overflow-x-auto md:pt-7">

@@ -70,6 +70,7 @@ export async function savePostureAssessmentAction(patientId: string, formData: F
         imageHeight: v.imageHeight,
         landmarks: v.landmarks,
         landmarksEdited: v.landmarksEdited,
+        cameraCheck: v.cameraCheck,
       })),
     });
     assessmentId = assessment.id;

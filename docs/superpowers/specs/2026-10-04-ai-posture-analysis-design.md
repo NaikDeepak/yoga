@@ -204,3 +204,16 @@ Report page accepts `?compare=<otherAssessmentId>`: per view, two `PostureFigure
 5. `posture-capture.ts` + `PostureCapture` + `LandmarkEditor` + new page.
 6. Assessment-tab section + button; compare view; print.
 7. i18n, architecture.md, setup.md QA checklist.
+
+## Changes during implementation (2026-10-04)
+
+- **Camera level is enforced and recorded per view** (`posture_views.camera_check` jsonb: `{ method, rollDeg, pitchDeg }`).
+  - Phones: gravity vector from `DeviceMotionEvent.accelerationIncludingGravity` (not DeviceOrientation β/γ, which gimbal-lock when the phone is upright). Tolerance: roll ±1.5°, pitch ±3° — roll is tighter because shoulder/pelvic level is flagged from 2°.
+  - Laptops (no sensor): **door-frame calibration** — therapist drags a line onto a true vertical; roll must be within ±1.5° to continue; pitch is recorded as `null` and the report says "roll only".
+  - Server rejects any view whose camera check is outside tolerance.
+  - Residual roll is **recorded only**, not auto-corrected; revisit after verifying sensor sign conventions on real devices.
+- **Models load from CDN**, not `public/mediapipe/`: the heavy model is ~30 MB, too large for the repo. WASM from jsdelivr (pinned to the npm version), models from `storage.googleapis.com`. Only model files are downloaded; images stay on the device until saved to our storage.
+- Side views: "right" = client's right side to the camera, i.e. facing image-right; checked via toe direction (fallback nose vs ear).
+- Front vs back is checked from MediaPipe's left/right label order — needs validation on real captures.
+- `npm run dev:phone` (`scripts/dev-phone.sh`) serves HTTPS on the LAN with a self-signed cert for phone testing.
+- The "Add posture assessment" button landed in step 5 (needed for phone testing); the assessment history list remains step 6.

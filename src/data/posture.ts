@@ -5,6 +5,7 @@ import {
 import type { Db } from '@/db/types';
 import type { FileStorage } from '@/lib/storage';
 import { computeViewMetrics, POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
+import type { CameraCheck } from '@/lib/posture-capture';
 
 export interface PostureViewInput {
   view: PostureView;
@@ -13,6 +14,7 @@ export interface PostureViewInput {
   imageHeight: number;
   landmarks: Landmark[];
   landmarksEdited: boolean;
+  cameraCheck: CameraCheck | null;
 }
 
 export interface PostureAssessmentInput {
@@ -70,6 +72,7 @@ export async function addPostureAssessment(
         imageHeight: v.imageHeight,
         landmarks: v.landmarks,
         landmarksEdited: v.landmarksEdited,
+        cameraCheck: v.cameraCheck,
         metrics: computeViewMetrics(v.view, v.landmarks, {
           width: v.imageWidth, height: v.imageHeight, heightCm: input.heightCm,
         }),

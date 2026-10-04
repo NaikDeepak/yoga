@@ -33,9 +33,9 @@ describe('buildOverlay — frontal views', () => {
     lms[LM.RIGHT_SHOULDER].visibility = 0.2;
     const o = buildOverlay('front', lms, POSTURE_W, POSTURE_H);
     expect(measure(o.lines, 'shoulderLevel')).toBeUndefined();
-    expect(o.points).not.toContainEqual({ x: 400, y: 500 });
+    expect(o.points).not.toContainEqual(expect.objectContaining({ x: 400, y: 500 }));
     expect(o.lines.some((l) => l.x1 === 400 && l.y1 === 500)).toBe(false);
-    expect(o.points).toContainEqual({ x: 600, y: 500 });
+    expect(o.points).toContainEqual({ x: 600, y: 500, index: LM.LEFT_SHOULDER });
   });
 
   it('omits the plumb line when the ankles are hidden', () => {
@@ -54,7 +54,7 @@ describe('buildOverlay — side views', () => {
     expect(measure(o.lines, 'cva')).toMatchObject({ x1: 500, y1: 500, x2: 710, y2: 290 });
     expect(measure(o.lines, 'trunkLean')).toMatchObject({ x1: 500, y1: 1000, x2: 500, y2: 500 });
     expect(refs(o.lines)).toContainEqual(expect.objectContaining({ x1: 500, y1: 0, x2: 500, y2: POSTURE_H }));
-    expect(o.points).not.toContainEqual({ x: 100, y: 200 });
+    expect(o.points).not.toContainEqual(expect.objectContaining({ x: 100, y: 200 }));
   });
 
   it('adds a horizontal reference at shoulder height for the CVA', () => {

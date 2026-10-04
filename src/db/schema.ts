@@ -3,6 +3,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import type { Landmark, Metric } from '@/lib/posture';
+import type { CameraCheck } from '@/lib/posture-capture';
 
 export const patients = pgTable('patients', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -236,6 +237,9 @@ export const postureViews = pgTable('posture_views', {
   landmarks: jsonb('landmarks').$type<Landmark[]>().notNull(), // 33 × {x,y,visibility}, normalised 0–1
   landmarksEdited: boolean('landmarks_edited').default(false).notNull(),
   metrics: jsonb('metrics').$type<Metric[]>().notNull(), // always computed server-side from landmarks
+  // How camera level was verified at capture: phone gravity sensor, or a door-frame reference line
+  // (roll only). Null for rows captured before this was recorded.
+  cameraCheck: jsonb('camera_check').$type<CameraCheck>(),
 }, (table) => [
   uniqueIndex('posture_views_assessment_view_uq').on(table.assessmentId, table.view),
   check('posture_views_view_check', sql`${table.view} IN ('front', 'back', 'left', 'right')`),

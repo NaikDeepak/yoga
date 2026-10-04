@@ -19,7 +19,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 ## Module map
 | Path | Responsibility | Key exports |
 |---|---|---|
-| `src/db/schema.ts` | 14 tables: patients, patient_problems, documents, treatment_plans, visits, lifestyle_assessments, fees, fee_payments, charges, user_preferences, exercises, prescribed_exercises, posture_assessments, posture_views (landmarks + metrics as jsonb) | table objects + row types |
+| `src/db/schema.ts` | 14 tables: patients, patient_problems, documents, treatment_plans, visits, lifestyle_assessments, fees, fee_payments, charges, user_preferences, exercises, prescribed_exercises, posture_assessments, posture_views (landmarks + metrics + camera_check as jsonb) | table objects + row types |
 | `src/db/client.ts` | prod DB singleton; local-mock branch reads the PGlite cache | `getDb()` |
 | `src/db/types.ts` | DB type shared by prod/test | `Db` |
 | `src/db/local-cache.ts` | globalThis handle for the mock PGlite db (HMR-safe, no PGlite import) | `getLocalDbCache`, `setLocalDbCache` |
@@ -39,6 +39,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/posture.ts` | posture metrics from 33 MediaPipe landmarks: frontal (front/back — anatomical sides by image x) + sagittal (left/right — near side by visibility) angles/offsets, cm via client height, severity bands | `computeViewMetrics`, `severity`, `THRESHOLDS`, `LM`, `POSTURE_VIEWS` |
 | `src/lib/posture-overlay.ts` | what to draw on a posture photo (pixels): skeleton bones, plumb + level references, severity-coloured measure lines; side views draw the near side only | `buildOverlay`, `Overlay`, `OverlayLine` |
 | `src/lib/posture-format.ts` | metric → display strings (value+unit, side/direction, status) from `t.posture`; summary counts + mild/marked list | `formatMetric`, `summarizeFindings` |
+| `src/lib/posture-capture.ts` | live-capture checks: camera level from gravity (`levelFromGravity`, ±1.5° roll / ±3° pitch) or a door-frame line (`rollFromReferenceLine`), framing/facing (`checkFrame`), stillness (`isStill`); `CameraCheck` stored per view | `levelFromGravity`, `isLevel`, `rollFromReferenceLine`, `checkFrame`, `isStill`, `CameraCheck`, `LEVEL_TOLERANCE` |
 | `src/lib/files.ts` | upload rules (4MB — Vercel body limit, pdf/jpg/png) | `validateUpload`, `validatePhoto` |
 | `src/lib/validation.ts` | zod schemas, bilingual messages | `patientSchema`, `problemSchema`, `treatmentSchema`, `visitSchema`, `lifestyleSchema`, `docTypeSchema`, `postureAssessmentSchema` (consent + 4 distinct views × 33 landmarks), `firstError` |
 | `src/lib/storage.ts` | file storage abstraction (Supabase / R2 / local-mock fs) | `FileStorage`, `getStorage()`, `localFileStorage`, `BUCKET` |
@@ -65,7 +66,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/actions/posture.ts` | save a posture assessment (`payload` JSON + `photo_<view>` files, ≤4 MB combined; height snapshot from client; redirects to report) / delete one (scoped to client) | `savePostureAssessmentAction`, `deletePostureAssessmentAction` |
 | `src/actions/*` (rest) | server actions per domain; all return `ActionResult` | `*Action` functions |
 | `src/components/*` | Client islands: PatientForm (live BMI, grouped sections), InlineForm (error display), DeleteButton (AlertDialog confirm; optional `redirectTo` after success), PrintButton, AilmentBarChart (Recharts horizontal bar), VisitLineChart (Recharts line), TreatmentPlanForm (AI treatment builder), AddChargeForm (typed charge entry with fee-type presets and default-amount prefill), PatientHeader (sticky compact header via IntersectionObserver), TabDropdown (mobile tab select), GlobalSearch (debounced live patient search dropdown in top nav), BranchFilter (branch-scoped dashboard filter), CalendarMonthGrid (read-only month-grid follow-up view with day-click dialog), PrescribedExercisesForm (exercise-library picker with per-patient reps/frequency overrides + custom note), WellnessTipCard (sidebar health tip of the day + WhatsApp share via contact picker), PainScaleInput (segmented 1–10 pain picker, hidden input for server forms) | — |
-| `src/components/posture/*` | server-rendered posture report pieces: PostureFigure (photo + SVG overlay from `buildOverlay`, severity colours), PostureFindings + SeverityChip (findings table) | `PostureFigure`, `PostureFindings`, `SeverityChip` |
+| `src/components/posture/*` | Report (server): PostureFigure/OverlaySvg (photo + SVG overlay from `buildOverlay`), PostureFindings + SeverityChip. Capture (client): PostureCapture (setup → door-frame calibration if no sensor → live guide with 4 checks + 3 s auto-capture → LandmarkEditor review → summary/save), `pose-detector.ts` (MediaPipe from CDN: lite for live video, heavy for stills), `hooks.ts` (`useCamera`, `useDeviceLevel`, `requestMotionPermission`), LevelIndicator, DragHandles | `PostureCapture`, `PostureFigure`, `OverlaySvg`, `PostureFindings` |
 | `src/components/ui/native-select.tsx` | styled native `<select>` for server-rendered forms (Input-matched look; used by problems/documents/assessment forms) | `NativeSelect` |
 | `src/components/ui/*` | shadcn/ui generated components (Button, Input, Label, Card, Badge, AlertDialog, Dialog, Avatar, Separator, Tabs, Textarea, Select) | — |
 | `src/lib/utils.ts` | shadcn `cn()` helper (clsx + tailwind-merge) | `cn` |
@@ -74,7 +75,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/app/api/patients/search` | API GET route handler backing the global search dropdown | — |
 | `src/app/(app)/dashboard` | clinic-wide stats, ailment bar chart, recent visits, day-grouped follow-up agenda, branch filter, quick-add patient | — |
 | `src/app/(app)/calendar` | read-only month-grid view of upcoming follow-ups, branch filter, month navigation | — |
-| `src/app/(app)/patients/*` | list/new/detail/edit/print pages. Detail has 5 tabs (overview incl. problems + visit summary, treatment incl. progress charts, documents, fees, assessment); legacy `?tab=problems/progress` map to their new homes. `posture/[assessmentId]` = printable posture report (letterhead, summary, per-view `PostureFigure` + `PostureFindings`) | — |
+| `src/app/(app)/patients/*` | list/new/detail/edit/print pages. Detail has 5 tabs (overview incl. problems + visit summary, treatment incl. progress charts, documents, fees, assessment); legacy `?tab=problems/progress` map to their new homes. `posture/new` = camera capture (PostureCapture); `posture/[assessmentId]` = printable posture report (letterhead, summary, per-view `PostureFigure` + `PostureFindings`) | — |
 | `src/middleware.ts` | session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
 | `src/app/manifest.ts` | PWA web-app manifest (installable on Android: standalone display, icons in `public/icons/`) | `manifest` (default) |
 

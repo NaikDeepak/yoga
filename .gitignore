@@ -29,3 +29,6 @@ graphify-out/
 scripts/create-admin.js
 .env*
 !.env.example
+
+# self-signed dev HTTPS certs (scripts/dev-phone.sh)
+certificates/

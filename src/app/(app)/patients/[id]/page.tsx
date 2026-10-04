@@ -32,6 +32,8 @@ import { SubmitButton } from '@/components/SubmitButton';
 import { PainScaleInput } from '@/components/PainScaleInput';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScanLine } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { VisitNoteInput } from '@/components/VisitNoteInput';
@@ -676,6 +678,17 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
 
   return (
     <div className="max-w-2xl space-y-6">
+      <Card className="rounded-2xl border-l-4 border-l-primary/40">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
+          <CardTitle className="text-base">{t.posture.title}</CardTitle>
+          <Button asChild size="sm">
+            <Link href={`/patients/${patientId}/posture/new`}>
+              <ScanLine className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              {t.posture.add}
+            </Link>
+          </Button>
+        </CardHeader>
+      </Card>
       <InlineForm
         action={saveLifestyleAssessmentAction.bind(null, patientId)}
         className="space-y-6"
