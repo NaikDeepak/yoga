@@ -103,3 +103,21 @@ export async function savePrescribedExercises(
     }
   });
 }
+
+/**
+ * Adds exercises to a patient's prescription without touching existing ones (unlike
+ * savePrescribedExercises, which replaces the whole set). New rows use the library defaults.
+ */
+export async function addPrescribedExercises(
+  db: Db,
+  patientId: string,
+  exerciseIds: string[],
+): Promise<{ added: number; alreadyPrescribed: number }> {
+  const unique = [...new Set(exerciseIds)];
+  if (!unique.length) return { added: 0, alreadyPrescribed: 0 };
+  const inserted = await db.insert(prescribedExercises)
+    .values(unique.map((exerciseId) => ({ patientId, exerciseId })))
+    .onConflictDoNothing({ target: [prescribedExercises.patientId, prescribedExercises.exerciseId] })
+    .returning({ id: prescribedExercises.id });
+  return { added: inserted.length, alreadyPrescribed: unique.length - inserted.length };
+}

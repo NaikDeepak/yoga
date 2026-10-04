@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { prescribedExercisesListSchema } from '@/lib/validation';
-import { savePrescribedExercises } from '@/data/exercises';
+import { addPrescribedExercises, savePrescribedExercises } from '@/data/exercises';
+import { z } from 'zod';
 import type { ActionResult } from './patients';
 
 export async function savePrescribedExercisesAction(
@@ -34,6 +35,32 @@ export async function savePrescribedExercisesAction(
     return { ok: true };
   } catch (error) {
     console.error('Failed to save prescribed exercises:', error);
+    return { ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी' };
+  }
+}
+
+const exerciseIdsSchema = z.object({
+  patientId: z.string().uuid(),
+  exerciseIds: z.array(z.string().uuid()).min(1).max(50),
+});
+
+/**
+ * Adds exercises (e.g. from a posture report's focus areas or AI recommendations) to the patient's
+ * prescription at library defaults, keeping everything already prescribed. The click is the
+ * physio's confirmation; they can adjust or remove items on the Treatment tab.
+ */
+export async function addPrescribedExercisesAction(
+  patientId: string,
+  exerciseIds: string[],
+): Promise<{ ok: true; added: number; alreadyPrescribed: number } | { ok: false; error: string }> {
+  await requireUser();
+  const parsed = exerciseIdsSchema.safeParse({ patientId, exerciseIds });
+  if (!parsed.success) return { ok: false, error: 'Invalid exercise selection / अमान्य व्यायाम निवड' };
+  try {
+    const result = await addPrescribedExercises(getDb(), patientId, parsed.data.exerciseIds);
+    revalidatePath(`/patients/${patientId}`);
+    return { ok: true, ...result };
+  } catch {
     return { ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी' };
   }
 }

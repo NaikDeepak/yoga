@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb } from '../helpers/action-mocks';
-import { savePrescribedExercisesAction } from '@/actions/exercises';
+import { revalidatePath } from 'next/cache';
+import { savePrescribedExercisesAction, addPrescribedExercisesAction } from '@/actions/exercises';
 import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
@@ -59,5 +60,29 @@ describe('savePrescribedExercisesAction', () => {
 
     const result = await savePrescribedExercisesAction(patientId, fd({ prescribedExercisesJson: badPayload }));
     expect(result).toMatchObject({ ok: false });
+  });
+});
+
+describe('addPrescribedExercisesAction', () => {
+  it('adds exercises to the prescription and reports how many were new', async () => {
+    const [a, b] = await listAllExercises(db);
+    vi.mocked(revalidatePath).mockClear();
+    expect(await addPrescribedExercisesAction(patientId, [a.id, b.id])).toEqual({ ok: true, added: 2, alreadyPrescribed: 0 });
+    expect(await addPrescribedExercisesAction(patientId, [a.id])).toEqual({ ok: true, added: 0, alreadyPrescribed: 1 });
+    expect(await getPrescribedExercises(db, patientId)).toHaveLength(2);
+    expect(revalidatePath).toHaveBeenCalledWith(`/patients/${patientId}`);
+  });
+
+  it('rejects bad input', async () => {
+    const msg = { ok: false, error: 'Invalid exercise selection / अमान्य व्यायाम निवड' };
+    expect(await addPrescribedExercisesAction(patientId, [])).toEqual(msg);
+    expect(await addPrescribedExercisesAction(patientId, ['not-a-uuid'])).toEqual(msg);
+    expect(await addPrescribedExercisesAction('', ['00000000-0000-0000-0000-000000000000'])).toEqual(msg);
+  });
+
+  it('reports a failure (e.g. unknown exercise id) without throwing', async () => {
+    expect(await addPrescribedExercisesAction(patientId, ['00000000-0000-0000-0000-000000000000'])).toEqual({
+      ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी',
+    });
   });
 });

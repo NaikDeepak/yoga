@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { PostureFigure } from '@/components/posture/PostureFigure';
 import { PostureFindings } from '@/components/posture/PostureFindings';
 import { PostureAiPanel } from '@/components/posture/PostureAiPanel';
+import { AddToPrescriptionButton } from '@/components/posture/AddToPrescriptionButton';
 import {
   BRAND, PatternCard, RegionBars, ScoreRing, SectionHeader, SeverityDot,
 } from '@/components/posture/ReportParts';
@@ -69,7 +70,9 @@ export default async function PostureReportPage({
   const retakeViews = POSTURE_VIEWS.filter((v) => disagreements.some((m) => m.sources.some((s) => s.view === v)));
   const retakeHref = (vs: readonly PostureView[]) => `/patients/${id}/posture/${assessmentId}/retake?views=${vs.join(',')}`;
   const focus = focusCategories(patterns);
-  const library = focus.length ? await listAllExercises(db) : [];
+  const aiExercises = assessment.aiReport?.recommendations.exercises ?? [];
+  const library = focus.length || aiExercises.length ? await listAllExercises(db) : [];
+  const aiExerciseIds = library.filter((e) => aiExercises.includes(e.name)).map((e) => e.id);
   const exercisesFor = (category: string) =>
     library.filter((e) => e.category === category).slice(0, EXERCISES_PER_CATEGORY);
 
@@ -133,6 +136,7 @@ export default async function PostureReportPage({
           assessmentId={assessmentId}
           report={assessment.aiReport ?? null}
           approvedAt={assessment.aiApprovedAt ? assessment.aiApprovedAt.toISOString().slice(0, 10) : null}
+          recommendedExerciseIds={aiExerciseIds}
         />
       </div>
 
@@ -215,6 +219,7 @@ export default async function PostureReportPage({
                     <ul className="mt-1 list-disc pl-4 text-sm text-gray-700">
                       {exercisesFor(cat).map((e) => <li key={e.id}>{locale === 'mr' ? e.nameMr : e.name}</li>)}
                     </ul>
+                    <AddToPrescriptionButton patientId={id} exerciseIds={exercisesFor(cat).map((e) => e.id)} />
                   </>
                 )}
               </div>

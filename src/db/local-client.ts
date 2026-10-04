@@ -5,6 +5,7 @@ import * as schema from './schema';
 import type { Db } from './types';
 import { getLocalDbCache, setLocalDbCache, type LocalDbCache } from './local-cache';
 import { seedMockData } from './seed-mock';
+import { seedExercises } from './seed-exercises';
 
 export const LOCAL_DB_DIR = '.local-db';
 
@@ -16,7 +17,10 @@ export function getLocalDb(): LocalDbCache {
     const client = new PGlite(LOCAL_DB_DIR);
     const pgliteDb = drizzle(client, { schema });
     const db = pgliteDb as unknown as Db;
-    const ready = migrate(pgliteDb, { migrationsFolder: 'drizzle' }).then(() => seedMockData(db));
+    // seedExercises is an idempotent upsert, so the exercise library is present (and kept current) in mock mode too.
+    const ready = migrate(pgliteDb, { migrationsFolder: 'drizzle' })
+      .then(() => seedMockData(db))
+      .then(() => seedExercises(db));
     cache = { db, ready };
     setLocalDbCache(cache);
   }

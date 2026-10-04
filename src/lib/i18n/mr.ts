@@ -504,6 +504,14 @@ export const mr: Translations = {
       notMeasured: '—',
       notFound: 'तुलनेसाठी या साधकाची दोन मूल्यांकने निवडा.',
     },
+    prescribe: {
+      add: 'प्रिस्क्रिप्शनमध्ये जोडा',
+      addAi: 'सुचवलेले व्यायाम प्रिस्क्रिप्शनमध्ये जोडा',
+      added: '{added} प्रिस्क्रिप्शनमध्ये जोडले',
+      addedSome: '{added} जोडले · {already} आधीच दिलेले',
+      allPresent: 'आधीच प्रिस्क्रिप्शनमध्ये आहे',
+      view: 'प्रिस्क्रिप्शन पहा',
+    },
     ai: {
       title: 'AI विश्लेषण',
       generate: 'AI विश्लेषण तयार करा',

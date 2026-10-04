@@ -502,6 +502,14 @@ export const en = {
       notMeasured: '—',
       notFound: 'Choose two assessments of this client to compare.',
     },
+    prescribe: {
+      add: 'Add to prescription',
+      addAi: 'Add recommended exercises to prescription',
+      added: '{added} added to the prescription',
+      addedSome: '{added} added · {already} already prescribed',
+      allPresent: 'Already in the prescription',
+      view: 'View prescription',
+    },
     ai: {
       title: 'AI analysis',
       generate: 'Generate AI analysis',
