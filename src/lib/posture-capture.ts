@@ -109,18 +109,32 @@ export function checkFrame(view: PostureView, lms: Landmark[], size: { width: nu
   return { inFrame, facing: facingDir === expected && ratio !== null && ratio <= SAGITTAL_MAX_WIDTH_RATIO };
 }
 
-const FRONTAL_STILL_KEYPOINTS = [LM.NOSE, LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, LM.LEFT_HIP, LM.RIGHT_HIP, LM.LEFT_ANKLE, LM.RIGHT_ANKLE];
-export const STILL_MIN_FRAMES = 15; // ≈0.5–1 s of video
-const STILL_MAX_SHIFT = 0.006;      // normalised image units
+const median = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+};
 
-/** Points to watch for stillness — side views use only the near side (the far side jitters while occluded). */
+const FRONTAL_STILL_KEYPOINTS = [LM.NOSE, LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, LM.LEFT_HIP, LM.RIGHT_HIP, LM.LEFT_ANKLE, LM.RIGHT_ANKLE];
+export const STILL_MIN_FRAMES = 15;  // ≈0.5–1 s of video
+const STILL_MAX_SHIFT = 0.008;       // normalised image units from the window's median position
+const STILL_MIN_FRACTION = 0.8;      // share of frames that must be within tolerance
+
+/**
+ * Points to watch for stillness. From behind, head points are skipped (the face is hidden, so the
+ * detector guesses and hair movement makes them jump); side views use only the near side.
+ */
 export function stillKeypoints(view: PostureView, lms: Landmark[]): number[] {
-  if (view === 'front' || view === 'back') return FRONTAL_STILL_KEYPOINTS;
+  if (view === 'front') return FRONTAL_STILL_KEYPOINTS;
+  if (view === 'back') return FRONTAL_STILL_KEYPOINTS.filter((i) => i !== LM.NOSE);
   const s = sagittalLandmarks(lms);
   return [LM.NOSE, s.ear, s.shoulder, s.hip, s.knee, s.ankle];
 }
 
-/** True when the given points have stayed within a small radius across the recent frames (oldest first). */
+/**
+ * True when, over the recent frames (oldest first), at least 80% keep every watched point within
+ * a small radius of its median position. Robust to a few glitchy detections; real swaying fails.
+ */
 export function isStill(
   frames: Landmark[][],
   keypoints: number[],
@@ -129,9 +143,13 @@ export function isStill(
 ): boolean {
   if (frames.length < minFrames) return false;
   const recent = frames.slice(-minFrames);
-  const first = recent[0];
-  return recent.every((f) => keypoints.every((i) =>
-    Math.hypot(f[i].x - first[i].x, f[i].y - first[i].y) <= maxShift));
+  const centre = keypoints.map((i) => ({
+    x: median(recent.map((f) => f[i].x)),
+    y: median(recent.map((f) => f[i].y)),
+  }));
+  const steady = recent.filter((f) => keypoints.every((i, k) =>
+    Math.hypot(f[i].x - centre[k].x, f[i].y - centre[k].y) <= maxShift)).length;
+  return steady / recent.length >= STILL_MIN_FRACTION;
 }
 
 export interface CountdownState { okSince: number | null; lastOk: number | null }
@@ -160,12 +178,6 @@ export function advanceCountdown(
 }
 
 // ── still-photo processing ──────────────────────────────────────────────────
-
-const median = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b);
-  const mid = Math.floor(s.length / 2);
-  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
-};
 
 /** Per-point median of several detections of the same still pose; damps single-frame jitter/outliers. */
 export function medianLandmarks(frames: Landmark[][]): Landmark[] {

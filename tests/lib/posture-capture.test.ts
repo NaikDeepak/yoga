@@ -179,9 +179,31 @@ describe('isStill', () => {
     const swaying = Array.from({ length: 15 }, (_, i) => frame(i * 0.002));
     expect(isStill(swaying, keys)).toBe(false);
   });
+
+  it('tolerates a couple of glitchy frames in the window', () => {
+    const keys = stillKeypoints('front', frame());
+    const glitchy = Array.from({ length: 15 }, (_, i) => frame(i === 4 || i === 9 ? 0.03 : 0));
+    expect(isStill(glitchy, keys)).toBe(true);
+    const shaky = Array.from({ length: 15 }, (_, i) => frame(i % 3 === 0 ? 0.03 : 0)); // 5 of 15 off
+    expect(isStill(shaky, keys)).toBe(false);
+  });
 });
 
 describe('stillKeypoints', () => {
+  it('ignores head points from behind, where the face is hidden and hair moves', () => {
+    expect(stillKeypoints('front', alignedLandmarks('front'))).toContain(LM.NOSE);
+    const back = stillKeypoints('back', alignedLandmarks('back'));
+    expect(back).not.toContain(LM.NOSE);
+    expect(back).toEqual(expect.arrayContaining([LM.LEFT_SHOULDER, LM.RIGHT_HIP, LM.LEFT_ANKLE]));
+    // head jitter from behind doesn't break stillness
+    const frames = Array.from({ length: 15 }, (_, i) => {
+      const f = alignedLandmarks('back');
+      f[LM.NOSE] = { ...f[LM.NOSE], x: f[LM.NOSE].x + (i % 2) * 0.03 };
+      return f;
+    });
+    expect(isStill(frames, back)).toBe(true);
+  });
+
   it('uses both sides from the front/back and only the near side from the side', () => {
     expect(stillKeypoints('front', alignedLandmarks('front'))).toContain(LM.RIGHT_SHOULDER);
     const side = stillKeypoints('left', alignedLandmarks('left'));
