@@ -165,8 +165,9 @@ export type PrescribedExerciseInput = z.infer<typeof prescribedExerciseSchema>;
 
 // Posture assessment payload (JSON part of the capture form; photos are sent as separate files).
 const POSTURE_DATA_ERR = { error: 'Invalid posture data / चुकीची पोश्चर माहिती' };
-// MediaPipe reports out-of-frame points slightly outside 0–1; such points also get low visibility.
-const landmarkCoord = z.number(POSTURE_DATA_ERR).min(-1, POSTURE_DATA_ERR).max(2, POSTURE_DATA_ERR);
+// MediaPipe reports out-of-frame points outside 0–1 (with low visibility); the capture screen clamps
+// them to this range when cropping (remapToCrop), so anything beyond it is malformed.
+const landmarkCoord = z.number(POSTURE_DATA_ERR).min(-0.5, POSTURE_DATA_ERR).max(1.5, POSTURE_DATA_ERR);
 
 const postureViewSchema = z.object({
   view: z.enum(POSTURE_VIEWS, POSTURE_DATA_ERR),

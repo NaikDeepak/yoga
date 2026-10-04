@@ -177,6 +177,10 @@ describe('postureAssessmentSchema', () => {
     expect(err(short)).toBe(msg);
     const nan = valid(); nan.views[0].landmarks[0] = { x: NaN, y: 0.5, visibility: 1 };
     expect(err(nan)).toBe(msg);
+    const far = valid(); far.views[0].landmarks[0] = { x: 1.6, y: 0.5, visibility: 0.1 };
+    expect(err(far)).toBe(msg);
+    const edge = valid(); edge.views[0].landmarks[0] = { x: 1.5, y: -0.5, visibility: 0.1 };
+    expect(postureAssessmentSchema.safeParse(edge).success).toBe(true);
     const vis = valid(); vis.views[0].landmarks[0] = { x: 0.5, y: 0.5, visibility: 2 };
     expect(err(vis)).toBe(msg);
     expect(err({ ...valid(), views: [{ ...view('front'), view: 'top' }, view('right'), view('back'), view('left')] })).toBe(msg);

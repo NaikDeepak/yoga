@@ -59,8 +59,10 @@ export async function requestMotionPermission(): Promise<boolean> {
 
 /**
  * Smoothed camera level from the gravity sensor while `enabled`.
- * `supported`: null while probing, false when no real gravity data arrives within 1.5 s (laptops).
+ * `supported`: null while probing, false when no real gravity data arrives within 3 s (laptops).
  */
+const SENSOR_PROBE_MS = 3000;
+
 export function useDeviceLevel(enabled: boolean) {
   const [level, setLevel] = useState<Level | null>(null);
   const [supported, setSupported] = useState<boolean | null>(null);
@@ -80,7 +82,8 @@ export function useDeviceLevel(enabled: boolean) {
       if (l) { setLevel(l); setSupported(true); }
     };
     window.addEventListener('devicemotion', onMotion);
-    const probe = window.setTimeout(() => setSupported((s) => s ?? false), 1500);
+    // Generous: a busy phone can be slow to fire the first event; a late event still flips to `true`.
+    const probe = window.setTimeout(() => setSupported((s) => s ?? false), SENSOR_PROBE_MS);
     return () => { window.removeEventListener('devicemotion', onMotion); window.clearTimeout(probe); };
   }, [enabled]);
 

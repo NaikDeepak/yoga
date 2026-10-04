@@ -34,10 +34,10 @@ interface Capture {
 }
 
 const MAX_EDGE = 1600;       // px, long edge of the saved crop; four JPEGs stay well under the 4 MB upload cap
-const DETECTIONS = 3;        // still-photo detections combined by per-point median
-const DETECTION_GAP_MS = 120;
-const JPEG_QUALITY = 0.85;
-const HISTORY_FRAMES = 30;
+const DETECTIONS = 3;        // still-photo detections combined by per-point median (odd → a true median)
+const DETECTION_GAP_MS = 120; // spread the detections over ~¼ s so they see different video frames
+const JPEG_QUALITY = 0.85;   // ~150–300 KB per crop; visually lossless for review and print
+const HISTORY_FRAMES = 30;   // live landmark history kept for the stillness check (≥ STILL_MIN_FRAMES)
 
 /** Sizes a media box to its aspect ratio while fitting within 70% of the viewport height. */
 const stageStyle = (w: number, h: number) => ({
