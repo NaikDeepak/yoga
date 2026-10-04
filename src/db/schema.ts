@@ -1,7 +1,8 @@
 import {
-  pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index, uniqueIndex, check,
+  pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index, uniqueIndex, check, jsonb,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import type { Landmark, Metric } from '@/lib/posture';
 
 export const patients = pgTable('patients', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -210,3 +211,35 @@ export const prescribedExercises = pgTable('prescribed_exercises', {
 export type Exercise = typeof exercises.$inferSelect;
 export type PrescribedExerciseRow = typeof prescribedExercises.$inferSelect;
 
+
+export const postureAssessments = pgTable('posture_assessments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  assessedOn: date('assessed_on').notNull(),
+  heightCm: real('height_cm'), // snapshot of client height used for cm conversion
+  note: text('note'),
+  consentAt: timestamp('consent_at').notNull(), // when the photo-consent checkbox was ticked
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('posture_assessments_patient_idx').on(table.patientId, table.assessedOn),
+]).enableRLS();
+
+export const postureViews = pgTable('posture_views', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  assessmentId: uuid('assessment_id').notNull()
+    .references(() => postureAssessments.id, { onDelete: 'cascade' }),
+  view: text('view').notNull(), // 'front' | 'back' | 'left' | 'right'
+  filePath: text('file_path').notNull(), // private bucket; signed URLs only
+  imageWidth: integer('image_width').notNull(),
+  imageHeight: integer('image_height').notNull(),
+  landmarks: jsonb('landmarks').$type<Landmark[]>().notNull(), // 33 × {x,y,visibility}, normalised 0–1
+  landmarksEdited: boolean('landmarks_edited').default(false).notNull(),
+  metrics: jsonb('metrics').$type<Metric[]>().notNull(), // always computed server-side from landmarks
+}, (table) => [
+  uniqueIndex('posture_views_assessment_view_uq').on(table.assessmentId, table.view),
+  check('posture_views_view_check', sql`${table.view} IN ('front', 'back', 'left', 'right')`),
+]).enableRLS();
+
+export type PostureAssessmentRow = typeof postureAssessments.$inferSelect;
+export type PostureViewRow = typeof postureViews.$inferSelect;

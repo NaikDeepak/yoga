@@ -19,7 +19,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 ## Module map
 | Path | Responsibility | Key exports |
 |---|---|---|
-| `src/db/schema.ts` | 9 tables: patients, patient_problems, documents, treatment_plans, visits, lifestyle_assessments, fees, fee_payments, user_preferences | table objects + row types |
+| `src/db/schema.ts` | 14 tables: patients, patient_problems, documents, treatment_plans, visits, lifestyle_assessments, fees, fee_payments, charges, user_preferences, exercises, prescribed_exercises, posture_assessments, posture_views (landmarks + metrics as jsonb) | table objects + row types |
 | `src/db/client.ts` | prod DB singleton; local-mock branch reads the PGlite cache | `getDb()` |
 | `src/db/types.ts` | DB type shared by prod/test | `Db` |
 | `src/db/local-cache.ts` | globalThis handle for the mock PGlite db (HMR-safe, no PGlite import) | `getLocalDbCache`, `setLocalDbCache` |
@@ -46,6 +46,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/supabase/*` | vendor cookie glue (coverage-exempt) | `createSupabaseServerClient`, `updateSession` |
 | `src/data/patients.ts` | CRUD + search + code assignment (transaction) | `createPatient`, `getPatient`, `updatePatient`, `setPhotoPath`, `searchPatients` |
 | `src/data/problems.ts` | ailment rows | `addProblem`, `listProblems`, `removeProblem`, `problemsForPatients` |
+| `src/data/posture.ts` | posture assessments: upload all view photos → one transaction for assessment + views; metrics always recomputed from landmarks (never caller-supplied); any failure removes uploaded photos | `addPostureAssessment`, `listPostureAssessments` (with mild/marked counts), `getPostureAssessment`, `deletePostureAssessment` |
 | `src/data/documents.ts` | upload-then-insert, cleanup on failure | `addDocument`, `listDocuments`, `deleteDocument` |
 | `src/data/treatment.ts` | one plan per patient (upsert) | `getTreatmentPlan`, `upsertTreatmentPlan` |
 | `src/data/dashboard.ts` | aggregate queries for global stats | `getDashboardStats`, `getAilmentBreakdown`, `getRecentVisits` |
@@ -77,6 +78,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 - BMI is never stored; always computed from weight/height.
 - Patient codes are assigned only inside `createPatient`'s transaction.
 - Document rows exist only if the file upload succeeded (and vice-versa cleanup).
+- Posture metrics are computed server-side in `addPostureAssessment` from stored landmarks; client-computed numbers are display-only.
 - All file access via signed URLs; bucket is private; service-role key server-only.
 - Every mutation goes through a server action that calls `requireUser()` first (auth actions excepted — they create/end the session itself).
 - Mock mode never runs in production: `isLocalMock()` throws when `LOCAL_MOCK=true` under `NODE_ENV=production`; never read `process.env.LOCAL_MOCK` directly.
@@ -90,6 +92,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 ## Testing
 - `tests/helpers/db.ts` — in-memory PGlite running real migrations.
 - `tests/helpers/fake-storage.ts` — `FileStorage` fake with failure injection.
+- `tests/helpers/posture.ts` — `alignedLandmarks(view, overrides)` (33-point upright body on 1000×2000, pixel overrides) + `jpeg()` file stub.
 - `tests/helpers/action-mocks.ts` — vi.mocks for db client, storage, auth, next/cache, next/navigation.
 - Auth/storage glue is unit-tested with mocked Supabase clients (`tests/actions/auth.test.ts`, `tests/lib/auth.test.ts`, `tests/lib/storage.test.ts`).
 - Coverage: 80% enforced on lib/data/actions. UI = component test (PatientForm) + `next build` + manual checklist in `docs/setup.md`.
