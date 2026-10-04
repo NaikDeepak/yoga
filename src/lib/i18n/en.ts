@@ -502,6 +502,21 @@ export const en = {
       notMeasured: '—',
       notFound: 'Choose two assessments of this client to compare.',
     },
+    voice: {
+      instructions: {
+        front: 'Please stand facing the camera, with your arms relaxed by your sides.',
+        right: 'Now turn so that your right side faces the camera.',
+        back: 'Now turn your back to the camera.',
+        left: 'Now turn so that your left side faces the camera.',
+      },
+      hints: {
+        inFrame: 'Please make sure your whole body, from head to feet, is in view.',
+        still: 'Please hold still.',
+      },
+      captured: 'Thank you.',
+      on: 'Voice guidance on',
+      off: 'Voice guidance off',
+    },
     capture: {
       title: 'New posture assessment',
       retakeTitle: 'Retake posture photos',
