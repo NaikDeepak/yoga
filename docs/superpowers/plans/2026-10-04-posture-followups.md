@@ -74,7 +74,7 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 
 ### Phase 4 — scope expansion (separate spec each)
 14. **D1 Flexibility tests** — new capture mode per pose with MediaPipe angles (e.g. hip-flexion angle in forward fold, knee height in butterfly, shoulder extension angle), 0–100 score bands, combined "overall /300"-style score next to posture.
-15. **D3 AI narrative** (optional, therapist-editable) and **D2 gait** — scope separately.
+15. ✅ **D3 AI analysis** (done — `feat/posture-ai-analysis`, spec `2026-10-04-posture-ai-analysis.md`) and and **D2 gait** — scope separately.
 
 ### Low priority
 - **B3 Render throttling** (deprioritised 2026-10-04: the clinic uses recent phones) — keep landmarks in a ref; draw the live overlay via a ref'd SVG/canvas each frame; `setState` only when check results or countdown change. Revisit only if a device shows lag or heat.

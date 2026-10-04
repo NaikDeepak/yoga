@@ -69,7 +69,7 @@ export function combineViews(views: ViewMetrics): CombinedMetric[] {
   }
   return [...groups.values()].map((g) => {
     if (!g.sources.length) {
-      return { key: g.key, value: null, unit: g.unit, side: null, direction: null, severity: null, approx: g.approx, sources: [], lowConfidence: false };
+      return { key: g.key, value: null, unit: g.unit, side: g.limbSide, direction: null, severity: null, approx: g.approx, sources: [], lowConfidence: false };
     }
     const values = g.sources.map((s) => signed(s.metric));
     const unit = g.sources[0].metric.unit;

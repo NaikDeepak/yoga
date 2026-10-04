@@ -4,6 +4,7 @@ import {
 import { sql } from 'drizzle-orm';
 import type { Landmark, Metric } from '@/lib/posture';
 import type { CameraCheck } from '@/lib/posture-capture';
+import type { PostureAiReport } from '@/lib/posture-ai';
 
 export const patients = pgTable('patients', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -221,6 +222,10 @@ export const postureAssessments = pgTable('posture_assessments', {
   heightCm: real('height_cm'), // snapshot of client height used for cm conversion
   note: text('note'),
   consentAt: timestamp('consent_at').notNull(), // when the photo-consent checkbox was ticked
+  // AI-written analysis (see lib/posture-ai.ts). Draft until the physio approves it.
+  aiReport: jsonb('ai_report').$type<PostureAiReport>(),
+  aiGeneratedAt: timestamp('ai_generated_at'),
+  aiApprovedAt: timestamp('ai_approved_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   index('posture_assessments_patient_idx').on(table.patientId, table.assessedOn),

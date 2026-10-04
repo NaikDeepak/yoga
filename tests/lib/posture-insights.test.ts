@@ -114,6 +114,12 @@ describe('combineViews', () => {
     expect(find(c, 'kneeAlignment', 'left')).toMatchObject({ value: 6, severity: 'mild' });
   });
 
+  it('keeps the leg label on a leg no view could measure', () => {
+    const hidden: Metric = { ...mk('kneeAlignment', null), side: 'right' };
+    const c = combineViews(views({ front: [hidden], back: [{ ...hidden }] }));
+    expect(find(c, 'kneeAlignment', 'right')).toMatchObject({ value: null, side: 'right' });
+  });
+
   it('reports not measurable when no view could measure it', () => {
     const c = combineViews(views({ front: [mk('pelvicLevel', null)], back: [mk('pelvicLevel', null)] }));
     expect(find(c, 'pelvicLevel')).toMatchObject({ value: null, severity: null, sources: [], lowConfidence: false });

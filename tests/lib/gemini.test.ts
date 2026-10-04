@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { generateTreatmentDraft, type TreatmentContext } from '@/lib/gemini';
+import { generateTreatmentDraft, generatePostureAnalysis, type TreatmentContext } from '@/lib/gemini';
+import { MOCK_POSTURE_AI_REPORT, POSTURE_AI_SYSTEM_PROMPT, type PostureAiContext } from '@/lib/posture-ai';
 
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
@@ -214,5 +215,58 @@ describe('generateTreatmentDraft', () => {
     expect(url).toContain('key=test-key');
     expect(options?.method).toBe('POST');
     expect((options as RequestInit).headers).toEqual({ 'Content-Type': 'application/json' });
+  });
+});
+
+describe('generatePostureAnalysis', () => {
+  const ctx: PostureAiContext = {
+    client: { age: 46, gender: 'female', heightCm: 158, weightKg: 68, bmi: 27.2 },
+    ailments: [],
+    lifestyle: null,
+    assessment: {
+      assessedOn: '2026-10-04',
+      score: { overall: 90, grade: 'good', regions: { headNeck: { score: 85, worst: 'mild' }, shoulders: { score: 100, worst: 'normal' }, trunk: { score: null, worst: null }, pelvis: { score: null, worst: null }, legs: { score: null, worst: null } } },
+      patterns: [],
+      measures: [],
+      cameraLevel: 'sensor',
+    },
+    library: [{ name: 'Neck Stretch', category: 'neck' }],
+  };
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    process.env.GEMINI_API_KEY = 'test-key';
+  });
+  afterEach(() => {
+    delete process.env.GEMINI_API_KEY;
+    vi.unstubAllEnvs();
+  });
+
+  it('sends the posture prompt with the JSON schema and validates the answer', async () => {
+    mockGeminiOk({ ...MOCK_POSTURE_AI_REPORT, recommendations: { ...MOCK_POSTURE_AI_REPORT.recommendations, exercises: ['Neck Stretch', 'Unknown Move'] } });
+    const report = await generatePostureAnalysis(ctx);
+    expect(report.recommendations.exercises).toEqual(['Neck Stretch']);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.system_instruction.parts[0].text).toBe(POSTURE_AI_SYSTEM_PROMPT);
+    expect(body.contents[0].parts[0].text).toContain('Posture score: 90/100');
+    expect(body.generationConfig.responseSchema.required).toContain('keyFindings');
+  });
+
+  it('rejects an answer that fails validation', async () => {
+    mockGeminiOk({ summary: 'only a summary' });
+    await expect(generatePostureAnalysis(ctx)).rejects.toThrow();
+  });
+
+  it('returns the canned analysis in local mock mode without an API key', async () => {
+    delete process.env.GEMINI_API_KEY;
+    vi.stubEnv('LOCAL_MOCK', 'true');
+    const report = await generatePostureAnalysis(ctx);
+    expect(report.summary).toBe(MOCK_POSTURE_AI_REPORT.summary);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('throws without an API key outside mock mode', async () => {
+    delete process.env.GEMINI_API_KEY;
+    await expect(generatePostureAnalysis(ctx)).rejects.toThrow('GEMINI_API_KEY');
   });
 });

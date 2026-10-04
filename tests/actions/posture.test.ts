@@ -2,13 +2,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb, storage } from '../helpers/action-mocks';
 import { alignedLandmarks, jpeg } from '../helpers/posture';
-import { savePostureAssessmentAction, deletePostureAssessmentAction, replacePostureViewsAction } from '@/actions/posture';
+import {
+  savePostureAssessmentAction, deletePostureAssessmentAction, replacePostureViewsAction,
+  generatePostureAiAction, savePostureAiAction,
+} from '@/actions/posture';
+import { generatePostureAnalysis } from '@/lib/gemini';
+import { MOCK_POSTURE_AI_REPORT } from '@/lib/posture-ai';
 import { createPatient } from '@/data/patients';
 import { addPostureAssessment, listPostureAssessments, getPostureAssessment } from '@/data/posture';
 import { requireUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import type { Db } from '@/db/types';
+
+vi.mock('@/lib/gemini', () => ({ generatePostureAnalysis: vi.fn() }));
 
 let db: Db;
 let patientId: string;
@@ -229,5 +236,74 @@ describe('replacePostureViewsAction', () => {
       ok: false, error: 'Could not save posture assessment / पोश्चर मूल्यांकन जतन करता आले नाही',
     });
     expect(storage.files.size).toBe(4);
+  });
+});
+
+describe('posture AI analysis actions', () => {
+  const addOne = (id = patientId) => addPostureAssessment(db, storage, {
+    patientId: id, assessedOn: '2026-10-04', heightCm: 160, note: null, consentAt: new Date(),
+    views: POSTURE_VIEWS.map((v) => ({ ...viewPayload(v), photo: jpeg() })),
+  });
+
+  beforeEach(() => vi.mocked(generatePostureAnalysis).mockReset());
+
+  it('generates a draft from measurements + profile without the client name', async () => {
+    vi.mocked(generatePostureAnalysis).mockResolvedValue(MOCK_POSTURE_AI_REPORT);
+    const { id } = await addOne();
+    expect(await generatePostureAiAction(patientId, id)).toEqual({ ok: true });
+    const ctx = vi.mocked(generatePostureAnalysis).mock.calls[0][0];
+    expect(JSON.stringify(ctx)).not.toContain('Asha');
+    expect(JSON.stringify(ctx)).not.toContain('9876543210');
+    expect(ctx.client.heightCm).toBe(160);
+    expect(ctx.assessment.measures.length).toBeGreaterThan(0);
+    expect(ctx.assessment.cameraLevel).toBe('sensor');
+    const a = await getPostureAssessment(db, id);
+    expect(a).toMatchObject({ aiReport: MOCK_POSTURE_AI_REPORT, aiApprovedAt: null });
+    expect(revalidatePath).toHaveBeenCalledWith(`/patients/${patientId}/posture/${id}`);
+  });
+
+  it("refuses another client's assessment and bad parameters", async () => {
+    const { id } = await addOne();
+    const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
+    expect(await generatePostureAiAction(otherId, id)).toEqual({ ok: false, error: 'Assessment not found / मूल्यांकन सापडले नाही' });
+    expect(await generatePostureAiAction('', id)).toEqual({ ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' });
+    expect(generatePostureAnalysis).not.toHaveBeenCalled();
+  });
+
+  it('saves the physio-edited analysis as approved', async () => {
+    const { id } = await addOne();
+    const f = new FormData();
+    f.set('summary', 'Mild forward head.');
+    f.set('keyFindings', 'Forward head: about 12° ahead of the shoulders\nUneven shoulders: right 2° lower');
+    f.set('lifestyleLinks', 'Desk work 8 h/day');
+    f.set('likelyCauses', 'Weak deep neck flexors\n\n');
+    f.set('risks', 'Neck pain');
+    f.set('exercises', 'Neck Stretch');
+    f.set('ergonomics', '');
+    f.set('yogaAndBreathing', 'Bhujangasana');
+    f.set('followUp', 'Reassess in 6 weeks.');
+    expect(await savePostureAiAction(patientId, id, { ok: false, error: '' }, f)).toEqual({ ok: true });
+    const a = await getPostureAssessment(db, id);
+    expect(a!.aiApprovedAt).toBeInstanceOf(Date);
+    expect(a!.aiReport).toMatchObject({
+      summary: 'Mild forward head.',
+      keyFindings: [
+        { title: 'Forward head', explanation: 'about 12° ahead of the shoulders' },
+        { title: 'Uneven shoulders', explanation: 'right 2° lower' },
+      ],
+      likelyCauses: ['Weak deep neck flexors'],
+      recommendations: { exercises: ['Neck Stretch'], ergonomics: [], yogaAndBreathing: ['Bhujangasana'] },
+    });
+  });
+
+  it('rejects an edit without a summary or findings', async () => {
+    const { id } = await addOne();
+    const f = new FormData();
+    f.set('summary', ' ');
+    f.set('keyFindings', 'Forward head: x');
+    f.set('followUp', 'Later');
+    expect(await savePostureAiAction(patientId, id, { ok: false, error: '' }, f)).toEqual({
+      ok: false, error: 'Summary, at least one finding and follow-up are required / सारांश, किमान एक निष्कर्ष आणि पुढील तपासणी आवश्यक',
+    });
   });
 });

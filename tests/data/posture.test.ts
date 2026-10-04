@@ -10,10 +10,12 @@ import {
   getPostureAssessment,
   deletePostureAssessment,
   replacePostureViews,
+  saveAiReport,
   type PostureViewInput,
 } from '@/data/posture';
 import { patients, postureAssessments, postureViews } from '@/db/schema';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
+import { MOCK_POSTURE_AI_REPORT } from '@/lib/posture-ai';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -240,5 +242,37 @@ describe('best-effort photo cleanup', () => {
     storage.remove = async () => { throw new Error('storage down'); };
     await expect(deletePostureAssessment(db, storage, patientId, a.id)).resolves.toBeUndefined();
     expect(await getPostureAssessment(db, a.id)).toBeNull();
+  });
+});
+
+describe('saveAiReport', () => {
+  it('saves a generated draft (not approved), then an approved edit', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    expect(await saveAiReport(db, patientId, a.id, MOCK_POSTURE_AI_REPORT, { approved: false })).toBe(true);
+    let got = await getPostureAssessment(db, a.id);
+    expect(got).toMatchObject({ aiReport: MOCK_POSTURE_AI_REPORT, aiApprovedAt: null });
+    expect(got!.aiGeneratedAt).toBeInstanceOf(Date);
+    const generatedAt = got!.aiGeneratedAt;
+
+    const edited = { ...MOCK_POSTURE_AI_REPORT, summary: 'Edited by the physio.' };
+    await saveAiReport(db, patientId, a.id, edited, { approved: true });
+    got = await getPostureAssessment(db, a.id);
+    expect(got!.aiReport!.summary).toBe('Edited by the physio.');
+    expect(got!.aiApprovedAt).toBeInstanceOf(Date);
+    expect(got!.aiGeneratedAt).toEqual(generatedAt); // editing doesn't change when it was generated
+  });
+
+  it('regenerating resets approval', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    await saveAiReport(db, patientId, a.id, MOCK_POSTURE_AI_REPORT, { approved: true });
+    await saveAiReport(db, patientId, a.id, MOCK_POSTURE_AI_REPORT, { approved: false });
+    expect((await getPostureAssessment(db, a.id))!.aiApprovedAt).toBeNull();
+  });
+
+  it("returns false for another client's assessment", async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
+    expect(await saveAiReport(db, otherId, a.id, MOCK_POSTURE_AI_REPORT, { approved: false })).toBe(false);
+    expect((await getPostureAssessment(db, a.id))!.aiReport).toBeNull();
   });
 });
