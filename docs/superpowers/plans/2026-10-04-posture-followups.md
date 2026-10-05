@@ -33,6 +33,9 @@ State at PR time: 4-view guided capture (phone + laptop), enforced camera level,
 | C4 | No **ideal-posture reference** figure (FlexifyMe shows one next to each view). |
 | C5 | No therapist "reviewed" state; note can't be edited after save. |
 | C6 | Spinal curves (kyphosis / lordosis) not estimated; FlexifyMe gives a qualitative read. |
+| C7 | Report lacks FlexifyMe's client context: weight, BMI, main goal, pain level, BMI + stress gauges. Spec `2026-10-05-posture-score-overview-design.md`. |
+| C8 | No combined overall score (FlexifyMe: posture + 3 flexibility tests = /300). Needs D1 first. |
+| C9 | No phased programme timeline on the report (FlexifyMe: Initiation wk 1–6 → Adoption 7–10 → Alleviation 11–16 → Retention 17–18, self-assessment at each phase end). Could be generated from the AI analysis + prescription, with re-assessment follow-ups booked per phase. |
 
 ### D. Scope beyond posture (FlexifyMe parity)
 | # | Gap |
@@ -62,7 +65,7 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 ### Phase 2 — workflow (≈3–4 days)
 5. ✅ **C1 Prescribe from report** (done — `feat/posture-prescribe`; appends at library defaults instead of opening the form) — "Add to prescription" per focus category (pre-selects library exercises of that category in the existing prescription form / `savePrescribedExercisesAction`).
 6. **C2 Share** — signed short-lived link or PDF; WhatsApp deep link via `src/lib/whatsapp.ts` (no PHI in the message text beyond the link).
-7. **C3 Score on Overview** — latest score chip + trend vs previous on the Overview tab; optional column in the client list.
+7. **C3 + C7 Score on Overview, report client context** (spec `2026-10-05-posture-score-overview-design.md`, branch `feat/posture-overview-score`): latest score + trend on the Overview tab and client list; report gets weight/BMI/goal/pain and BMI + stress gauges.
 8. **E1 + E2 storage cleanup** — delete posture + document files when a client is deleted (collect paths before the cascade); "withdraw photo consent" deletes photos and blanks `file_path` while keeping metrics if the client agrees.
 9. ✅ **E3** — seed exercises in mock mode (done with C1: `seedExercises` runs at mock DB startup).
 
@@ -74,6 +77,7 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 
 ### Phase 4 — scope expansion (separate spec each)
 14. **D1 Flexibility tests** — new capture mode per pose with MediaPipe angles (e.g. hip-flexion angle in forward fold, knee height in butterfly, shoulder extension angle), 0–100 score bands, combined "overall /300"-style score next to posture.
+14b. **C8 Combined score** after D1; **C9 Phased programme** on the report (separate spec).
 15. ✅ **D3 AI analysis** (done — `feat/posture-ai-analysis`, spec `2026-10-04-posture-ai-analysis.md`) and and **D2 gait** — scope separately.
 
 ### Low priority
