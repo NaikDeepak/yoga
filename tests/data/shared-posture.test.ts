@@ -55,6 +55,9 @@ describe('getSharedPostureReport', () => {
     const { link } = await share(false, '2026-10-04', { front: { RIGHT_SHOULDER: [400, 535] } }); // back view level
     const r = (await getSharedPostureReport(db, storage, link))!;
     expect(r.patterns.map((p) => p.key)).not.toContain('shoulderImbalance');
+    // ...and the same reading isn't listed or coloured under the front figure either
+    const front = r.views.find((v) => v.view === 'front')!;
+    expect(front.metrics.find((m) => m.key === 'shoulderLevel')?.severity).toBeNull();
   });
 
   it('includes the AI analysis only once approved, and only its client-facing parts', async () => {

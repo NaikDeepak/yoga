@@ -71,6 +71,13 @@ export async function getSharedPostureReport(
       : null,
   })));
   const combined = combineViews(views);
+  // Readings the views disagree on are for the physio to retake: unrate them in each view so they're
+  // neither listed nor coloured on the client's page (patterns below skip them too).
+  const disputed = new Set(combined.filter((m) => m.lowConfidence).flatMap((m) => m.sources.map((s) => s.metric)));
+  const clientViews = views.map((v) => ({
+    ...v,
+    metrics: v.metrics.map((m) => (disputed.has(m) ? { ...m, severity: null } : m)),
+  }));
   const weightKg = vitals.weightKg ?? (patient.weightKg === null ? null : Number(patient.weightKg));
 
   return {
@@ -79,7 +86,7 @@ export async function getSharedPostureReport(
     photosShared: link.includePhotos,
     score: scorePosture(combined),
     patterns: detectPatterns(combined.filter((m) => !m.lowConfidence)).map((p) => ({ key: p.key, severity: p.severity })),
-    views,
+    views: clientViews,
     ai: assessment.aiReport && assessment.aiApprovedAt
       ? { summary: assessment.aiReport.summary, recommendations: assessment.aiReport.recommendations }
       : null,
