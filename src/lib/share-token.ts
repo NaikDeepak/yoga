@@ -28,3 +28,10 @@ export function shareUrl(token: string, origin: { appUrl: string | undefined; ho
   if (!base) throw new Error('Cannot build share link: set APP_URL');
   return `${base}/s/${token}`;
 }
+
+const PREVIEW_BOTS = /whatsapp|facebookexternalhit|telegrambot|slackbot|discordbot|twitterbot|linkedinbot|skypeuripreview/i;
+
+/** Chat apps fetch a link to build its preview; those fetches aren't the client opening it. */
+export function isLinkPreviewBot(userAgent: string | null): boolean {
+  return !!userAgent && PREVIEW_BOTS.test(userAgent);
+}

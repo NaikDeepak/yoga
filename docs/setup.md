@@ -75,6 +75,8 @@ at the prepared-statement level.
 public address (e.g. `https://yoga.example.com`) in Vercel env vars so links always use it; without it the
 link uses the address the physio is browsing from (fine locally, but on a phone via LAN IP the link only
 works on the same Wi-Fi). Links last 90 days; "Share again" replaces the old link.
+Note: the token is part of the URL, so hosting request logs (Vercel) record it. Only the account owner can
+read those logs; a logged token stops working when the link expires or is replaced.
 
 ## Feature flag: AI posture analysis
 Posture analysis is a premium feature still in development. The "Posture Assessment" card (add button +

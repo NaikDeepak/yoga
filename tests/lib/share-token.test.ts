@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hashShareToken, newShareToken, shareLinkExpiry, shareUrl, SHARE_LINK_TTL_DAYS } from '@/lib/share-token';
+import { hashShareToken, isLinkPreviewBot, newShareToken, shareLinkExpiry, shareUrl, SHARE_LINK_TTL_DAYS } from '@/lib/share-token';
 
 describe('newShareToken', () => {
   it('makes a 43-character base64url token (256 bits) and its hash', () => {
@@ -43,5 +43,19 @@ describe('shareUrl', () => {
 
   it('fails without any origin', () => {
     expect(() => shareUrl('tok', { appUrl: undefined, host: null, proto: null })).toThrow();
+  });
+});
+
+describe('isLinkPreviewBot', () => {
+  it('spots chat-app link previews so they are not counted as client views', () => {
+    for (const ua of [
+      'WhatsApp/2.23.20.0 A', 'facebookexternalhit/1.1', 'TelegramBot (like TwitterBot)',
+      'Slackbot-LinkExpanding 1.0', 'Mozilla/5.0 (compatible; Discordbot/2.0)', 'Twitterbot/1.0',
+    ]) expect(isLinkPreviewBot(ua)).toBe(true);
+  });
+
+  it('counts real browsers and missing user agents', () => {
+    expect(isLinkPreviewBot('Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/128 Mobile Safari/537.36')).toBe(false);
+    expect(isLinkPreviewBot(null)).toBe(false);
   });
 });

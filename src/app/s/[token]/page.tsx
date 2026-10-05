@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { getSharedExerciseProgramme } from '@/data/exercises';
 import { recordShareView } from '@/data/share-links';
 import { CLINIC } from '@/lib/clinic';
+import { isLinkPreviewBot } from '@/lib/share-token';
 import { getTranslations } from '@/lib/i18n/translations';
 
 // Public, token-checked page: it only ever receives the whitelisted SharedExerciseProgramme.
@@ -28,8 +30,11 @@ export default async function SharedExercisesPage({
   const programme = await getSharedExerciseProgramme(db, token, lang, now);
   if (!programme) notFound(); // unknown, expired and revoked all look the same
 
-  // Best-effort: a failed counter must not stop the client seeing their exercises.
-  await recordShareView(db, programme.linkId, now).catch(() => {});
+  // Best-effort: a failed counter must not stop the client seeing their exercises. WhatsApp etc. fetch
+  // the link to build a preview when the physio sends it; that isn't the client opening it.
+  if (!isLinkPreviewBot((await headers()).get('user-agent'))) {
+    await recordShareView(db, programme.linkId, now).catch(() => {});
+  }
 
   const t = getTranslations(lang).sharedPage;
   return (
