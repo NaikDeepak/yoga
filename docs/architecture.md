@@ -3,7 +3,7 @@
 Read this before touching code — it replaces scanning `src/`.
 
 ## System shape
-Next.js 15 App Router monolith. Supabase = Postgres + Auth + Storage (private bucket `patient-files`).
+Next.js 15 App Router monolith on Vercel. Production: **Neon** = Postgres, **Cloudflare R2** = files (private bucket `patient-files`), **Supabase = Auth only**. Local dev: mock mode (PGlite + mock login + local files). See `docs/environments.md`.
 Drizzle ORM everywhere; tests run the same migrations on in-memory PGlite.
 
 **Local mock mode** (`LOCAL_MOCK=true`, dev-only): file-backed PGlite at `.local-db/` (migrated +
@@ -50,7 +50,9 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/posture-ai.ts` | AI posture analysis: de-identified context (no name/photos) → prompt, Gemini response schema, zod validation (`parseAiReport` keeps only library exercises), mock report | `buildPostureAiPrompt`, `parseAiReport`, `postureAiReportSchema`, `PostureAiReport`, `PostureAiContext` |
 | `src/lib/files.ts` | upload rules (4MB — Vercel body limit, pdf/jpg/png) | `validateUpload`, `validatePhoto` |
 | `src/lib/validation.ts` | zod schemas, bilingual messages | `patientSchema`, `problemSchema`, `treatmentSchema`, `visitSchema`, `lifestyleSchema`, `docTypeSchema`, `postureAssessmentSchema` (consent + 4 distinct views × 33 landmarks + camera check), `postureRetakeSchema` (1–4 distinct views), `firstError` |
-| `src/lib/storage.ts` | file storage abstraction (Supabase / R2 / local-mock fs) | `FileStorage`, `getStorage()`, `localFileStorage`, `BUCKET` |
+| `src/lib/storage.ts` | file storage abstraction: R2 in production (throws if the 4 R2 vars are missing — no Supabase fallback), local fs in mock mode | `FileStorage`, `getStorage()`, `localFileStorage` |
+| `src/lib/prod-ops.ts` | pure helpers for the production scripts: pending migrations, release guards (clean/pushed/up-to-date main), smoke-test check, masked DB host | `pendingMigrations`, `releaseProblems`, `smokeFailures`, `maskDbUrl` |
+| `scripts/prod/*` | `db:status:prod` (read-only), `db:migrate:prod`, `deploy:prod` (worktree build → promote → smoke → auto-rollback); read only `PROD_DATABASE_URL`/`PROD_SITE_URL` from `.env` | — |
 | `src/lib/r2-storage.ts` | Cloudflare R2 storage implementation | `r2Storage` |
 | `src/lib/gemini.ts` | Gemini 2.5 Flash REST client wrapper (shared structured-JSON call; mock outputs in local mock mode without a key) | `generateTreatmentDraft`, `generatePostureAnalysis` |
 | `src/lib/auth.ts` / `auth-paths.ts` | session guard; `/login` + `/register` + `/s/*` (client share links, token-checked by the page) are public; API routes use the non-redirecting check | `requireUser`, `getSessionUser`, `isPublicPath` |
@@ -112,7 +114,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 - `tests/helpers/fake-storage.ts` — `FileStorage` fake with failure injection.
 - `tests/helpers/posture.ts` — `alignedLandmarks(view, overrides)` (33-point upright body on 1000×2000, pixel overrides) + `jpeg()` file stub.
 - `tests/helpers/action-mocks.ts` — vi.mocks for db client, storage, auth, next/cache, next/navigation.
-- Auth/storage glue is unit-tested with mocked Supabase clients (`tests/actions/auth.test.ts`, `tests/lib/auth.test.ts`, `tests/lib/storage.test.ts`).
+- Auth glue is unit-tested with mocked Supabase clients (`tests/actions/auth.test.ts`, `tests/lib/auth.test.ts`); storage selection in `tests/lib/storage.test.ts`.
 - Coverage: 80% enforced on lib/data/actions. UI = component test (PatientForm) + `next build` + manual checklist in `docs/setup.md`.
 
 ## Phase roadmap
