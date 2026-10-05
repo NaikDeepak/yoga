@@ -53,6 +53,7 @@ Every change made there changes real client records. Needs the real Supabase log
 | Live site 500 on every page, log says *"Your project's URL and Key are required"* | Supabase login vars missing in Vercel **Production** env; add them, redeploy |
 | New deploy not showing after a manual rollback | `vercel promote <deployment-url>` (`deploy:prod` does this) |
 | Need the previous version back | `vercel rollback <previous-deployment-url> --yes` |
+| `deploy:prod` stopped after "Built:" without a smoke-test result | The new build may be live untested: check `/login`, `/api/ping` and an unknown `/s/<token>` by hand, roll back if any fails |
 | `db:migrate:prod` / `deploy:prod` refuse | Follow the listed reasons (switch to `main`, commit, `git pull`, push via PR) |
 
 ## Secrets

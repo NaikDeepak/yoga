@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deploymentUrlFromCli, maskDbUrl, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
+import { alreadyLive, deploymentUrlFromCli, maskDbUrl, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
 
 const journal = [{ tag: '0000_a', when: 100 }, { tag: '0001_b', when: 200 }, { tag: '0002_c', when: 300 }];
 
@@ -66,5 +66,15 @@ describe('deploymentUrlFromCli', () => {
     expect(deploymentUrlFromCli('Error: something')).toBeNull();
     expect(deploymentUrlFromCli('{"url":"https://evil.example.com"}')).toBeNull();
     expect(deploymentUrlFromCli('{"status":"error"}')).toBeNull();
+  });
+});
+
+describe('alreadyLive', () => {
+  it("recognises Vercel's 409 for promoting the deployment that is already live", () => {
+    expect(alreadyLive('Error: The provided deploymentId (dpl_x) is already the current production deployment. (409)')).toBe(true);
+  });
+  it('treats other promote errors as real failures', () => {
+    expect(alreadyLive('Error: Deployment not found (404)')).toBe(false);
+    expect(alreadyLive('')).toBe(false);
   });
 });
