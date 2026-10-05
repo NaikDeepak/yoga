@@ -14,6 +14,11 @@ export function waMeUrl(mobile: string, text: string): string {
   return `https://api.whatsapp.com/send?phone=${withCountry}&text=${encodeURIComponent(text)}`;
 }
 
+/** Home-exercise link for the client. Only the link — no name, ailment or other health detail. */
+export function exerciseShareMessage(url: string): string {
+  return `Namaskar 🙏 Your home exercises from Pawar's Yog Therapy: ${url} / नमस्कार 🙏 आपले घरगुती व्यायाम: ${url}`;
+}
+
 export function buildReminderMessage(fullName: string, nextVisitDate: string): string {
   const date = formatDueDate(nextVisitDate);
   return `Hello ${fullName}, a reminder from Pawar's Yog Therapy — your next session is on ${date}. / नमस्कार ${fullName}, आपल्या पुढील योग थेरपी भेटीची आठवण — ${date} रोजी आहे.`;

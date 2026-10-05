@@ -5,6 +5,7 @@ import {
   reminderUrl,
   buildDigestMessage,
   digestUrl,
+  exerciseShareMessage,
   type DigestEntry,
 } from '@/lib/whatsapp';
 import { CLINIC } from '@/lib/clinic';
@@ -106,5 +107,14 @@ describe('digestUrl', () => {
   it('addresses a configured 10-digit target with 91 prefix', () => {
     const url = digestUrl([entry()], '2026-07-03', '9812345678');
     expect(url.startsWith('https://api.whatsapp.com/send?phone=919812345678&text=')).toBe(true);
+  });
+});
+
+describe('exerciseShareMessage', () => {
+  it('carries the link and no personal or health details', () => {
+    const msg = exerciseShareMessage('https://clinic.example/s/tok');
+    expect(msg).toContain('https://clinic.example/s/tok');
+    expect(msg).toContain("Pawar's Yog Therapy");
+    expect(msg).not.toMatch(/pain|back|neck|knee|दुखी/i);
   });
 });

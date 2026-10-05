@@ -32,10 +32,10 @@ Clients have no accounts, so every client-facing feature (C1–C4) reaches them 
 | `patient_id` | uuid FK → patients, `ON DELETE CASCADE` | deleting a client kills their links |
 | `kind` | text, CHECK `IN ('exercises')` | widened by later specs (`posture`, `progress`) |
 | `token_hash` | text, UNIQUE | SHA-256 of the token (hex). **The token itself is never stored.** |
-| `expires_at` | timestamptz not null | |
-| `revoked_at` | timestamptz null | |
+| `expires_at` | timestamp not null | house pattern (no tz), like every other table |
+| `revoked_at` | timestamp null | |
 | `view_count` | integer not null default 0 | |
-| `last_viewed_at` | timestamptz null | |
+| `last_viewed_at` | timestamp null | |
 | `created_at` | timestamptz | house pattern |
 
 Index on `(patient_id, kind)`. `enableRLS()` (house pattern; the app uses the service role).

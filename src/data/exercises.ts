@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm';
-import { exercises, prescribedExercises } from '@/db/schema';
+import { exercises, patients, prescribedExercises } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { Exercise } from '@/db/schema';
+import { resolveShareLink } from './share-links';
 
 export type PrescribedExercise = {
   id: string; // prescribed_exercise id
@@ -121,4 +122,52 @@ export async function addPrescribedExercises(
     // With DO NOTHING, RETURNING yields only the rows actually inserted, so this counts new additions.
     .returning({ id: prescribedExercises.id });
   return { added: inserted.length, alreadyPrescribed: unique.length - inserted.length };
+}
+
+/** What the public exercise page may show. Nothing else from the client's record reaches it. */
+export type SharedExerciseProgramme = {
+  linkId: string; // for the view counter
+  firstName: string;
+  exercises: {
+    name: string;
+    description: string | null;
+    steps: string[];
+    repetitions: string;
+    daysPerWeek: string;
+    tip: string | null;
+    note: string | null;
+    imagePath: string | null;
+  }[];
+};
+
+/**
+ * The client's current home-exercise programme for a share-link token, in one language, or null when
+ * the token is unknown, expired or revoked. Dose overrides are the physio's own text (one language).
+ */
+export async function getSharedExerciseProgramme(
+  db: Db,
+  token: string,
+  lang: 'en' | 'mr',
+  now: Date,
+): Promise<SharedExerciseProgramme | null> {
+  const link = await resolveShareLink(db, token, 'exercises', now);
+  if (!link) return null;
+  const [patient] = await db.select({ fullName: patients.fullName }).from(patients).where(eq(patients.id, link.patientId));
+  if (!patient) return null;
+  const mr = lang === 'mr';
+  const rows = await getPrescribedExercises(db, link.patientId);
+  return {
+    linkId: link.id,
+    firstName: patient.fullName.trim().split(/\s+/)[0],
+    exercises: rows.map((r) => ({
+      name: mr ? r.nameMr : r.name,
+      description: mr ? r.descriptionMr : r.description,
+      steps: mr ? r.stepsMr : r.steps,
+      repetitions: r.repetitionsOverride ?? (mr ? r.repetitionsMr : r.repetitions),
+      daysPerWeek: r.daysPerWeekOverride ?? (mr ? r.daysPerWeekMr : r.daysPerWeek),
+      tip: mr ? r.tipMr : r.tip,
+      note: r.customNote,
+      imagePath: r.imagePath,
+    })),
+  };
 }
