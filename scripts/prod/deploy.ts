@@ -8,7 +8,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { deploymentUrlFromCli, releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
+import { alreadyLive, deploymentUrlFromCli, releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
 import { envValue, fail, gitState, printStatus, prodSiteUrl, prodStatus, sh } from './common';
 
 const DEPLOY_TIMEOUT_MS = 15 * 60_000;
@@ -98,7 +98,13 @@ async function main() {
       throw new Error('Rolled back. Check the Vercel dashboard for the deployment.');
     }
     console.log(`Built:    ${deployment}`);
-    vercel(`promote ${deployment} --yes`, undefined, SWITCH_TIMEOUT_MS); // no-op when already live; required after a rollback
+    // Needed after an earlier rollback; otherwise the --prod build is usually live already (Vercel answers 409).
+    try {
+      vercel(`promote ${deployment} --yes`, undefined, SWITCH_TIMEOUT_MS);
+    } catch (e) {
+      // Either way the build may be serving the domain, so let the smoke test decide (it rolls back).
+      if (!alreadyLive(cliError(e))) console.warn(`⚠ promote failed, checking the live site anyway:\n${cliError(e)}`);
+    }
 
     const failures = await smoke(site);
     if (failures.length) {

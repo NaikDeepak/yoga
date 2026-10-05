@@ -53,3 +53,8 @@ export function deploymentUrlFromCli(stdout: string): string | null {
     return null;
   }
 }
+
+/** `vercel promote` fails with 409 when the deployment is already live (a --prod build usually is). */
+export function alreadyLive(promoteError: string): boolean {
+  return /already the current production deployment/i.test(promoteError);
+}
