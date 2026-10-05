@@ -75,12 +75,16 @@ export function PostureFigure({
   noPhotoLabel: string;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-md bg-muted" style={{ aspectRatio: `${overlay.width} / ${overlay.height}` }}>
+    // Without a photo the overlay's white skeleton needs a dark backdrop to be visible (e.g. shared without photos).
+    <div
+      className={`relative overflow-hidden rounded-md ${photoUrl ? 'bg-muted' : 'bg-slate-700'}`}
+      style={{ aspectRatio: `${overlay.width} / ${overlay.height}` }}
+    >
       {photoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={photoUrl} alt={alt} className="absolute inset-0 h-full w-full object-contain" />
       ) : (
-        <span className="absolute inset-x-0 top-2 text-center text-xs text-muted-foreground">{noPhotoLabel}</span>
+        <span className="absolute inset-x-0 top-2 text-center text-xs text-slate-200">{noPhotoLabel}</span>
       )}
       <OverlaySvg overlay={overlay} metrics={metrics} />
     </div>
