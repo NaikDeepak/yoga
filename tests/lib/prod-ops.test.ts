@@ -33,6 +33,11 @@ describe('smokeFailures', () => {
     expect(smokeFailures({ '/login': 200, '/api/ping': 500, '/s/x': 404 }, { '/login': 200, '/api/ping': 200, '/s/x': 404 }))
       .toEqual(['/api/ping: expected 200, got 500']);
   });
+  it('accepts any of several statuses for a path', () => {
+    expect(smokeFailures({ '/api/ping': 401 }, { '/api/ping': [200, 401] })).toEqual([]);
+    expect(smokeFailures({ '/api/ping': 500 }, { '/api/ping': [200, 401] })).toEqual(['/api/ping: expected 200 or 401, got 500']);
+  });
+
   it('treats a missing response as a failure', () => {
     expect(smokeFailures({}, { '/login': 200 })).toEqual(['/login: expected 200, got no response']);
   });

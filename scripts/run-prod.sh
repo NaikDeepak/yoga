@@ -4,7 +4,7 @@
 # Reads only PROD_DATABASE_URL from .env (sourcing the whole file would also pick up LOCAL_MOCK=true
 # and silently run on mock data).
 set -euo pipefail
-URL="$(grep -E '^PROD_DATABASE_URL=' .env 2>/dev/null | cut -d= -f2- | sed -e 's/^["'"'"']//' -e 's/["'"'"']$//')"
+URL="$(grep -E '^PROD_DATABASE_URL=' .env 2>/dev/null | cut -d= -f2- | sed -e 's/^["'"'"']//' -e 's/["'"'"']$//' || true)"
 if [[ -z "$URL" ]]; then
   echo "Error: PROD_DATABASE_URL is not set in .env" >&2
   exit 1

@@ -20,11 +20,15 @@ export function releaseProblems(git: GitState): string[] {
   return problems;
 }
 
-/** Smoke-test paths whose HTTP status didn't match. */
-export function smokeFailures(actual: Record<string, number | undefined>, expected: Record<string, number>): string[] {
+/** Smoke-test paths whose HTTP status didn't match (a path may allow several statuses). */
+export function smokeFailures(
+  actual: Record<string, number | undefined>,
+  expected: Record<string, number | number[]>,
+): string[] {
   return Object.entries(expected)
-    .filter(([path, status]) => actual[path] !== status)
-    .map(([path, status]) => `${path}: expected ${status}, got ${actual[path] ?? 'no response'}`);
+    .map(([path, want]) => [path, Array.isArray(want) ? want : [want]] as const)
+    .filter(([path, ok]) => !ok.includes(actual[path] as number))
+    .map(([path, ok]) => `${path}: expected ${ok.join(' or ')}, got ${actual[path] ?? 'no response'}`);
 }
 
 /** Database host for logs, without user, password or the instance-specific first label. */

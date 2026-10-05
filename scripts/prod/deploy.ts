@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { deploymentUrlFromCli, releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
-import { fail, gitState, printStatus, prodSiteUrl, prodStatus, sh } from './common';
+import { envValue, fail, gitState, printStatus, prodSiteUrl, prodStatus, sh } from './common';
 
 const DEPLOY_TIMEOUT_MS = 15 * 60_000;
 
@@ -25,19 +25,26 @@ function currentDeployment(site: string): string {
   return url;
 }
 
-async function status(url: string): Promise<number | undefined> {
+async function status(url: string, headers?: Record<string, string>): Promise<number | undefined> {
   try {
-    return (await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(30_000) })).status;
+    return (await fetch(url, { redirect: 'manual', headers, signal: AbortSignal.timeout(30_000) })).status;
   } catch {
     return undefined;
   }
 }
 
 async function smoke(site: string): Promise<string[]> {
-  const expected = { '/login': 200, '/api/ping': 200, [`/s/${randomBytes(8).toString('hex')}`]: 404 };
+  // /api/ping answers 401 without the cron secret (still proves the build is up); with it, 200 = DB + login OK.
+  const cronSecret = envValue('CRON_SECRET');
+  const expected: Record<string, number | number[]> = {
+    '/login': 200,
+    '/api/ping': cronSecret ? 200 : [200, 401],
+    [`/s/${randomBytes(8).toString('hex')}`]: 404,
+  };
+  const auth = (p: string) => (p === '/api/ping' && cronSecret ? { authorization: `Bearer ${cronSecret}` } : undefined);
   let failures: string[] = [];
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const actual = Object.fromEntries(await Promise.all(Object.keys(expected).map(async (p) => [p, await status(site + p)])));
+    const actual = Object.fromEntries(await Promise.all(Object.keys(expected).map(async (p) => [p, await status(site + p, auth(p))])));
     failures = smokeFailures(actual, expected);
     if (!failures.length) return [];
     await new Promise((r) => setTimeout(r, 5_000)); // aliases can take a few seconds to switch
@@ -57,6 +64,7 @@ async function main() {
   const previous = currentDeployment(site);
   console.log(`\nLive now: ${previous}`);
 
+  // Inside here, errors are thrown (not fail()) so `finally` removes the worktree before exiting.
   const dir = mkdtempSync(join(tmpdir(), 'yoga-deploy-'));
   try {
     sh('git worktree prune'); // forget worktrees left behind by an interrupted earlier run
@@ -71,7 +79,7 @@ async function main() {
       stdout = vercel('deploy --prod --yes --format=json', dir, DEPLOY_TIMEOUT_MS);
     } catch (e) {
       // Failed builds never go live, but a timed-out one may still finish and take the domain.
-      fail(`vercel deploy failed or timed out: ${(e as Error).message.split('\n')[0]}\n` +
+      throw new Error(`vercel deploy failed or timed out: ${(e as Error).message.split('\n')[0]}\n` +
         `  If a new deployment still went live and misbehaves: vercel rollback ${previous} --yes`);
     }
     const deployment = deploymentUrlFromCli(stdout);
@@ -79,7 +87,7 @@ async function main() {
       // A --prod build may already be serving the domain, so put the previous one back.
       console.error(`\n✖ Deploy did not report a deployment URL. Rolling back to ${previous}…`);
       vercel(`rollback ${previous} --yes`);
-      fail('Rolled back. Check the Vercel dashboard for the deployment.');
+      throw new Error('Rolled back. Check the Vercel dashboard for the deployment.');
     }
     console.log(`Built:    ${deployment}`);
     vercel(`promote ${deployment} --yes`); // no-op when already live; required after a rollback
@@ -88,7 +96,7 @@ async function main() {
     if (failures.length) {
       console.error(`\n✖ Smoke test failed:\n  - ${failures.join('\n  - ')}\nRolling back to ${previous}…`);
       vercel(`rollback ${previous} --yes`);
-      fail('Rolled back. Check `vercel logs` for the failed deployment.');
+      throw new Error('Rolled back. Check `vercel logs` for the failed deployment.');
     }
     console.log(`\n✓ Live: ${site} (${deployment}) — /login, /api/ping and an unknown share link all OK.`);
   } finally {
