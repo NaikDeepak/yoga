@@ -5,6 +5,7 @@ import {
   listAllExercises, getPrescribedExercises, savePrescribedExercises, addPrescribedExercises, getSharedExerciseProgramme,
 } from '@/data/exercises';
 import { createShareLink, revokeShareLinks } from '@/data/share-links';
+import { saveCheckin } from '@/data/checkins';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -117,7 +118,7 @@ describe('getSharedExerciseProgramme', () => {
     const { token } = await createShareLink(db, patientId, 'exercises', now);
 
     const en = await getSharedExerciseProgramme(db, token, 'en', now);
-    expect(Object.keys(en!).sort()).toEqual(['exercises', 'firstName', 'linkId']);
+    expect(Object.keys(en!).sort()).toEqual(['checkins', 'exercises', 'firstName', 'linkId']);
     expect(en!.firstName).toBe('Asha');
     expect(Object.keys(en!.exercises[0]).sort()).toEqual(
       ['daysPerWeek', 'description', 'imagePath', 'name', 'note', 'repetitions', 'steps', 'tip'],
@@ -142,5 +143,31 @@ describe('getSharedExerciseProgramme', () => {
     expect(await getSharedExerciseProgramme(db, 'nope', 'en', now)).toBeNull();
     await revokeShareLinks(db, patientId, 'exercises', now);
     expect(await getSharedExerciseProgramme(db, token, 'en', now)).toBeNull();
+  });
+});
+
+describe('getSharedExerciseProgramme check-ins', () => {
+  const now = new Date('2026-10-10T04:30:00Z'); // 10 Oct in IST
+
+  it("gives today's entry and the last 7 days' answers only — no past pain", async () => {
+    const { token, link } = await createShareLink(db, patientId, 'exercises', new Date('2026-10-01T04:30:00Z'));
+    await saveCheckin(db, link, { done: 'some', pain: 7 }, '2026-10-03'); // outside the 7 days
+    await saveCheckin(db, link, { done: 'all', pain: 5 }, '2026-10-04');
+    await saveCheckin(db, link, { done: 'none', pain: 4 }, '2026-10-08');
+    await saveCheckin(db, link, { done: 'all', pain: 2 }, '2026-10-10');
+
+    const p = await getSharedExerciseProgramme(db, token, 'en', now);
+    expect(p!.checkins).toEqual({
+      today: { done: 'all', pain: 2 },
+      last7: [{ date: '2026-10-04', done: 'all' }, { date: '2026-10-05', done: null }, { date: '2026-10-06', done: null },
+        { date: '2026-10-07', done: null }, { date: '2026-10-08', done: 'none' }, { date: '2026-10-09', done: null },
+        { date: '2026-10-10', done: 'all' }],
+    });
+    expect(JSON.stringify(p!.checkins.last7)).not.toContain('pain');
+  });
+
+  it('has no entry for today until the client saves one', async () => {
+    const { token } = await createShareLink(db, patientId, 'exercises', now);
+    expect((await getSharedExerciseProgramme(db, token, 'en', now))!.checkins.today).toBeNull();
   });
 });

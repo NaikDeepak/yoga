@@ -213,3 +213,10 @@ export const postureRetakeSchema = z.object({
     .max(POSTURE_VIEWS.length, POSTURE_DATA_ERR)
     .refine((views) => new Set(views.map((v) => v.view)).size === views.length, POSTURE_DATA_ERR),
 });
+
+// Daily home-exercise check-in from the public share page. No free text; date and client come from the server.
+export const checkinSchema = z.object({
+  done: z.enum(['all', 'some', 'none']),
+  pain: opt(z.coerce.number().int().min(0).max(10)),
+});
+export type CheckinInput = z.infer<typeof checkinSchema>;

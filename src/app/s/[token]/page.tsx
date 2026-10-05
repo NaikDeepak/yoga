@@ -7,6 +7,7 @@ import { recordShareView } from '@/data/share-links';
 import { CLINIC } from '@/lib/clinic';
 import { isLinkPreviewBot } from '@/lib/share-token';
 import { getTranslations } from '@/lib/i18n/translations';
+import { CheckinForm } from './CheckinForm';
 
 // Public, token-checked page: it only ever receives the whitelisted SharedExerciseProgramme.
 export const dynamic = 'force-dynamic';
@@ -21,10 +22,11 @@ export default async function SharedExercisesPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; edit?: string; error?: string }>;
 }) {
   const { token } = await params;
-  const lang = (await searchParams).lang === 'mr' ? 'mr' : 'en';
+  const query = await searchParams;
+  const lang = query.lang === 'mr' ? 'mr' : 'en';
   const now = new Date();
   const db = getDb();
   const programme = await getSharedExerciseProgramme(db, token, lang, now);
@@ -54,6 +56,13 @@ export default async function SharedExercisesPage({
         <h1 className="text-2xl font-bold">{t.greeting.replace('{name}', programme.firstName)} 🙏</h1>
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
+
+      {programme.exercises.length > 0 && (
+        <CheckinForm
+          token={token} lang={lang} checkins={programme.checkins}
+          editing={query.edit === '1'} error={query.error === '1'} t={t.checkin}
+        />
+      )}
 
       {programme.exercises.length === 0 ? (
         <p className="rounded-2xl border bg-card p-5 text-muted-foreground">{t.empty}</p>

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   patientSchema, problemSchema, treatmentSchema, visitSchema, docTypeSchema,
-  prescribedExercisesListSchema, postureAssessmentSchema, postureRetakeSchema,
+  prescribedExercisesListSchema, postureAssessmentSchema, postureRetakeSchema, checkinSchema,
 } from '@/lib/validation';
 import { alignedLandmarks } from '../helpers/posture';
 import { getISTDateString } from '@/lib/dates';
@@ -216,5 +216,24 @@ describe('postureRetakeSchema', () => {
   it('rejects no views or a repeated view', () => {
     expect(postureRetakeSchema.safeParse({ views: [] }).success).toBe(false);
     expect(postureRetakeSchema.safeParse({ views: [view('back'), view('back')] }).success).toBe(false);
+  });
+});
+
+describe('checkinSchema', () => {
+  it('accepts the three answers with an optional 0–10 pain score', () => {
+    expect(checkinSchema.parse({ done: 'all', pain: '0' })).toEqual({ done: 'all', pain: 0 });
+    expect(checkinSchema.parse({ done: 'some', pain: '10' })).toEqual({ done: 'some', pain: 10 });
+    expect(checkinSchema.parse({ done: 'none', pain: '' })).toEqual({ done: 'none' });
+    expect(checkinSchema.parse({ done: 'none' })).toEqual({ done: 'none' });
+  });
+
+  it('rejects anything else', () => {
+    for (const bad of [{ done: 'yes' }, { done: 'all', pain: '11' }, { done: 'all', pain: '-1' }, { done: 'all', pain: '2.5' }, {}]) {
+      expect(checkinSchema.safeParse(bad).success).toBe(false);
+    }
+  });
+
+  it('drops fields the client must not set', () => {
+    expect(checkinSchema.parse({ done: 'all', checkinDate: '2020-01-01', patientId: 'x' })).toEqual({ done: 'all' });
   });
 });

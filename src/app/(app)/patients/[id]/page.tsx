@@ -22,7 +22,10 @@ import { addVisitAction } from '@/actions/visits';
 import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
 import { ShareExercisesPanel } from '@/components/ShareExercisesPanel';
-import { activeShareLink } from '@/data/share-links';
+import { activeShareLink, firstShareDate } from '@/data/share-links';
+import { listCheckins } from '@/data/checkins';
+import { HomeExerciseCard } from '@/components/HomeExerciseCard';
+import { shiftDate } from '@/lib/adherence';
 import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { listPostureAssessments, latestPostureScores } from '@/data/posture';
@@ -487,7 +490,11 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
 
   const allExercises = await listAllExercises(db);
   const prescribedExercises = await getPrescribedExercises(db, patientId);
-  const share = await activeShareLink(db, patientId, 'exercises', new Date());
+  const [share, since, checkins] = await Promise.all([
+    activeShareLink(db, patientId, 'exercises', new Date()),
+    firstShareDate(db, patientId, 'exercises'),
+    listCheckins(db, patientId, shiftDate(today, -29), today),
+  ]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -509,6 +516,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
             lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
           }}
         />
+        <HomeExerciseCard checkins={checkins} today={today} since={since} linkActive={!!share} t={t} />
       </div>
 
       <div className="space-y-4">

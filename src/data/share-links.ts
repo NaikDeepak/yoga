@@ -1,7 +1,8 @@
-import { and, desc, eq, gt, isNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNull, sql } from 'drizzle-orm';
 import { patients, shareLinks, type ShareLinkKind, type ShareLinkRow } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { hashShareToken, newShareToken, shareLinkExpiry } from '@/lib/share-token';
+import { getISTDateString } from '@/lib/dates';
 
 const live = (now: Date) => and(isNull(shareLinks.revokedAt), gt(shareLinks.expiresAt, now));
 
@@ -65,4 +66,13 @@ export async function recordShareView(db: Db, id: string, now: Date): Promise<vo
       lastViewedAt: now,
     })
     .where(eq(shareLinks.id, id));
+}
+
+/** IST day the client's first link of a kind was created (revoked ones count), or null — starts their adherence window. */
+export async function firstShareDate(db: Db, patientId: string, kind: ShareLinkKind): Promise<string | null> {
+  const [row] = await db.select({ createdAt: shareLinks.createdAt }).from(shareLinks)
+    .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, kind)))
+    .orderBy(asc(shareLinks.createdAt))
+    .limit(1);
+  return row ? getISTDateString(0, row.createdAt) : null;
 }

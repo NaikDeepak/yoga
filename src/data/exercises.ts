@@ -3,6 +3,9 @@ import { exercises, patients, prescribedExercises } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { Exercise } from '@/db/schema';
 import { resolveShareLink } from './share-links';
+import { listCheckins } from './checkins';
+import { dayStrip, shiftDate, type CheckinDone } from '@/lib/adherence';
+import { getISTDateString } from '@/lib/dates';
 
 export type PrescribedExercise = {
   id: string; // prescribed_exercise id
@@ -138,6 +141,11 @@ export type SharedExerciseProgramme = {
     note: string | null;
     imagePath: string | null;
   }[];
+  /** The client's own check-ins: today's entry and the last 7 days' answers (no past pain). */
+  checkins: {
+    today: { done: CheckinDone; pain: number | null } | null;
+    last7: { date: string; done: CheckinDone | null }[];
+  };
 };
 
 /**
@@ -155,7 +163,12 @@ export async function getSharedExerciseProgramme(
   const [patient] = await db.select({ fullName: patients.fullName }).from(patients).where(eq(patients.id, link.patientId));
   if (!patient) return null;
   const mr = lang === 'mr';
-  const rows = await getPrescribedExercises(db, link.patientId);
+  const today = getISTDateString(0, now);
+  const [rows, recent] = await Promise.all([
+    getPrescribedExercises(db, link.patientId),
+    listCheckins(db, link.patientId, shiftDate(today, -6), today),
+  ]);
+  const todays = recent.find((c) => c.date === today);
   return {
     linkId: link.id,
     firstName: patient.fullName.trim().split(/\s+/)[0],
@@ -169,5 +182,9 @@ export async function getSharedExerciseProgramme(
       note: r.customNote,
       imagePath: r.imagePath,
     })),
+    checkins: {
+      today: todays ? { done: todays.done, pain: todays.pain } : null,
+      last7: dayStrip(recent, today, 7),
+    },
   };
 }
