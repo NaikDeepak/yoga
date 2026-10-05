@@ -40,9 +40,9 @@ The physio taps **"Share progress"**, and the client gets a WhatsApp link to a o
   - `firstName`, `since`, `goal`;
   - `pain` / `weight` series (`weight` is null when `link.hideWeight`) and first → latest values (from `listVisitsWithData`);
   - `sessions` (visit count);
-  - `home: { adherence30, painSeries }` (C2 helpers);
-  - `posture: { before, after, regions, changes } | null`, only when `isPostureEnabled()` and there are 2+ assessments, using `compareScores` / `compareMetrics` without low-confidence readings.
-- `src/lib/progress.ts` (pure): `firstLatest(series)` (and the change), `sparklinePoints(values, width, height)` for the SVG charts.
+  - `home: { adherence, painSeries } | null` (C2 helpers, last 30 days; null when the client never had an exercise link);
+  - `posture: { firstOn, latestOn, overall, regions, changes } | null`, only when `isPostureEnabled()` and there are 2+ assessments, using `compareScores` / `compareMetrics` without low-confidence readings.
+- `src/lib/progress.ts` (pure): `firstLatest(series)` (and the change), `chartPoints(series, { width, height, min?, max? })` for the SVG charts.
 - `src/components/TrendChart.tsx`: a server-rendered SVG line chart (axis labels, dots, gaps for missing days).
 - `src/app/s/[token]/ProgressReportBody.tsx`, with the page routing on `kind === 'progress'`.
 - `src/actions/share-links.ts`: `createProgressShareLinkAction(patientId, { hideWeight })` / `revokeProgressShareLinkAction(patientId)`.

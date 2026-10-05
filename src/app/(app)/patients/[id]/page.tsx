@@ -601,7 +601,22 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
 
 async function Progress({ patientId, t }: { patientId: string; t: Translations }) {
   const db = getDb();
-  const rows = await listVisitsWithData(db, patientId);
+  const [rows, share] = await Promise.all([
+    listVisitsWithData(db, patientId),
+    activeShareLink(db, patientId, 'progress', new Date()),
+  ]);
+  const sharePanel = (
+    <SharePanel
+      target={{ kind: 'progress', patientId, canShare: rows.length > 0 }}
+      active={share && {
+        createdAt: share.createdAt.toISOString(),
+        expiresAt: share.expiresAt.toISOString(),
+        viewCount: share.viewCount,
+        lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
+        hideWeight: share.hideWeight,
+      }}
+    />
+  );
 
   const weightData = rows
     .filter((r): r is typeof r & { weightKg: number } => r.weightKg !== null)
@@ -626,18 +641,22 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
 
   if (rows.length === 0) {
     return (
-      <Card className="rounded-2xl">
-        <CardContent className="pt-6">
-          <p className="text-sm text-muted-foreground">
-            {t.progress.notEnoughData}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {sharePanel}
+        <Card className="rounded-2xl">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">
+              {t.progress.notEnoughData}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {sharePanel}
       <Card className="rounded-2xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">

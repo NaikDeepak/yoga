@@ -7,6 +7,7 @@ import { render, screen } from '@testing-library/react';
 import { createPatient } from '@/data/patients';
 import { listAllExercises, savePrescribedExercises } from '@/data/exercises';
 import { createShareLink, revokeShareLinks } from '@/data/share-links';
+import { addVisit } from '@/data/visits';
 import type { Db } from '@/db/types';
 
 vi.mock('next/headers', () => ({ headers: async () => new Headers({ 'user-agent': 'Mozilla/5.0 test' }) }));
@@ -60,6 +61,46 @@ describe('/s/[token]', () => {
     const a = await addAssessment(db, patientId);
     const { token } = await createShareLink(db, patientId, 'posture', new Date(), { postureAssessmentId: a.id });
     vi.stubEnv('FEATURE_POSTURE', 'false');
+    await expect(page(token)).rejects.toThrow('NOT_FOUND');
+  });
+
+  it('renders the progress report for a progress link — live, no visit notes', async () => {
+    await addVisit(db, patientId, { visitDate: '2026-08-01', progressNote: 'private visit note', painScale: 7, weightKg: 82 });
+    await addVisit(db, patientId, { visitDate: '2026-09-20', progressNote: 'private visit note', painScale: 3, weightKg: 78 });
+    const { token } = await createShareLink(db, patientId, 'progress', new Date());
+    render(await page(token));
+    expect(screen.getByText(/Namaskar Asha/)).toBeTruthy();
+    expect(screen.getByText(/Your progress since/)).toBeTruthy();
+    expect(screen.getByText('7 → 3')).toBeTruthy();
+    expect(screen.getByText('82 → 78 kg')).toBeTruthy();
+    expect(document.querySelectorAll('svg polyline').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Did you do your exercises today?')).toBeNull();
+    const text = document.body.textContent!;
+    for (const secret of ['private visit note', 'Kulkarni', '9876543210']) expect(text).not.toContain(secret);
+  });
+
+  it('leaves weight off a "hide weight" progress link, and reads in Marathi', async () => {
+    await addVisit(db, patientId, { visitDate: '2026-08-01', progressNote: 'n', painScale: 7, weightKg: 82 });
+    await addVisit(db, patientId, { visitDate: '2026-09-20', progressNote: 'n', painScale: 3, weightKg: 78 });
+    const { token } = await createShareLink(db, patientId, 'progress', new Date(), { hideWeight: true });
+    render(await page(token, 'mr'));
+    expect(screen.getByText(/आपली प्रगती/)).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/82|78|kg/);
+  });
+
+  it('a progress link keeps working with posture analysis off (the posture part just hides)', async () => {
+    await addVisit(db, patientId, { visitDate: '2026-08-01', progressNote: 'n', painScale: 7 });
+    await addAssessment(db, patientId, '2026-08-01');
+    await addAssessment(db, patientId, '2026-09-30');
+    const { token } = await createShareLink(db, patientId, 'progress', new Date());
+    vi.stubEnv('FEATURE_POSTURE', 'false');
+    render(await page(token));
+    expect(screen.queryByText(/Posture: before vs now/)).toBeNull();
+  });
+
+  it('gives the same not-found for a revoked progress link', async () => {
+    const { token } = await createShareLink(db, patientId, 'progress', new Date());
+    await revokeShareLinks(db, patientId, 'progress', new Date());
     await expect(page(token)).rejects.toThrow('NOT_FOUND');
   });
 });
