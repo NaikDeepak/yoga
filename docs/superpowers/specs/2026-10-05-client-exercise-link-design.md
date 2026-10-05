@@ -36,7 +36,7 @@ Clients have no accounts, so every client-facing feature (C1–C4) reaches them 
 | `revoked_at` | timestamp null | |
 | `view_count` | integer not null default 0 | |
 | `last_viewed_at` | timestamp null | |
-| `created_at` | timestamptz | house pattern |
+| `created_at` | timestamp | house pattern |
 
 Index on `(patient_id, kind)`. `enableRLS()` (house pattern; the app uses the service role).
 
