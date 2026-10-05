@@ -106,8 +106,12 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
   const assessments = await db.select().from(postureAssessments)
     .where(eq(postureAssessments.patientId, patientId))
     .orderBy(desc(postureAssessments.assessedOn), desc(postureAssessments.createdAt));
-  if (!assessments.length) return [];
+  return summarize(db, assessments);
+}
 
+/** Score + mild/marked counts on the combined findings, for each assessment (one views query). */
+async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<PostureAssessmentSummary[]> {
+  if (!assessments.length) return [];
   const views = await db.select().from(postureViews)
     .where(inArray(postureViews.assessmentId, assessments.map((a) => a.id)));
 
@@ -123,6 +127,48 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
       grade,
     };
   });
+}
+
+export interface LatestPostureScore {
+  assessmentId: string;
+  assessedOn: string;
+  score: number | null;
+  grade: Grade | null;
+  mildCount: number;
+  markedCount: number;
+  previousId: string | null;
+  previousOn: string | null;
+  previousScore: number | null;
+}
+
+/**
+ * Latest posture score per client plus the previous one (for the trend), for the Overview card and
+ * the client list. Clients without assessments are absent. Two queries regardless of client count.
+ */
+export async function latestPostureScores(db: Db, patientIds: string[]): Promise<Map<string, LatestPostureScore>> {
+  const result = new Map<string, LatestPostureScore>();
+  if (!patientIds.length) return result;
+  const all = await db.select().from(postureAssessments)
+    .where(inArray(postureAssessments.patientId, patientIds))
+    .orderBy(desc(postureAssessments.assessedOn), desc(postureAssessments.createdAt));
+
+  const lastTwo = new Map<string, PostureAssessmentRow[]>();
+  for (const a of all) {
+    const list = lastTwo.get(a.patientId) ?? [];
+    if (list.length < 2) lastTwo.set(a.patientId, [...list, a]);
+  }
+  const summaries = new Map((await summarize(db, [...lastTwo.values()].flat())).map((s) => [s.id, s]));
+
+  for (const [patientId, [latest, previous]] of lastTwo) {
+    const l = summaries.get(latest.id)!;
+    const p = previous ? summaries.get(previous.id)! : null;
+    result.set(patientId, {
+      assessmentId: l.id, assessedOn: l.assessedOn, score: l.score, grade: l.grade,
+      mildCount: l.mildCount, markedCount: l.markedCount,
+      previousId: p?.id ?? null, previousOn: p?.assessedOn ?? null, previousScore: p?.score ?? null,
+    });
+  }
+  return result;
 }
 
 export async function getPostureAssessment(db: Db, id: string): Promise<PostureAssessment | null> {

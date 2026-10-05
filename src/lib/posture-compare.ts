@@ -65,3 +65,14 @@ export function compareScores(before: PostureScore, after: PostureScore): {
     regions: Object.fromEntries(REGIONS.map((r) => [r, diff(before.regions[r].score, after.regions[r].score)])) as Record<Region, ScoreChange>,
   };
 }
+
+/** Overall-score changes smaller than this are retake noise, not progress (spec 2026-10-05). */
+export const SCORE_SAME_BAND = 3;
+
+/** Latest vs previous overall score (higher = better posture). */
+export function scoreTrend(latest: number | null, previous: number | null): { change: number | null; trend: Trend | null } {
+  if (latest === null || previous === null) return { change: null, trend: null };
+  const change = latest - previous;
+  if (Math.abs(change) < SCORE_SAME_BAND) return { change, trend: 'same' };
+  return { change, trend: change > 0 ? 'better' : 'worse' };
+}

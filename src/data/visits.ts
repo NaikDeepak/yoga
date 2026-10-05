@@ -33,6 +33,24 @@ export async function listVisitsWithData(db: Db, patientId: string): Promise<Vis
     .orderBy(visits.visitDate, visits.createdAt);
 }
 
+/**
+ * Weight and pain as of a date (e.g. a posture assessment): each is the latest non-empty value from
+ * visits on or before that date, so a visit that logged only weight doesn't hide an earlier pain score.
+ */
+export async function visitVitalsOn(
+  db: Db,
+  patientId: string,
+  onDate: string,
+): Promise<{ weightKg: number | null; painScale: number | null }> {
+  const latest = (col: typeof visits.weightKg | typeof visits.painScale) => db
+    .select({ value: col }).from(visits)
+    .where(and(eq(visits.patientId, patientId), lte(visits.visitDate, onDate), isNotNull(col)))
+    .orderBy(desc(visits.visitDate), desc(visits.createdAt))
+    .limit(1);
+  const [[weight], [pain]] = await Promise.all([latest(visits.weightKg), latest(visits.painScale)]);
+  return { weightKg: weight?.value ?? null, painScale: pain?.value ?? null };
+}
+
 export { getISTDateString };
 
 export async function getFollowUpsInRange(db: Db, start: string, end: string, branch?: string): Promise<FollowUp[]> {

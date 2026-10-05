@@ -5,6 +5,11 @@ import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { getPostureAssessment } from '@/data/posture';
 import { listAllExercises } from '@/data/exercises';
+import { visitVitalsOn } from '@/data/visits';
+import { getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
+import { computeBmi } from '@/lib/bmi';
+import { bmiBand, painBand, stressBand } from '@/lib/wellbeing';
+import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
 import { deletePostureAssessmentAction } from '@/actions/posture';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
@@ -76,6 +81,21 @@ export default async function PostureReportPage({
   const exercisesFor = (category: string) =>
     library.filter((e) => e.category === category).slice(0, EXERCISES_PER_CATEGORY);
 
+  // Client context (FlexifyMe-style profile strip + wellbeing gauges). Display-only: not sent to the AI.
+  const [vitals, lifestyle] = await Promise.all([
+    visitVitalsOn(db, id, assessment.assessedOn),
+    getLifestyleAssessmentSnapshot(db, id),
+  ]);
+  const weightKg = vitals.weightKg ?? patient.weightKg;
+  const bmi = computeBmi(weightKg, assessment.heightCm);
+  const bmiKey = bmiBand(bmi);
+  const pain = painBand(vitals.painScale);
+  const stress = stressBand(lifestyle?.stressLevel);
+  const goal = lifestyle?.primaryGoal?.trim() || null;
+  const genderLabel = { male: t.form.genderMale, female: t.form.genderFemale, other: t.form.genderOther }[patient.gender ?? ''];
+  const ageGender = [patient.age, genderLabel].filter((x) => x != null && x !== '').join(' / ') || '—';
+  const wb = p.wellbeing;
+
   const reading = (view: PostureView, value: string) => `${ins.viewNames[view]} ${value}`;
   const evidenceText = (m: CombinedMetric) => {
     const f = formatMetric(m, p);
@@ -111,6 +131,18 @@ export default async function PostureReportPage({
         <div><dt className="text-gray-500">{t.receipt.patientCode}</dt><dd className="font-medium">{patient.patientCode}</dd></div>
         <div><dt className="text-gray-500">{p.assessedOn}</dt><dd className="font-medium">{formatFullDate(assessment.assessedOn)}</dd></div>
         <div><dt className="text-gray-500">{p.heightUsed}</dt><dd className="font-medium">{assessment.heightCm ? `${assessment.heightCm} cm` : p.heightUnknown}</dd></div>
+        <div><dt className="text-gray-500">{p.profile.ageGender}</dt><dd className="font-medium">{ageGender}</dd></div>
+        <div><dt className="text-gray-500">{p.profile.weight}</dt><dd className="font-medium">{weightKg ? `${weightKg} kg` : '—'}</dd></div>
+        <div>
+          <dt className="text-gray-500">{p.profile.bmi}</dt>
+          <dd className="font-medium">{bmi !== null && bmiKey ? `${bmi} · ${wb.bmiBands[bmiKey]}` : '—'}</dd>
+        </div>
+        {pain && (
+          <div><dt className="text-gray-500">{p.profile.pain}</dt><dd className="font-medium">{vitals.painScale}/10 · {wb.painBands[pain]}</dd></div>
+        )}
+        {goal && (
+          <div className="col-span-2 sm:col-span-4"><dt className="text-gray-500">{p.profile.goal}</dt><dd className="font-medium">{goal}</dd></div>
+        )}
       </dl>
 
       {/* ── SCORE ── */}
@@ -127,6 +159,20 @@ export default async function PostureReportPage({
           <p className="mt-3 text-[11px] text-gray-500">{ins.averaged}</p>
         </div>
       </section>
+
+      {/* ── WELLBEING ── (hidden when neither BMI nor stress is known) */}
+      {(bmiKey || stress) && (
+        <section className="mt-6 print:break-inside-avoid">
+          <SectionHeader>{wb.title}</SectionHeader>
+          <div className="flex flex-wrap justify-around gap-6 rounded-xl p-5" style={{ backgroundColor: BRAND.sandLight }}>
+            {bmi !== null && bmiKey && <BmiGauge bmi={bmi} caption={wb.bmiBands[bmiKey]} label={wb.bmi} />}
+            {stress && lifestyle?.stressLevel != null && (
+              <StressGauge level={lifestyle.stressLevel} caption={wb.stressBands[stress]} label={wb.stress} />
+            )}
+          </div>
+          <p className="mt-2 text-[11px] text-gray-500">{wb.source}</p>
+        </section>
+      )}
 
       {/* ── AI ANALYSIS ── (hidden in print until one exists) */}
       <div className={assessment.aiReport ? '' : 'print:hidden'}>

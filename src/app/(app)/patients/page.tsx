@@ -4,6 +4,9 @@ import { Plus, Search } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { searchPatients, countPatients } from '@/data/patients';
 import { problemsForPatients } from '@/data/problems';
+import { latestPostureScores } from '@/data/posture';
+import { isPostureEnabled } from '@/lib/features';
+import { scoreTrend } from '@/lib/posture-compare';
 import { assessmentCompletionForPatients } from '@/data/lifestyle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,9 +39,11 @@ export default async function PatientsPage({
 
   const list = await searchPatients(db, q, PAGE_SIZE, offset);
 
-  const [problems, completions] = await Promise.all([
-    problemsForPatients(db, list.map((p) => p.id)),
-    assessmentCompletionForPatients(db, list.map((p) => p.id)),
+  const ids = list.map((p) => p.id);
+  const [problems, completions, postureScores] = await Promise.all([
+    problemsForPatients(db, ids),
+    assessmentCompletionForPatients(db, ids),
+    isPostureEnabled() ? latestPostureScores(db, ids) : null,
   ]);
 
   return (
@@ -90,6 +95,10 @@ export default async function PatientsPage({
             {list.map((p) => {
               const pts = (problems[p.id] ?? []).map((pr) => pr.problem);
               const filled = completions[p.id] ?? 0;
+              const latest = postureScores?.get(p.id);
+              const posture = latest && latest.score !== null
+                ? { score: latest.score, ...scoreTrend(latest.score, latest.previousScore) }
+                : undefined;
               return (
                 <PatientCard
                   key={p.id}
@@ -99,6 +108,7 @@ export default async function PatientsPage({
                   mobile={p.mobile}
                   problems={pts}
                   completionStatus={{ filled, total: 5 }}
+                  posture={posture}
                 />
               );
             })}

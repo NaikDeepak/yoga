@@ -23,7 +23,9 @@ import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
 import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
-import { listPostureAssessments } from '@/data/posture';
+import { listPostureAssessments, latestPostureScores } from '@/data/posture';
+import { PostureScoreCard } from '@/components/posture/PostureScoreCard';
+import { stressBand } from '@/lib/wellbeing';
 import { isPostureEnabled } from '@/lib/features';
 import { scoreColor } from '@/components/posture/ReportParts';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
@@ -164,9 +166,11 @@ async function Overview({
 }) {
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const db = getDb();
-  const [assessment, visits] = await Promise.all([
+  const showPosture = isPostureEnabled();
+  const [assessment, visits, postureScores] = await Promise.all([
     getLifestyleAssessmentSnapshot(db, patient.id),
     listVisits(db, patient.id),
+    showPosture ? latestPostureScores(db, [patient.id]) : null,
   ]);
   const today = getISTDateString(0);
   const lastVisit = visits[0]?.visitDate ?? null; // listVisits is ordered newest-first
@@ -252,6 +256,8 @@ async function Overview({
         </CardContent>
       </Card>
 
+      {postureScores && <PostureScoreCard patientId={patient.id} latest={postureScores.get(patient.id)} t={t} />}
+
       <Card className="rounded-2xl sm:col-span-2">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground">{t.patientDetail.contact}</CardTitle>
@@ -289,7 +295,8 @@ async function Overview({
                   light: t.assessment.light,
                   active: t.assessment.active,
                 };
-                const stressColor = assessment.stressLevel == null ? '' : assessment.stressLevel >= 8 ? 'text-destructive font-medium' : assessment.stressLevel >= 5 ? 'text-yellow-700 font-medium' : 'text-primary font-medium';
+                const band = stressBand(assessment.stressLevel);
+                const stressColor = band ? { high: 'text-destructive font-medium', moderate: 'text-yellow-700 font-medium', low: 'text-primary font-medium' }[band] : '';
                 const sleepColor = assessment.sleepQuality == null ? '' : assessment.sleepQuality <= 3 ? 'text-destructive font-medium' : assessment.sleepQuality <= 6 ? 'text-yellow-700 font-medium' : 'text-primary font-medium';
                 return [
                   { label: t.patientDetail.stress, value: assessment.stressLevel != null ? `${assessment.stressLevel}/10` : null, cls: stressColor },

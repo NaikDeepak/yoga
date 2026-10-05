@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from '@/lib/i18n/context';
+import type { Trend } from '@/lib/posture-compare';
+import { scoreColor } from '@/components/posture/ReportParts';
+import { ScoreTrend } from '@/components/posture/ScoreTrend';
 
 interface PatientCardProps {
   id: string;
@@ -12,6 +15,8 @@ interface PatientCardProps {
   mobile: string;
   problems: string[];
   completionStatus: { filled: number; total: 5 };
+  /** Latest posture score + trend; absent when not scored or the feature is off. */
+  posture?: { score: number; change: number | null; trend: Trend | null };
 }
 
 function initials(name: string): string {
@@ -38,6 +43,7 @@ export function PatientCard({
   mobile,
   problems,
   completionStatus,
+  posture,
 }: PatientCardProps) {
   const t = useTranslations();
   const visible = problems.slice(0, 3);
@@ -78,14 +84,23 @@ export function PatientCard({
               {t.patients.moreProblems.replace('{count}', String(overflow))}
             </span>
           )}
-          <span
-            className={cn(
-              'ml-auto inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-              chip.cls,
+          {/* Posture + intake chips stay together on the right, wrapping as one group */}
+          <div className="ml-auto flex items-center gap-1.5">
+            {posture && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium"
+                style={{ borderColor: scoreColor(posture.score), color: scoreColor(posture.score) }}
+              >
+                {t.posture.overviewCard.chip.replace('{score}', String(posture.score))}
+                {posture.trend && posture.change !== null && (
+                  <ScoreTrend change={posture.change} trend={posture.trend} label={t.posture.overviewCard.trend[posture.trend]} compact />
+                )}
+              </span>
             )}
-          >
-            {chip.text}
-          </span>
+            <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium', chip.cls)}>
+              {chip.text}
+            </span>
+          </div>
         </div>
       </div>
     </Link>
