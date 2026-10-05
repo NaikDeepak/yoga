@@ -118,7 +118,7 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
           </div>
         )}
 
-        {!canShare && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
+        {!canShare && target.kind === 'exercises' && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
         {posture && (
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={includePhotos} onChange={(e) => setIncludePhotos(e.target.checked)} />

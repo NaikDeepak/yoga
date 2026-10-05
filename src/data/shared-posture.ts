@@ -63,7 +63,11 @@ export async function getSharedPostureReport(
     overlay: buildOverlay(v.view as PostureView, v.landmarks, v.imageWidth, v.imageHeight),
     metrics: v.metrics,
     photoUrl: link.includePhotos
-      ? await storage.createSignedUrl(v.filePath, SHARED_PHOTO_URL_SECONDS).catch(() => null)
+      ? await storage.createSignedUrl(v.filePath, SHARED_PHOTO_URL_SECONDS).catch((err: unknown) => {
+        // The page then says "Photo unavailable". Message only: no paths or ids in logs.
+        console.error('Shared posture photo URL failed:', err instanceof Error ? err.message : String(err));
+        return null;
+      })
       : null,
   })));
   const combined = combineViews(views);

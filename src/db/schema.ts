@@ -271,6 +271,7 @@ export const shareLinks = pgTable('share_links', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => [
   index('share_links_patient_kind_idx').on(table.patientId, table.kind),
+  index('share_links_posture_assessment_idx').on(table.postureAssessmentId), // FK: cascade deletes
   // At most one unrevoked link per client and kind ("Share again" replaces the old link).
   uniqueIndex('share_links_one_live_uq').on(table.patientId, table.kind).where(sql`${table.revokedAt} IS NULL`),
   check('share_links_kind_check', sql`${table.kind} IN ('exercises', 'posture')`),

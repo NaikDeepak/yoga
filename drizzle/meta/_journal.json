@@ -134,6 +134,13 @@
       "when": 1791206647562,
       "tag": "0018_stiff_blue_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791209605587,
+      "tag": "0019_green_senator_kelly",
+      "breakpoints": true
     }
   ]
 }
