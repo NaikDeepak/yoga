@@ -6,6 +6,7 @@ import {
   buildDigestMessage,
   digestUrl,
   exerciseShareMessage,
+  postureShareMessage,
   type DigestEntry,
 } from '@/lib/whatsapp';
 import { CLINIC } from '@/lib/clinic';
@@ -116,5 +117,13 @@ describe('exerciseShareMessage', () => {
     expect(msg).toContain('https://clinic.example/s/tok');
     expect(msg).toContain("Pawar's Yog Therapy");
     expect(msg).not.toMatch(/pain|back|neck|knee|दुखी/i);
+  });
+});
+
+describe('postureShareMessage', () => {
+  it('carries the link and no personal or health details', () => {
+    const msg = postureShareMessage('https://clinic.example/s/tok');
+    expect(msg).toContain('https://clinic.example/s/tok');
+    expect(msg).not.toMatch(/shoulder|head|pelvis|knee|score/i);
   });
 });

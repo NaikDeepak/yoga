@@ -3,13 +3,16 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Camera } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
-import { getPostureAssessment } from '@/data/posture';
+import { getPostureAssessment, postureAssessedOn } from '@/data/posture';
 import { listAllExercises } from '@/data/exercises';
 import { visitVitalsOn } from '@/data/visits';
 import { getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { computeBmi } from '@/lib/bmi';
-import { bmiBand, painBand, stressBand } from '@/lib/wellbeing';
+import { bmiBand, genderLabel, painBand, stressBand } from '@/lib/wellbeing';
 import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
+import { SharePanel } from '@/components/SharePanel';
+import { activeShareLink } from '@/data/share-links';
+import { isPostureEnabled } from '@/lib/features';
 import { deletePostureAssessmentAction } from '@/actions/posture';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
@@ -82,18 +85,22 @@ export default async function PostureReportPage({
     library.filter((e) => e.category === category).slice(0, EXERCISES_PER_CATEGORY);
 
   // Client context (FlexifyMe-style profile strip + wellbeing gauges). Display-only: not sent to the AI.
-  const [vitals, lifestyle] = await Promise.all([
+  const [vitals, lifestyle, share] = await Promise.all([
     visitVitalsOn(db, id, assessment.assessedOn),
     getLifestyleAssessmentSnapshot(db, id),
+    activeShareLink(db, id, 'posture', new Date()),
   ]);
+  // The client's live posture link may show a different (older/newer) report.
+  const sharedOtherOn = share && share.postureAssessmentId !== assessmentId && share.postureAssessmentId
+    ? await postureAssessedOn(db, share.postureAssessmentId)
+    : null;
   const weightKg = vitals.weightKg ?? patient.weightKg;
   const bmi = computeBmi(weightKg, assessment.heightCm);
   const bmiKey = bmiBand(bmi);
   const pain = painBand(vitals.painScale);
   const stress = stressBand(lifestyle?.stressLevel);
   const goal = lifestyle?.primaryGoal?.trim() || null;
-  const genderLabel = { male: t.form.genderMale, female: t.form.genderFemale, other: t.form.genderOther }[patient.gender ?? ''];
-  const ageGender = [patient.age, genderLabel].filter((x) => x != null && x !== '').join(' / ') || '—';
+  const ageGender = [patient.age, genderLabel(patient.gender, t.form)].filter((x) => x != null && x !== '').join(' / ') || '—';
   const wb = p.wellbeing;
 
   const reading = (view: PostureView, value: string) => `${ins.viewNames[view]} ${value}`;
@@ -122,6 +129,19 @@ export default async function PostureReportPage({
           <PrintButton />
         </div>
       </div>
+
+      {isPostureEnabled() && <div className="mb-4 print:hidden">
+        <SharePanel
+          target={{ kind: 'posture', patientId: id, assessmentId, otherReportOn: sharedOtherOn }}
+          active={share && share.postureAssessmentId === assessmentId ? {
+            createdAt: share.createdAt.toISOString(),
+            expiresAt: share.expiresAt.toISOString(),
+            viewCount: share.viewCount,
+            lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
+            includePhotos: share.includePhotos,
+          } : null}
+        />
+      </div>}
 
       <ReportLetterhead badgeLabel={p.reportTitle} patientCode={patient.patientCode} branch={branch} today={getISTDateString()} />
 

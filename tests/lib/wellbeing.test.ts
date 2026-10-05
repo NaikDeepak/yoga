@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bmiBand, gaugeFraction, painBand, stressBand } from '@/lib/wellbeing';
+import { bmiBand, gaugeFraction, genderLabel, painBand, stressBand } from '@/lib/wellbeing';
 
 describe('stressBand', () => {
   it('bands the 1–10 lifestyle stress level as low 1–4, moderate 5–7, high 8–10', () => {
@@ -36,5 +36,15 @@ describe('gaugeFraction', () => {
     expect(gaugeFraction(5, 0, 10)).toBe(0.5);
     expect(gaugeFraction(-3, 0, 10)).toBe(0);
     expect(gaugeFraction(42, 15, 40)).toBe(1);
+  });
+});
+
+describe('genderLabel', () => {
+  const labels = { genderMale: 'Male', genderFemale: 'Female', genderOther: 'Other' };
+  it('maps the stored value to its label, or null', () => {
+    expect(genderLabel('female', labels)).toBe('Female');
+    expect(genderLabel('other', labels)).toBe('Other');
+    expect(genderLabel(null, labels)).toBeNull();
+    expect(genderLabel('x', labels)).toBeNull();
   });
 });

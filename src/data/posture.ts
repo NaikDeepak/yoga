@@ -174,6 +174,13 @@ export async function latestPostureScores(db: Db, patientIds: string[]): Promise
   return result;
 }
 
+/** Just an assessment's date (cheap; e.g. "the client's link shows the report from …"). */
+export async function postureAssessedOn(db: Db, id: string): Promise<string | null> {
+  const [row] = await db.select({ assessedOn: postureAssessments.assessedOn }).from(postureAssessments)
+    .where(eq(postureAssessments.id, id));
+  return row?.assessedOn ?? null;
+}
+
 export async function getPostureAssessment(db: Db, id: string): Promise<PostureAssessment | null> {
   const [assessment] = await db.select().from(postureAssessments).where(eq(postureAssessments.id, id));
   if (!assessment) return null;
@@ -242,6 +249,9 @@ export async function replacePostureViews(
           .returning({ id: postureViews.id });
         if (!row) throw new Error(`No ${v.view} view to replace`);
       }
+      // An approved AI analysis described the old measurements: back to draft until re-approved
+      // (it also stops it reaching the client's shared report).
+      await tx.update(postureAssessments).set({ aiApprovedAt: null }).where(eq(postureAssessments.id, assessmentId));
     });
   } catch (err) {
     await Promise.allSettled(uploaded.map((p) => storage.remove(p)));

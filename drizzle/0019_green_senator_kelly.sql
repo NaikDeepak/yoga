@@ -1,0 +1,1 @@
+CREATE INDEX "share_links_posture_assessment_idx" ON "share_links" USING btree ("posture_assessment_id");

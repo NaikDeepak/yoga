@@ -3,21 +3,26 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { getSharedExerciseProgramme } from '@/data/exercises';
-import { recordShareView } from '@/data/share-links';
+import { getSharedPostureReport } from '@/data/shared-posture';
+import { recordShareView, resolveAnyShareLink } from '@/data/share-links';
 import { CLINIC } from '@/lib/clinic';
 import { isLinkPreviewBot } from '@/lib/share-token';
+import { getStorage } from '@/lib/storage';
+import { isPostureEnabled } from '@/lib/features';
 import { getTranslations } from '@/lib/i18n/translations';
-import { CheckinForm } from './CheckinForm';
+import { ExercisesBody } from './ExercisesBody';
+import { PostureReportBody } from './PostureReportBody';
 
-// Public, token-checked page: it only ever receives the whitelisted SharedExerciseProgramme.
+// Public, token-checked page. Each kind of link gets only its whitelisted view model
+// (SharedExerciseProgramme / SharedPostureReport), never database rows.
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: "Home exercises · Pawar's Yog Therapy",
+  title: "Pawar's Yog Therapy",
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
 };
 
-export default async function SharedExercisesPage({
+export default async function SharedLinkPage({
   params,
   searchParams,
 }: {
@@ -29,16 +34,32 @@ export default async function SharedExercisesPage({
   const lang = query.lang === 'mr' ? 'mr' : 'en';
   const now = new Date();
   const db = getDb();
-  const programme = await getSharedExerciseProgramme(db, token, lang, now);
-  if (!programme) notFound(); // unknown, expired and revoked all look the same
+  const link = await resolveAnyShareLink(db, token, now);
+  if (!link) notFound(); // unknown, expired and revoked all look the same
 
-  // Best-effort: a failed counter must not stop the client seeing their exercises. WhatsApp etc. fetch
-  // the link to build a preview when the physio sends it; that isn't the client opening it.
-  if (!isLinkPreviewBot((await headers()).get('user-agent'))) {
-    await recordShareView(db, programme.linkId, now).catch(() => {});
+  const tr = getTranslations(lang);
+  const t = tr.sharedPage;
+  let body: React.ReactNode;
+  if (link.kind === 'posture') {
+    if (!isPostureEnabled()) notFound(); // switching the feature off also stops existing posture links
+    const report = await getSharedPostureReport(db, getStorage(), link);
+    if (!report) notFound();
+    body = <PostureReportBody report={report} t={tr} />;
+  } else {
+    const programme = await getSharedExerciseProgramme(db, link, lang, now);
+    if (!programme) notFound();
+    body = (
+      <ExercisesBody token={token} lang={lang} programme={programme}
+        editing={query.edit === '1'} error={query.error === '1'} t={t} />
+    );
   }
 
-  const t = getTranslations(lang).sharedPage;
+  // Best-effort: a failed counter must not stop the client seeing the page. WhatsApp etc. fetch
+  // the link to build a preview when the physio sends it; that isn't the client opening it.
+  if (!isLinkPreviewBot((await headers()).get('user-agent'))) {
+    await recordShareView(db, link.id, now).catch(() => {});
+  }
+
   return (
     <main className="mx-auto max-w-xl space-y-5 px-4 py-6" lang={lang}>
       <header className="flex items-center justify-between gap-3">
@@ -52,52 +73,10 @@ export default async function SharedExercisesPage({
         </nav>
       </header>
 
-      <section>
-        <h1 className="text-2xl font-bold">{t.greeting.replace('{name}', programme.firstName)} 🙏</h1>
-        <p className="text-muted-foreground">{t.intro}</p>
-      </section>
-
-      {programme.exercises.length > 0 && (
-        <CheckinForm
-          token={token} lang={lang} checkins={programme.checkins}
-          editing={query.edit === '1'} error={query.error === '1'} t={t.checkin}
-        />
-      )}
-
-      {programme.exercises.length === 0 ? (
-        <p className="rounded-2xl border bg-card p-5 text-muted-foreground">{t.empty}</p>
-      ) : (
-        <ol className="space-y-4">
-          {programme.exercises.map((ex, i) => (
-            <li key={`${ex.name}-${i}`} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-              {ex.imagePath && (
-                <img src={ex.imagePath} alt={ex.name} className="w-full bg-muted object-contain" loading="lazy" referrerPolicy="no-referrer" />
-              )}
-              <div className="space-y-3 p-4">
-                <h2 className="text-lg font-semibold">{i + 1}. {ex.name}</h2>
-                {ex.description && <p className="text-sm text-muted-foreground">{ex.description}</p>}
-                <dl className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="rounded-lg bg-primary/10 p-2"><dt className="text-xs text-muted-foreground">{t.reps}</dt><dd className="font-medium">{ex.repetitions}</dd></div>
-                  <div className="rounded-lg bg-primary/10 p-2"><dt className="text-xs text-muted-foreground">{t.days}</dt><dd className="font-medium">{ex.daysPerWeek}</dd></div>
-                </dl>
-                {ex.note && (
-                  <p className="rounded-lg border border-yellow-300 bg-yellow-50 p-2 text-sm"><strong>{t.note}:</strong> {ex.note}</p>
-                )}
-                {ex.steps.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold">{t.steps}</h3>
-                    <ol className="ml-5 list-decimal space-y-1 text-sm">{ex.steps.map((s, j) => <li key={j}>{s}</li>)}</ol>
-                  </div>
-                )}
-                {ex.tip && <p className="text-sm"><strong>{t.tip}:</strong> {ex.tip}</p>}
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
+      {body}
 
       <footer className="space-y-2 rounded-2xl bg-muted p-4 text-sm">
-        <p>⚠️ {t.safety}</p>
+        <p>⚠️ {link.kind === 'posture' ? t.postureFooter : t.safety}</p>
         <a href={`tel:${CLINIC.phone.replace(/\s/g, '')}`} className="font-medium text-primary">{t.call}: {CLINIC.phone}</a>
       </footer>
     </main>

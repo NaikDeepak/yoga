@@ -4,7 +4,7 @@ import { createPatient } from '@/data/patients';
 import {
   listAllExercises, getPrescribedExercises, savePrescribedExercises, addPrescribedExercises, getSharedExerciseProgramme,
 } from '@/data/exercises';
-import { createShareLink, revokeShareLinks } from '@/data/share-links';
+import { createShareLink, resolveAnyShareLink, revokeShareLinks } from '@/data/share-links';
 import { saveCheckin } from '@/data/checkins';
 import type { Db } from '@/db/types';
 
@@ -117,7 +117,7 @@ describe('getSharedExerciseProgramme', () => {
     ]);
     const { token } = await createShareLink(db, patientId, 'exercises', now);
 
-    const en = await getSharedExerciseProgramme(db, token, 'en', now);
+    const en = await getSharedExerciseProgramme(db, (await resolveAnyShareLink(db, token, now))!, 'en', now);
     expect(Object.keys(en!).sort()).toEqual(['checkins', 'exercises', 'firstName', 'linkId']);
     expect(en!.firstName).toBe('Asha');
     expect(Object.keys(en!.exercises[0]).sort()).toEqual(
@@ -126,7 +126,7 @@ describe('getSharedExerciseProgramme', () => {
     const first = en!.exercises.find((e) => e.name === a.name)!;
     expect(first).toMatchObject({ repetitions: '8 times', daysPerWeek: a.daysPerWeek, note: 'Slowly, no pain', steps: a.steps });
 
-    const mr = await getSharedExerciseProgramme(db, token, 'mr', now);
+    const mr = await getSharedExerciseProgramme(db, (await resolveAnyShareLink(db, token, now))!, 'mr', now);
     expect(mr!.exercises.find((e) => e.name === a.nameMr)).toMatchObject({ repetitions: '8 times', daysPerWeek: a.daysPerWeekMr, steps: a.stepsMr });
   });
 
@@ -135,14 +135,16 @@ describe('getSharedExerciseProgramme', () => {
     await savePrescribedExercises(db, patientId, [{ exerciseId: a.id, customNote: null }]);
     const { token } = await createShareLink(db, patientId, 'exercises', now);
     await savePrescribedExercises(db, patientId, [{ exerciseId: b.id, customNote: null }]);
-    expect((await getSharedExerciseProgramme(db, token, 'en', now))!.exercises.map((e) => e.name)).toEqual([b.name]);
+    expect((await getSharedExerciseProgramme(db, (await resolveAnyShareLink(db, token, now))!, 'en', now))!.exercises.map((e) => e.name)).toEqual([b.name]);
   });
 
-  it('is null for a bad or revoked token', async () => {
+  it('has no programme once the link is revoked or for a non-exercise link', async () => {
     const { token } = await createShareLink(db, patientId, 'exercises', now);
-    expect(await getSharedExerciseProgramme(db, 'nope', 'en', now)).toBeNull();
+    expect(await resolveAnyShareLink(db, 'nope', now)).toBeNull();
     await revokeShareLinks(db, patientId, 'exercises', now);
-    expect(await getSharedExerciseProgramme(db, token, 'en', now)).toBeNull();
+    expect(await resolveAnyShareLink(db, token, now)).toBeNull();
+    const posture = { ...(await createShareLink(db, patientId, 'exercises', now)).link, kind: 'posture' };
+    expect(await getSharedExerciseProgramme(db, posture, 'en', now)).toBeNull();
   });
 });
 
@@ -156,7 +158,7 @@ describe('getSharedExerciseProgramme check-ins', () => {
     await saveCheckin(db, link, { done: 'none', pain: 4 }, '2026-10-08');
     await saveCheckin(db, link, { done: 'all', pain: 2 }, '2026-10-10');
 
-    const p = await getSharedExerciseProgramme(db, token, 'en', now);
+    const p = await getSharedExerciseProgramme(db, (await resolveAnyShareLink(db, token, now))!, 'en', now);
     expect(p!.checkins).toEqual({
       today: { done: 'all', pain: 2 },
       last7: [{ date: '2026-10-04', done: 'all' }, { date: '2026-10-05', done: null }, { date: '2026-10-06', done: null },
@@ -168,6 +170,6 @@ describe('getSharedExerciseProgramme check-ins', () => {
 
   it('has no entry for today until the client saves one', async () => {
     const { token } = await createShareLink(db, patientId, 'exercises', now);
-    expect((await getSharedExerciseProgramme(db, token, 'en', now))!.checkins.today).toBeNull();
+    expect((await getSharedExerciseProgramme(db, (await resolveAnyShareLink(db, token, now))!, 'en', now))!.checkins.today).toBeNull();
   });
 });

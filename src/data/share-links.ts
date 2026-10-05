@@ -15,6 +15,7 @@ export async function createShareLink(
   patientId: string,
   kind: ShareLinkKind,
   now: Date,
+  opts: { postureAssessmentId?: string; includePhotos?: boolean } = {},
 ): Promise<{ token: string; link: ShareLinkRow }> {
   const { token, hash } = newShareToken();
   const link = await db.transaction(async (tx) => {
@@ -24,7 +25,10 @@ export async function createShareLink(
     await tx.update(shareLinks).set({ revokedAt: now })
       .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, kind), isNull(shareLinks.revokedAt)));
     const [row] = await tx.insert(shareLinks)
-      .values({ patientId, kind, tokenHash: hash, expiresAt: shareLinkExpiry(now), createdAt: now })
+      .values({
+        patientId, kind, tokenHash: hash, expiresAt: shareLinkExpiry(now), createdAt: now,
+        postureAssessmentId: opts.postureAssessmentId ?? null, includePhotos: opts.includePhotos ?? false,
+      })
       .returning();
     return row;
   });
@@ -35,6 +39,13 @@ export async function createShareLink(
 export async function resolveShareLink(db: Db, token: string, kind: ShareLinkKind, now: Date): Promise<ShareLinkRow | null> {
   const [row] = await db.select().from(shareLinks)
     .where(and(eq(shareLinks.tokenHash, hashShareToken(token)), eq(shareLinks.kind, kind), live(now)));
+  return row ?? null;
+}
+
+/** The live link for a token of any kind (the public page branches on `kind`), or null. */
+export async function resolveAnyShareLink(db: Db, token: string, now: Date): Promise<ShareLinkRow | null> {
+  const [row] = await db.select().from(shareLinks)
+    .where(and(eq(shareLinks.tokenHash, hashShareToken(token)), live(now)));
   return row ?? null;
 }
 

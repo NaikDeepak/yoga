@@ -470,6 +470,13 @@ export const en = {
     notOpened: 'Not opened yet',
     noExercises: 'Add exercises to the prescription before sharing.',
   },
+  sharePosture: {
+    hint: 'Send the client a link to this report. Photos are left out unless you tick the box.',
+    includePhotos: 'Include photos (client agreed)',
+    withPhotos: 'with photos',
+    withoutPhotos: 'without photos',
+    otherReport: "The client's link shows the report from {date}. Sharing this one replaces it.",
+  },
   sharedPage: {
     greeting: 'Namaskar {name}',
     intro: 'Your home exercises from your therapist.',
@@ -483,6 +490,13 @@ export const en = {
     expiredTitle: 'This link has expired',
     expiredBody: 'Please ask the clinic for a new link.',
     call: 'Call the clinic',
+    postureTitle: 'Your posture report · {date}',
+    patternsTitle: 'What we noticed',
+    patternsNote: 'Your therapist will explain these with you.',
+    aiTitle: "Your therapist's explanation",
+    findingsTitle: 'Measurements by view',
+    noPhotoShared: 'Photo not shared',
+    postureFooter: 'A screening aid, not a diagnosis. Your therapist will go through this report with you.',
     checkin: {
       question: 'Did you do your exercises today?',
       done: { all: 'All of them', some: 'Some', none: 'Skipped today' },

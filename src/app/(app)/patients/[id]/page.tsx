@@ -21,7 +21,7 @@ import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents'
 import { addVisitAction } from '@/actions/visits';
 import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
-import { ShareExercisesPanel } from '@/components/ShareExercisesPanel';
+import { SharePanel } from '@/components/SharePanel';
 import { activeShareLink, firstShareDate } from '@/data/share-links';
 import { lastCheckinDate, listCheckins } from '@/data/checkins';
 import { HomeExerciseCard } from '@/components/HomeExerciseCard';
@@ -508,9 +508,8 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
           initialPrescribed={prescribedExercises}
           locale={locale}
         />
-        <ShareExercisesPanel
-          patientId={patientId}
-          hasExercises={prescribedExercises.length > 0}
+        <SharePanel
+          target={{ kind: 'exercises', patientId, canShare: prescribedExercises.length > 0 }}
           active={share && {
             createdAt: share.createdAt.toISOString(),
             expiresAt: share.expiresAt.toISOString(),

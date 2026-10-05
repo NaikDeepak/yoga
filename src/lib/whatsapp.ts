@@ -40,3 +40,8 @@ export function buildDigestMessage(entries: DigestEntry[], dateISO: string): str
 export function digestUrl(entries: DigestEntry[], dateISO: string, targetMobile: string): string {
   return waMeUrl(targetMobile, buildDigestMessage(entries, dateISO));
 }
+
+/** Posture report link for the client. Only the link — no name or findings. */
+export function postureShareMessage(url: string): string {
+  return `Namaskar 🙏 Your posture report from Pawar's Yog Therapy: ${url} / नमस्कार 🙏 आपला पोश्चर अहवाल: ${url}`;
+}

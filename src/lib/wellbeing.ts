@@ -29,3 +29,14 @@ export function bmiBand(bmi: number | null | undefined): BmiBand | null {
 export function gaugeFraction(value: number, min: number, max: number): number {
   return Math.min(1, Math.max(0, (value - min) / (max - min)));
 }
+
+const GENDER_LABEL_KEY = { male: 'genderMale', female: 'genderFemale', other: 'genderOther' } as const;
+
+/** Label for the stored gender value (male/female/other), or null. */
+export function genderLabel(
+  gender: string | null | undefined,
+  labels: { genderMale: string; genderFemale: string; genderOther: string },
+): string | null {
+  const key = GENDER_LABEL_KEY[gender as keyof typeof GENDER_LABEL_KEY];
+  return key ? labels[key] : null;
+}

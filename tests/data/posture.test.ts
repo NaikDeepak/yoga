@@ -219,6 +219,14 @@ describe('deletePostureAssessment', () => {
 });
 
 describe('replacePostureViews', () => {
+  it('turns an approved AI analysis back into a draft, since it described the old measurements', async () => {
+    const a = await addPostureAssessment(db, storage, input());
+    await saveAiReport(db, patientId, a.id, MOCK_POSTURE_AI_REPORT, { approved: true });
+    await replacePostureViews(db, storage, patientId, a.id, [view('front', { RIGHT_SHOULDER: [400, 535] })]);
+    const after = await getPostureAssessment(db, a.id);
+    expect(after).toMatchObject({ aiReport: MOCK_POSTURE_AI_REPORT, aiApprovedAt: null });
+  });
+
   it('replaces only the retaken views: new photo, landmarks, metrics and camera check', async () => {
     const a = await addPostureAssessment(db, storage, input());
     const oldBack = a.views.find((v) => v.view === 'back')!;
