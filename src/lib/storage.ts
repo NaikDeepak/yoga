@@ -1,10 +1,8 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { r2Storage } from './r2-storage';
 import { isLocalMock } from './local-mock';
 
-export const BUCKET = 'patient-files';
 export const LOCAL_UPLOADS_DIR = 'public/uploads';
 
 export interface FileStorage {
@@ -45,23 +43,7 @@ export function localFileStorage(baseDir: string = LOCAL_UPLOADS_DIR): FileStora
   };
 }
 
-export function supabaseStorage(client: SupabaseClient): FileStorage {
-  return {
-    async upload(path, file) {
-      const { error } = await client.storage.from(BUCKET).upload(path, file);
-      if (error) throw new Error(`Upload failed: ${error.message}`);
-    },
-    async remove(path) {
-      const { error } = await client.storage.from(BUCKET).remove([path]);
-      if (error) throw new Error(`Remove failed: ${error.message}`);
-    },
-    async createSignedUrl(path, expiresInSeconds = 3600) {
-      const { data, error } = await client.storage.from(BUCKET).createSignedUrl(path, expiresInSeconds);
-      if (error || !data) throw new Error(`Signed URL failed: ${error?.message}`);
-      return data.signedUrl;
-    },
-  };
-}
+const R2_ENV = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET'] as const;
 
 let _storage: FileStorage | undefined;
 export function getStorage(): FileStorage {
@@ -70,14 +52,10 @@ export function getStorage(): FileStorage {
       _storage = localFileStorage();
       return _storage;
     }
-    const r2Ready = process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID &&
-      process.env.R2_SECRET_ACCESS_KEY && process.env.R2_BUCKET;
-    _storage = r2Ready
-      ? r2Storage()
-      : supabaseStorage(createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        ));
+    // Files live in Cloudflare R2 (the Supabase Storage fallback was removed 2026-10-05).
+    const missing = R2_ENV.filter((k) => !process.env[k]);
+    if (missing.length) throw new Error(`R2 storage is not configured: set ${missing.join(', ')}`);
+    _storage = r2Storage();
   }
   return _storage;
 }

@@ -1,6 +1,6 @@
 # Setup (one-time)
 
-## Run locally without Supabase (local mock mode)
+## Run locally (mock mode — the default for development)
 
 No accounts or keys needed — fully offline:
 
@@ -23,8 +23,7 @@ locally instead of just avoiding it:
 1. `npm run docker:up` — starts `postgres:18-alpine` (direct, port `5433`, migrations only) +
    `pgbouncer` in transaction mode (port `6432`, the app connects here).
 2. `npm run docker:migrate` — applies migrations via the direct port (`5433`), mirroring the
-   "direct/session connection for migrate, pooled connection for the app" split used for real
-   Supabase below.
+   "direct/session connection for migrate, pooled connection for the app" split used in production.
 3. Point `.env` `DATABASE_URL` at `postgresql://postgres@localhost:6432/yoga_local` to run the
    app through the pooler.
 4. `npm run docker:down` to stop, `npm run docker:reset` to wipe the volume and start clean.
@@ -34,41 +33,47 @@ pooler-specific bugs (session state, `SET`, temp tables, LISTEN/NOTIFY) that a d
 connection can't — those are broken by Neon in prod regardless of what `prepare:false` avoids
 at the prepared-statement level.
 
-## Real Supabase setup
+## Production: what runs where
+| Piece | Service | Configured by |
+|---|---|---|
+| App | Vercel project `yoga` → https://yoga-ten-tau.vercel.app | Vercel env vars (Production) |
+| **Database** | **Neon** (pooled connection) | Vercel `DATABASE_URL`; locally `PROD_DATABASE_URL` in `.env` |
+| **Files** (documents, posture photos) | **Cloudflare R2** | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` |
+| **Login only** | **Supabase Auth** (project `yabzxeetzihtnbumampg`) | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (+ `_PUBLISHABLE_KEY`), `SUPABASE_SERVICE_ROLE_KEY` |
+| Client share links | — | `APP_URL` |
 
-1. Create a Supabase project (free tier, region ap-south-1).
-2. SQL editor → run nothing manually; locally run `npm run db:migrate` with `DATABASE_URL` set to the
-   **session pooler** connection string (drizzle migrations need it once), then switch `DATABASE_URL`
-   in the app env to the transaction pooler string.
-3. Storage → create **private** bucket `patient-files`.
-4. Copy `.env.example` → `.env`, fill all four values (Project Settings → API / Database).
-   `.env` is gitignored — never commit real keys.
-5. `npm install && npm run dev` → create the admin account at `/register`, then sign in at `/login`.
-6. **After the admin account exists, disable public signups** (Auth → Sign In / Up →
-   turn off "Allow new users to sign up"). The `/register` page stays reachable but Supabase
-   will reject further signups — this app has no roles, so any signed-up user gets full access.
-7. Deploy: push to GitHub → import in Vercel → set env vars → deploy.
+Supabase holds **no app data**: its old database is unused (abandoned after the move to Neon) and the
+Supabase Storage fallback was removed — the app refuses to start outside mock mode without the four R2
+vars. The Supabase project is kept only for sign-in; `/api/ping` (daily Vercel cron) stops it auto-pausing.
+After creating the admin account, keep **public signups disabled** (Auth → Sign In / Up → turn off
+"Allow new users to sign up"): the app has no roles, so any signed-up user gets full access.
 
-## Switching to Neon (free Postgres, never pauses)
+## Working with production
+Vercel is **not** connected to GitHub: merging to `main` does not deploy. These scripts are the way in.
+They read only `PROD_DATABASE_URL` / `PROD_SITE_URL` from `.env` (never the rest, so `LOCAL_MOCK` can't
+leak in) and never print a connection string.
 
-1. Create a free project at [neon.tech](https://neon.tech).
-2. Copy the **pooled connection string** (Neon dashboard → Connection Details → Pooled).
-3. Run migrations once against Neon: `DATABASE_URL=<neon-pooled-url> npm run db:migrate`
-4. Set `DATABASE_URL` to the Neon pooled URL in Vercel (and locally in `.env`).
-5. Migrate existing data manually via pg_dump/pg_restore if needed.
-6. Keep the three Supabase env vars — Auth still runs on Supabase.
+| Command | What it does | Guards |
+|---|---|---|
+| `npm run dev` | Local app on mock data (`.local-db`) | Never touches production |
+| `npm run db:status:prod` | **Read-only**: applied / pending migrations on Neon, a few row counts | Read-only transaction |
+| `npm run db:migrate:prod` | Applies pending migrations to Neon | Clean, pushed, up-to-date `main` only; shows what's pending; type `migrate prod` |
+| `npm run deploy:prod` | Deploys `main` to Vercel production, smoke-tests the live site, **rolls back** on failure | Same `main` checks; refuses while migrations are pending; builds from a temporary worktree with no `.env` |
+| `npm run dev:prod-db` | Local app on `http://127.0.0.1:3000` against the **production** database (debugging only) | Loud warning; localhost only. Login needs the real Supabase values in `.env` |
 
-## Switching to Cloudflare R2 (10 GB free storage, zero egress)
+**Release flow:** merge the PR → `git checkout main && git pull` → `npm run db:status:prod` →
+`npm run db:migrate:prod` (if anything is pending) → `npm run deploy:prod`.
+Smoke test = `/login` 200, `/api/ping` 200, an unknown `/s/<token>` 404. After a manual `vercel rollback`,
+Vercel stops pointing the domain at new deployments until one is promoted; `deploy:prod` always promotes.
 
-1. Cloudflare dashboard → R2 → Create bucket named `patient-files` (or any name).
-2. R2 → Manage API Tokens → Create token with Read/Write on the bucket.
-3. Add four env vars (Vercel + `.env`):
-   - `R2_ACCOUNT_ID` — your Cloudflare account ID
-   - `R2_ACCESS_KEY_ID` — token key
-   - `R2_SECRET_ACCESS_KEY` — token secret
-   - `R2_BUCKET` — bucket name
-4. When `R2_ACCOUNT_ID` is set, the app automatically uses R2; Supabase Storage is ignored.
-5. Migrate existing files: `rclone copy supabase-remote:patient-files r2-remote:patient-files`
+### First-time setup of a new environment (reference)
+1. **Neon**: create a project; copy the **pooled** connection string → Vercel `DATABASE_URL` and local
+   `PROD_DATABASE_URL`; run `npm run db:migrate:prod`, then seed the exercise library once with
+   `DATABASE_URL=<neon url> npx tsx scripts/seed-db.ts` (idempotent upsert).
+2. **R2**: create bucket `patient-files` and an API token with read/write on it → the four `R2_*` vars.
+3. **Supabase (login)**: create a project; Project Settings → API → URL, anon/publishable key, service-role
+   key → the auth vars; create the admin account at `/register`; then disable signups.
+4. `npm run deploy:prod`.
 
 ## Client share links (`APP_URL`)
 "Share with client" on the Treatment tab creates a link like `https://<app>/s/<token>`. Set `APP_URL` to the
