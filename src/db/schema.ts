@@ -259,6 +259,10 @@ export const shareLinks = pgTable('share_links', {
   patientId: uuid('patient_id').notNull()
     .references(() => patients.id, { onDelete: 'cascade' }),
   kind: text('kind').notNull(),
+  // kind 'posture': the one assessment this link shows (deleting it kills the link).
+  postureAssessmentId: uuid('posture_assessment_id')
+    .references(() => postureAssessments.id, { onDelete: 'cascade' }),
+  includePhotos: boolean('include_photos').notNull().default(false),
   tokenHash: text('token_hash').notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),
   revokedAt: timestamp('revoked_at'),
@@ -269,11 +273,12 @@ export const shareLinks = pgTable('share_links', {
   index('share_links_patient_kind_idx').on(table.patientId, table.kind),
   // At most one unrevoked link per client and kind ("Share again" replaces the old link).
   uniqueIndex('share_links_one_live_uq').on(table.patientId, table.kind).where(sql`${table.revokedAt} IS NULL`),
-  check('share_links_kind_check', sql`${table.kind} IN ('exercises')`),
+  check('share_links_kind_check', sql`${table.kind} IN ('exercises', 'posture')`),
+  check('share_links_posture_target_check', sql`(${table.kind} = 'posture') = (${table.postureAssessmentId} IS NOT NULL)`),
 ]).enableRLS();
 
 export type ShareLinkRow = typeof shareLinks.$inferSelect;
-export type ShareLinkKind = 'exercises';
+export type ShareLinkKind = 'exercises' | 'posture';
 
 // Daily home-exercise check-ins from the client's share-link page (spec 2026-10-05-exercise-checkin).
 export const exerciseCheckins = pgTable('exercise_checkins', {

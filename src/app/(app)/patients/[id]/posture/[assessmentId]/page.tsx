@@ -10,6 +10,8 @@ import { getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { computeBmi } from '@/lib/bmi';
 import { bmiBand, painBand, stressBand } from '@/lib/wellbeing';
 import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
+import { SharePanel } from '@/components/SharePanel';
+import { activeShareLink } from '@/data/share-links';
 import { deletePostureAssessmentAction } from '@/actions/posture';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
@@ -82,10 +84,15 @@ export default async function PostureReportPage({
     library.filter((e) => e.category === category).slice(0, EXERCISES_PER_CATEGORY);
 
   // Client context (FlexifyMe-style profile strip + wellbeing gauges). Display-only: not sent to the AI.
-  const [vitals, lifestyle] = await Promise.all([
+  const [vitals, lifestyle, share] = await Promise.all([
     visitVitalsOn(db, id, assessment.assessedOn),
     getLifestyleAssessmentSnapshot(db, id),
+    activeShareLink(db, id, 'posture', new Date()),
   ]);
+  // The client's live posture link may show a different (older/newer) report.
+  const sharedOther = share && share.postureAssessmentId !== assessmentId && share.postureAssessmentId
+    ? await getPostureAssessment(db, share.postureAssessmentId)
+    : null;
   const weightKg = vitals.weightKg ?? patient.weightKg;
   const bmi = computeBmi(weightKg, assessment.heightCm);
   const bmiKey = bmiBand(bmi);
@@ -121,6 +128,19 @@ export default async function PostureReportPage({
           />
           <PrintButton />
         </div>
+      </div>
+
+      <div className="mb-4 print:hidden">
+        <SharePanel
+          target={{ kind: 'posture', patientId: id, assessmentId, canShare: true, otherReportOn: sharedOther?.assessedOn ?? null }}
+          active={share && share.postureAssessmentId === assessmentId ? {
+            createdAt: share.createdAt.toISOString(),
+            expiresAt: share.expiresAt.toISOString(),
+            viewCount: share.viewCount,
+            lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
+            includePhotos: share.includePhotos,
+          } : null}
+        />
       </div>
 
       <ReportLetterhead badgeLabel={p.reportTitle} patientCode={patient.patientCode} branch={branch} today={getISTDateString()} />

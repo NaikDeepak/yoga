@@ -6,24 +6,37 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslations } from '@/lib/i18n/context';
 import { formatFullDate, getISTDateString } from '@/lib/dates';
-import { createExerciseShareLinkAction, revokeExerciseShareLinkAction } from '@/actions/share-links';
+import {
+  createExerciseShareLinkAction, createPostureShareLinkAction,
+  revokeExerciseShareLinkAction, revokePostureShareLinkAction,
+} from '@/actions/share-links';
 
 export interface ActiveShare {
   createdAt: string; // ISO
   expiresAt: string; // ISO
   viewCount: number;
   lastViewedAt: string | null; // ISO
+  includePhotos?: boolean; // posture links
 }
+
+/** What is being shared: the client's exercise programme, or one posture report. */
+export type ShareTarget =
+  | { kind: 'exercises'; patientId: string; canShare: boolean }
+  | { kind: 'posture'; patientId: string; assessmentId: string; canShare: true; otherReportOn: string | null };
 
 const day = (iso: string) => formatFullDate(getISTDateString(0, new Date(iso)));
 
-/** Treatment tab: send the client a link to their home exercises; status, re-share and stop. */
-export function ShareExercisesPanel({ patientId, active, hasExercises }: {
-  patientId: string;
-  active: ActiveShare | null;
-  hasExercises: boolean;
-}) {
-  const t = useTranslations().shareExercises;
+/**
+ * Send the client a link (exercise programme on the Treatment tab, or a posture report); status,
+ * re-share and stop. Posture shares can include photos only when the physio ticks "client agreed".
+ */
+export function SharePanel({ target, active }: { target: ShareTarget; active: ActiveShare | null }) {
+  const tr = useTranslations();
+  const t = tr.shareExercises;
+  const tp = tr.sharePosture;
+  const { patientId, canShare: hasExercises } = target;
+  const posture = target.kind === 'posture' ? target : null;
+  const [includePhotos, setIncludePhotos] = useState(false);
   const [pending, start] = useTransition();
   const [fresh, setFresh] = useState<{ url: string; whatsappUrl: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -32,14 +45,16 @@ export function ShareExercisesPanel({ patientId, active, hasExercises }: {
   const share = () => start(async () => {
     setError(null);
     setCopied(false);
-    const r = await createExerciseShareLinkAction(patientId);
+    const r = posture
+      ? await createPostureShareLinkAction(posture.assessmentId, includePhotos)
+      : await createExerciseShareLinkAction(patientId);
     if (!r.ok) return setError(r.error);
     setFresh({ url: r.url, whatsappUrl: r.whatsappUrl });
   });
 
   const stop = () => start(async () => {
     setError(null);
-    const r = await revokeExerciseShareLinkAction(patientId);
+    const r = posture ? await revokePostureShareLinkAction(patientId) : await revokeExerciseShareLinkAction(patientId);
     if (!r.ok) return setError(r.error);
     setFresh(null);
   });
@@ -63,11 +78,17 @@ export function ShareExercisesPanel({ patientId, active, hasExercises }: {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
-        <p className="text-muted-foreground">{t.hint}</p>
+        <p className="text-muted-foreground">{posture ? tp.hint : t.hint}</p>
+        {posture?.otherReportOn && (
+          <p className="text-xs text-amber-700">{tp.otherReport.replace('{date}', formatFullDate(posture.otherReportOn))}</p>
+        )}
 
         {active && (
           <div className="rounded-lg bg-primary/5 p-3 text-xs">
-            <p>{t.status.replace('{created}', day(active.createdAt)).replace('{expires}', day(active.expiresAt))}</p>
+            <p>
+              {t.status.replace('{created}', day(active.createdAt)).replace('{expires}', day(active.expiresAt))}
+              {posture && ` · ${active.includePhotos ? tp.withPhotos : tp.withoutPhotos}`}
+            </p>
             <p className="text-muted-foreground">
               {active.lastViewedAt
                 ? t.views.replace('{count}', String(active.viewCount)).replace('{last}', day(active.lastViewedAt))
@@ -96,6 +117,12 @@ export function ShareExercisesPanel({ patientId, active, hasExercises }: {
         )}
 
         {!hasExercises && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
+        {posture && (
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={includePhotos} onChange={(e) => setIncludePhotos(e.target.checked)} />
+            {tp.includePhotos}
+          </label>
+        )}
         {(hasExercises || active || fresh) && <div className="flex flex-wrap items-center gap-2">
           {hasExercises && (
             <Button size="sm" variant={active || fresh ? 'outline' : 'default'} onClick={share} disabled={pending}>
