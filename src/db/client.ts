@@ -18,7 +18,7 @@ export function getDb(): Db {
     return cache.db;
   }
   if (!_db) {
-    // prepare:false required for transaction poolers (Supabase PgBouncer, Neon pooler)
+    // prepare:false required for transaction poolers (Neon pooler)
     const client = postgres(process.env.DATABASE_URL!, { prepare: false });
     _db = drizzle(client, { schema });
   }

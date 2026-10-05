@@ -1,7 +1,9 @@
 import { getDb } from '@/db/client';
 import { sql } from 'drizzle-orm';
 
-// Daily cron target — keeps the Supabase Auth project and Database active/warm on the free tier.
+// Daily cron target. Keeps the production database (Neon) warm, and keeps the Supabase project that
+// hosts **login** from auto-pausing (free tier pauses after 7 days without database activity, which
+// would take sign-in down). Supabase is used for auth only — data is on Neon, files on R2.
 // Vercel cron calls this once a day (see vercel.json) and automatically sends
 // Authorization: Bearer <CRON_SECRET> when CRON_SECRET is set in the project.
 export async function GET(req: Request) {
@@ -13,7 +15,7 @@ export async function GET(req: Request) {
     }
   }
 
-  // 1. Keep Database active & prevent cold starts / pauses
+  // 1. Keep the app database (Neon) warm
   let dbOk = true;
   try {
     const db = getDb();
@@ -23,7 +25,7 @@ export async function GET(req: Request) {
     console.error('Database keepalive query failed:', dbErr);
   }
 
-  // 2. Keep Supabase Auth & PostgREST DB active — prevent 7-day auto-pause.
+  // 2. Keep the Supabase login project active — prevent its 7-day auto-pause.
   let authOk = true;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -50,7 +52,7 @@ export async function GET(req: Request) {
       console.error('Supabase Auth keepalive skipped: missing anon/publishable key env var');
     }
 
-    // 2b. Ping PostgREST with service key to register Postgres schema / DB query activity on Supabase
+    // 2b. PostgREST call = database activity on the Supabase project, which is what the pause timer counts
     if (serviceKey) {
       try {
         const res = await fetch(`${supabaseUrl}/rest/v1/`, {

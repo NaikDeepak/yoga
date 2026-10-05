@@ -23,7 +23,7 @@ In this application, PHI includes:
 
 2. **Database Security (RLS)**
    - All tables holding PHI must have Row Level Security enabled in Drizzle (`.enableRLS()`).
-   - The application connects to Supabase using a service role key ONLY for server-side logic protected by `requireUser()`.
+   - The app reaches the database (Neon in production) only from server code via `DATABASE_URL`, behind `requireUser()` (the token-keyed public share pages/actions are the documented exceptions). The Supabase service-role key is for auth/keepalive only.
    - Do NOT expose `DATABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` to the client.
 
 3. **Data Leakage & Logging**
@@ -31,7 +31,7 @@ In this application, PHI includes:
    - Error messages returned to the client should be generic (e.g., "Failed to load patient") rather than leaking database internals or raw PHI.
 
 4. **File Storage**
-   - Patient documents are stored in Cloudflare R2 (`src/lib/r2-storage.ts`), selected at runtime via `getStorage()` in `src/lib/storage.ts`. A Supabase Storage backend (bucket `patient-files`) also exists behind the same interface as a fallback when R2 env vars are unset — check whichever backend is actually active.
+   - Patient documents and posture photos are stored in Cloudflare R2 (`src/lib/r2-storage.ts`), selected via `getStorage()` in `src/lib/storage.ts` (local files in mock mode). There is no Supabase Storage fallback any more; Supabase is used for login only.
    - Storage must never be a public bucket; access to files in either backend must be granted via short-lived signed URLs (`createSignedUrl`), NOT public unauthenticated URLs.
    - When fetching documents, verify the patient ID belongs to the system and is accessed in an authenticated context.
 
