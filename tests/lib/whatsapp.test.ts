@@ -128,3 +128,12 @@ describe('postureShareMessage', () => {
     expect(msg).not.toMatch(/shoulder|head|pelvis|knee|score/i);
   });
 });
+
+describe('progressShareMessage', () => {
+  it('carries the link and no personal or health details', () => {
+    const msg = progressShareMessage('https://clinic.example/s/tok');
+    expect(msg).toContain('https://clinic.example/s/tok');
+    expect(msg).toContain('progress');
+    expect(msg).not.toMatch(/pain|weight|kg|score|दुखी|वजन/i);
+  });
+});
