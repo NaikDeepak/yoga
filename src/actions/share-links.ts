@@ -6,11 +6,12 @@ import { z } from 'zod';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { shareUrl } from '@/lib/share-token';
-import { exerciseShareMessage, postureShareMessage, waMeUrl } from '@/lib/whatsapp';
+import { exerciseShareMessage, postureShareMessage, progressShareMessage, waMeUrl } from '@/lib/whatsapp';
 import { getPatient } from '@/data/patients';
 import { getPrescribedExercises } from '@/data/exercises';
 import { createShareLink, revokeShareLinks } from '@/data/share-links';
 import { getPostureAssessment } from '@/data/posture';
+import { listVisitsWithData } from '@/data/visits';
 import { isPostureEnabled } from '@/lib/features';
 
 const patientIdSchema = z.string().uuid();
@@ -101,6 +102,46 @@ export async function revokePostureShareLinkAction(patientId: string): Promise<{
     return { ok: true };
   } catch (error) {
     console.error('Failed to revoke posture share link:', error instanceof Error ? error.message : String(error));
+    return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
+  }
+}
+
+/**
+ * Live progress report link for the client (replaces their previous one). Weight is left out when the
+ * physio ticked "Hide weight". The token leaves the server only in this response.
+ */
+export async function createProgressShareLinkAction(
+  patientId: string,
+  opts: { hideWeight: boolean },
+): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
+  await requireUser();
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  try {
+    const db = getDb();
+    const patient = await getPatient(db, patientId);
+    if (!patient) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+    if (!(await listVisitsWithData(db, patientId)).length) {
+      return { ok: false, error: 'Record pain or weight at a visit first / आधी भेटीत वेदना किंवा वजन नोंदवा' };
+    }
+    const { token, link } = await createShareLink(db, patientId, 'progress', new Date(), { hideWeight: opts?.hideWeight === true });
+    const url = await publicUrl(token);
+    revalidatePath(`/patients/${patientId}`);
+    return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, progressShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
+  } catch (error) {
+    console.error('Failed to create progress share link:', error instanceof Error ? error.message : String(error));
+    return { ok: false, error: 'Could not create the link / लिंक तयार करता आली नाही' };
+  }
+}
+
+export async function revokeProgressShareLinkAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireUser();
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  try {
+    await revokeShareLinks(getDb(), patientId, 'progress', new Date());
+    revalidatePath(`/patients/${patientId}`);
+    return { ok: true };
+  } catch (error) {
+    console.error('Failed to revoke progress share link:', error instanceof Error ? error.message : String(error));
     return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
   }
 }

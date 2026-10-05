@@ -7,6 +7,7 @@ import {
   digestUrl,
   exerciseShareMessage,
   postureShareMessage,
+  progressShareMessage,
   type DigestEntry,
 } from '@/lib/whatsapp';
 import { CLINIC } from '@/lib/clinic';
