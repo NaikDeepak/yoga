@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns, inArray, lte, sql } from 'drizzle-orm';
 import {
   postureAssessments, postureViews, type PostureAssessmentRow, type PostureViewRow,
 } from '@/db/schema';
@@ -106,8 +106,12 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
   const assessments = await db.select().from(postureAssessments)
     .where(eq(postureAssessments.patientId, patientId))
     .orderBy(desc(postureAssessments.assessedOn), desc(postureAssessments.createdAt));
-  if (!assessments.length) return [];
+  return summarize(db, assessments);
+}
 
+/** Score + mild/marked counts on the combined findings, for each assessment (one views query). */
+async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<PostureAssessmentSummary[]> {
+  if (!assessments.length) return [];
   const views = await db.select().from(postureViews)
     .where(inArray(postureViews.assessmentId, assessments.map((a) => a.id)));
 
@@ -123,6 +127,51 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
       grade,
     };
   });
+}
+
+export interface LatestPostureScore {
+  assessmentId: string;
+  assessedOn: string;
+  score: number | null;
+  grade: Grade | null;
+  mildCount: number;
+  markedCount: number;
+  previousId: string | null;
+  previousOn: string | null;
+  previousScore: number | null;
+}
+
+/**
+ * Latest posture score per client plus the previous one (for the trend), for the Overview card and
+ * the client list. Clients without assessments are absent. Two queries regardless of client count.
+ */
+export async function latestPostureScores(db: Db, patientIds: string[]): Promise<Map<string, LatestPostureScore>> {
+  const result = new Map<string, LatestPostureScore>();
+  if (!patientIds.length) return result;
+  // Only the newest two per client leave the database, however long a client's history gets.
+  const ranked = db.select({
+    ...getTableColumns(postureAssessments),
+    rank: sql<number>`row_number() over (partition by ${postureAssessments.patientId}
+      order by ${postureAssessments.assessedOn} desc, ${postureAssessments.createdAt} desc)`.as('rank'),
+  }).from(postureAssessments)
+    .where(inArray(postureAssessments.patientId, patientIds))
+    .as('ranked');
+  const rows = await db.select().from(ranked).where(lte(ranked.rank, 2)).orderBy(ranked.patientId, ranked.rank);
+
+  const lastTwo = new Map<string, PostureAssessmentRow[]>();
+  for (const { rank: _rank, ...a } of rows) lastTwo.set(a.patientId, [...(lastTwo.get(a.patientId) ?? []), a]);
+  const summaries = new Map((await summarize(db, [...lastTwo.values()].flat())).map((s) => [s.id, s]));
+
+  for (const [patientId, [latest, previous]] of lastTwo) {
+    const l = summaries.get(latest.id)!;
+    const p = previous ? summaries.get(previous.id)! : null;
+    result.set(patientId, {
+      assessmentId: l.id, assessedOn: l.assessedOn, score: l.score, grade: l.grade,
+      mildCount: l.mildCount, markedCount: l.markedCount,
+      previousId: p?.id ?? null, previousOn: p?.assessedOn ?? null, previousScore: p?.score ?? null,
+    });
+  }
+  return result;
 }
 
 export async function getPostureAssessment(db: Db, id: string): Promise<PostureAssessment | null> {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareMetrics, compareScores } from '@/lib/posture-compare';
+import { compareMetrics, compareScores, scoreTrend } from '@/lib/posture-compare';
 import { combineViews, scorePosture } from '@/lib/posture-insights';
 import { severity, type Metric, type MetricKey, type PostureView } from '@/lib/posture';
 
@@ -93,5 +93,24 @@ describe('compareScores', () => {
     expect(c.regions.shoulders).toEqual({ before: 65, after: 100, change: 35 });
     expect(c.regions.headNeck).toEqual({ before: 85, after: 85, change: 0 });
     expect(c.regions.legs).toEqual({ before: null, after: null, change: null });
+  });
+});
+
+describe('scoreTrend', () => {
+  it('is better or worse when the score moves by 3 points or more', () => {
+    expect(scoreTrend(80, 72)).toEqual({ change: 8, trend: 'better' });
+    expect(scoreTrend(72, 75)).toEqual({ change: -3, trend: 'worse' });
+    expect(scoreTrend(75, 72)).toEqual({ change: 3, trend: 'better' });
+  });
+
+  it('is the same within ±2 points (retake noise)', () => {
+    expect(scoreTrend(74, 72)).toEqual({ change: 2, trend: 'same' });
+    expect(scoreTrend(70, 72)).toEqual({ change: -2, trend: 'same' });
+    expect(scoreTrend(72, 72)).toEqual({ change: 0, trend: 'same' });
+  });
+
+  it('has no trend when either score is missing', () => {
+    expect(scoreTrend(72, null)).toEqual({ change: null, trend: null });
+    expect(scoreTrend(null, 72)).toEqual({ change: null, trend: null });
   });
 });

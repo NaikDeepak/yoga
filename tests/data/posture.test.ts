@@ -7,6 +7,7 @@ import { createPatient } from '@/data/patients';
 import {
   addPostureAssessment,
   listPostureAssessments,
+  latestPostureScores,
   getPostureAssessment,
   deletePostureAssessment,
   replacePostureViews,
@@ -125,6 +126,41 @@ describe('listPostureAssessments', () => {
     // shoulders 9.9° marked (65), pelvis 3.8° mild (85), other regions 100 → 90
     expect(list[0]).toMatchObject({ id: latest.id, markedCount: 1, mildCount: 1, score: 90, grade: 'good' });
     expect(list[1]).toMatchObject({ markedCount: 0, mildCount: 0, score: 100 });
+  });
+});
+
+describe('latestPostureScores', () => {
+  // Front view with the right shoulder marked low: shoulders 65 → overall 93 (vs 100 when aligned).
+  const lowShoulder = () => { const v = allViews(); v[0] = view('front', { RIGHT_SHOULDER: [400, 535] }); return v; };
+
+  it('returns an empty map for no ids, and skips clients without assessments', async () => {
+    expect((await latestPostureScores(db, [])).size).toBe(0);
+    expect((await latestPostureScores(db, [patientId])).size).toBe(0);
+  });
+
+  it('gives the latest score and the previous one per client', async () => {
+    await addPostureAssessment(db, storage, input({ assessedOn: '2026-08-01', views: lowShoulder() }));
+    await addPostureAssessment(db, storage, input({ assessedOn: '2026-09-01', views: lowShoulder() }));
+    const latest = await addPostureAssessment(db, storage, input({ assessedOn: '2026-10-04' }));
+    const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
+    const only = await addPostureAssessment(db, storage, input({ patientId: otherId, assessedOn: '2026-07-01', views: lowShoulder() }));
+
+    const scores = await latestPostureScores(db, [patientId, otherId]);
+    const [mine] = await listPostureAssessments(db, patientId);
+    expect(scores.get(patientId)).toEqual({
+      assessmentId: latest.id, assessedOn: '2026-10-04', score: mine.score, grade: mine.grade,
+      mildCount: 0, markedCount: 0, previousId: expect.any(String), previousOn: '2026-09-01', previousScore: 93,
+    });
+    expect(mine.score).toBe(100);
+    expect(scores.get(otherId)).toMatchObject({
+      assessmentId: only.id, score: 93, markedCount: 1, previousId: null, previousOn: null, previousScore: null,
+    });
+  });
+
+  it('reports a null score when no view was measurable', async () => {
+    const blank = POSTURE_VIEWS.map((v) => ({ ...view(v), landmarks: view(v).landmarks.map((l) => ({ ...l, visibility: 0 })) }));
+    await addPostureAssessment(db, storage, input({ views: blank }));
+    expect((await latestPostureScores(db, [patientId])).get(patientId)).toMatchObject({ score: null, grade: null });
   });
 });
 

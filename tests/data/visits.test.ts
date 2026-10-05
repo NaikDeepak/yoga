@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { addVisit, getFollowUpsThisWeek, getFollowUpsInRange, getISTDateString } from '@/data/visits';
+import { addVisit, visitVitalsOn, getFollowUpsThisWeek, getFollowUpsInRange, getISTDateString } from '@/data/visits';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
 
@@ -153,5 +153,26 @@ describe('getFollowUpsInRange', () => {
     const result = await getFollowUpsInRange(db, getISTDateString(15), getISTDateString(25), 'Manjari BK');
     expect(result).toHaveLength(1);
     expect(result[0].fullName).toBe('Asha Pawar');
+  });
+});
+
+describe('visitVitalsOn', () => {
+  it('takes the latest weight and pain on or before the date, each independently', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    await addVisit(db, p.id, { visitDate: '2026-05-01', progressNote: 'a', weightKg: 82, painScale: 7 });
+    await addVisit(db, p.id, { visitDate: '2026-05-20', progressNote: 'b', weightKg: 80 });
+    await addVisit(db, p.id, { visitDate: '2026-06-01', progressNote: 'c' });
+    await addVisit(db, p.id, { visitDate: '2026-06-10', progressNote: 'later', weightKg: 78, painScale: 2 });
+
+    expect(await visitVitalsOn(db, p.id, '2026-06-01')).toEqual({ weightKg: 80, painScale: 7 });
+    expect(await visitVitalsOn(db, p.id, '2026-06-10')).toEqual({ weightKg: 78, painScale: 2 });
+  });
+
+  it('is empty before any visit and ignores other clients', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Pawar', mobile: '9876543210' });
+    const other = await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' });
+    await addVisit(db, other.id, { visitDate: '2026-05-01', progressNote: 'a', weightKg: 60, painScale: 3 });
+    await addVisit(db, p.id, { visitDate: '2026-06-01', progressNote: 'a', weightKg: 70 });
+    expect(await visitVitalsOn(db, p.id, '2026-05-15')).toEqual({ weightKg: null, painScale: null });
   });
 });
