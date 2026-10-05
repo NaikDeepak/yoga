@@ -71,6 +71,8 @@ describe('activeShareLink', () => {
 });
 
 describe('recordShareView', () => {
+  const minutes = (base: Date, m: number) => new Date(base.getTime() + m * 60_000);
+
   it('counts views and remembers the last one', async () => {
     const { link } = await createShareLink(db, patientId, 'exercises', now);
     await recordShareView(db, link.id, later(1));
@@ -78,6 +80,22 @@ describe('recordShareView', () => {
     const [row] = await db.select().from(shareLinks);
     expect(row.viewCount).toBe(2);
     expect(row.lastViewedAt?.toISOString()).toBe(later(2).toISOString());
+  });
+
+  it('counts reloads within 30 minutes of the last view as the same visit', async () => {
+    const { link } = await createShareLink(db, patientId, 'exercises', now);
+    const t0 = later(1);
+    await recordShareView(db, link.id, t0);
+    await recordShareView(db, link.id, minutes(t0, 0)); // browser's second request for the same load
+    await recordShareView(db, link.id, minutes(t0, 20));
+    await recordShareView(db, link.id, minutes(t0, 45)); // 25 min after the last view: still the same sitting
+    let [row] = await db.select().from(shareLinks);
+    expect(row.viewCount).toBe(1);
+    expect(row.lastViewedAt?.toISOString()).toBe(minutes(t0, 45).toISOString());
+
+    await recordShareView(db, link.id, minutes(t0, 80)); // 35 min later: a new visit
+    [row] = await db.select().from(shareLinks);
+    expect(row.viewCount).toBe(2);
   });
 });
 

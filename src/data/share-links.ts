@@ -48,8 +48,18 @@ export async function revokeShareLinks(db: Db, patientId: string, kind: ShareLin
     .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, kind), isNull(shareLinks.revokedAt)));
 }
 
+/** Views within this long of the previous one are the same visit (reloads, the browser re-requesting the page). */
+export const SHARE_VISIT_GAP_MINUTES = 30;
+
+/** Counts a visit (at most one per 30-minute sitting) and always updates the last-opened time. */
 export async function recordShareView(db: Db, id: string, now: Date): Promise<void> {
+  // ISO string, as drizzle writes `timestamp` columns, so the comparison matches on every driver.
+  const sameVisitAfter = new Date(now.getTime() - SHARE_VISIT_GAP_MINUTES * 60_000).toISOString();
   await db.update(shareLinks)
-    .set({ viewCount: sql`${shareLinks.viewCount} + 1`, lastViewedAt: now })
+    .set({
+      viewCount: sql`${shareLinks.viewCount} + case
+        when ${shareLinks.lastViewedAt} is not null and ${shareLinks.lastViewedAt} > ${sameVisitAfter} then 0 else 1 end`,
+      lastViewedAt: now,
+    })
     .where(eq(shareLinks.id, id));
 }
