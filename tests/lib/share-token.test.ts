@@ -42,7 +42,8 @@ describe('shareUrl', () => {
   });
 
   it('fails without any origin', () => {
-    expect(() => shareUrl('tok', { appUrl: undefined, host: null, proto: null })).toThrow();
+    expect(() => shareUrl('tok', { appUrl: undefined, host: null, proto: null })).toThrow(/Host header/);
+    expect(() => shareUrl('tok', { appUrl: '', host: '  ', proto: 'https' })).toThrow(/Host header/);
   });
 });
 
@@ -51,6 +52,7 @@ describe('isLinkPreviewBot', () => {
     for (const ua of [
       'WhatsApp/2.23.20.0 A', 'facebookexternalhit/1.1', 'TelegramBot (like TwitterBot)',
       'Slackbot-LinkExpanding 1.0', 'Mozilla/5.0 (compatible; Discordbot/2.0)', 'Twitterbot/1.0',
+      'Slackbot 1.0 (+https://api.slack.com/robots)', 'Mozilla/5.0 (compatible; Googlebot/2.1)', 'Mozilla/5.0 (Applebot/0.1)',
     ]) expect(isLinkPreviewBot(ua)).toBe(true);
   });
 

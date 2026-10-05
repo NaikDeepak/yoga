@@ -24,12 +24,13 @@ export function shareLinkExpiry(createdAt: Date): Date {
  */
 export function shareUrl(token: string, origin: { appUrl: string | undefined; host: string | null; proto: string | null }): string {
   const base = origin.appUrl?.trim().replace(/\/+$/, '')
-    || (origin.host ? `${origin.proto ?? 'https'}://${origin.host}` : null);
-  if (!base) throw new Error('Cannot build share link: set APP_URL');
+    || (origin.host?.trim() ? `${origin.proto ?? 'https'}://${origin.host.trim()}` : null);
+  if (!base) throw new Error('Cannot build share link: no APP_URL and no Host header on the request');
   return `${base}/s/${token}`;
 }
 
-const PREVIEW_BOTS = /whatsapp|facebookexternalhit|telegrambot|slackbot|discordbot|twitterbot|linkedinbot|skypeuripreview/i;
+// Chat-app previews, plus search crawlers in case a link ever leaks (pages are noindex, tokens unguessable).
+const PREVIEW_BOTS = /whatsapp|facebookexternalhit|telegrambot|slackbot|discordbot|twitterbot|linkedinbot|skypeuripreview|applebot|googlebot|bingbot|duckduckbot/i;
 
 /** Chat apps fetch a link to build its preview; those fetches aren't the client opening it. */
 export function isLinkPreviewBot(userAgent: string | null): boolean {

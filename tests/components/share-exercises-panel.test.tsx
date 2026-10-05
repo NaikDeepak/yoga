@@ -19,6 +19,12 @@ describe('ShareExercisesPanel', () => {
     expect(screen.queryByRole('button', { name: /Stop sharing/ })).toBeNull();
   });
 
+  it('renders no empty button row without exercises or a link', () => {
+    const { container } = render(<ShareExercisesPanel patientId="p1" active={null} hasExercises={false} />);
+    expect(container.querySelectorAll('button')).toHaveLength(0);
+    expect(container.querySelector('.flex-wrap.gap-2')).toBeNull();
+  });
+
   it('still lets the physio stop a live link after the prescription was emptied', () => {
     render(<ShareExercisesPanel patientId="p1" active={active} hasExercises={false} />);
     expect(screen.getByText(en.shareExercises.noExercises)).toBeTruthy();

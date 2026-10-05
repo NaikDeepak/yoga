@@ -56,12 +56,12 @@ export const SHARE_VISIT_GAP_MINUTES = 30;
 
 /** Counts a visit (at most one per 30-minute sitting) and always updates the last-opened time. */
 export async function recordShareView(db: Db, id: string, now: Date): Promise<void> {
-  // ISO string, as drizzle writes `timestamp` columns, so the comparison matches on every driver.
+  // ISO string cast to `timestamp` (no tz), as drizzle writes these columns — no driver/session-timezone guessing.
   const sameVisitAfter = new Date(now.getTime() - SHARE_VISIT_GAP_MINUTES * 60_000).toISOString();
   await db.update(shareLinks)
     .set({
       viewCount: sql`${shareLinks.viewCount} + case
-        when ${shareLinks.lastViewedAt} is not null and ${shareLinks.lastViewedAt} > ${sameVisitAfter} then 0 else 1 end`,
+        when ${shareLinks.lastViewedAt} is not null and ${shareLinks.lastViewedAt} > ${sameVisitAfter}::timestamp then 0 else 1 end`,
       lastViewedAt: now,
     })
     .where(eq(shareLinks.id, id));

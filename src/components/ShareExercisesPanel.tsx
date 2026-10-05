@@ -96,7 +96,7 @@ export function ShareExercisesPanel({ patientId, active, hasExercises }: {
         )}
 
         {!hasExercises && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
-        <div className="flex flex-wrap items-center gap-2">
+        {(hasExercises || active || fresh) && <div className="flex flex-wrap items-center gap-2">
           {hasExercises && (
             <Button size="sm" variant={active || fresh ? 'outline' : 'default'} onClick={share} disabled={pending}>
               <Link2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
@@ -110,7 +110,7 @@ export function ShareExercisesPanel({ patientId, active, hasExercises }: {
               {t.stop}
             </Button>
           )}
-        </div>
+        </div>}
         {(active || fresh) && hasExercises && <p className="text-[11px] text-muted-foreground">{t.shareAgainHint}</p>}
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       </CardContent>
