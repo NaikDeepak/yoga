@@ -118,6 +118,7 @@ export async function addPrescribedExercises(
   const inserted = await db.insert(prescribedExercises)
     .values(unique.map((exerciseId) => ({ patientId, exerciseId })))
     .onConflictDoNothing({ target: [prescribedExercises.patientId, prescribedExercises.exerciseId] })
+    // With DO NOTHING, RETURNING yields only the rows actually inserted, so this counts new additions.
     .returning({ id: prescribedExercises.id });
   return { added: inserted.length, alreadyPrescribed: unique.length - inserted.length };
 }

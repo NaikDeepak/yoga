@@ -22,14 +22,14 @@ export function PostureAiPanel({
   assessmentId,
   report,
   approvedAt,
-  recommendedExerciseIds = [],
+  recommendedExerciseIds,
 }: {
   patientId: string;
   assessmentId: string;
   report: PostureAiReport | null;
   approvedAt: string | null; // ISO date (yyyy-mm-dd) when the therapist approved it
   /** Library ids of the exercises the analysis recommends (for "add to prescription"). */
-  recommendedExerciseIds?: string[];
+  recommendedExerciseIds: string[];
 }) {
   const t = useTranslations();
   const a = t.posture.ai;

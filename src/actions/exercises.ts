@@ -60,7 +60,8 @@ export async function addPrescribedExercisesAction(
     const result = await addPrescribedExercises(getDb(), patientId, parsed.data.exerciseIds);
     revalidatePath(`/patients/${patientId}`);
     return { ok: true, ...result };
-  } catch {
+  } catch (error) {
+    console.error('Failed to add prescribed exercises:', error instanceof Error ? error.message : String(error));
     return { ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी' };
   }
 }

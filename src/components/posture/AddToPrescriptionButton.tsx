@@ -27,8 +27,8 @@ export function AddToPrescriptionButton({
     const r = await addPrescribedExercisesAction(patientId, exerciseIds);
     if (!r.ok) return setMessage({ ok: false, text: r.error });
     const text = r.added === 0 ? pr.allPresent
-      : r.alreadyPrescribed === 0 ? pr.added.replace('{added}', String(r.added))
-      : pr.addedSome.replace('{added}', String(r.added)).replace('{already}', String(r.alreadyPrescribed));
+      : r.alreadyPrescribed === 0 ? pr.added.replaceAll('{added}', String(r.added))
+      : pr.addedSome.replaceAll('{added}', String(r.added)).replaceAll('{already}', String(r.alreadyPrescribed));
     setMessage({ ok: true, text });
   });
 
