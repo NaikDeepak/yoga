@@ -4,7 +4,7 @@ import { freshTestDb } from '../helpers/action-mocks';
 import { requireUser } from '@/lib/auth';
 import { createExerciseShareLinkAction, revokeExerciseShareLinkAction } from '@/actions/share-links';
 import { listAllExercises, savePrescribedExercises, getSharedExerciseProgramme } from '@/data/exercises';
-import { activeShareLink } from '@/data/share-links';
+import { activeShareLink, resolveAnyShareLink } from '@/data/share-links';
 import { createPatient } from '@/data/patients';
 import type { Db } from '@/db/types';
 
@@ -31,7 +31,8 @@ describe('createExerciseShareLinkAction', () => {
     expect(decodeURIComponent(r.whatsappUrl)).toContain(r.url);
     expect(decodeURIComponent(r.whatsappUrl)).not.toMatch(/Asha|Kulkarni/);
     const token = r.url.split('/s/')[1];
-    expect(await getSharedExerciseProgramme(db, token, 'en', new Date())).not.toBeNull();
+    const link = await resolveAnyShareLink(db, token, new Date());
+    expect(link && await getSharedExerciseProgramme(db, link, 'en', new Date())).not.toBeNull();
   });
 
   it('refuses a client with no prescribed exercises', async () => {

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { createTestDb } from '../helpers/db';
 import { addAssessment } from '../helpers/posture-assessment';
 import { createPatient } from '@/data/patients';
+import { postureAssessedOn } from '@/data/posture';
 import { createShareLink, resolveAnyShareLink, resolveShareLink } from '@/data/share-links';
 import { postureAssessments, shareLinks } from '@/db/schema';
 import type { Db } from '@/db/types';
@@ -55,3 +56,12 @@ describe('resolveAnyShareLink', () => {
     expect(await resolveAnyShareLink(db, 'nope', now)).toBeNull();
   });
 });
+
+describe('postureAssessedOn', () => {
+  it("is an assessment's date, or null", async () => {
+    const a = await addAssessment(db, patientId, '2026-09-01');
+    expect(await postureAssessedOn(db, a.id)).toBe('2026-09-01');
+    expect(await postureAssessedOn(db, '00000000-0000-4000-8000-000000000000')).toBeNull();
+  });
+});
+

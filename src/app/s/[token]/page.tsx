@@ -8,6 +8,7 @@ import { recordShareView, resolveAnyShareLink } from '@/data/share-links';
 import { CLINIC } from '@/lib/clinic';
 import { isLinkPreviewBot } from '@/lib/share-token';
 import { getStorage } from '@/lib/storage';
+import { isPostureEnabled } from '@/lib/features';
 import { getTranslations } from '@/lib/i18n/translations';
 import { ExercisesBody } from './ExercisesBody';
 import { PostureReportBody } from './PostureReportBody';
@@ -40,11 +41,12 @@ export default async function SharedLinkPage({
   const t = tr.sharedPage;
   let body: React.ReactNode;
   if (link.kind === 'posture') {
+    if (!isPostureEnabled()) notFound(); // switching the feature off also stops existing posture links
     const report = await getSharedPostureReport(db, getStorage(), link);
     if (!report) notFound();
     body = <PostureReportBody report={report} t={tr} />;
   } else {
-    const programme = await getSharedExerciseProgramme(db, token, lang, now);
+    const programme = await getSharedExerciseProgramme(db, link, lang, now);
     if (!programme) notFound();
     body = (
       <ExercisesBody token={token} lang={lang} programme={programme}

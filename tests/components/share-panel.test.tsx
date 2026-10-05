@@ -36,7 +36,7 @@ describe('SharePanel (exercises)', () => {
 });
 
 describe('SharePanel (posture)', () => {
-  const target = { kind: 'posture' as const, patientId: 'p1', assessmentId: 'a1', canShare: true as const, otherReportOn: null };
+  const target = { kind: 'posture' as const, patientId: 'p1', assessmentId: 'a1', otherReportOn: null };
 
   it('offers sharing with photos left out unless ticked', () => {
     render(<SharePanel target={target} active={null} />);
@@ -50,5 +50,9 @@ describe('SharePanel (posture)', () => {
     expect(screen.getByText(/with photos/)).toBeTruthy();
     expect(screen.getByText(/shows the report from/)).toBeTruthy();
   });
-});
 
+  it('starts "Include photos" from the live link, so Share again keeps the photos choice', () => {
+    render(<SharePanel target={target} active={{ ...active, includePhotos: true }} />);
+    expect((screen.getByRole('checkbox', { name: en.sharePosture.includePhotos }) as HTMLInputElement).checked).toBe(true);
+  });
+});

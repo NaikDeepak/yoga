@@ -29,3 +29,11 @@ export function bmiBand(bmi: number | null | undefined): BmiBand | null {
 export function gaugeFraction(value: number, min: number, max: number): number {
   return Math.min(1, Math.max(0, (value - min) / (max - min)));
 }
+
+/** Label for the stored gender value (male/female/other), or null. */
+export function genderLabel(
+  gender: string | null | undefined,
+  labels: { genderMale: string; genderFemale: string; genderOther: string },
+): string | null {
+  return ({ male: labels.genderMale, female: labels.genderFemale, other: labels.genderOther } as Record<string, string>)[gender ?? ''] ?? null;
+}

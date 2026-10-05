@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb } from '../helpers/action-mocks';
 import { addAssessment } from '../helpers/posture-assessment';
@@ -16,11 +16,21 @@ let db: Db;
 let patientId: string;
 
 beforeEach(async () => {
+  vi.stubEnv('FEATURE_POSTURE', 'true');
   db = await freshTestDb();
   patientId = (await createPatient(db, { fullName: 'Asha Kulkarni', mobile: '9876543210' })).id;
 });
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe('createPostureShareLinkAction', () => {
+  it('refuses while posture analysis is switched off', async () => {
+    vi.stubEnv('FEATURE_POSTURE', 'false');
+    const a = await addAssessment(db, patientId);
+    expect(await createPostureShareLinkAction(a.id, false)).toMatchObject({ ok: false });
+    expect(await activeShareLink(db, patientId, 'posture', new Date())).toBeNull();
+  });
+
   it('shares that assessment, remembering the photos choice', async () => {
     const a = await addAssessment(db, patientId);
     const r = await createPostureShareLinkAction(a.id, true);

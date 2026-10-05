@@ -5,6 +5,7 @@ import { patients, type ShareLinkRow } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { FileStorage } from '@/lib/storage';
 import { computeBmi } from '@/lib/bmi';
+import { firstName } from '@/lib/names';
 import { buildOverlay, type Overlay } from '@/lib/posture-overlay';
 import { combineViews, detectPatterns, scorePosture, type PatternKey, type PostureScore } from '@/lib/posture-insights';
 import type { Metric, PostureView } from '@/lib/posture';
@@ -20,7 +21,12 @@ export interface SharedPostureReport {
   firstName: string;
   assessedOn: string;
   score: PostureScore;
-  /** Titles are looked up by key on the page (English in both languages; no cause/effect text). */
+  /** The physio shared photos (a null photoUrl then means it failed to load, not that it was withheld). */
+  photosShared: boolean;
+  /**
+   * Titles are looked up by key on the page (English in both languages; no cause/effect text). Only
+   * patterns the views agree on: low-confidence readings are for the physio to retake, not to tell the client.
+   */
   patterns: { key: PatternKey; severity: 'mild' | 'marked' }[];
   views: { view: PostureView; overlay: Overlay; metrics: Metric[]; photoUrl: string | null }[];
   /** Only once the physio approved it, and only the client-facing parts. */
@@ -64,10 +70,11 @@ export async function getSharedPostureReport(
   const weightKg = vitals.weightKg ?? (patient.weightKg === null ? null : Number(patient.weightKg));
 
   return {
-    firstName: patient.fullName.trim().split(/\s+/)[0],
+    firstName: firstName(patient.fullName),
     assessedOn: assessment.assessedOn,
+    photosShared: link.includePhotos,
     score: scorePosture(combined),
-    patterns: detectPatterns(combined).map((p) => ({ key: p.key, severity: p.severity })),
+    patterns: detectPatterns(combined.filter((m) => !m.lowConfidence)).map((p) => ({ key: p.key, severity: p.severity })),
     views,
     ai: assessment.aiReport && assessment.aiApprovedAt
       ? { summary: assessment.aiReport.summary, recommendations: assessment.aiReport.recommendations }

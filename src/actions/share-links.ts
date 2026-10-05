@@ -11,6 +11,7 @@ import { getPatient } from '@/data/patients';
 import { getPrescribedExercises } from '@/data/exercises';
 import { createShareLink, revokeShareLinks } from '@/data/share-links';
 import { getPostureAssessment } from '@/data/posture';
+import { isPostureEnabled } from '@/lib/features';
 
 const patientIdSchema = z.string().uuid();
 
@@ -72,6 +73,7 @@ export async function createPostureShareLinkAction(
   includePhotos: boolean,
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
   await requireUser();
+  if (!isPostureEnabled()) return { ok: false, error: 'Posture analysis is switched off / पोश्चर विश्लेषण बंद आहे' };
   if (!patientIdSchema.safeParse(assessmentId).success) return { ok: false, error: 'Report not found / अहवाल सापडला नाही' };
   try {
     const db = getDb();

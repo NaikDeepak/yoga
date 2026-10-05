@@ -16,8 +16,11 @@ let storage: FakeStorage;
 let patientId: string;
 const now = new Date('2026-10-05T04:30:00Z');
 
-async function share(includePhotos = false, assessedOn = '2026-10-04') {
-  const a = await addAssessment(db, patientId, assessedOn, { front: { RIGHT_SHOULDER: [400, 535] } }, storage);
+// Right shoulder low, seen the same way from the front and the back (sides by image position).
+const lowShoulder = { front: { RIGHT_SHOULDER: [400, 535] as [number, number] }, back: { LEFT_SHOULDER: [600, 535] as [number, number] } };
+
+async function share(includePhotos = false, assessedOn = '2026-10-04', overrides: Parameters<typeof addAssessment>[3] = lowShoulder) {
+  const a = await addAssessment(db, patientId, assessedOn, overrides, storage);
   const { token } = await createShareLink(db, patientId, 'posture', now, { postureAssessmentId: a.id, includePhotos });
   return { a, link: (await resolveAnyShareLink(db, token, now))! };
 }
@@ -33,7 +36,7 @@ describe('getSharedPostureReport', () => {
     const { a, link } = await share();
     await saveAiReport(db, patientId, a.id, MOCK_POSTURE_AI_REPORT, { approved: false }); // draft
     const r = (await getSharedPostureReport(db, storage, link))!;
-    expect(Object.keys(r).sort()).toEqual(['ai', 'assessedOn', 'firstName', 'patterns', 'score', 'views', 'wellbeing']);
+    expect(Object.keys(r).sort()).toEqual(['ai', 'assessedOn', 'firstName', 'patterns', 'photosShared', 'score', 'views', 'wellbeing']);
     expect(r).toMatchObject({ firstName: 'Asha', assessedOn: '2026-10-04', ai: null });
     const json = JSON.stringify(r);
     for (const secret of ['private physio note', 'Kulkarni', '9876543210', 'PYT-']) expect(json).not.toContain(secret);
@@ -48,6 +51,12 @@ describe('getSharedPostureReport', () => {
     expect(r.patterns[0]).toEqual({ key: 'shoulderImbalance', severity: 'marked' });
   });
 
+  it("leaves out patterns the views disagree on (the physio's report flags those for a retake)", async () => {
+    const { link } = await share(false, '2026-10-04', { front: { RIGHT_SHOULDER: [400, 535] } }); // back view level
+    const r = (await getSharedPostureReport(db, storage, link))!;
+    expect(r.patterns.map((p) => p.key)).not.toContain('shoulderImbalance');
+  });
+
   it('includes the AI analysis only once approved, and only its client-facing parts', async () => {
     const { a, link } = await share();
     await saveAiReport(db, patientId, a.id, MOCK_POSTURE_AI_REPORT, { approved: true });
@@ -58,12 +67,22 @@ describe('getSharedPostureReport', () => {
 
   it('has no photo URLs unless the physio included photos; then short-lived signed ones', async () => {
     const without = (await getSharedPostureReport(db, storage, (await share(false)).link))!;
+    expect(without.photosShared).toBe(false);
     expect(without.views.every((v) => v.photoUrl === null)).toBe(true);
 
     const spy = vi.spyOn(storage, 'createSignedUrl');
     const withPhotos = (await getSharedPostureReport(db, storage, (await share(true, '2026-10-05')).link))!;
     expect(withPhotos.views.every((v) => v.photoUrl?.startsWith('https://fake.local/'))).toBe(true);
+    expect(withPhotos.photosShared).toBe(true);
     expect(spy).toHaveBeenCalledWith(expect.any(String), 600);
+  });
+
+  it('marks photos as shared even if one fails to load, so the page says "unavailable", not "not shared"', async () => {
+    const { link } = await share(true);
+    vi.spyOn(storage, 'createSignedUrl').mockRejectedValueOnce(new Error('R2 down'));
+    const r = (await getSharedPostureReport(db, storage, link))!;
+    expect(r.photosShared).toBe(true);
+    expect(r.views.filter((v) => v.photoUrl === null)).toHaveLength(1);
   });
 
   it('includes wellbeing: age/gender, weight and pain as of the assessment, BMI, stress and goal', async () => {

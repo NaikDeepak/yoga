@@ -4,7 +4,7 @@ import { en } from '@/lib/i18n/en';
 import type { Translations } from '@/lib/i18n/en';
 import { REGIONS } from '@/lib/posture-insights';
 import { formatMetric } from '@/lib/posture-format';
-import { bmiBand, painBand, stressBand } from '@/lib/wellbeing';
+import { bmiBand, genderLabel, painBand, stressBand } from '@/lib/wellbeing';
 import { PostureFigure } from '@/components/posture/PostureFigure';
 import { BRAND, RegionBars, ScoreRing, SectionHeader, SeverityDot } from '@/components/posture/ReportParts';
 import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
@@ -19,7 +19,7 @@ export function PostureReportBody({ report, t }: { report: SharedPostureReport; 
   const bmiKey = bmiBand(w.bmi);
   const pain = painBand(w.painScale);
   const stress = stressBand(w.stressLevel);
-  const gender = { male: t.form.genderMale, female: t.form.genderFemale, other: t.form.genderOther }[w.gender ?? ''];
+  const gender = genderLabel(w.gender, t.form);
   const profile = [
     [p.profile.ageGender, [w.age, gender].filter((x) => x != null && x !== '').join(' / ') || null],
     [p.profile.weight, w.weightKg ? `${w.weightKg} kg` : null],
@@ -78,7 +78,7 @@ export function PostureReportBody({ report, t }: { report: SharedPostureReport; 
         <div className="grid grid-cols-2 gap-3">
           {report.views.map((v) => (
             <figure key={v.view}>
-              <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={s.noPhotoShared} />
+              <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={report.photosShared ? p.noPhoto : s.noPhotoShared} />
               <figcaption className="mt-1.5">
                 <p className="text-center text-sm font-semibold" style={{ color: BRAND.green }}>{ins.viewNames[v.view]}</p>
                 <ul className="mt-1 space-y-0.5 text-xs">

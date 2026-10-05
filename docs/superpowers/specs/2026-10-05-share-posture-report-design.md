@@ -70,6 +70,12 @@ The panel follows the exercise share panel:
 - **Actions:** auth required; an assessment belonging to another client is rejected; no client name in the WhatsApp text.
 - **Page routing:** an exercise token still renders the exercise page; a posture token renders the report; unknown, expired and revoked give the same 404.
 
+## From code review (2026-10-05)
+- A **retake** turns an approved AI analysis back into a draft (it described the old measurements), so it leaves the client's page until re-approved.
+- The client sees only patterns the views **agree on**; low-confidence readings stay on the physio's report with its retake prompt.
+- "Share again" keeps the live link's photos choice; a photo that fails to load says "Photo unavailable", not "not shared".
+- Posture links (creating and viewing) follow `FEATURE_POSTURE`.
+
 ## Decisions (approved 2026-10-05)
 
 1. **Photos off by default**, opt-in per share with "client agreed". Or include them by default?

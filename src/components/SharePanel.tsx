@@ -22,7 +22,7 @@ export interface ActiveShare {
 /** What is being shared: the client's exercise programme, or one posture report. */
 export type ShareTarget =
   | { kind: 'exercises'; patientId: string; canShare: boolean }
-  | { kind: 'posture'; patientId: string; assessmentId: string; canShare: true; otherReportOn: string | null };
+  | { kind: 'posture'; patientId: string; assessmentId: string; otherReportOn: string | null };
 
 const day = (iso: string) => formatFullDate(getISTDateString(0, new Date(iso)));
 
@@ -34,9 +34,11 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
   const tr = useTranslations();
   const t = tr.shareExercises;
   const tp = tr.sharePosture;
-  const { patientId, canShare: hasExercises } = target;
+  const { patientId } = target;
   const posture = target.kind === 'posture' ? target : null;
-  const [includePhotos, setIncludePhotos] = useState(false);
+  const canShare = target.kind === 'posture' || target.canShare; // exercises need a prescription
+  // Start from the live link's choice, so "Share again" doesn't silently drop (or add) photos.
+  const [includePhotos, setIncludePhotos] = useState(active?.includePhotos ?? false);
   const [pending, start] = useTransition();
   const [fresh, setFresh] = useState<{ url: string; whatsappUrl: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -116,15 +118,15 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
           </div>
         )}
 
-        {!hasExercises && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
+        {!canShare && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
         {posture && (
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={includePhotos} onChange={(e) => setIncludePhotos(e.target.checked)} />
             {tp.includePhotos}
           </label>
         )}
-        {(hasExercises || active || fresh) && <div className="flex flex-wrap items-center gap-2">
-          {hasExercises && (
+        {(canShare || active || fresh) && <div className="flex flex-wrap items-center gap-2">
+          {canShare && (
             <Button size="sm" variant={active || fresh ? 'outline' : 'default'} onClick={share} disabled={pending}>
               <Link2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
               {active || fresh ? t.shareAgain : t.share}
@@ -138,7 +140,7 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
             </Button>
           )}
         </div>}
-        {(active || fresh) && hasExercises && <p className="text-[11px] text-muted-foreground">{t.shareAgainHint}</p>}
+        {(active || fresh) && canShare && <p className="text-[11px] text-muted-foreground">{t.shareAgainHint}</p>}
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       </CardContent>
     </Card>

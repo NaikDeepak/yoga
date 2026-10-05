@@ -1,8 +1,8 @@
 import { eq } from 'drizzle-orm';
 import { exercises, patients, prescribedExercises } from '@/db/schema';
 import type { Db } from '@/db/types';
-import type { Exercise } from '@/db/schema';
-import { resolveShareLink } from './share-links';
+import type { Exercise, ShareLinkRow } from '@/db/schema';
+import { firstName } from '@/lib/names';
 import { listCheckins } from './checkins';
 import { dayStrip, shiftDate, type CheckinDone } from '@/lib/adherence';
 import { getISTDateString } from '@/lib/dates';
@@ -149,17 +149,16 @@ export type SharedExerciseProgramme = {
 };
 
 /**
- * The client's current home-exercise programme for a share-link token, in one language, or null when
- * the token is unknown, expired or revoked. Dose overrides are the physio's own text (one language).
+ * The client's current home-exercise programme behind a resolved share link, in one language, or null
+ * for a non-exercise link. Dose overrides are the physio's own text (one language).
  */
 export async function getSharedExerciseProgramme(
   db: Db,
-  token: string,
+  link: ShareLinkRow,
   lang: 'en' | 'mr',
   now: Date,
 ): Promise<SharedExerciseProgramme | null> {
-  const link = await resolveShareLink(db, token, 'exercises', now);
-  if (!link) return null;
+  if (link.kind !== 'exercises') return null;
   const [patient] = await db.select({ fullName: patients.fullName }).from(patients).where(eq(patients.id, link.patientId));
   if (!patient) return null;
   const mr = lang === 'mr';
@@ -171,7 +170,7 @@ export async function getSharedExerciseProgramme(
   const todays = recent.find((c) => c.date === today);
   return {
     linkId: link.id,
-    firstName: patient.fullName.trim().split(/\s+/)[0],
+    firstName: firstName(patient.fullName),
     exercises: rows.map((r) => ({
       name: mr ? r.nameMr : r.name,
       description: mr ? r.descriptionMr : r.description,
