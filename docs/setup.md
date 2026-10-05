@@ -70,6 +70,14 @@ at the prepared-statement level.
 4. When `R2_ACCOUNT_ID` is set, the app automatically uses R2; Supabase Storage is ignored.
 5. Migrate existing files: `rclone copy supabase-remote:patient-files r2-remote:patient-files`
 
+## Client share links (`APP_URL`)
+"Share with client" on the Treatment tab creates a link like `https://<app>/s/<token>`. Set `APP_URL` to the
+public address (e.g. `https://yoga.example.com`) in Vercel env vars so links always use it; without it the
+link uses the address the physio is browsing from (fine locally, but on a phone via LAN IP the link only
+works on the same Wi-Fi). Links last 90 days; "Share again" replaces the old link.
+Note: the token is part of the URL, so hosting request logs (Vercel) record it. Only the account owner can
+read those logs; a logged token stops working when the link expires or is replaced.
+
 ## Feature flag: AI posture analysis
 Posture analysis is a premium feature still in development. The "Posture Assessment" card (add button +
 history) on a client's Assessment tab shows in local dev and is **hidden in production** unless

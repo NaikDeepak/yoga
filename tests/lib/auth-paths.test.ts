@@ -13,4 +13,10 @@ describe('isPublicPath', () => {
     expect(isPublicPath('/patients')).toBe(false);
     expect(isPublicPath('/patients/abc/print')).toBe(false);
   });
+  it('client share links are public, nothing that merely starts with /s', () => {
+    expect(isPublicPath('/s/AbC123_-')).toBe(true);
+    expect(isPublicPath('/s')).toBe(false);
+    expect(isPublicPath('/settings')).toBe(false);
+    expect(isPublicPath('/sx/abc')).toBe(false);
+  });
 });

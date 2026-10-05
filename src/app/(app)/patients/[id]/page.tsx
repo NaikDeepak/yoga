@@ -21,6 +21,8 @@ import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents'
 import { addVisitAction } from '@/actions/visits';
 import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
+import { ShareExercisesPanel } from '@/components/ShareExercisesPanel';
+import { activeShareLink } from '@/data/share-links';
 import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { listPostureAssessments, latestPostureScores } from '@/data/posture';
@@ -485,6 +487,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
 
   const allExercises = await listAllExercises(db);
   const prescribedExercises = await getPrescribedExercises(db, patientId);
+  const share = await activeShareLink(db, patientId, 'exercises', new Date());
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -495,6 +498,16 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
           allExercises={allExercises}
           initialPrescribed={prescribedExercises}
           locale={locale}
+        />
+        <ShareExercisesPanel
+          patientId={patientId}
+          hasExercises={prescribedExercises.length > 0}
+          active={share && {
+            createdAt: share.createdAt.toISOString(),
+            expiresAt: share.expiresAt.toISOString(),
+            viewCount: share.viewCount,
+            lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
+          }}
         />
       </div>
 

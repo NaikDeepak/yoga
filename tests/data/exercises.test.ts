@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { createPatient } from '@/data/patients';
-import { listAllExercises, getPrescribedExercises, savePrescribedExercises, addPrescribedExercises } from '@/data/exercises';
+import {
+  listAllExercises, getPrescribedExercises, savePrescribedExercises, addPrescribedExercises, getSharedExerciseProgramme,
+} from '@/data/exercises';
+import { createShareLink, revokeShareLinks } from '@/data/share-links';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -99,5 +102,45 @@ describe('addPrescribedExercises', () => {
     const [a] = await listAllExercises(db);
     expect(await addPrescribedExercises(db, patientId, [a.id, a.id])).toEqual({ added: 1, alreadyPrescribed: 0 });
     expect(await addPrescribedExercises(db, patientId, [])).toEqual({ added: 0, alreadyPrescribed: 0 });
+  });
+});
+
+describe('getSharedExerciseProgramme', () => {
+  const now = new Date('2026-10-05T10:00:00Z');
+
+  it('returns only the first name and whitelisted exercise fields, in the chosen language', async () => {
+    const [a, b] = await listAllExercises(db);
+    await savePrescribedExercises(db, patientId, [
+      { exerciseId: a.id, customNote: 'Slowly, no pain', repetitions: '8 times', daysPerWeek: null },
+      { exerciseId: b.id, customNote: null },
+    ]);
+    const { token } = await createShareLink(db, patientId, 'exercises', now);
+
+    const en = await getSharedExerciseProgramme(db, token, 'en', now);
+    expect(Object.keys(en!).sort()).toEqual(['exercises', 'firstName', 'linkId']);
+    expect(en!.firstName).toBe('Asha');
+    expect(Object.keys(en!.exercises[0]).sort()).toEqual(
+      ['daysPerWeek', 'description', 'imagePath', 'name', 'note', 'repetitions', 'steps', 'tip'],
+    );
+    const first = en!.exercises.find((e) => e.name === a.name)!;
+    expect(first).toMatchObject({ repetitions: '8 times', daysPerWeek: a.daysPerWeek, note: 'Slowly, no pain', steps: a.steps });
+
+    const mr = await getSharedExerciseProgramme(db, token, 'mr', now);
+    expect(mr!.exercises.find((e) => e.name === a.nameMr)).toMatchObject({ repetitions: '8 times', daysPerWeek: a.daysPerWeekMr, steps: a.stepsMr });
+  });
+
+  it('shows the current prescription, not a snapshot', async () => {
+    const [a, b] = await listAllExercises(db);
+    await savePrescribedExercises(db, patientId, [{ exerciseId: a.id, customNote: null }]);
+    const { token } = await createShareLink(db, patientId, 'exercises', now);
+    await savePrescribedExercises(db, patientId, [{ exerciseId: b.id, customNote: null }]);
+    expect((await getSharedExerciseProgramme(db, token, 'en', now))!.exercises.map((e) => e.name)).toEqual([b.name]);
+  });
+
+  it('is null for a bad or revoked token', async () => {
+    const { token } = await createShareLink(db, patientId, 'exercises', now);
+    expect(await getSharedExerciseProgramme(db, 'nope', 'en', now)).toBeNull();
+    await revokeShareLinks(db, patientId, 'exercises', now);
+    expect(await getSharedExerciseProgramme(db, token, 'en', now)).toBeNull();
   });
 });

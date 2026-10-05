@@ -252,3 +252,25 @@ export const postureViews = pgTable('posture_views', {
 
 export type PostureAssessmentRow = typeof postureAssessments.$inferSelect;
 export type PostureViewRow = typeof postureViews.$inferSelect;
+
+// Client share links (spec 2026-10-05-client-exercise-link). Only the token's SHA-256 is stored.
+export const shareLinks = pgTable('share_links', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull(),
+  tokenHash: text('token_hash').notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  revokedAt: timestamp('revoked_at'),
+  viewCount: integer('view_count').notNull().default(0),
+  lastViewedAt: timestamp('last_viewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  index('share_links_patient_kind_idx').on(table.patientId, table.kind),
+  // At most one unrevoked link per client and kind ("Share again" replaces the old link).
+  uniqueIndex('share_links_one_live_uq').on(table.patientId, table.kind).where(sql`${table.revokedAt} IS NULL`),
+  check('share_links_kind_check', sql`${table.kind} IN ('exercises')`),
+]).enableRLS();
+
+export type ShareLinkRow = typeof shareLinks.$inferSelect;
+export type ShareLinkKind = 'exercises';

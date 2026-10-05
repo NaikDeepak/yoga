@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "share_links_one_live_uq" ON "share_links" USING btree ("patient_id","kind") WHERE "share_links"."revoked_at" IS NULL;
