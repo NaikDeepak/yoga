@@ -12,6 +12,14 @@ import { deploymentUrlFromCli, releaseProblems, smokeFailures } from '../../src/
 import { envValue, fail, gitState, printStatus, prodSiteUrl, prodStatus, sh } from './common';
 
 const DEPLOY_TIMEOUT_MS = 15 * 60_000;
+/** promote / rollback: give Vercel time on a bad day — that's exactly when a rollback matters. */
+const SWITCH_TIMEOUT_MS = 5 * 60_000;
+
+/** What the CLI said: execSync's message is only "Command failed: …"; the cause is in stderr. */
+const cliError = (e: unknown) => {
+  const err = e as Error & { stderr?: string };
+  return (err.stderr?.trim() || err.message).slice(-1500);
+};
 
 /** Vercel CLI; returns stdout only (progress and logs go to stderr). */
 const vercel = (args: string, cwd?: string, timeoutMs?: number) =>
@@ -79,23 +87,23 @@ async function main() {
       stdout = vercel('deploy --prod --yes --format=json', dir, DEPLOY_TIMEOUT_MS);
     } catch (e) {
       // Failed builds never go live, but a timed-out one may still finish and take the domain.
-      throw new Error(`vercel deploy failed or timed out: ${(e as Error).message.split('\n')[0]}\n` +
+      throw new Error(`vercel deploy failed or timed out:\n${cliError(e)}\n` +
         `  If a new deployment still went live and misbehaves: vercel rollback ${previous} --yes`);
     }
     const deployment = deploymentUrlFromCli(stdout);
     if (!deployment || deployment === site) {
       // A --prod build may already be serving the domain, so put the previous one back.
       console.error(`\n✖ Deploy did not report a deployment URL. Rolling back to ${previous}…`);
-      vercel(`rollback ${previous} --yes`);
+      vercel(`rollback ${previous} --yes`, undefined, SWITCH_TIMEOUT_MS);
       throw new Error('Rolled back. Check the Vercel dashboard for the deployment.');
     }
     console.log(`Built:    ${deployment}`);
-    vercel(`promote ${deployment} --yes`); // no-op when already live; required after a rollback
+    vercel(`promote ${deployment} --yes`, undefined, SWITCH_TIMEOUT_MS); // no-op when already live; required after a rollback
 
     const failures = await smoke(site);
     if (failures.length) {
       console.error(`\n✖ Smoke test failed:\n  - ${failures.join('\n  - ')}\nRolling back to ${previous}…`);
-      vercel(`rollback ${previous} --yes`);
+      vercel(`rollback ${previous} --yes`, undefined, SWITCH_TIMEOUT_MS);
       throw new Error('Rolled back. Check `vercel logs` for the failed deployment.');
     }
     console.log(`\n✓ Live: ${site} (${deployment}) — /login, /api/ping and an unknown share link all OK.`);

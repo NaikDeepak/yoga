@@ -17,7 +17,7 @@ export const DEFAULT_PROD_SITE_URL = 'https://yoga-ten-tau.vercel.app';
 export function envValue(key: string): string | undefined {
   if (process.env[key]) return process.env[key];
   if (!existsSync('.env')) return undefined;
-  return parse(readFileSync('.env'))[key] || undefined;
+  return parse(readFileSync('.env'))[key] || undefined; // empty `KEY=` (as in .env.example) = not set
 }
 
 export function prodDbUrl(): string {
