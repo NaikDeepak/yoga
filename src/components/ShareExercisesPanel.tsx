@@ -95,22 +95,22 @@ export function ShareExercisesPanel({ patientId, active, hasExercises }: {
           </div>
         )}
 
-        {!hasExercises ? (
-          <p className="text-xs text-muted-foreground">{t.noExercises}</p>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
+        {!hasExercises && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
+        <div className="flex flex-wrap items-center gap-2">
+          {hasExercises && (
             <Button size="sm" variant={active || fresh ? 'outline' : 'default'} onClick={share} disabled={pending}>
               <Link2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
               {active || fresh ? t.shareAgain : t.share}
             </Button>
-            {(active || fresh) && (
-              <Button size="sm" variant="ghost" onClick={stop} disabled={pending} className="text-destructive">
-                <XCircle className="mr-1.5 h-4 w-4" aria-hidden="true" />
-                {t.stop}
-              </Button>
-            )}
-          </div>
-        )}
+          )}
+          {/* Stop stays available even if the prescription was emptied while a link is live. */}
+          {(active || fresh) && (
+            <Button size="sm" variant="ghost" onClick={stop} disabled={pending} className="text-destructive">
+              <XCircle className="mr-1.5 h-4 w-4" aria-hidden="true" />
+              {t.stop}
+            </Button>
+          )}
+        </div>
         {(active || fresh) && hasExercises && <p className="text-[11px] text-muted-foreground">{t.shareAgainHint}</p>}
         {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
       </CardContent>

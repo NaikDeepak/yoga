@@ -99,6 +99,13 @@ describe('recordShareView', () => {
   });
 });
 
+it('the database allows only one unrevoked link per client and kind', async () => {
+  await createShareLink(db, patientId, 'exercises', now);
+  await expect(db.insert(shareLinks).values({
+    patientId, kind: 'exercises', tokenHash: 'x'.repeat(64), expiresAt: later(90),
+  })).rejects.toThrow();
+});
+
 it('links disappear when the client is deleted', async () => {
   await createShareLink(db, patientId, 'exercises', now);
   await db.delete(patients).where(eq(patients.id, patientId));

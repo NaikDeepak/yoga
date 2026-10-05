@@ -1,5 +1,5 @@
 import { and, desc, eq, gt, isNull, sql } from 'drizzle-orm';
-import { shareLinks, type ShareLinkKind, type ShareLinkRow } from '@/db/schema';
+import { patients, shareLinks, type ShareLinkKind, type ShareLinkRow } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { hashShareToken, newShareToken, shareLinkExpiry } from '@/lib/share-token';
 
@@ -17,6 +17,9 @@ export async function createShareLink(
 ): Promise<{ token: string; link: ShareLinkRow }> {
   const { token, hash } = newShareToken();
   const link = await db.transaction(async (tx) => {
+    // Lock the client so overlapping "Share again" requests run one after the other; each then revokes
+    // the link the previous one created (the unique index on live links backs this up).
+    await tx.select({ id: patients.id }).from(patients).where(eq(patients.id, patientId)).for('update');
     await tx.update(shareLinks).set({ revokedAt: now })
       .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, kind), isNull(shareLinks.revokedAt)));
     const [row] = await tx.insert(shareLinks)
