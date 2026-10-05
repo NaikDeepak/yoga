@@ -490,6 +490,7 @@ export const mr: Translations = {
       done: { all: 'सर्व केले', some: 'काही केले', none: 'आज केले नाहीत' },
       pain: 'आत्ताची वेदना (० = नाही, १० = सर्वात जास्त)',
       painOptional: 'ऐच्छिक',
+      painNone: 'उत्तर नाही',
       save: 'जतन करा',
       saved: 'आजची नोंद जतन झाली ✓',
       painValue: 'वेदना {pain}/10',

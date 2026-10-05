@@ -13,6 +13,9 @@ export function shiftDate(date: string, days: number): string {
 
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS);
 
+/** Whole days from `date` to `today` (both 'YYYY-MM-DD'). */
+export const daysSince = (date: string, today: string) => daysBetween(date, today);
+
 /**
  * Days practised in the last `windowDays` (All = 1, Some = ½). For a new client the window starts at
  * `since` (their first exercise link), so 4 logged days out of 4 isn't shown as 4/30.
@@ -33,10 +36,4 @@ export function dayStrip(checkins: CheckinDay[], today: string, days: number): {
     const date = shiftDate(today, i - (days - 1));
     return { date, done: byDate.get(date) ?? null };
   });
-}
-
-export function daysSinceLastCheckin(checkins: CheckinDay[], today: string): number | null {
-  if (!checkins.length) return null;
-  const last = checkins.reduce((max, ch) => (ch.date > max ? ch.date : max), checkins[0].date);
-  return daysBetween(last, today);
 }

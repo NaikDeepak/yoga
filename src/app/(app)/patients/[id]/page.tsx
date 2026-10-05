@@ -23,7 +23,7 @@ import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
 import { ShareExercisesPanel } from '@/components/ShareExercisesPanel';
 import { activeShareLink, firstShareDate } from '@/data/share-links';
-import { listCheckins } from '@/data/checkins';
+import { lastCheckinDate, listCheckins } from '@/data/checkins';
 import { HomeExerciseCard } from '@/components/HomeExerciseCard';
 import { shiftDate } from '@/lib/adherence';
 import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
@@ -490,10 +490,11 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
 
   const allExercises = await listAllExercises(db);
   const prescribedExercises = await getPrescribedExercises(db, patientId);
-  const [share, since, checkins] = await Promise.all([
+  const [share, since, checkins, lastCheckin] = await Promise.all([
     activeShareLink(db, patientId, 'exercises', new Date()),
     firstShareDate(db, patientId, 'exercises'),
     listCheckins(db, patientId, shiftDate(today, -29), today),
+    lastCheckinDate(db, patientId),
   ]);
 
   return (
@@ -516,7 +517,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
             lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
           }}
         />
-        <HomeExerciseCard checkins={checkins} today={today} since={since} linkActive={!!share} t={t} />
+        <HomeExerciseCard checkins={checkins} lastCheckin={lastCheckin} today={today} since={since} linkActive={!!share} t={t} />
       </div>
 
       <div className="space-y-4">

@@ -47,7 +47,8 @@ describe('saveCheckinAction', () => {
   });
 
   it('rejects invalid answers without saving', async () => {
-    await expect(saveCheckinAction(token, 'en', form({ done: 'maybe' }))).rejects.toThrow(`REDIRECT:/s/${token}?lang=en&error=1`);
+    // keeps the form open (edit=1) so the error shows even when today already has an entry
+    await expect(saveCheckinAction(token, 'en', form({ done: 'maybe' }))).rejects.toThrow(`REDIRECT:/s/${token}?lang=en&edit=1&error=1`);
     await expect(saveCheckinAction(token, 'en', form({ done: 'all', pain: '42' }))).rejects.toThrow(/error=1/);
     expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
   });
@@ -61,5 +62,11 @@ describe('saveCheckinAction', () => {
 
   it('only allows en or mr in the redirect', async () => {
     await expect(saveCheckinAction(token, 'https://evil.test', form({ done: 'all' }))).rejects.toThrow(`REDIRECT:/s/${token}?lang=en`);
+  });
+
+  it('clears a saved pain score when the client picks no answer', async () => {
+    await expect(saveCheckinAction(token, 'en', form({ done: 'all', pain: '6' }))).rejects.toThrow(/^REDIRECT:/);
+    await expect(saveCheckinAction(token, 'en', form({ done: 'all', pain: '' }))).rejects.toThrow(/^REDIRECT:/);
+    expect((await db.select().from(exerciseCheckins))[0].painScale).toBeNull();
   });
 });

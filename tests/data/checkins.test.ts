@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { createTestDb } from '../helpers/db';
 import { createPatient } from '@/data/patients';
 import { createShareLink, firstShareDate } from '@/data/share-links';
-import { listCheckins, saveCheckin } from '@/data/checkins';
+import { lastCheckinDate, listCheckins, saveCheckin } from '@/data/checkins';
 import { exerciseCheckins, patients, shareLinks } from '@/db/schema';
 import type { Db } from '@/db/types';
 
@@ -67,5 +67,14 @@ describe('firstShareDate', () => {
   it('is null without any link', async () => {
     const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
     expect(await firstShareDate(db, otherId, 'exercises')).toBeNull();
+  });
+});
+
+describe('lastCheckinDate', () => {
+  it("is the client's latest check-in date however old, or null", async () => {
+    expect(await lastCheckinDate(db, patientId)).toBeNull();
+    await saveCheckin(db, link, { done: 'all' }, '2026-06-01');
+    await saveCheckin(db, link, { done: 'none' }, '2026-07-15');
+    expect(await lastCheckinDate(db, patientId)).toBe('2026-07-15');
   });
 });

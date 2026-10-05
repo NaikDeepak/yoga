@@ -45,6 +45,12 @@ export function CheckinForm({ token, lang, checkins, editing, error, t }: {
           <fieldset>
             <legend className="mb-2 text-sm">{t.pain} <span className="text-muted-foreground">({t.painOptional})</span></legend>
             <div className="flex flex-wrap gap-1.5">
+              {/* "–" = no answer; lets a client clear a pain score they saved earlier today */}
+              <label className="cursor-pointer">
+                <input type="radio" name="pain" value="" defaultChecked={!today || today.pain === null} className="peer sr-only" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-full border text-sm peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground peer-focus-visible:ring-2"
+                  aria-label={t.painNone} title={t.painNone}>–</span>
+              </label>
               {PAIN.map((n) => (
                 <label key={n} className="cursor-pointer">
                   <input type="radio" name="pain" value={n} defaultChecked={today?.pain === n} className="peer sr-only" />

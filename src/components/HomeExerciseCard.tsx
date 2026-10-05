@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckinDots } from '@/components/CheckinDots';
 import { VisitLineChart } from '@/components/VisitLineChart';
 import type { Checkin } from '@/data/checkins';
-import { adherence, dayStrip, daysSinceLastCheckin } from '@/lib/adherence';
+import { adherence, dayStrip, daysSince } from '@/lib/adherence';
 import { formatFullDate } from '@/lib/dates';
 import type { Translations } from '@/lib/i18n/en';
 
@@ -10,8 +10,9 @@ import type { Translations } from '@/lib/i18n/en';
 const QUIET_DAYS = 3;
 
 /** Treatment tab: adherence and home pain from the client's daily check-ins (last 30 days). */
-export function HomeExerciseCard({ checkins, today, since, linkActive, t }: {
+export function HomeExerciseCard({ checkins, lastCheckin, today, since, linkActive, t }: {
   checkins: Checkin[]; // last 30 days, oldest first
+  lastCheckin: string | null; // latest check-in ever (may be older than 30 days)
   today: string;
   since: string | null; // first exercise link (IST day)
   linkActive: boolean;
@@ -22,9 +23,8 @@ export function HomeExerciseCard({ checkins, today, since, linkActive, t }: {
     h.daysOf.replace('{score}', String(a.score)).replace('{days}', String(a.days));
   const week = adherence(checkins, today, 7, since);
   const month = adherence(checkins, today, 30, since);
-  const quietFor = daysSinceLastCheckin(checkins, today);
+  const quietFor = lastCheckin ? daysSince(lastCheckin, today) : null;
   const pain = checkins.filter((c) => c.pain !== null).map((c) => ({ visitDate: formatFullDate(c.date), value: c.pain! }));
-  const last = checkins[checkins.length - 1];
 
   return (
     <Card className="rounded-2xl">
@@ -32,7 +32,7 @@ export function HomeExerciseCard({ checkins, today, since, linkActive, t }: {
         <CardTitle className="text-base">{h.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
-        {!checkins.length ? (
+        {!lastCheckin ? (
           <p className="text-muted-foreground">{h.empty}</p>
         ) : (
           <>
@@ -51,7 +51,7 @@ export function HomeExerciseCard({ checkins, today, since, linkActive, t }: {
             <p className={linkActive && quietFor !== null && quietFor >= QUIET_DAYS ? 'font-medium text-destructive' : 'text-xs text-muted-foreground'}>
               {linkActive && quietFor !== null && quietFor >= QUIET_DAYS
                 ? h.quiet.replace('{days}', String(quietFor))
-                : h.lastCheckin.replace('{date}', formatFullDate(last.date))}
+                : h.lastCheckin.replace('{date}', formatFullDate(lastCheckin))}
             </p>
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">{h.painTitle}</p>

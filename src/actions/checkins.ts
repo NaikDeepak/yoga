@@ -11,7 +11,8 @@ import { checkinSchema } from '@/lib/validation';
 /**
  * Daily check-in from the client's public exercise page. The one mutation without `requireUser()`:
  * the share-link token is the key, the client and the date come from the server, input is two
- * enums (no free text), and there's one row per client per day. Always redirects back to the page.
+ * enums (no free text), and there's one row per client per day. Always redirects back to the page;
+ * on errors with the form open (edit=1), so the message shows even when today already has an entry.
  */
 export async function saveCheckinAction(token: string, lang: string, formData: FormData): Promise<never> {
   const page = `/s/${encodeURIComponent(token)}`;
@@ -21,13 +22,13 @@ export async function saveCheckinAction(token: string, lang: string, formData: F
   if (!link) redirect(page); // the page shows the same "link expired" screen
 
   const parsed = checkinSchema.safeParse({ done: formData.get('done'), pain: formData.get('pain') ?? undefined });
-  if (!parsed.success) redirect(`${page}${query}&error=1`);
+  if (!parsed.success) redirect(`${page}${query}&edit=1&error=1`);
 
   try {
     await saveCheckin(db, link, parsed.data, getISTDateString());
   } catch (error) {
     console.error('Failed to save check-in:', error instanceof Error ? error.message : String(error));
-    redirect(`${page}${query}&error=1`);
+    redirect(`${page}${query}&edit=1&error=1`);
   }
   revalidatePath(`/patients/${link.patientId}`);
   redirect(`${page}${query}`);

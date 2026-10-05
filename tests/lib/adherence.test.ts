@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { adherence, dayStrip, daysSinceLastCheckin, shiftDate, type CheckinDay } from '@/lib/adherence';
+import { adherence, dayStrip, daysSince, shiftDate, type CheckinDay } from '@/lib/adherence';
 
 const today = '2026-10-10';
 const c = (date: string, done: CheckinDay['done']): CheckinDay => ({ date, done });
@@ -44,10 +44,10 @@ describe('dayStrip', () => {
   });
 });
 
-describe('daysSinceLastCheckin', () => {
-  it('is days since the latest entry of any kind, or null', () => {
-    expect(daysSinceLastCheckin([c('2026-10-06', 'none'), c('2026-10-02', 'all')], today)).toBe(4);
-    expect(daysSinceLastCheckin([c('2026-10-10', 'all')], today)).toBe(0);
-    expect(daysSinceLastCheckin([], today)).toBeNull();
+describe('daysSince', () => {
+  it('counts whole calendar days', () => {
+    expect(daysSince('2026-10-06', today)).toBe(4);
+    expect(daysSince(today, today)).toBe(0);
+    expect(daysSince('2026-08-01', today)).toBe(70);
   });
 });

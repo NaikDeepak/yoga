@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
 import { exerciseCheckins } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { CheckinDay } from '@/lib/adherence';
@@ -35,4 +35,13 @@ export async function listCheckins(db: Db, patientId: string, from: string, to: 
     .where(and(eq(exerciseCheckins.patientId, patientId), gte(exerciseCheckins.checkinDate, from), lte(exerciseCheckins.checkinDate, to)))
     .orderBy(asc(exerciseCheckins.checkinDate));
   return rows as Checkin[]; // `done` is constrained to the three values by a CHECK
+}
+
+/** The client's most recent check-in date, however old (a client who stopped weeks ago still shows as quiet). */
+export async function lastCheckinDate(db: Db, patientId: string): Promise<string | null> {
+  const [row] = await db.select({ date: exerciseCheckins.checkinDate }).from(exerciseCheckins)
+    .where(eq(exerciseCheckins.patientId, patientId))
+    .orderBy(desc(exerciseCheckins.checkinDate))
+    .limit(1);
+  return row?.date ?? null;
 }

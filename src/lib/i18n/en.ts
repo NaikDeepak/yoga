@@ -488,6 +488,7 @@ export const en = {
       done: { all: 'All of them', some: 'Some', none: 'Skipped today' },
       pain: 'Pain right now (0 = none, 10 = worst)',
       painOptional: 'optional',
+      painNone: 'No answer',
       save: 'Save',
       saved: 'Saved for today ✓',
       painValue: 'pain {pain}/10',
