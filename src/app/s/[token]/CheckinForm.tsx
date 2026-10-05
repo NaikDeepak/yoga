@@ -19,7 +19,7 @@ export function CheckinForm({ token, lang, checkins, editing, error, t }: {
   const { today, last7 } = checkins;
   const shownDay = last7[last7.length - 1].date; // the server's today when the page was rendered
   const logged = last7.flatMap((d) => (d.done ? [{ date: d.date, done: d.done }] : []));
-  const practised = adherence(logged, shownDay, 7, null).score; // same scoring as the physio's card
+  const practised = adherence(logged, shownDay, 7, null).score; // same weights as the physio's card; fixed 7-day window
 
   return (
     <section className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">

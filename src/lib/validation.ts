@@ -218,5 +218,7 @@ export const postureRetakeSchema = z.object({
 export const checkinSchema = z.object({
   done: z.enum(['all', 'some', 'none']),
   pain: opt(z.coerce.number().int().min(0).max(10)),
+  /** Day the form was shown; only honoured just after midnight (see checkinDay). */
+  day: opt(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
 });
 export type CheckinInput = z.infer<typeof checkinSchema>;

@@ -233,6 +233,11 @@ describe('checkinSchema', () => {
     }
   });
 
+  it('accepts a well-formed day and rejects anything else', () => {
+    expect(checkinSchema.parse({ done: 'all', day: '2026-10-05' })).toEqual({ done: 'all', day: '2026-10-05' });
+    expect(checkinSchema.safeParse({ done: 'all', day: 'not-a-date' }).success).toBe(false);
+  });
+
   it('drops fields the client must not set', () => {
     expect(checkinSchema.parse({ done: 'all', checkinDate: '2020-01-01', patientId: 'x' })).toEqual({ done: 'all' });
   });

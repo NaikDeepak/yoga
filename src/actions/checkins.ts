@@ -25,12 +25,13 @@ export async function saveCheckinAction(token: string, lang: string, formData: F
   // The page hides the form for an empty prescription; refuse direct posts too.
   if (!(await getPrescribedExercises(db, link.patientId)).length) redirect(`${page}${query}`);
 
-  const parsed = checkinSchema.safeParse({ done: formData.get('done'), pain: formData.get('pain') ?? undefined });
+  const parsed = checkinSchema.safeParse({
+    done: formData.get('done'), pain: formData.get('pain') ?? undefined, day: formData.get('day') ?? undefined,
+  });
   if (!parsed.success) redirect(`${page}${query}&edit=1&error=1`);
 
   try {
-    const shown = formData.get('day');
-    await saveCheckin(db, link, parsed.data, checkinDay(typeof shown === 'string' ? shown : null, new Date()));
+    await saveCheckin(db, link, parsed.data, checkinDay(parsed.data.day ?? null, new Date()));
   } catch (error) {
     console.error('Failed to save check-in:', error instanceof Error ? error.message : String(error));
     redirect(`${page}${query}&edit=1&error=1`);

@@ -11,6 +11,8 @@ export function shiftDate(date: string, days: number): string {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
+// Both are UTC-midnight 'YYYY-MM-DD' dates, so the difference is an exact whole number of days; round()
+// only guards against a stray timestamp ever being passed in.
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS);
 
 /** Whole days from `date` to `today` (both 'YYYY-MM-DD'). */
@@ -51,7 +53,7 @@ export function quietDays(today: string, lastCheckin: string | null, liveLinkSin
 
 /** Minutes after IST midnight during which a form shown "yesterday" still saves to yesterday. */
 const MIDNIGHT_GRACE_MINUTES = 60;
-const IST_OFFSET_MS = 330 * 60_000;
+const IST_OFFSET_MS = 330 * 60_000; // IST = UTC+5:30 all year (no daylight saving)
 
 /**
  * Which day a check-in belongs to: today (IST), except a form shown yesterday and saved within an hour

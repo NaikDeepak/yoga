@@ -7,7 +7,7 @@ import { formatDueDate, formatFullDate } from '@/lib/dates';
 import type { Translations } from '@/lib/i18n/en';
 
 /** Days without a check-in (while a link is live) before the card flags it. */
-const QUIET_DAYS = 3;
+const QUIET_FLAG_AFTER_DAYS = 3;
 
 /** Treatment tab: adherence and home pain from the client's daily check-ins (last 30 days). */
 export function HomeExerciseCard({ checkins, lastCheckin, today, since, liveLinkSince, t }: {
@@ -20,7 +20,7 @@ export function HomeExerciseCard({ checkins, lastCheckin, today, since, liveLink
 }) {
   const h = t.homeExercise;
   const quiet = quietDays(today, lastCheckin, liveLinkSince);
-  const isQuiet = quiet !== null && quiet >= QUIET_DAYS;
+  const isQuiet = quiet !== null && quiet >= QUIET_FLAG_AFTER_DAYS;
   const quietLine = isQuiet && <p className="font-medium text-destructive">{h.quiet.replace('{days}', String(quiet))}</p>;
 
   if (!lastCheckin) {

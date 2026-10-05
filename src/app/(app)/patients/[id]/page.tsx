@@ -495,7 +495,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
     firstShareDate(db, patientId, 'exercises'),
     listCheckins(db, patientId, shiftDate(today, -29), today),
   ]);
-  // The 30-day list already has the latest check-in unless it's older than that.
+  // Latest check-in: the newest in the 30-day list, or (if none in 30 days) the all-time latest.
   const lastCheckin = checkins.at(-1)?.date ?? await lastCheckinDate(db, patientId);
 
   return (
