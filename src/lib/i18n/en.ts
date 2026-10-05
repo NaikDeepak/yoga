@@ -487,6 +487,7 @@ export const en = {
       since: 'since {date}',
       trend: { better: 'Improved', worse: 'Declined', same: 'Steady' },
       firstAssessment: 'First assessment — no trend yet',
+      previousNotMeasured: 'Previous assessment not measured — no trend',
       none: 'No posture assessment yet.',
       compare: 'Compare',
       chip: 'Posture {score}',

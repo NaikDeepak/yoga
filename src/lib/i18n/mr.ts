@@ -489,6 +489,7 @@ export const mr: Translations = {
       since: '{date} पासून',
       trend: { better: 'सुधारणा', worse: 'घट', same: 'स्थिर' },
       firstAssessment: 'पहिले मूल्यांकन — अजून तुलना नाही',
+      previousNotMeasured: 'मागील मूल्यांकन मोजता आले नाही — तुलना नाही',
       none: 'अजून पोश्चर मूल्यांकन नाही.',
       compare: 'तुलना करा',
       chip: 'पोश्चर {score}',

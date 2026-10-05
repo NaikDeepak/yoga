@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns, inArray, lte, sql } from 'drizzle-orm';
 import {
   postureAssessments, postureViews, type PostureAssessmentRow, type PostureViewRow,
 } from '@/db/schema';
@@ -148,15 +148,18 @@ export interface LatestPostureScore {
 export async function latestPostureScores(db: Db, patientIds: string[]): Promise<Map<string, LatestPostureScore>> {
   const result = new Map<string, LatestPostureScore>();
   if (!patientIds.length) return result;
-  const all = await db.select().from(postureAssessments)
+  // Only the newest two per client leave the database, however long a client's history gets.
+  const ranked = db.select({
+    ...getTableColumns(postureAssessments),
+    rank: sql<number>`row_number() over (partition by ${postureAssessments.patientId}
+      order by ${postureAssessments.assessedOn} desc, ${postureAssessments.createdAt} desc)`.as('rank'),
+  }).from(postureAssessments)
     .where(inArray(postureAssessments.patientId, patientIds))
-    .orderBy(desc(postureAssessments.assessedOn), desc(postureAssessments.createdAt));
+    .as('ranked');
+  const rows = await db.select().from(ranked).where(lte(ranked.rank, 2)).orderBy(ranked.patientId, ranked.rank);
 
   const lastTwo = new Map<string, PostureAssessmentRow[]>();
-  for (const a of all) {
-    const list = lastTwo.get(a.patientId) ?? [];
-    if (list.length < 2) lastTwo.set(a.patientId, [...list, a]);
-  }
+  for (const { rank: _rank, ...a } of rows) lastTwo.set(a.patientId, [...(lastTwo.get(a.patientId) ?? []), a]);
   const summaries = new Map((await summarize(db, [...lastTwo.values()].flat())).map((s) => [s.id, s]));
 
   for (const [patientId, [latest, previous]] of lastTwo) {

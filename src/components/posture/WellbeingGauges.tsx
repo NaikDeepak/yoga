@@ -55,6 +55,7 @@ export function StressGauge({ level, caption, label }: { level: number; caption:
   return (
     <Gauge
       value={level} min={1} max={10} display={`${level}/10`} caption={caption} label={label}
+      // Levels are whole numbers, so half-point edges put 1–4 / 5–7 / 8–10 in the bands `stressBand` uses.
       bands={[{ to: 4.5, color: BRAND.green }, { to: 7.5, color: AMBER }, { to: 10, color: BRAND.red }]}
     />
   );

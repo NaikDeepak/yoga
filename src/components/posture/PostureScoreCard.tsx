@@ -48,6 +48,8 @@ export function PostureScoreCard({ patientId, latest, t }: {
                   </>
                 ) : latest.previousId === null ? (
                   <span>{oc.firstAssessment}</span>
+                ) : latest.previousScore === null ? (
+                  <span>{oc.previousNotMeasured}</span>
                 ) : null}
                 <span>· {p.history.counts.replace('{marked}', String(latest.markedCount)).replace('{mild}', String(latest.mildCount))}</span>
               </p>
