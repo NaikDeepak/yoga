@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { maskDbUrl, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
+import { deploymentUrlFromCli, maskDbUrl, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
 
 const journal = [{ tag: '0000_a', when: 100 }, { tag: '0001_b', when: 200 }, { tag: '0002_c', when: 300 }];
 
@@ -46,5 +46,20 @@ describe('maskDbUrl', () => {
   });
   it('copes with garbage', () => {
     expect(maskDbUrl('not a url')).toBe('(invalid URL)');
+  });
+});
+
+describe('deploymentUrlFromCli', () => {
+  it('reads the agent-mode JSON (non-interactive vercel deploy)', () => {
+    const out = JSON.stringify({ status: 'ok', deployment: { id: 'dpl_1', url: 'https://yoga-abc123-team.vercel.app' }, message: 'ready' });
+    expect(deploymentUrlFromCli(out)).toBe('https://yoga-abc123-team.vercel.app');
+  });
+  it('reads the plain --format=json output', () => {
+    expect(deploymentUrlFromCli('{"id":"dpl_1","url":"https://yoga-x-team.vercel.app"}')).toBe('https://yoga-x-team.vercel.app');
+  });
+  it('is null for anything else, including a non-Vercel URL', () => {
+    expect(deploymentUrlFromCli('Error: something')).toBeNull();
+    expect(deploymentUrlFromCli('{"url":"https://evil.example.com"}')).toBeNull();
+    expect(deploymentUrlFromCli('{"status":"error"}')).toBeNull();
   });
 });

@@ -35,3 +35,17 @@ export function maskDbUrl(url: string): string {
     return '(invalid URL)';
   }
 }
+
+/**
+ * The new deployment's URL from `vercel deploy --format=json` stdout. Non-interactive (agent) runs wrap
+ * it as `{ deployment: { url } }`; plain JSON mode has `{ url }`. Null unless it's a *.vercel.app URL.
+ */
+export function deploymentUrlFromCli(stdout: string): string | null {
+  try {
+    const out = JSON.parse(stdout) as { url?: unknown; deployment?: { url?: unknown } };
+    const url = out.deployment?.url ?? out.url;
+    return typeof url === 'string' && /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(url) ? url : null;
+  } catch {
+    return null;
+  }
+}

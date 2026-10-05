@@ -3,17 +3,21 @@
 import { execSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
+import { parse } from 'dotenv';
 import postgres from 'postgres';
+import drizzleConfig from '../../drizzle.config';
 import { pendingMigrations, maskDbUrl, type GitState, type JournalEntry } from '../../src/lib/prod-ops';
 
 export const DEFAULT_PROD_SITE_URL = 'https://yoga-ten-tau.vercel.app';
 
-/** Reads one key from .env without loading the rest (LOCAL_MOCK etc. must not leak into prod scripts). */
+/**
+ * Reads one key from .env without loading the rest into process.env (LOCAL_MOCK etc. must not leak
+ * into prod scripts). dotenv's parse() handles quotes, `export`, and comments.
+ */
 export function envValue(key: string): string | undefined {
   if (process.env[key]) return process.env[key];
   if (!existsSync('.env')) return undefined;
-  const line = readFileSync('.env', 'utf8').split('\n').find((l) => l.startsWith(`${key}=`));
-  return line?.slice(key.length + 1).trim().replace(/^['"]|['"]$/g, '') || undefined;
+  return parse(readFileSync('.env'))[key] || undefined;
 }
 
 export function prodDbUrl(): string {
@@ -29,7 +33,9 @@ export function fail(message: string): never {
   process.exit(1);
 }
 
-export const sh = (cmd: string) => execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+/** Runs a command and returns its stdout (stderr is captured, not mixed in). Times out after `timeoutMs`. */
+export const sh = (cmd: string, timeoutMs = 120_000) =>
+  execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs }).trim();
 
 export function gitState(): GitState {
   sh('git fetch --quiet origin main');
@@ -37,8 +43,9 @@ export function gitState(): GitState {
   return { branch: sh('git rev-parse --abbrev-ref HEAD'), dirty: sh('git status --porcelain') !== '', behind, ahead };
 }
 
-export function journal(dir = '.'): JournalEntry[] {
-  return JSON.parse(readFileSync(`${dir}/drizzle/meta/_journal.json`, 'utf8')).entries;
+/** Migration journal from drizzle.config.ts's `out` folder. */
+export function journal(): JournalEntry[] {
+  return JSON.parse(readFileSync(`${drizzleConfig.out ?? './drizzle'}/meta/_journal.json`, 'utf8')).entries;
 }
 
 export interface ProdStatus { host: string; applied: number; pending: string[]; rows: Record<string, number | null> }

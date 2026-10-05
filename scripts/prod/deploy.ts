@@ -8,15 +8,19 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
+import { deploymentUrlFromCli, releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
 import { fail, gitState, printStatus, prodSiteUrl, prodStatus, sh } from './common';
 
-const vercel = (args: string, cwd?: string) =>
-  sh(`${cwd ? `cd "${cwd}" && ` : ''}vercel ${args} 2>&1`);
+const DEPLOY_TIMEOUT_MS = 15 * 60_000;
+
+/** Vercel CLI; returns stdout only (progress and logs go to stderr). */
+const vercel = (args: string, cwd?: string, timeoutMs?: number) =>
+  sh(`${cwd ? `cd "${cwd}" && ` : ''}vercel ${args}`, timeoutMs);
 
 /** The deployment URL currently serving the live domain (for rollback). */
 function currentDeployment(site: string): string {
-  const url = vercel(`inspect ${site}`).match(/url\s+(https:\/\/\S+)/)?.[1];
+  // `vercel inspect` prints its details on stderr, so capture both here.
+  const url = sh(`vercel inspect ${site} 2>&1`).match(/url\s+(https:\/\/\S+)/)?.[1];
   if (!url) fail(`Could not find the current deployment of ${site} (is the Vercel CLI logged in?).`);
   return url;
 }
@@ -55,14 +59,28 @@ async function main() {
 
   const dir = mkdtempSync(join(tmpdir(), 'yoga-deploy-'));
   try {
+    sh('git worktree prune'); // forget worktrees left behind by an interrupted earlier run
     sh(`git worktree add --detach "${dir}" HEAD`);
     mkdirSync(join(dir, '.vercel'));
     copyFileSync('.vercel/project.json', join(dir, '.vercel', 'project.json'));
 
     console.log(`Building ${sh('git rev-parse --short HEAD')} on Vercel…`);
-    const out = vercel('deploy --prod --yes', dir);
-    const deployment = out.match(/https:\/\/[a-z0-9-]+\.vercel\.app/g)?.find((u) => u !== site);
-    if (!deployment) fail(`Deploy did not report a deployment URL:\n${out.slice(-800)}`);
+    // JSON on stdout (logs go to stderr), so the URL is read from a structure, not scraped from text.
+    let stdout = '';
+    try {
+      stdout = vercel('deploy --prod --yes --format=json', dir, DEPLOY_TIMEOUT_MS);
+    } catch (e) {
+      // Failed builds never go live, but a timed-out one may still finish and take the domain.
+      fail(`vercel deploy failed or timed out: ${(e as Error).message.split('\n')[0]}\n` +
+        `  If a new deployment still went live and misbehaves: vercel rollback ${previous} --yes`);
+    }
+    const deployment = deploymentUrlFromCli(stdout);
+    if (!deployment || deployment === site) {
+      // A --prod build may already be serving the domain, so put the previous one back.
+      console.error(`\n✖ Deploy did not report a deployment URL. Rolling back to ${previous}…`);
+      vercel(`rollback ${previous} --yes`);
+      fail('Rolled back. Check the Vercel dashboard for the deployment.');
+    }
     console.log(`Built:    ${deployment}`);
     vercel(`promote ${deployment} --yes`); // no-op when already live; required after a rollback
 
