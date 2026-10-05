@@ -15,7 +15,7 @@ export async function createShareLink(
   patientId: string,
   kind: ShareLinkKind,
   now: Date,
-  opts: { postureAssessmentId?: string; includePhotos?: boolean } = {},
+  opts: { postureAssessmentId?: string; includePhotos?: boolean; hideWeight?: boolean } = {},
 ): Promise<{ token: string; link: ShareLinkRow }> {
   const { token, hash } = newShareToken();
   const link = await db.transaction(async (tx) => {
@@ -28,6 +28,7 @@ export async function createShareLink(
       .values({
         patientId, kind, tokenHash: hash, expiresAt: shareLinkExpiry(now), createdAt: now,
         postureAssessmentId: opts.postureAssessmentId ?? null, includePhotos: opts.includePhotos ?? false,
+        hideWeight: opts.hideWeight ?? false,
       })
       .returning();
     return row;
