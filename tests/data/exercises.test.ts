@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { createPatient } from '@/data/patients';
-import { listAllExercises, getPrescribedExercises, savePrescribedExercises } from '@/data/exercises';
+import { listAllExercises, getPrescribedExercises, savePrescribedExercises, addPrescribedExercises } from '@/data/exercises';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -80,5 +80,24 @@ describe('Exercises data helpers', () => {
     expect(prescribed).toHaveLength(1);
     expect(prescribed[0].exerciseId).toBe(ex2.id);
     expect(prescribed[0].customNote).toBe('Note 2');
+  });
+});
+
+describe('addPrescribedExercises', () => {
+  it('adds new exercises at library defaults and keeps existing prescriptions untouched', async () => {
+    const [a, b, c] = await listAllExercises(db);
+    await savePrescribedExercises(db, patientId, [{ exerciseId: a.id, repetitions: '5 reps', customNote: 'gently' }]);
+    expect(await addPrescribedExercises(db, patientId, [a.id, b.id, c.id])).toEqual({ added: 2, alreadyPrescribed: 1 });
+    const list = await getPrescribedExercises(db, patientId);
+    expect(list).toHaveLength(3);
+    const kept = list.find((e) => e.exerciseId === a.id)!;
+    expect(kept).toMatchObject({ repetitionsOverride: '5 reps', customNote: 'gently' });
+    expect(list.find((e) => e.exerciseId === b.id)!.repetitionsOverride).toBeNull();
+  });
+
+  it('ignores duplicates in the request and an empty list', async () => {
+    const [a] = await listAllExercises(db);
+    expect(await addPrescribedExercises(db, patientId, [a.id, a.id])).toEqual({ added: 1, alreadyPrescribed: 0 });
+    expect(await addPrescribedExercises(db, patientId, [])).toEqual({ added: 0, alreadyPrescribed: 0 });
   });
 });

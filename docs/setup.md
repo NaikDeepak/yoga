@@ -129,4 +129,5 @@ WASM runtime is served from our own origin (`public/mediapipe/`, copied from nod
 - [ ] Posture voice: instruction spoken at each view, 3 beeps + shutter on capture, "Please hold still" after ~2.5 s of movement; the Voice guidance toggle silences it immediately and is remembered on the device; Marathi UI speaks Marathi (or Hindi voice) where available
 - [ ] Posture review: a point the detector missed shows as a dashed orange handle with a hint; dragging it onto the joint fills in the measures that needed it
 - [ ] Posture AI: Generate → draft badge + sections; Edit & approve → "Reviewed by the therapist on …"; Regenerate resets to draft; print shows "AI draft — not yet reviewed" for drafts
+- [ ] Posture report: "Add to prescription" on a focus area / "Add recommended exercises" in the AI analysis → "N added · View prescription"; existing prescriptions and their custom reps are untouched
 - [ ] Posture: wrong facing (e.g. back to camera on the Front step) keeps "Facing correctly" red; manual "Capture now" still works

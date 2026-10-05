@@ -60,11 +60,11 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 3. ✅ **B2 Place missed points** (done — branch `feat/posture-place-missed-points`) — editor shows handles for every landmark used by that view's metrics; low-visibility ones in a distinct colour at their guessed position (clamped into frame), labelled; dragging sets visibility 1. Test: `computeViewMetrics` measures a previously hidden point after edit.
 
 ### Phase 2 — workflow (≈3–4 days)
-5. **C1 Prescribe from report** — "Add to prescription" per focus category (pre-selects library exercises of that category in the existing prescription form / `savePrescribedExercisesAction`).
+5. ✅ **C1 Prescribe from report** (done — `feat/posture-prescribe`; appends at library defaults instead of opening the form) — "Add to prescription" per focus category (pre-selects library exercises of that category in the existing prescription form / `savePrescribedExercisesAction`).
 6. **C2 Share** — signed short-lived link or PDF; WhatsApp deep link via `src/lib/whatsapp.ts` (no PHI in the message text beyond the link).
 7. **C3 Score on Overview** — latest score chip + trend vs previous on the Overview tab; optional column in the client list.
 8. **E1 + E2 storage cleanup** — delete posture + document files when a client is deleted (collect paths before the cascade); "withdraw photo consent" deletes photos and blanks `file_path` while keeping metrics if the client agrees.
-9. **E3** — seed exercises in mock mode (`seedMockData`).
+9. ✅ **E3** — seed exercises in mock mode (done with C1: `seedExercises` runs at mock DB startup).
 
 ### Phase 3 — accuracy (needs real-device data)
 10. **B4 Roll correction** — after A2 confirms sensor signs per platform, rotate landmarks by recorded roll before metrics (frontal views); re-score history automatically (reads already recompute).

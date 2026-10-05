@@ -11,6 +11,7 @@ import { generatePostureAiAction, savePostureAiAction } from '@/actions/posture'
 import { formatFullDate } from '@/lib/dates';
 import type { PostureAiReport } from '@/lib/posture-ai';
 import { BRAND } from './ReportParts';
+import { AddToPrescriptionButton } from './AddToPrescriptionButton';
 
 type ListKey = 'lifestyleLinks' | 'likelyCauses' | 'risks';
 type RecKey = keyof PostureAiReport['recommendations'];
@@ -21,11 +22,14 @@ export function PostureAiPanel({
   assessmentId,
   report,
   approvedAt,
+  recommendedExerciseIds,
 }: {
   patientId: string;
   assessmentId: string;
   report: PostureAiReport | null;
   approvedAt: string | null; // ISO date (yyyy-mm-dd) when the therapist approved it
+  /** Library ids of the exercises the analysis recommends (for "add to prescription"). */
+  recommendedExerciseIds: string[];
 }) {
   const t = useTranslations();
   const a = t.posture.ai;
@@ -147,6 +151,8 @@ export function PostureAiPanel({
         <Bullets title={a.sections.ergonomics} items={rec('ergonomics')} />
         <Bullets title={a.sections.yogaAndBreathing} items={rec('yogaAndBreathing')} />
       </div>
+
+      <AddToPrescriptionButton patientId={patientId} exerciseIds={recommendedExerciseIds} label={t.posture.prescribe.addAi} />
 
       <p className="text-sm"><span className="font-semibold" style={{ color: BRAND.green }}>{a.sections.followUp}:</span> {report.followUp}</p>
     </div>
