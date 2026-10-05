@@ -120,6 +120,13 @@
       "when": 1791175266906,
       "tag": "0016_volatile_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791180339485,
+      "tag": "0017_tricky_wasp",
+      "breakpoints": true
     }
   ]
 }

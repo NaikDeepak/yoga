@@ -22,7 +22,10 @@ import { addVisitAction } from '@/actions/visits';
 import { TreatmentPlanForm } from '@/components/TreatmentPlanForm';
 import { PrescribedExercisesForm } from '@/components/PrescribedExercisesForm';
 import { ShareExercisesPanel } from '@/components/ShareExercisesPanel';
-import { activeShareLink } from '@/data/share-links';
+import { activeShareLink, firstShareDate } from '@/data/share-links';
+import { lastCheckinDate, listCheckins } from '@/data/checkins';
+import { HomeExerciseCard } from '@/components/HomeExerciseCard';
+import { shiftDate } from '@/lib/adherence';
 import { listAllExercises, getPrescribedExercises } from '@/data/exercises';
 import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/lifestyle';
 import { listPostureAssessments, latestPostureScores } from '@/data/posture';
@@ -485,9 +488,15 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
   const today = getISTDateString();
   const locale = await getLocale();
 
-  const allExercises = await listAllExercises(db);
-  const prescribedExercises = await getPrescribedExercises(db, patientId);
-  const share = await activeShareLink(db, patientId, 'exercises', new Date());
+  const [allExercises, prescribedExercises, share, since, checkins] = await Promise.all([
+    listAllExercises(db),
+    getPrescribedExercises(db, patientId),
+    activeShareLink(db, patientId, 'exercises', new Date()),
+    firstShareDate(db, patientId, 'exercises'),
+    listCheckins(db, patientId, shiftDate(today, -29), today),
+  ]);
+  // Latest check-in: the newest in the 30-day list, or (if none in 30 days) the all-time latest.
+  const lastCheckin = checkins.at(-1)?.date ?? await lastCheckinDate(db, patientId);
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -508,6 +517,10 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
             viewCount: share.viewCount,
             lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
           }}
+        />
+        <HomeExerciseCard
+          checkins={checkins} lastCheckin={lastCheckin} today={today} since={since}
+          liveLinkSince={share ? getISTDateString(0, share.createdAt) : null} t={t}
         />
       </div>
 

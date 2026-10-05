@@ -9,7 +9,7 @@ export function VisitLineChart({
   color,
   unit,
 }: {
-  data: { visitDate: string; value: number }[];
+  data: { visitDate: string; value: number | null }[]; // null = no reading that day (gap, line bridges it)
   color: string;
   unit: string;
 }) {
@@ -29,9 +29,11 @@ export function VisitLineChart({
           dataKey="value"
           stroke={color}
           strokeWidth={2}
-          dot={(props: { cx?: number; cy?: number }) => (
-            <circle cx={props.cx} cy={props.cy} r={4} fill={color} />
-          )}
+          connectNulls
+          dot={(props: { cx?: number; cy?: number; index?: number; value?: number | null }) =>
+            props.value == null || props.cy == null
+              ? <g key={props.index} />
+              : <circle key={props.index} cx={props.cx} cy={props.cy} r={4} fill={color} />}
           activeDot={{ r: 6 }}
         />
       </LineChart>

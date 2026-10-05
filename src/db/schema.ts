@@ -274,3 +274,23 @@ export const shareLinks = pgTable('share_links', {
 
 export type ShareLinkRow = typeof shareLinks.$inferSelect;
 export type ShareLinkKind = 'exercises';
+
+// Daily home-exercise check-ins from the client's share-link page (spec 2026-10-05-exercise-checkin).
+export const exerciseCheckins = pgTable('exercise_checkins', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  patientId: uuid('patient_id').notNull()
+    .references(() => patients.id, { onDelete: 'cascade' }),
+  shareLinkId: uuid('share_link_id')
+    .references(() => shareLinks.id, { onDelete: 'set null' }),
+  checkinDate: date('checkin_date').notNull(), // clinic (IST) day, set by the server
+  done: text('done').notNull(),
+  painScale: integer('pain_scale'),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('exercise_checkins_patient_date_uq').on(table.patientId, table.checkinDate),
+  check('exercise_checkins_done_check', sql`${table.done} IN ('all', 'some', 'none')`),
+  check('exercise_checkins_pain_check', sql`${table.painScale} IS NULL OR ${table.painScale} BETWEEN 0 AND 10`),
+]).enableRLS();
+
+export type ExerciseCheckinRow = typeof exerciseCheckins.$inferSelect;
