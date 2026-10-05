@@ -508,6 +508,7 @@ export const en = {
     quiet: 'No check-in for {days} days',
     painTitle: 'Home pain (client-reported, 0–10)',
     empty: 'No check-ins yet. Share the exercise link so the client can log their practice.',
+    waiting: 'Shared on {date} — waiting for the first check-in',
     noPainYet: 'Not enough pain entries yet.',
   },
   posture: {

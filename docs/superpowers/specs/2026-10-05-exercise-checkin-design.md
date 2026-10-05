@@ -82,6 +82,11 @@ This is the first unauthenticated **write** in the app, so:
 - `tests/actions/checkins.test.ts`: valid save; bad, expired and revoked token rejected; invalid `done` or pain rejected; the form can't set the date or patient; revoking the link blocks further check-ins.
 - `tests/data/exercises.test.ts`: the public view model gets exactly `{ today, last7 }` with no pain history.
 
+## Known limitations (from code review, 2026-10-05)
+- The adherence window starts at the client's **first** exercise link and doesn't subtract periods when no link was live (stopped, then re-shared later). Rare today — production had no links before this feature — so it's left simple; revisit if clinics often pause programmes.
+- The quiet flag counts from the later of the last check-in and the **current** link's share day, so a fresh re-share isn't flagged for an old gap, and a client who never checked in is.
+- A form shown before midnight and saved within 60 minutes after it is logged for the day it showed; any other day the form claims is ignored.
+
 ## Decisions (approved 2026-10-05: all kept as proposed)
 
 1. **Three answers (All / Some / Skipped) rather than a single "Done" tick.** "Some" captures partial practice honestly, and adherence counts it as half a day. OK?

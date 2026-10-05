@@ -1,5 +1,6 @@
 import { saveCheckinAction } from '@/actions/checkins';
 import { CheckinDots } from '@/components/CheckinDots';
+import { adherence } from '@/lib/adherence';
 import type { SharedExerciseProgramme } from '@/data/exercises';
 import type { Translations } from '@/lib/i18n/en';
 
@@ -16,7 +17,9 @@ export function CheckinForm({ token, lang, checkins, editing, error, t }: {
   t: Translations['sharedPage']['checkin'];
 }) {
   const { today, last7 } = checkins;
-  const practised = last7.reduce((n, d) => n + (d.done === 'all' ? 1 : d.done === 'some' ? 0.5 : 0), 0);
+  const shownDay = last7[last7.length - 1].date; // the server's today when the page was rendered
+  const logged = last7.flatMap((d) => (d.done ? [{ date: d.date, done: d.done }] : []));
+  const practised = adherence(logged, shownDay, 7, null).score; // same scoring as the physio's card
 
   return (
     <section className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
@@ -29,6 +32,8 @@ export function CheckinForm({ token, lang, checkins, editing, error, t }: {
         </p>
       ) : (
         <form action={saveCheckinAction.bind(null, token, lang)} className="space-y-3">
+          {/* The day this form was shown; the server honours it only just after midnight. */}
+          <input type="hidden" name="day" value={shownDay} />
           <fieldset>
             <legend className="mb-2 font-semibold">{t.question}</legend>
             <div className="grid grid-cols-3 gap-2">

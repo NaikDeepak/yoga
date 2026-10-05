@@ -488,14 +488,15 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
   const today = getISTDateString();
   const locale = await getLocale();
 
-  const allExercises = await listAllExercises(db);
-  const prescribedExercises = await getPrescribedExercises(db, patientId);
-  const [share, since, checkins, lastCheckin] = await Promise.all([
+  const [allExercises, prescribedExercises, share, since, checkins] = await Promise.all([
+    listAllExercises(db),
+    getPrescribedExercises(db, patientId),
     activeShareLink(db, patientId, 'exercises', new Date()),
     firstShareDate(db, patientId, 'exercises'),
     listCheckins(db, patientId, shiftDate(today, -29), today),
-    lastCheckinDate(db, patientId),
   ]);
+  // The 30-day list already has the latest check-in unless it's older than that.
+  const lastCheckin = checkins.at(-1)?.date ?? await lastCheckinDate(db, patientId);
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -517,7 +518,10 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
             lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
           }}
         />
-        <HomeExerciseCard checkins={checkins} lastCheckin={lastCheckin} today={today} since={since} linkActive={!!share} t={t} />
+        <HomeExerciseCard
+          checkins={checkins} lastCheckin={lastCheckin} today={today} since={since}
+          liveLinkSince={share ? getISTDateString(0, share.createdAt) : null} t={t}
+        />
       </div>
 
       <div className="space-y-4">
