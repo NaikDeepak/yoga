@@ -27,7 +27,7 @@ export function QuietClientsCard({ clients, today, t, className = '' }: { client
           <p className="py-6 text-center text-sm text-muted-foreground">{q.empty}</p>
         ) : (
           // Everyone is listed (no hidden "+N more"); long lists scroll inside the card.
-          <ul className="mt-1 max-h-96 space-y-3 overflow-y-auto pr-1 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:space-y-0 sm:gap-y-3">
+          <ul className="mt-1 grid max-h-96 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 sm:gap-x-6">
             {clients.map((c) => (
               <li key={c.patientId} className="flex items-center gap-3">
                 <div className="min-w-0 flex-1">
@@ -40,7 +40,7 @@ export function QuietClientsCard({ clients, today, t, className = '' }: { client
                     {c.nudgedAt && <> · <span className="text-emerald-700">{nudged(c.nudgedAt)}</span></>}
                   </p>
                 </div>
-                <NudgeButton patientId={c.patientId} href={waMeUrl(c.mobile, quietNudgeMessage(firstName(c.fullName)))} label={q.nudge} failedText={q.nudgeFailed} />
+                <NudgeButton patientId={c.patientId} href={waMeUrl(c.mobile, quietNudgeMessage(firstName(c.fullName)))} label={q.nudge} failedText={q.nudgeFailed} openText={q.openWhatsapp} />
               </li>
             ))}
           </ul>

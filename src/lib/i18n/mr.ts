@@ -58,6 +58,7 @@ export const mr: Translations = {
       nudgedToday: 'आज आठवण दिली',
       nudgedYesterday: 'काल आठवण दिली',
       nudgedDaysAgo: '{days} दिवसांपूर्वी आठवण दिली',
+      openWhatsapp: 'WhatsApp उघडा',
       nudgeFailed: 'आठवण नोंदवता आली नाही — {error}',
     },
     title: 'डॅशबोर्ड',

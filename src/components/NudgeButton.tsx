@@ -10,18 +10,22 @@ import { recordNudgeAction } from '@/actions/share-links';
  * opened inside the tap so browsers don't block it, and pointed at WhatsApp once the save succeeds; on a
  * failed save it closes and the error shows, so the "nudged today" guard never silently fails.
  */
-export function NudgeButton({ patientId, href, label, failedText }: {
+export function NudgeButton({ patientId, href, label, failedText, openText }: {
   patientId: string;
   href: string;
   label: string;
   /** Contains `{error}`. */
   failedText: string;
+  /** Link shown when the browser blocked the new tab (the nudge is already saved). */
+  openText: string;
 }) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
 
   const nudge = () => {
     setError(null);
+    setBlocked(false);
     const tab = window.open('', '_blank');
     start(async () => {
       let r: Awaited<ReturnType<typeof recordNudgeAction>>;
@@ -36,7 +40,7 @@ export function NudgeButton({ patientId, href, label, failedText }: {
         return;
       }
       if (tab) tab.location.href = href;
-      else window.location.href = href; // pop-up blocked: open WhatsApp here instead
+      else setBlocked(true); // pop-up blocked: offer a real link (a direct tap always opens), stay on the dashboard
     });
   };
 
@@ -46,6 +50,9 @@ export function NudgeButton({ patientId, href, label, failedText }: {
         <MessageCircle className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
         {label}
       </Button>
+      {blocked && (
+        <a href={href} target="_blank" rel="noopener noreferrer" className="mt-1 text-[11px] font-medium text-primary underline">{openText}</a>
+      )}
       {error && <p role="alert" className="mt-1 max-w-48 text-right text-[11px] text-destructive">{error}</p>}
     </div>
   );

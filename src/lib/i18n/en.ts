@@ -56,6 +56,7 @@ export const en = {
       nudgedToday: 'nudged today',
       nudgedYesterday: 'nudged yesterday',
       nudgedDaysAgo: 'nudged {days} days ago',
+      openWhatsapp: 'Open WhatsApp',
       nudgeFailed: 'Could not record the nudge — {error}',
     },
     title: 'Dashboard',

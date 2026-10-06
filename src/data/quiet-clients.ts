@@ -33,7 +33,7 @@ export async function listQuietClients(
   const lastCheckins = db
     .select({ patientId: exerciseCheckins.patientId, last: max(exerciseCheckins.checkinDate).as('last') })
     .from(exerciseCheckins)
-    .where(inArray(exerciseCheckins.patientId, db.select({ id: shareLinks.patientId }).from(shareLinks).where(liveExercise)))
+    .where(inArray(exerciseCheckins.patientId, db.select({ patientId: shareLinks.patientId }).from(shareLinks).where(liveExercise)))
     .groupBy(exerciseCheckins.patientId)
     .as('last_checkins');
 
@@ -56,7 +56,7 @@ export async function listQuietClients(
       patientId: r.patientId,
       fullName: r.fullName,
       mobile: r.mobile,
-      quietDays: quietDays(today, r.lastCheckin, getISTDateString(0, r.sharedAt))!, // non-null: a live link is passed
+      quietDays: quietDays(today, r.lastCheckin, getISTDateString(0, r.sharedAt)) ?? 0,
       lastCheckin: r.lastCheckin,
       nudgedAt: r.nudgedAt,
     }))

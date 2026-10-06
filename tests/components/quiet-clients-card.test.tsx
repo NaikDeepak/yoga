@@ -60,4 +60,14 @@ describe('Nudge button', () => {
     expect(tab.close).toHaveBeenCalled();
     expect(tab.location.href).toBe('');
   });
+
+  it('if the browser blocks the new tab, stays on the dashboard and offers an Open WhatsApp link', async () => {
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    vi.mocked(recordNudgeAction).mockResolvedValue({ ok: true });
+    render(<QuietClientsCard today={today} t={en} clients={[client({})]} />);
+    fireEvent.click(screen.getByRole('button', { name: /Nudge/ }));
+    const link = await screen.findByRole('link', { name: en.dashboard.quiet.openWhatsapp });
+    expect(link.getAttribute('href')).toContain('phone=919876543210');
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
 });
