@@ -1,9 +1,10 @@
 // Flexibility tests attached to a posture assessment (spec 2026-10-06-flexibility-tests). Photos live in
 // the client's folder next to the posture photos; measures and scores are recomputed on every read.
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { flexibilityTests, postureAssessments, type FlexibilityTestRow } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { FileStorage } from '@/lib/storage';
+import { consentWithdrawn } from './posture';
 import type { Landmark } from '@/lib/posture';
 import type { CameraCheck } from '@/lib/posture-capture';
 import {
@@ -49,8 +50,9 @@ export async function getFlexibility(db: Db, assessmentId: string): Promise<Flex
 
 /**
  * Saves 1–4 shots for this client's assessment (first capture or retakes): uploads the photos, then
- * upserts the rows in one transaction, then removes replaced photos. Any failure removes what was
- * uploaded. Returns null (and stores nothing) if the assessment isn't this client's.
+ * upserts the rows in one transaction, then removes the photos they replaced. Any failure removes what
+ * was uploaded. Stores nothing for another client's assessment ('notFound'), or when photo consent was
+ * withdrawn and not given again ('consentRequired'; `freshConsent` records it).
  */
 export async function saveFlexibilityShots(
   db: Db,
@@ -58,22 +60,29 @@ export async function saveFlexibilityShots(
   patientId: string,
   assessmentId: string,
   shots: FlexShotInput[],
-): Promise<Flexibility | null> {
-  const [owned] = await db.select({ id: postureAssessments.id }).from(postureAssessments)
+  opts: { freshConsent?: boolean } = {},
+): Promise<'saved' | 'notFound' | 'consentRequired'> {
+  const [assessment] = await db.select({ photosDeletedAt: postureAssessments.photosDeletedAt, consentAt: postureAssessments.consentAt })
+    .from(postureAssessments)
     .where(and(eq(postureAssessments.id, assessmentId), eq(postureAssessments.patientId, patientId)));
-  if (!owned) return null;
+  if (!assessment) return 'notFound';
+  if (consentWithdrawn(assessment) && !opts.freshConsent) return 'consentRequired';
 
-  const existing = await db.select({ shot: flexibilityTests.shot, filePath: flexibilityTests.filePath })
-    .from(flexibilityTests).where(eq(flexibilityTests.assessmentId, assessmentId));
   const version = crypto.randomUUID().slice(0, 8);
   const pathFor = (s: FlexShot) => flexPhotoPath(patientId, assessmentId, s, version);
   const uploaded: string[] = [];
+  let replaced: { filePath: string | null }[];
   try {
     for (const s of shots) {
       await storage.upload(pathFor(s.shot), s.photo);
       uploaded.push(pathFor(s.shot));
     }
-    await db.transaction(async (tx) => {
+    replaced = await db.transaction(async (tx) => {
+      // Lock the assessment so overlapping saves run one after the other, and read the photos being
+      // replaced inside the lock: each save then removes exactly the file it replaced (no orphans).
+      await tx.select({ id: postureAssessments.id }).from(postureAssessments).where(eq(postureAssessments.id, assessmentId)).for('update');
+      const old = await tx.select({ filePath: flexibilityTests.filePath }).from(flexibilityTests)
+        .where(and(eq(flexibilityTests.assessmentId, assessmentId), inArray(flexibilityTests.shot, shots.map((s) => s.shot))));
       for (const s of shots) {
         const values = {
           filePath: pathFor(s.shot),
@@ -86,13 +95,14 @@ export async function saveFlexibilityShots(
         await tx.insert(flexibilityTests).values({ assessmentId, shot: s.shot, ...values })
           .onConflictDoUpdate({ target: [flexibilityTests.assessmentId, flexibilityTests.shot], set: values });
       }
+      if (opts.freshConsent) await tx.update(postureAssessments).set({ consentAt: new Date() }).where(eq(postureAssessments.id, assessmentId));
+      return old;
     });
   } catch (err) {
     await Promise.allSettled(uploaded.map((p) => storage.remove(p)));
     throw err;
   }
   // Only after the rows point at the new photos; best effort, the save itself has succeeded.
-  const replaced = new Set<string>(shots.map((s) => s.shot));
-  await Promise.allSettled(existing.flatMap((e) => (replaced.has(e.shot) && e.filePath ? [storage.remove(e.filePath)] : [])));
-  return getFlexibility(db, assessmentId);
+  await Promise.allSettled(replaced.flatMap((e) => (e.filePath ? [storage.remove(e.filePath)] : [])));
+  return 'saved';
 }

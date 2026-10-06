@@ -260,6 +260,19 @@ export async function deletePosturePhotos(
 }
 
 /**
+ * New photos for an existing assessment need fresh consent when its photos were deleted (consent
+ * withdrawn) after the last consent. Giving it updates `consent_at`, so it's asked once.
+ */
+export const consentWithdrawn = (a: { photosDeletedAt: Date | null; consentAt: Date }) =>
+  a.photosDeletedAt !== null && a.photosDeletedAt >= a.consentAt;
+
+export async function needsFreshConsent(db: Db, assessmentId: string): Promise<boolean> {
+  const [a] = await db.select({ photosDeletedAt: postureAssessments.photosDeletedAt, consentAt: postureAssessments.consentAt })
+    .from(postureAssessments).where(eq(postureAssessments.id, assessmentId));
+  return !!a && consentWithdrawn(a);
+}
+
+/**
  * Retakes some views of an existing assessment (e.g. when front and back disagree). Uploads the new
  * photos under versioned keys, updates those view rows in one transaction, then removes the replaced
  * photos. Any failure leaves the assessment as it was. Returns null if the assessment isn't this client's.
@@ -270,22 +283,28 @@ export async function replacePostureViews(
   patientId: string,
   assessmentId: string,
   views: PostureViewInput[],
-): Promise<PostureAssessment | null> {
+  opts: { freshConsent?: boolean } = {},
+): Promise<PostureAssessment | null | 'consentRequired'> {
   const [assessment] = await db.select().from(postureAssessments)
     .where(and(eq(postureAssessments.id, assessmentId), eq(postureAssessments.patientId, patientId)));
   if (!assessment) return null;
+  if (consentWithdrawn(assessment) && !opts.freshConsent) return 'consentRequired';
 
-  const existing = await db.select({ view: postureViews.view, filePath: postureViews.filePath }).from(postureViews)
-    .where(and(eq(postureViews.assessmentId, assessmentId), inArray(postureViews.view, views.map((v) => v.view))));
   const version = crypto.randomUUID().slice(0, 8);
   const pathFor = (v: PostureView) => posturePhotoPath(patientId, assessmentId, v, version);
   const uploaded: string[] = [];
+  let existing: { filePath: string | null }[];
   try {
     for (const v of views) {
       await storage.upload(pathFor(v.view), v.photo);
       uploaded.push(pathFor(v.view));
     }
-    await db.transaction(async (tx) => {
+    existing = await db.transaction(async (tx) => {
+      // Lock the assessment so overlapping retakes run one after the other, and read the photos being
+      // replaced inside the lock: each save then removes exactly the file it replaced (no orphans).
+      await tx.select({ id: postureAssessments.id }).from(postureAssessments).where(eq(postureAssessments.id, assessmentId)).for('update');
+      const replaced = await tx.select({ filePath: postureViews.filePath }).from(postureViews)
+        .where(and(eq(postureViews.assessmentId, assessmentId), inArray(postureViews.view, views.map((v) => v.view))));
       for (const v of views) {
         const [row] = await tx.update(postureViews).set({
           filePath: pathFor(v.view),
@@ -303,7 +322,10 @@ export async function replacePostureViews(
       }
       // An approved AI analysis described the old measurements: back to draft until re-approved
       // (it also stops it reaching the client's shared report).
-      await tx.update(postureAssessments).set({ aiApprovedAt: null }).where(eq(postureAssessments.id, assessmentId));
+      await tx.update(postureAssessments)
+        .set({ aiApprovedAt: null, ...(opts.freshConsent && { consentAt: new Date() }) })
+        .where(eq(postureAssessments.id, assessmentId));
+      return replaced;
     });
   } catch (err) {
     await Promise.allSettled(uploaded.map((p) => storage.remove(p)));

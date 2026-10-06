@@ -12,6 +12,7 @@ import {
   deletePostureAssessment,
   replacePostureViews,
   saveAiReport,
+  type PostureAssessment,
   type PostureViewInput,
 } from '@/data/posture';
 import { patients, postureAssessments, postureViews } from '@/db/schema';
@@ -233,7 +234,7 @@ describe('replacePostureViews', () => {
     const oldFront = a.views.find((v) => v.view === 'front')!;
     const retake = { ...view('back', { RIGHT_SHOULDER: [400, 535] }), cameraCheck: { method: 'sensor' as const, rollDeg: -0.3, pitchDeg: 0.5 } };
 
-    const updated = await replacePostureViews(db, storage, patientId, a.id, [retake]);
+    const updated = await replacePostureViews(db, storage, patientId, a.id, [retake]) as PostureAssessment;
     const back = updated!.views.find((v) => v.view === 'back')!;
     expect(back.filePath).not.toBe(oldBack.filePath);
     expect(back.filePath).toMatch(new RegExp(`^patients/${patientId}/posture/${a.id}/back-[a-z0-9]+\\.jpg$`));
@@ -277,7 +278,7 @@ describe('best-effort photo cleanup', () => {
   it('a retake still succeeds if removing the replaced photo fails', async () => {
     const a = await addPostureAssessment(db, storage, input());
     storage.remove = async () => { throw new Error('storage down'); };
-    const updated = await replacePostureViews(db, storage, patientId, a.id, [view('back')]);
+    const updated = await replacePostureViews(db, storage, patientId, a.id, [view('back')]) as PostureAssessment;
     expect(updated!.views.find((v) => v.view === 'back')!.filePath).toMatch(/back-/);
   });
 

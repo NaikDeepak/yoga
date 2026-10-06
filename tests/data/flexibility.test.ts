@@ -6,7 +6,7 @@ import { addAssessment } from '../helpers/posture-assessment';
 import { flexShot } from '../helpers/flexibility';
 import { createPatient } from '@/data/patients';
 import { getFlexibility, saveFlexibilityShots } from '@/data/flexibility';
-import { deletePostureAssessment, deletePosturePhotos, listPostureAssessments } from '@/data/posture';
+import { deletePostureAssessment, deletePosturePhotos, listPostureAssessments, needsFreshConsent, replacePostureViews } from '@/data/posture';
 import { flexibilityTests } from '@/db/schema';
 import { FLEX_SHOTS } from '@/lib/flexibility';
 import type { Db } from '@/db/types';
@@ -28,7 +28,8 @@ const all = () => FLEX_SHOTS.map((s) => flexShot(s));
 
 describe('saveFlexibilityShots', () => {
   it('stores the four shots with photos under the client folder; scores are computed on read', async () => {
-    const r = (await saveFlexibilityShots(db, storage, patientId, assessmentId, all()))!;
+    expect(await saveFlexibilityShots(db, storage, patientId, assessmentId, all())).toBe('saved');
+    const r = await getFlexibility(db, assessmentId);
     expect(r.shots.map((s) => s.shot)).toEqual([...FLEX_SHOTS]);
     for (const s of r.shots) {
       expect(s.filePath).toMatch(new RegExp(`^patients/${patientId}/posture/${assessmentId}/flex-${s.shot}-[a-z0-9]+\\.jpg$`));
@@ -41,10 +42,12 @@ describe('saveFlexibilityShots', () => {
   });
 
   it('a retake of one shot replaces only that shot and removes its old photo', async () => {
-    const first = (await saveFlexibilityShots(db, storage, patientId, assessmentId, all()))!;
+    await saveFlexibilityShots(db, storage, patientId, assessmentId, all());
+    const first = await getFlexibility(db, assessmentId);
     const oldFold = first.shots.find((s) => s.shot === 'forwardFold')!.filePath!;
     const oldButterfly = first.shots.find((s) => s.shot === 'butterfly')!.filePath!;
-    const r = (await saveFlexibilityShots(db, storage, patientId, assessmentId, [flexShot('forwardFold')]))!;
+    await saveFlexibilityShots(db, storage, patientId, assessmentId, [flexShot('forwardFold')]);
+    const r = await getFlexibility(db, assessmentId);
     const fold = r.shots.find((s) => s.shot === 'forwardFold')!;
     expect(fold.filePath).not.toBe(oldFold);
     expect(storage.files.has(oldFold)).toBe(false);
@@ -55,7 +58,7 @@ describe('saveFlexibilityShots', () => {
   it("refuses another client's assessment and stores nothing", async () => {
     const otherId = (await createPatient(db, { fullName: 'Ravi Patil', mobile: '9876500000' })).id;
     const before = storage.files.size;
-    expect(await saveFlexibilityShots(db, storage, otherId, assessmentId, all())).toBeNull();
+    expect(await saveFlexibilityShots(db, storage, otherId, assessmentId, all())).toBe('notFound');
     expect(storage.files.size).toBe(before);
     expect(await db.select().from(flexibilityTests)).toHaveLength(0);
   });
@@ -68,6 +71,33 @@ describe('saveFlexibilityShots', () => {
     storage.upload = async (path, file) => { if (++n === 3) throw new Error('storage down'); return upload(path, file); };
     await expect(saveFlexibilityShots(db, storage, patientId, assessmentId, shots)).rejects.toThrow('storage down');
     expect(storage.files.size).toBe(before);
+  });
+});
+
+describe('after photo consent was withdrawn', () => {
+  it('refuses new photos without fresh consent, takes them with it, and asks only once', async () => {
+    await deletePosturePhotos(db, storage, patientId, now);
+    const before = storage.files.size;
+    expect(await saveFlexibilityShots(db, storage, patientId, assessmentId, all())).toBe('consentRequired');
+    expect(storage.files.size).toBe(before); // nothing uploaded
+    expect((await getFlexibility(db, assessmentId)).shots).toHaveLength(0);
+
+    expect(await saveFlexibilityShots(db, storage, patientId, assessmentId, all(), { freshConsent: true })).toBe('saved');
+    expect(await needsFreshConsent(db, assessmentId)).toBe(false);
+    expect(await saveFlexibilityShots(db, storage, patientId, assessmentId, [flexShot('butterfly')])).toBe('saved');
+  });
+
+  it('posture retakes need fresh consent too', async () => {
+    await deletePosturePhotos(db, storage, patientId, now);
+    expect(await needsFreshConsent(db, assessmentId)).toBe(true);
+    const back = { ...flexShot('butterfly'), view: 'back' as const };
+    const { shot: _s, ...retake } = back;
+    expect(await replacePostureViews(db, storage, patientId, assessmentId, [retake])).toBe('consentRequired');
+    expect(await replacePostureViews(db, storage, patientId, assessmentId, [retake], { freshConsent: true })).not.toBe('consentRequired');
+  });
+
+  it('no fresh consent is needed when photos were never deleted', async () => {
+    expect(await needsFreshConsent(db, assessmentId)).toBe(false);
   });
 });
 

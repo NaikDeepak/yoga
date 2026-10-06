@@ -9,7 +9,7 @@ import {
 import { generatePostureAnalysis } from '@/lib/gemini';
 import { MOCK_POSTURE_AI_REPORT } from '@/lib/posture-ai';
 import { createPatient } from '@/data/patients';
-import { addPostureAssessment, listPostureAssessments, getPostureAssessment } from '@/data/posture';
+import { addPostureAssessment, deletePosturePhotos, listPostureAssessments, getPostureAssessment } from '@/data/posture';
 import { requireUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
@@ -200,6 +200,15 @@ describe('replacePostureViewsAction', () => {
       return { redirect: (e as Error).message.replace('REDIRECT:', '') };
     }
   };
+
+  it('after photo consent was withdrawn, needs the consent tick again', async () => {
+    const a = await addOne();
+    await deletePosturePhotos(db, storage, patientId, new Date());
+    expect(await retake(retakeForm(['back']), a.id)).toMatchObject({ ok: false, error: expect.stringContaining('consent') });
+    const f = retakeForm(['back']);
+    f.set('payload', JSON.stringify({ consent: true, views: [viewPayload('back')] }));
+    expect(await retake(f, a.id)).toEqual({ redirect: `/patients/${patientId}/posture/${a.id}` });
+  });
 
   it('replaces the retaken views and returns to the report', async () => {
     const a = await addOne();

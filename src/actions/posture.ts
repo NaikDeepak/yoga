@@ -28,6 +28,8 @@ import type { ActionResult } from '@/actions/patients';
 
 const INVALID_PARAMS: ActionResult = { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
 const INVALID_DATA: ActionResult = { ok: false, error: 'Invalid posture data / चुकीची पोश्चर माहिती' };
+// Photos of this assessment were deleted (consent withdrawn); new ones need the consent tick again.
+const CONSENT_REQUIRED: ActionResult = { ok: false, error: 'Photo consent required / फोटोसाठी संमती आवश्यक' };
 const SAVE_FAILED: ActionResult = { ok: false, error: 'Could not save posture assessment / पोश्चर मूल्यांकन जतन करता आले नाही' };
 
 function parsePayload(formData: FormData): unknown {
@@ -128,6 +130,7 @@ export async function replacePostureViewsAction(
 
   let updated;
   try {
+    const freshConsent = parsed.data.consent === true;
     updated = await replacePostureViews(getDb(), getStorage(), patientId, assessmentId, parsed.data.views.map((v) => ({
       view: v.view,
       photo: photos.get(v.view)!,
@@ -136,10 +139,11 @@ export async function replacePostureViewsAction(
       landmarks: v.landmarks,
       landmarksEdited: v.landmarksEdited,
       cameraCheck: v.cameraCheck,
-    })));
+    })), { freshConsent });
   } catch {
     return SAVE_FAILED;
   }
+  if (updated === 'consentRequired') return CONSENT_REQUIRED;
   if (!updated) return NOT_FOUND;
 
   revalidatePath(`/patients/${patientId}`);
@@ -171,12 +175,13 @@ export async function saveFlexibilityTestsAction(
   try {
     saved = await saveFlexibilityShots(getDb(), getStorage(), patientId, assessmentId, parsed.data.shots.map((s) => ({
       ...s, photo: photos.get(s.shot)!,
-    })));
+    })), { freshConsent: parsed.data.consent === true });
   } catch (error) {
     console.error('Failed to save flexibility tests:', safeErrorMessage(error));
     return { ok: false, error: 'Could not save flexibility tests / लवचिकता चाचण्या जतन करता आल्या नाहीत' };
   }
-  if (!saved) return NOT_FOUND;
+  if (saved === 'consentRequired') return CONSENT_REQUIRED;
+  if (saved === 'notFound') return NOT_FOUND;
 
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);

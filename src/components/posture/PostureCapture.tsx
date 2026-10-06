@@ -55,6 +55,7 @@ export function PostureCapture({
   patientName,
   retake,
   flexibility,
+  reconsent = false,
 }: {
   patientId: string;
   patientName: string;
@@ -62,6 +63,8 @@ export function PostureCapture({
   retake?: { assessmentId: string; views: PostureView[] };
   /** Flexibility mode: capture these flexibility shots for an existing assessment (consent was given originally). */
   flexibility?: { assessmentId: string; shots: FlexShot[] };
+  /** Retake/flexibility on an assessment whose photos were deleted (consent withdrawn): ask again. */
+  reconsent?: boolean;
 }) {
   const t = useTranslations();
   const p = t.posture;
@@ -86,8 +89,9 @@ export function PostureCapture({
 
   const [step, setStep] = useState<Step>('setup');
   const order: readonly CaptureShot[] = flexibility?.shots ?? retake?.views ?? POSTURE_VIEWS;
-  const existing = !!(retake || flexibility); // consent was recorded with the assessment
-  const [consent, setConsent] = useState(existing);
+  // Consent was recorded with an existing assessment, unless the client withdrew it since.
+  const askConsent = !(retake || flexibility) || reconsent;
+  const [consent, setConsent] = useState(!askConsent);
   const label = (s: CaptureShot) => (isFlexShot(s) ? p.flex.shots[s] : p.views[s]);
   const instruction = (s: CaptureShot) => (isFlexShot(s) ? p.flex.instructions[s] : c.instructions[s]);
   const spoken = (s: CaptureShot) => (isFlexShot(s)
@@ -292,7 +296,7 @@ export function PostureCapture({
           landmarks: cap.landmarks, landmarksEdited: cap.edited, cameraCheck: cap.cameraCheck,
         };
       });
-      fd.set('payload', JSON.stringify({ shots }));
+      fd.set('payload', JSON.stringify(reconsent ? { consent: true, shots } : { shots }));
       for (const s of order) fd.set(`photo_${s}`, new File([captures[s]!.blob], `${s}.jpg`, { type: 'image/jpeg' }));
       setError(null);
       startSaving(async () => {
@@ -308,7 +312,7 @@ export function PostureCapture({
         landmarks: cap.landmarks, landmarksEdited: cap.edited, cameraCheck: cap.cameraCheck,
       };
     });
-    fd.set('payload', JSON.stringify(retake ? { views } : { consent: true, note, views }));
+    fd.set('payload', JSON.stringify(retake ? (reconsent ? { consent: true, views } : { views }) : { consent: true, note, views }));
     for (const v of order) fd.set(`photo_${v}`, new File([captures[v]!.blob], `${v}.jpg`, { type: 'image/jpeg' }));
     setError(null);
     startSaving(async () => {
@@ -344,7 +348,7 @@ export function PostureCapture({
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             {c.tips.map((tip) => <li key={tip}>{tip}</li>)}
           </ul>
-          {!existing && (
+          {askConsent && (
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-0.5 h-4 w-4" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
               <span>{c.consent}</span>
@@ -477,7 +481,7 @@ export function PostureCapture({
               );
             })}
           </div>
-          {!existing && (
+          {!(retake || flexibility) && (
             <div className="space-y-2">
               <Label htmlFor="posture-note">{p.note}</Label>
               <Textarea id="posture-note" value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />

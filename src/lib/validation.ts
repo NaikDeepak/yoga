@@ -210,6 +210,8 @@ export type PostureAssessmentPayload = z.infer<typeof postureAssessmentSchema>;
 
 /** Retaking some views of an existing assessment (consent was recorded with the original). */
 export const postureRetakeSchema = z.object({
+  /** Only sent when the assessment's photos were deleted (consent withdrawn) and the client agreed again. */
+  consent: z.literal(true).optional(),
   views: z.array(postureViewSchema, POSTURE_DATA_ERR)
     .min(1, POSTURE_DATA_ERR)
     .max(POSTURE_VIEWS.length, POSTURE_DATA_ERR)
@@ -218,6 +220,8 @@ export const postureRetakeSchema = z.object({
 
 /** Flexibility shots for an existing assessment: any 1–4 distinct shots (first capture or retakes). */
 export const flexibilityShotsSchema = z.object({
+  /** Only sent when the assessment's photos were deleted (consent withdrawn) and the client agreed again. */
+  consent: z.literal(true).optional(),
   shots: z.array(z.object({ shot: z.enum(FLEX_SHOTS, POSTURE_DATA_ERR), ...capturedPhotoFields }, POSTURE_DATA_ERR), POSTURE_DATA_ERR)
     .min(1, POSTURE_DATA_ERR)
     .max(FLEX_SHOTS.length, POSTURE_DATA_ERR)

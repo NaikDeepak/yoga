@@ -7,6 +7,7 @@ import { jpeg } from '../helpers/posture';
 import { saveFlexibilityTestsAction } from '@/actions/posture';
 import { createPatient } from '@/data/patients';
 import { getFlexibility } from '@/data/flexibility';
+import { deletePosturePhotos } from '@/data/posture';
 import { requireUser } from '@/lib/auth';
 import { FLEX_SHOTS, type FlexShot } from '@/lib/flexibility';
 import type { Db } from '@/db/types';
@@ -54,6 +55,15 @@ describe('saveFlexibilityTestsAction', () => {
     expect(await saveFlexibilityTestsAction(patientId, assessmentId, form(['butterfly'], dup))).toMatchObject({ ok: false });
     expect(await saveFlexibilityTestsAction(patientId, assessmentId, form(FLEX_SHOTS, undefined, { butterfly: null }))).toMatchObject({ ok: false });
     expect((await getFlexibility(db, assessmentId)).shots).toHaveLength(0);
+  });
+
+  it('after photo consent was withdrawn, refuses without the consent tick and saves with it', async () => {
+    await deletePosturePhotos(db, storage, patientId, new Date());
+    expect(await saveFlexibilityTestsAction(patientId, assessmentId, form())).toMatchObject({ ok: false, error: expect.stringContaining('consent') });
+    expect((await getFlexibility(db, assessmentId)).shots).toHaveLength(0);
+    const withConsent = { consent: true, shots: FLEX_SHOTS.map((s) => { const { photo: _p, ...rest } = flexShot(s); return rest; }) };
+    await expect(saveFlexibilityTestsAction(patientId, assessmentId, form(FLEX_SHOTS, withConsent))).rejects.toThrow('REDIRECT:');
+    expect((await getFlexibility(db, assessmentId)).shots).toHaveLength(4);
   });
 
   it("refuses another client's assessment", async () => {

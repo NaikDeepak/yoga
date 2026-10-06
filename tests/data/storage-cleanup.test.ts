@@ -157,7 +157,7 @@ describe('deletePosturePhotos (consent withdrawn)', () => {
     const updated = (await replacePostureViews(db, storage, patientId, a.id, [{
       view: 'back', photo: jpeg(), imageWidth: POSTURE_W, imageHeight: POSTURE_H,
       landmarks: alignedLandmarks('back'), landmarksEdited: false, cameraCheck: null,
-    }]))!;
+    }], { freshConsent: true })) as Exclude<Awaited<ReturnType<typeof replacePostureViews>>, 'consentRequired' | null>;
     const back = updated.views.find((v) => v.view === 'back')!;
     expect(back.filePath && storage.files.has(back.filePath)).toBe(true);
     expect(updated.views.filter((v) => v.filePath === null)).toHaveLength(3);
