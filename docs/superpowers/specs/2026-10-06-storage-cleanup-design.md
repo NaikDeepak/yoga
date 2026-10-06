@@ -12,16 +12,16 @@ Roadmap: posture follow-up plan **E1 + E2** (`docs/superpowers/plans/2026-10-04-
 
 - **Where:** a "Delete client / साधक हटवा" card at the bottom of the client's **edit** page.
 - **Confirming:** the physio types the client's full name, as with a GitHub repo delete. The action compares it again on the server (trimmed, case-insensitive).
-- **Order:**
-  1. Delete the `patients` row. All 12 child tables cascade, including share links, so any live client link stops working at once.
-  2. Then remove **every file under `patients/<id>/`** in storage, by prefix rather than from the DB paths, so leftovers and orphans go too.
-  3. Storage cleanup is best effort. The client is already gone, so a storage error doesn't fail the delete. It is logged as a count only, with no paths or ids.
+- **Order (files first, revised after PR review):**
+  1. Remove **every file under `patients/<id>/`** in storage, by prefix rather than from the DB paths, so leftovers and orphans go too. R2 attempts every batch, then reports failures (counts only).
+  2. Only if that succeeded, delete the `patients` row. All 12 child tables cascade, including share links, so any live client link stops working at once.
+  3. If storage fails, the client is **kept** and the physio sees "please try again". A retry finishes the job. Deleting the row first would orphan PHI with no way to find it again.
 - **Afterwards:** redirect to `/patients`.
 
 ## 2. Withdraw photo consent (all posture photos of a client)
 
 - **Where:** on the client's **Assessment tab**, in the posture section, a "Withdraw photo consent / फोटो संमती मागे घ्या" button with an AlertDialog confirmation. It only appears when the client has posture photos.
-- **What it deletes:** every posture photo file for that client.
+- **What it deletes:** every posture photo file for that client. Files go first; only views whose file is actually gone get `file_path` nulled. A photo that failed to delete keeps its path, the physio sees "N photo(s) could not be deleted; please try again", and the button stays until a retry succeeds.
 - **What it keeps:** the saved points (landmarks), measurements, scores, AI text and notes. The stick figures are drawn from the saved points, so reports, comparisons, the score trend and the progress link all keep working, just with no photo behind the figure.
 - **Recorded:** `posture_assessments.photos_deleted_at` is set on each affected assessment (the first withdrawal date is kept). Each view with no photo says "Photo deleted (consent withdrawn)", and the Assessment tab notes "Photos deleted on {date}".
 - **Shared posture links:** `include_photos` is switched off on the client's posture link, so the physio's status line says "without photos" and the client's page says "Photo not shared".
@@ -40,9 +40,9 @@ Roadmap: posture follow-up plan **E1 + E2** (`docs/superpowers/plans/2026-10-04-
 
 ## Code layout
 
-- `src/data/patients.ts`: `deletePatientAndFiles(db, storage, id)` deletes the row, then calls `storage.removePrefix(`patients/${id}/`)`. Returns `{ deleted: boolean; filesRemoved: number | null }` (null when storage cleanup failed).
+- `src/data/patients.ts`: `deletePatientAndFiles(db, storage, id)` calls `storage.removePrefix(`patients/${id}/`)`, then deletes the row. Throws on a storage failure and keeps the client. Returns `{ deleted, filesRemoved }`.
 - `src/data/posture.ts`:
-  - `deletePosturePhotos(db, storage, patientId, now)` collects this client's non-null view paths, nulls them and stamps `photos_deleted_at` in one transaction, then removes the files (allSettled). Returns the count.
+  - `deletePosturePhotos(db, storage, patientId, now)` collects this client's non-null view paths and removes the files (allSettled). Then, in one transaction, it nulls the paths of the files that are gone, stamps `photos_deleted_at` and turns off `include_photos`. Returns `{ deleted, failed }`.
   - Every reader treats a null `filePath` as "no photo": the physio report, compare, the shared posture report, retake and delete.
 - `src/actions/patients.ts`: `deletePatientAction(id, confirmName)`.
 - `src/actions/posture.ts`: `withdrawPhotoConsentAction(patientId)`.

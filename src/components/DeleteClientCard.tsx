@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useTranslations } from '@/lib/i18n/context';
 import { deletePatientAction } from '@/actions/patients';
-
-const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
+import { sameName } from '@/lib/names';
 
 /**
  * Danger zone on the edit page: permanently erases the client and all their files. The physio types
@@ -19,7 +18,7 @@ export function DeleteClientCard({ patientId, fullName }: { patientId: string; f
   const [typed, setTyped] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const matches = norm(typed) === norm(fullName);
+  const matches = sameName(typed, fullName);
 
   const remove = () => start(async () => {
     setError(null);

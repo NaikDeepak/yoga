@@ -179,10 +179,26 @@ describe('r2Storage', () => {
       expect(mockSend).toHaveBeenCalledOnce();
     });
 
-    it('fails when R2 reports per-key errors', async () => {
-      mockSend.mockImplementation(async (cmd: Cmd) =>
-        cmd._type === 'List' ? { Contents: keys(2), IsTruncated: false } : { Errors: [{ Key: `${prefix}f0`, Code: 'AccessDenied' }] });
+    it('tries every batch, then fails with the count of keys R2 could not delete', async () => {
+      let deletes = 0;
+      mockSend.mockImplementation(async (cmd: Cmd) => {
+        if (cmd._type === 'List') return { Contents: keys(1500), IsTruncated: false };
+        deletes++;
+        return deletes === 1 ? { Errors: [{ Key: `${prefix}f0`, Code: 'AccessDenied' }] } : {};
+      });
       await expect(r2Storage().removePrefix(prefix)).rejects.toThrow('1 file(s) could not be deleted');
+      expect(deletes).toBe(2);
+    });
+
+    it('a failed batch request does not stop the others', async () => {
+      let deletes = 0;
+      mockSend.mockImplementation(async (cmd: Cmd) => {
+        if (cmd._type === 'List') return { Contents: keys(1500), IsTruncated: false };
+        if (++deletes === 1) throw new Error('throttled');
+        return {};
+      });
+      await expect(r2Storage().removePrefix(prefix)).rejects.toThrow('1000 file(s) could not be deleted');
+      expect(deletes).toBe(2);
     });
 
     it('refuses anything but a client folder (never the whole bucket)', async () => {

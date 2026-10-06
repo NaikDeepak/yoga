@@ -40,20 +40,27 @@ export function r2Storage(): FileStorage {
     },
     async removePrefix(prefix) {
       assertClientFolder(prefix);
-      let removed = 0;
+      // Every batch is attempted even if one fails, then failures are reported (counts only: keys
+      // hold client ids). The caller keeps the client, so a retry finishes the job.
+      let removed = 0, failed = 0;
       let token: string | undefined;
       do {
         const page = await client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: token }));
         const keys = (page.Contents ?? []).flatMap((o) => (o.Key ? [{ Key: o.Key }] : []));
         for (let i = 0; i < keys.length; i += DELETE_BATCH) {
           const batch = keys.slice(i, i + DELETE_BATCH);
-          const res = await client.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: batch, Quiet: true } }));
-          // Counts only: keys hold client ids.
-          if (res.Errors?.length) throw new Error(`${res.Errors.length} file(s) could not be deleted`);
-          removed += batch.length;
+          try {
+            const res = await client.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: batch, Quiet: true } }));
+            const errors = res.Errors?.length ?? 0;
+            failed += errors;
+            removed += batch.length - errors;
+          } catch {
+            failed += batch.length;
+          }
         }
         token = page.IsTruncated ? page.NextContinuationToken : undefined;
       } while (token);
+      if (failed) throw new Error(`${failed} file(s) could not be deleted`);
       return removed;
     },
   };

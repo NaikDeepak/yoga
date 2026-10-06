@@ -71,22 +71,19 @@ export async function countPatients(db: Db, branch?: string, q?: string): Promis
 }
 
 /**
- * Permanently erases a client: the row (every child table cascades, so their share links stop at
- * once), then every file in their storage folder — by prefix, so files the DB no longer knows about
- * (replaced profile photos, leftovers) go too. Storage is best effort once the client is gone:
- * `filesRemoved` is null when the cleanup failed (logged as a message only, no ids or paths).
+ * Permanently erases a client: first every file in their storage folder — by prefix, so files the DB
+ * no longer knows about (replaced profile photos, leftovers) go too — then the row (every child
+ * table cascades, so their share links stop at once). Files first: if storage fails this throws and
+ * the client is kept, so trying again finishes the job instead of leaving files nobody can find.
  */
 export async function deletePatientAndFiles(
   db: Db,
   storage: FileStorage,
   id: string,
-): Promise<{ deleted: boolean; filesRemoved: number | null }> {
-  const gone = await db.delete(patients).where(eq(patients.id, id)).returning({ id: patients.id });
-  if (!gone.length) return { deleted: false, filesRemoved: 0 };
-  try {
-    return { deleted: true, filesRemoved: await storage.removePrefix(clientFolder(id)) };
-  } catch (err) {
-    console.error('Client deleted but storage cleanup failed:', err instanceof Error ? err.message : String(err));
-    return { deleted: true, filesRemoved: null };
-  }
+): Promise<{ deleted: boolean; filesRemoved: number }> {
+  const [exists] = await db.select({ id: patients.id }).from(patients).where(eq(patients.id, id));
+  if (!exists) return { deleted: false, filesRemoved: 0 };
+  const filesRemoved = await storage.removePrefix(clientFolder(id));
+  await db.delete(patients).where(eq(patients.id, id));
+  return { deleted: true, filesRemoved };
 }

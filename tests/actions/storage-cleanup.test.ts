@@ -31,6 +31,12 @@ describe('deletePatientAction', () => {
     expect(storage.files.size).toBe(0);
   });
 
+  it('reports a storage failure and keeps the client', async () => {
+    storage.failNextRemovePrefix = true;
+    expect(await deletePatientAction(patientId, 'Asha Kulkarni')).toMatchObject({ ok: false });
+    expect(await getPatient(db, patientId)).toBeDefined();
+  });
+
   it('rejects an invalid or unknown client id', async () => {
     expect(await deletePatientAction('not-a-uuid', 'x')).toMatchObject({ ok: false });
     expect(await deletePatientAction('00000000-0000-4000-8000-000000000000', 'x')).toMatchObject({ ok: false });
@@ -50,6 +56,13 @@ describe('withdrawPhotoConsentAction', () => {
     const after = (await getPostureAssessment(db, a.id))!;
     expect(after.views.every((v) => v.filePath === null)).toBe(true);
     expect(after.photosDeletedAt).not.toBeNull();
+  });
+
+  it('reports photos it could not delete as an error (the physio can retry)', async () => {
+    const a = await addAssessment(db, patientId, '2026-10-04', {}, storage);
+    storage.failRemove.add(a.views[0].filePath!);
+    expect(await withdrawPhotoConsentAction(patientId)).toMatchObject({ ok: false, error: expect.stringContaining('1') });
+    storage.failRemove.clear();
   });
 
   it('rejects an invalid client id', async () => {

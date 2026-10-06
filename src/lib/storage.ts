@@ -48,7 +48,10 @@ export function localFileStorage(baseDir: string = LOCAL_UPLOADS_DIR): FileStora
     async removePrefix(prefix) {
       assertClientFolder(prefix);
       const target = safeTarget(prefix);
-      const entries = await readdir(target, { recursive: true, withFileTypes: true }).catch(() => []);
+      const entries = await readdir(target, { recursive: true, withFileTypes: true }).catch((err: NodeJS.ErrnoException) => {
+        if (err.code === 'ENOENT') return []; // no folder: nothing to delete
+        throw err;
+      });
       await rm(target, { recursive: true, force: true });
       return entries.filter((e) => e.isFile()).length;
     },

@@ -61,11 +61,12 @@ describe('deletePatientAndFiles', () => {
     expect(await db.select().from(shareLinks)).toHaveLength(0);
   });
 
-  it('still deletes the client when storage cleanup fails (files reported as unknown)', async () => {
+  it('keeps the client (so the physio can retry) when the files could not be deleted', async () => {
     await fillClient(patientId);
     storage.failNextRemovePrefix = true;
-    expect(await deletePatientAndFiles(db, storage, patientId)).toEqual({ deleted: true, filesRemoved: null });
-    expect(await db.select().from(patients).where(eq(patients.id, patientId))).toHaveLength(0);
+    await expect(deletePatientAndFiles(db, storage, patientId)).rejects.toThrow('storage down');
+    expect(await db.select().from(patients).where(eq(patients.id, patientId))).toHaveLength(1);
+    expect(await deletePatientAndFiles(db, storage, patientId)).toEqual({ deleted: true, filesRemoved: 7 }); // retry
   });
 
   it('reports nothing deleted for an unknown client and touches no files', async () => {
@@ -84,7 +85,7 @@ describe('deletePosturePhotos (consent withdrawn)', () => {
     const theirs = await addAssessment(db, otherId, '2026-10-04', {}, storage);
     const before = await getPostureAssessment(db, a2.id);
 
-    expect(await deletePosturePhotos(db, storage, patientId, now)).toBe(8);
+    expect(await deletePosturePhotos(db, storage, patientId, now)).toEqual({ deleted: 8, failed: 0 });
 
     for (const id of [a1.id, a2.id]) {
       const a = (await getPostureAssessment(db, id))!;
@@ -111,10 +112,23 @@ describe('deletePosturePhotos (consent withdrawn)', () => {
     expect(r.views.every((v) => v.photoUrl === null && v.overlay)).toBe(true);
   });
 
+  it('keeps the path of a photo it could not delete, so a retry finishes the job', async () => {
+    const a = await addAssessment(db, patientId, '2026-10-04', {}, storage);
+    const front = a.views.find((v) => v.view === 'front')!.filePath!;
+    storage.failRemove.add(front);
+    expect(await deletePosturePhotos(db, storage, patientId, now)).toEqual({ deleted: 3, failed: 1 });
+    const after = (await getPostureAssessment(db, a.id))!;
+    expect(after.views.filter((v) => v.filePath !== null).map((v) => v.filePath)).toEqual([front]);
+    expect(storage.files.has(front)).toBe(true);
+    storage.failRemove.clear();
+    expect(await deletePosturePhotos(db, storage, patientId, now)).toEqual({ deleted: 1, failed: 0 });
+    expect(storage.files.has(front)).toBe(false);
+  });
+
   it('is a no-op the second time', async () => {
     await addAssessment(db, patientId, '2026-10-04', {}, storage);
     await deletePosturePhotos(db, storage, patientId, now);
-    expect(await deletePosturePhotos(db, storage, patientId, new Date('2026-10-07T00:00:00Z'))).toBe(0);
+    expect(await deletePosturePhotos(db, storage, patientId, new Date('2026-10-07T00:00:00Z'))).toEqual({ deleted: 0, failed: 0 });
     const [a] = await listPostureAssessments(db, patientId);
     expect(a.photosDeletedAt).toEqual(now); // first withdrawal date kept
   });

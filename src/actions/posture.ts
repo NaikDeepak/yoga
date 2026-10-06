@@ -168,8 +168,11 @@ export async function withdrawPhotoConsentAction(
   await requireUser();
   if (!z.string().uuid().safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
-    const deleted = await deletePosturePhotos(getDb(), getStorage(), patientId, new Date());
+    const { deleted, failed } = await deletePosturePhotos(getDb(), getStorage(), patientId, new Date());
     revalidatePath(`/patients/${patientId}`, 'layout');
+    if (failed) {
+      return { ok: false, error: `${failed} photo(s) could not be deleted; please try again / ${failed} फोटो हटवता आले नाहीत; कृपया पुन्हा प्रयत्न करा` };
+    }
     return { ok: true, deleted };
   } catch (error) {
     console.error('Failed to withdraw photo consent:', error instanceof Error ? error.message : String(error));

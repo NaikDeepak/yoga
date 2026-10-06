@@ -213,29 +213,36 @@ export async function deletePostureAssessment(
 
 /**
  * The client withdrew photo consent: deletes all their posture photos but keeps every assessment's
- * points, measurements and scores (figures are drawn from the points). Stamps `photos_deleted_at`
- * (the first withdrawal is kept) and turns photos off on their posture share link, in one
- * transaction; files are removed afterwards, best effort. Returns how many photos were deleted.
+ * points, measurements and scores (figures are drawn from the points). Files first; only views whose
+ * file is gone get `file_path` nulled, so a photo that failed to delete keeps its path and a retry
+ * finishes the job. Stamps `photos_deleted_at` (the first withdrawal is kept) and turns photos off on
+ * their posture share link.
  */
-export async function deletePosturePhotos(db: Db, storage: FileStorage, patientId: string, now: Date): Promise<number> {
-  const paths = await db.transaction(async (tx) => {
-    const ids = (await tx.select({ id: postureAssessments.id }).from(postureAssessments)
-      .where(eq(postureAssessments.patientId, patientId)).for('update')).map((a) => a.id);
-    if (!ids.length) return [];
-    const rows = await tx.select({ filePath: postureViews.filePath }).from(postureViews)
-      .where(and(inArray(postureViews.assessmentId, ids), isNotNull(postureViews.filePath)));
-    await tx.update(postureViews).set({ filePath: null }).where(inArray(postureViews.assessmentId, ids));
-    await tx.update(postureAssessments).set({ photosDeletedAt: now })
-      .where(and(inArray(postureAssessments.id, ids), isNull(postureAssessments.photosDeletedAt)));
-    await tx.update(shareLinks).set({ includePhotos: false })
-      .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, 'posture')));
-    return rows.map((r) => r.filePath!);
-  });
-  // Only after the rows no longer point at them; best effort (logged as a count, no paths).
-  const results = await Promise.allSettled(paths.map((p) => storage.remove(p)));
-  const failed = results.filter((r) => r.status === 'rejected').length;
-  if (failed) console.error(`Posture photos withdrawn but ${failed} file(s) could not be removed`);
-  return paths.length;
+export async function deletePosturePhotos(
+  db: Db,
+  storage: FileStorage,
+  patientId: string,
+  now: Date,
+): Promise<{ deleted: number; failed: number }> {
+  const views = await db.select({ id: postureViews.id, assessmentId: postureViews.assessmentId, filePath: postureViews.filePath })
+    .from(postureViews)
+    .innerJoin(postureAssessments, eq(postureViews.assessmentId, postureAssessments.id))
+    .where(and(eq(postureAssessments.patientId, patientId), isNotNull(postureViews.filePath)));
+  const results = await Promise.allSettled(views.map((v) => storage.remove(v.filePath!)));
+  const gone = views.filter((_, i) => results[i].status === 'fulfilled');
+  const failed = views.length - gone.length;
+  if (failed) console.error(`Withdrawing photo consent: ${failed} file(s) could not be removed`); // count only
+
+  if (gone.length) {
+    await db.transaction(async (tx) => {
+      await tx.update(postureViews).set({ filePath: null }).where(inArray(postureViews.id, gone.map((v) => v.id)));
+      await tx.update(postureAssessments).set({ photosDeletedAt: now })
+        .where(and(inArray(postureAssessments.id, [...new Set(gone.map((v) => v.assessmentId))]), isNull(postureAssessments.photosDeletedAt)));
+      await tx.update(shareLinks).set({ includePhotos: false })
+        .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, 'posture')));
+    });
+  }
+  return { deleted: gone.length, failed };
 }
 
 /**
