@@ -18,12 +18,14 @@ export function TrendChart({
   const c = chartPoints(series, { width: PLOT_W, height: PLOT_H, min, max });
   if (!c.points.length) return null;
   const first = c.points[0], last = c.points[c.points.length - 1];
+  // Short, language-neutral summary for screen readers (not every point of a 30-day series).
+  const summary = `${label}: ${formatDueDate(first.date)} ${fmt(first.value)} → ${formatDueDate(last.date)} ${fmt(last.value)}`;
 
   return (
     <figure>
       <figcaption className="mb-1 text-xs font-medium text-muted-foreground">{label}</figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img"
-        aria-label={`${label}: ${c.points.map((p) => `${formatDueDate(p.date)} ${fmt(p.value)}`).join(', ')}`}>
+        aria-label={summary}>
         <g fill="currentColor" className="text-muted-foreground" fontSize="10">
           <text x={PAD.left - 6} y={PAD.top + 4} textAnchor="end">{fmt(c.max)}</text>
           <text x={PAD.left - 6} y={PAD.top + PLOT_H} textAnchor="end">{fmt(c.min)}</text>

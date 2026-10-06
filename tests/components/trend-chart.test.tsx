@@ -12,6 +12,7 @@ describe('TrendChart', () => {
     expect(container.querySelectorAll('circle')).toHaveLength(3);
     expect(container.querySelector('polyline')).toBeTruthy();
     expect(error).not.toHaveBeenCalled();
+    expect(container.querySelector('svg')!.getAttribute('aria-label')).toBe('Pain: 01 Sep 7 → 10 Sep 3');
     error.mockRestore();
   });
 
