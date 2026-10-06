@@ -35,6 +35,8 @@ export type PostureAssessmentSummary = PostureAssessmentRow & {
   markedCount: number;
   score: number | null;
   grade: Grade | null;
+  /** Views that still have a photo (0 once photo consent was withdrawn). */
+  photoCount: number;
 };
 
 /** Storage key for a view photo; retakes get a `version` suffix so the old file can be removed after commit. */
@@ -116,7 +118,8 @@ async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<P
     .where(inArray(postureViews.assessmentId, assessments.map((a) => a.id)));
 
   return assessments.map((a) => {
-    const combined = combineViews(views.filter((v) => v.assessmentId === a.id)
+    const own = views.filter((v) => v.assessmentId === a.id);
+    const combined = combineViews(own
       .map((v) => ({ view: v.view as PostureView, metrics: currentMetrics(v, a.heightCm) })));
     const { overall, grade } = scorePosture(combined);
     return {
@@ -125,6 +128,7 @@ async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<P
       markedCount: combined.filter((m) => m.severity === 'marked').length,
       score: overall,
       grade,
+      photoCount: own.filter((v) => v.filePath !== null).length,
     };
   });
 }

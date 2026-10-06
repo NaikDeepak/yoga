@@ -23,10 +23,10 @@ Roadmap: posture follow-up plan **E1 + E2** (`docs/superpowers/plans/2026-10-04-
 - **Where:** on the client's **Assessment tab**, in the posture section, a "Withdraw photo consent / फोटो संमती मागे घ्या" button with an AlertDialog confirmation. It only appears when the client has posture photos.
 - **What it deletes:** every posture photo file for that client.
 - **What it keeps:** the saved points (landmarks), measurements, scores, AI text and notes. The stick figures are drawn from the saved points, so reports, comparisons, the score trend and the progress link all keep working, just with no photo behind the figure.
-- **Recorded:** `posture_assessments.photos_deleted_at` is set on each affected assessment. The physio's report then says "Photos deleted on {date} (consent withdrawn)" in place of the photo.
-- **Shared posture links:** a link that was shared with photos now shows no photos. The client's page says "Photo not shared".
+- **Recorded:** `posture_assessments.photos_deleted_at` is set on each affected assessment (the first withdrawal date is kept). Each view with no photo says "Photo deleted (consent withdrawn)", and the Assessment tab notes "Photos deleted on {date}".
+- **Shared posture links:** `include_photos` is switched off on the client's posture link, so the physio's status line says "without photos" and the client's page says "Photo not shared".
 - **New assessments:** these still need the consent tick as today (`consent_at`), which is fresh consent.
-- **Retakes:** "Retake views" on an assessment whose photos were deleted uploads new photos with fresh consent. That assessment's `photos_deleted_at` is cleared. Those are the only photos it has.
+- **Retakes:** "Retake views" after withdrawal stores new photos under fresh consent. `photos_deleted_at` is kept as the record of the withdrawal: each view shows its photo if it has one, else "Photo deleted (consent withdrawn)". A partial retake leaves the other views' photos deleted, so clearing the flag would be wrong.
 
 ## Data model (migration 0021)
 

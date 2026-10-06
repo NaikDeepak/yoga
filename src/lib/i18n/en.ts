@@ -615,6 +615,9 @@ export const en = {
       compareWithPrevious: 'Compare with previous',
       compareFirstLatest: 'Compare first vs latest',
       counts: '{marked} marked · {mild} mild',
+      withdraw: 'Withdraw photo consent',
+      withdrawConfirm: "Deletes all {count} posture photos of this client. Measurements, scores and stick figures stay. New assessments will ask for consent again. This can't be undone.",
+      photosDeleted: 'Photos deleted on {date} (consent withdrawn)',
     },
     compare: {
       title: 'Posture Progress',
@@ -833,6 +836,13 @@ export const en = {
       pelvicTilt: 'Pelvic tilt',
       kneeSagittal: 'Knee (side view)',
     },
+  },
+  deleteClient: {
+    title: 'Delete client',
+    warning: "Permanently deletes this client and everything about them: visits, assessments, posture reports, fees, documents, photos and shared links. This can't be undone.",
+    typeName: 'Type "{name}" to confirm',
+    button: 'Delete client permanently',
+    deleting: 'Deleting…',
   },
   deleteButton: {
     confirmDelete: 'Are you sure?',

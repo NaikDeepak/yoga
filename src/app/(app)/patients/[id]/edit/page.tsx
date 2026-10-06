@@ -4,6 +4,7 @@ import { getPatient } from '@/data/patients';
 import { updatePatientAction } from '@/actions/patients';
 import { PageHeader } from '@/components/PageHeader';
 import { PatientForm } from '@/components/PatientForm';
+import { DeleteClientCard } from '@/components/DeleteClientCard';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
 
@@ -22,6 +23,7 @@ export default async function EditPatientPage({
         subtitle={`${patient.fullName} · ${patient.patientCode}`}
       />
       <PatientForm action={update} defaultValues={patient} submitLabel={t.common.save} />
+      <DeleteClientCard patientId={id} fullName={patient.fullName} />
     </div>
   );
 }

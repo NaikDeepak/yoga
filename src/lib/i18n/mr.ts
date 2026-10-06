@@ -617,6 +617,9 @@ export const mr: Translations = {
       compareWithPrevious: 'मागील मूल्यांकनाशी तुलना',
       compareFirstLatest: 'पहिले विरुद्ध नवीनतम तुलना',
       counts: '{marked} जास्त · {mild} सौम्य',
+      withdraw: 'फोटो संमती मागे घ्या',
+      withdrawConfirm: 'या साधकाचे सर्व {count} पोश्चर फोटो हटवले जातील. मोजमाप, गुण आणि आकृत्या राहतील. नवीन मूल्यांकनासाठी पुन्हा संमती घेतली जाईल. हे परत करता येणार नाही.',
+      photosDeleted: '{date} रोजी फोटो हटवले (संमती मागे घेतली)',
     },
     compare: {
       title: 'पोश्चर प्रगती',
@@ -776,6 +779,13 @@ export const mr: Translations = {
       pelvicTilt: 'पेल्विसचा कल',
       kneeSagittal: 'गुडघा (बाजूने)',
     },
+  },
+  deleteClient: {
+    title: 'साधक हटवा',
+    warning: 'हा साधक आणि त्याची सर्व माहिती कायमची हटवली जाईल: भेटी, मूल्यांकने, पोश्चर अहवाल, फी, कागदपत्रे, फोटो आणि पाठवलेल्या लिंक. हे परत करता येणार नाही.',
+    typeName: 'खात्री करण्यासाठी "{name}" लिहा',
+    button: 'साधक कायमचा हटवा',
+    deleting: 'हटवत आहे…',
   },
   deleteButton: {
     confirmDelete: 'आपण खात्री आहात का?',
