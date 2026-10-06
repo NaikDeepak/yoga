@@ -32,6 +32,7 @@ npm run dev:phone         # same over HTTPS on your Wi-Fi, to use a phone's came
 - [docs/environments.md](docs/environments.md): where is what, environment variables, Vercel env how-to, release, troubleshooting
 - [docs/setup.md](docs/setup.md): first-time setup of Neon / R2 / Supabase / Vercel, manual QA checklist
 - [docs/architecture.md](docs/architecture.md): code index (module map, invariants, how to add a feature)
+- [docs/backlog.md](docs/backlog.md): what's next: open items, decisions waiting on people, roadmap
 - [docs/superpowers/specs/](docs/superpowers/specs/): design spec for each feature
 
 ## Commands
