@@ -13,7 +13,7 @@ Roadmap: posture follow-up plan **C4** (FlexifyMe shows an "ideal posture" pictu
 ## Design
 - `src/lib/ideal-figures.ts` holds one landmark set per shot (4 posture views and 4 flexibility shots):
   - **standing posture views:** ear, shoulder, hip, knee and ankle on one plumb line, with shoulders and hips level and symmetric;
-  - **shoulder extension:** arms 65° behind the trunk;
+  - **shoulder extension:** arms 60° behind the trunk;
   - **forward fold:** trunk 40° from the thigh, knees straight, palms on the floor;
   - **butterfly:** knees on the floor, heels close in.
 - The sets are drawn with the **same overlay code** as a real capture, and coloured by the same metrics, so measure lines on the posture views show green.

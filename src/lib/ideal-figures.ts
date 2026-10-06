@@ -35,8 +35,9 @@ const SIDE: Px = {
   [LM.LEFT_HEEL]: [470, 1880], [LM.LEFT_FOOT_INDEX]: [560, 1900],
 };
 
-// Shoulder extension: the side figure with straight arms swept 65° behind the trunk (target ≥ 60°).
-const SHOULDER_EXT: Px = { ...SIDE, [LM.LEFT_ELBOW]: [273, 606], [LM.LEFT_WRIST]: [92, 690] };
+// Shoulder extension: the side figure with straight arms swept 60° behind the trunk (the score-100
+// target and the top of the normal 50–60° range).
+const SHOULDER_EXT: Px = { ...SIDE, [LM.LEFT_ELBOW]: [283, 625], [LM.LEFT_WRIST]: [110, 725] };
 
 // Forward fold: knees straight, trunk folded to 40° from the thigh (target ≤ 45°), palms on the floor.
 const FOLD: Px = {
