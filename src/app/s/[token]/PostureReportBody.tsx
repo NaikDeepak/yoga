@@ -76,7 +76,7 @@ export function PostureReportBody({ report, t }: { report: SharedPostureReport; 
 
       <section>
         <SectionHeader>{s.findingsTitle}</SectionHeader>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 print:grid-cols-2">
           {report.views.map((v) => (
             <figure key={v.view}>
               {/* Their figure beside the ideal one for the same view. */}

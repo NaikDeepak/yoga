@@ -9,8 +9,9 @@ import { PostureFigure } from './PostureFigure';
 import { IdealFigure } from './IdealFigure';
 import { BRAND, FLEX_BAND_COLOR, SectionHeader } from './ReportParts';
 
-/** Which ideal pose illustrates each test (one side is enough for shoulder extension). */
-const IDEAL_SHOT: Record<FlexTest, FlexShot> = { shoulderExtension: 'shoulderExtRight', forwardFold: 'forwardFold', butterfly: 'butterfly' };
+/** The ideal pose beside a test: one shoulder side is enough — the right, unless only the left was captured. */
+const idealShotFor = (test: FlexTest, taken: FlexShot[]): FlexShot =>
+  test !== 'shoulderExtension' ? test : taken.includes('shoulderExtRight') ? 'shoulderExtRight' : 'shoulderExtLeft';
 const SHOTS_OF: Record<FlexTest, FlexShot[]> = {
   shoulderExtension: ['shoulderExtLeft', 'shoulderExtRight'],
   forwardFold: ['forwardFold'],
@@ -104,7 +105,7 @@ function TestCard({
             noPhotoLabel={s.filePath === null ? t.posture.photoDeleted : t.posture.noPhoto}
           />
         ))}
-        {shots.length > 0 && <IdealFigure shot={IDEAL_SHOT[test]} label={t.posture.ideal} />}
+        {shots.length > 0 && <IdealFigure shot={idealShotFor(test, shots.map((s) => s.shot))} label={t.posture.ideal} />}
       </div>
       {result && result.score !== null && result.band ? (
         <p className="mt-3 flex items-baseline gap-2">

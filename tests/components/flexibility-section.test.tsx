@@ -41,6 +41,15 @@ describe('FlexibilitySection', () => {
     expect(screen.getAllByRole('img', { name: en.posture.ideal })).toHaveLength(3);
   });
 
+  it('shows the left-side shoulder ideal when only the left side was captured', () => {
+    const f = flexibility();
+    f.shots = f.shots.filter((s) => s.shot !== 'shoulderExtRight');
+    const { container } = render(<FlexibilitySection flexibility={f} photoUrls={{}} captureHref={null} t={en} />);
+    const srcs = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'));
+    expect(srcs).toContain('/ideal/shoulderExtLeft.jpg');
+    expect(srcs).not.toContain('/ideal/shoulderExtRight.jpg');
+  });
+
   it('shows quality flags', () => {
     const lms = fold(60, [700, 1700], [620, 1420]);
     const f = flexibility();

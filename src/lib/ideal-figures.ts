@@ -6,6 +6,7 @@ import { computeViewMetrics, LM, POSE_LANDMARK_COUNT, POSTURE_VIEWS, type Landma
 import { FLEX_FINGER, FLEX_SHOTS } from './flexibility';
 import { isFlexShot, shotOverlay, type CaptureShot } from './capture-shots';
 import type { Overlay } from './posture-overlay';
+import { IDEAL_PHOTOS } from './ideal-photos';
 
 export const IDEAL_SHOTS: readonly CaptureShot[] = [...POSTURE_VIEWS, ...FLEX_SHOTS];
 
@@ -84,6 +85,29 @@ export function idealFigure(shot: CaptureShot): { overlay: Overlay; metrics: Met
   const lms = idealLandmarks(shot);
   const size = idealSize(shot);
   return {
+    overlay: shotOverlay(shot, lms, size.width, size.height),
+    metrics: isFlexShot(shot) ? [] : computeViewMetrics(shot, lms, size),
+  };
+}
+
+/**
+ * The ideal figure placed on its reference photo (`IDEAL_PHOTOS`): the same landmarks under one uniform
+ * scale + shift, so every measure and score is unchanged; drawn in the photo's pixel space.
+ */
+export function idealPhotoLandmarks(shot: CaptureShot): Landmark[] {
+  const photo = IDEAL_PHOTOS[shot];
+  const size = idealSize(shot);
+  return idealLandmarks(shot).map((l) => (l.visibility
+    ? { x: (l.x * size.width * photo.scale + photo.dx) / photo.width, y: (l.y * size.height * photo.scale + photo.dy) / photo.height, visibility: 1 }
+    : l));
+}
+
+export function idealPhotoFigure(shot: CaptureShot): { src: string; overlay: Overlay; metrics: Metric[] } {
+  const photo = IDEAL_PHOTOS[shot];
+  const lms = idealPhotoLandmarks(shot);
+  const size = { width: photo.width, height: photo.height };
+  return {
+    src: photo.src,
     overlay: shotOverlay(shot, lms, size.width, size.height),
     metrics: isFlexShot(shot) ? [] : computeViewMetrics(shot, lms, size),
   };

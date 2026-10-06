@@ -27,7 +27,14 @@ Roadmap: posture follow-up plan **C4** (FlexifyMe shows an "ideal posture" pictu
   - the client page shows one pair per row on phones;
   - flexibility cards show the shot(s) then the ideal.
 
+## Update: real-person reference photos (Deepak, 2026-10-06)
+- **Source:** Deepak asked for a real person behind the skeleton. Free stock was tried first and covered only 2 of the 6 poses, with different people, so all six were AI-generated (Gemini `gemini-3-pro-image`): one model, outfit and studio.
+- **Approach:** "photo + our ideal skeleton".
+  - Measured with our own rules, the photos weren't ideal (2° head tilt, shoulder extension 32°, …), so the skeleton drawn is still **our ideal**, fitted onto each photo with one uniform scale and shift (`scripts/ideal-photos/fit.mts` → `src/lib/ideal-photos.ts`).
+  - Uniform scaling keeps every angle and proportion, and tests prove the fitted figures still measure normal / score 100 and land inside the photo.
+- **Known gap:** shoulder extension. The model's arms reach about 32° while the ideal line shows 60°.
+- **Pipeline and regeneration:** `scripts/ideal-photos/README.md`.
+
 ## Out
 - A ghost "ideal" over the client's own skeleton (the option not chosen).
-- Photos of a model.
 - Ideals in the progress report link (it is numbers only).
