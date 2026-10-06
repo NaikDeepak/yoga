@@ -7,7 +7,9 @@ import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { getStorage } from '@/lib/storage';
 import { MAX_FILE_BYTES, validatePhoto } from '@/lib/files';
-import { firstError, postureAssessmentSchema, postureRetakeSchema } from '@/lib/validation';
+import { firstError, flexibilityShotsSchema, postureAssessmentSchema, postureRetakeSchema } from '@/lib/validation';
+import { saveFlexibilityShots } from '@/data/flexibility';
+import type { FlexShot } from '@/lib/flexibility';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { getPatient } from '@/data/patients';
 import {
@@ -36,8 +38,8 @@ function parsePayload(formData: FormData): unknown {
 }
 
 /** `photo_<view>` files for the given views: JPG/PNG, non-empty, ≤4 MB combined (Vercel body cap). */
-function collectPhotos(formData: FormData, views: PostureView[]): Map<PostureView, File> | ActionResult {
-  const photos = new Map<PostureView, File>();
+function collectPhotos<K extends PostureView | FlexShot>(formData: FormData, views: K[]): Map<K, File> | ActionResult {
+  const photos = new Map<K, File>();
   for (const view of views) {
     const photo = formData.get(`photo_${view}`);
     if (!(photo instanceof File) || photo.size === 0) {
@@ -138,6 +140,41 @@ export async function replacePostureViewsAction(
     return SAVE_FAILED;
   }
   if (!updated) return NOT_FOUND;
+
+  revalidatePath(`/patients/${patientId}`);
+  redirect(`/patients/${patientId}/posture/${assessmentId}`);
+}
+
+/**
+ * Flexibility tests for an existing assessment (first capture or retakes). Form: `payload` (JSON
+ * `{ shots: [...] }`) and `photo_<shot>` for each. Consent was recorded with the assessment. Redirects
+ * back to the report on success.
+ */
+export async function saveFlexibilityTestsAction(
+  patientId: string,
+  assessmentId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireUser();
+  if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
+    return INVALID_PARAMS;
+  }
+  const raw = parsePayload(formData);
+  if (raw === undefined) return INVALID_DATA;
+  const parsed = flexibilityShotsSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  const photos = collectPhotos(formData, parsed.data.shots.map((s) => s.shot));
+  if (!(photos instanceof Map)) return photos;
+
+  let saved;
+  try {
+    saved = await saveFlexibilityShots(getDb(), getStorage(), patientId, assessmentId, parsed.data.shots.map((s) => ({
+      ...s, photo: photos.get(s.shot)!,
+    })));
+  } catch {
+    return { ok: false, error: 'Could not save flexibility tests / लवचिकता चाचण्या जतन करता आल्या नाहीत' };
+  }
+  if (!saved) return NOT_FOUND;
 
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);
