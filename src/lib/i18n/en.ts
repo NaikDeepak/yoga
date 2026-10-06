@@ -45,6 +45,18 @@ export const en = {
     ] as readonly string[],
   },
   dashboard: {
+    quiet: {
+      title: 'Quiet clients',
+      subtitle: 'Exercise link live, but no check-in for 3+ days',
+      empty: 'Everyone with an exercise link has checked in recently.',
+      days: '{days} days quiet',
+      lastCheckin: 'last check-in {date}',
+      never: 'never checked in',
+      nudge: 'Nudge',
+      nudgedToday: 'nudged today',
+      nudgedDaysAgo: 'nudged {days} days ago',
+      more: '+{count} more — see each client’s Treatment tab',
+    },
     title: 'Dashboard',
     subtitle: 'Manage your clinic, clients, and tasks with ease.',
     importData: 'Import Data',

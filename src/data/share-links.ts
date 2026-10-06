@@ -88,3 +88,11 @@ export async function firstShareDate(db: Db, patientId: string, kind: ShareLinkK
     .limit(1);
   return row ? getISTDateString(0, row.createdAt) : null;
 }
+
+/** "WhatsApp nudge" tapped for a quiet client: stamps their live exercise link. False if there is none. */
+export async function recordNudge(db: Db, patientId: string, now: Date): Promise<boolean> {
+  const rows = await db.update(shareLinks).set({ nudgedAt: now })
+    .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, 'exercises'), live(now)))
+    .returning({ id: shareLinks.id });
+  return rows.length > 0;
+}

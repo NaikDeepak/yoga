@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb } from '../helpers/action-mocks';
 import { requireUser } from '@/lib/auth';
-import { createExerciseShareLinkAction, revokeExerciseShareLinkAction } from '@/actions/share-links';
+import { createExerciseShareLinkAction, recordNudgeAction, revokeExerciseShareLinkAction } from '@/actions/share-links';
 import { listAllExercises, savePrescribedExercises, getSharedExerciseProgramme } from '@/data/exercises';
 import { activeShareLink, resolveAnyShareLink } from '@/data/share-links';
 import { createPatient } from '@/data/patients';
@@ -57,5 +57,23 @@ describe('revokeExerciseShareLinkAction', () => {
     expect(await activeShareLink(db, patientId, 'exercises', new Date())).not.toBeNull();
     expect(await revokeExerciseShareLinkAction(patientId)).toEqual({ ok: true });
     expect(await activeShareLink(db, patientId, 'exercises', new Date())).toBeNull();
+  });
+});
+
+describe('recordNudgeAction', () => {
+  it('stamps the live exercise link', async () => {
+    await createExerciseShareLinkAction(patientId);
+    expect(await recordNudgeAction(patientId)).toEqual({ ok: true });
+    expect((await activeShareLink(db, patientId, 'exercises', new Date()))?.nudgedAt).toBeInstanceOf(Date);
+  });
+
+  it('fails without a live link, or for an invalid id', async () => {
+    expect(await recordNudgeAction(patientId)).toMatchObject({ ok: false });
+    expect(await recordNudgeAction('nope')).toMatchObject({ ok: false });
+  });
+
+  it('requires a signed-in user', async () => {
+    vi.mocked(requireUser).mockRejectedValueOnce(new Error('REDIRECT:/login'));
+    await expect(recordNudgeAction(patientId)).rejects.toThrow('REDIRECT:/login');
   });
 });

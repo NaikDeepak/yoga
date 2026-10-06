@@ -8,6 +8,7 @@ import {
   exerciseShareMessage,
   postureShareMessage,
   progressShareMessage,
+  quietNudgeMessage,
   type DigestEntry,
 } from '@/lib/whatsapp';
 import { CLINIC } from '@/lib/clinic';
@@ -135,5 +136,16 @@ describe('progressShareMessage', () => {
     expect(msg).toContain('https://clinic.example/s/tok');
     expect(msg).toContain('progress');
     expect(msg).not.toMatch(/pain|weight|kg|score|दुखी|वजन/i);
+  });
+});
+
+describe('quietNudgeMessage', () => {
+  it('a gentle bilingual reminder with the first name only, no health details', () => {
+    const msg = quietNudgeMessage('Asha');
+    expect(msg).toContain('Asha');
+    expect(msg).toContain("Pawar's Yog Therapy");
+    expect(msg).toMatch(/exercise/i);
+    expect(msg).toContain('व्यायाम');
+    expect(msg).not.toMatch(/pain|back|knee|neck|weight|दुख/i);
   });
 });
