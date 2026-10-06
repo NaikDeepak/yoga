@@ -3,6 +3,7 @@ import { patients, type Patient } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { nextPatientCode } from '@/lib/patient-code';
 import type { PatientInput } from '@/lib/validation';
+import { clientFolder, type FileStorage } from '@/lib/storage';
 
 export async function createPatient(db: Db, input: PatientInput): Promise<Patient> {
   return db.transaction(async (tx) => {
@@ -69,6 +70,20 @@ export async function countPatients(db: Db, branch?: string, q?: string): Promis
   return value;
 }
 
-export async function deletePatient(db: Db, id: string): Promise<void> {
+/**
+ * Permanently erases a client: first every file in their storage folder — by prefix, so files the DB
+ * no longer knows about (replaced profile photos, leftovers) go too — then the row (every child
+ * table cascades, so their share links stop at once). Files first: if storage fails this throws and
+ * the client is kept, so trying again finishes the job instead of leaving files nobody can find.
+ */
+export async function deletePatientAndFiles(
+  db: Db,
+  storage: FileStorage,
+  id: string,
+): Promise<{ deleted: boolean; filesRemoved: number }> {
+  const [exists] = await db.select({ id: patients.id }).from(patients).where(eq(patients.id, id));
+  if (!exists) return { deleted: false, filesRemoved: 0 };
+  const filesRemoved = await storage.removePrefix(clientFolder(id));
   await db.delete(patients).where(eq(patients.id, id));
+  return { deleted: true, filesRemoved };
 }

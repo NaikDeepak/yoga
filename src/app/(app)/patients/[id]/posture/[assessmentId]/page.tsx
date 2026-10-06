@@ -67,7 +67,8 @@ export default async function PostureReportPage({
     edited: v.landmarksEdited,
     cameraCheck: v.cameraCheck,
     overlay: buildOverlay(v.view as PostureView, v.landmarks, v.imageWidth, v.imageHeight),
-    photoUrl: await storage.createSignedUrl(v.filePath).catch(() => null),
+    photoUrl: v.filePath ? await storage.createSignedUrl(v.filePath).catch(() => null) : null,
+    photoDeleted: v.filePath === null,
   })));
 
   // Front/back and left/right readings of the same measure are averaged for scoring and patterns.
@@ -299,7 +300,7 @@ export default async function PostureReportPage({
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 print:grid-cols-4">
         {views.map((v) => (
           <figure key={v.view} className="print:break-inside-avoid">
-            <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={p.noPhoto} />
+            <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={v.photoDeleted ? p.photoDeleted : p.noPhoto} />
             <figcaption className="mt-2">
               <p className="text-center text-sm font-semibold" style={{ color: BRAND.green }}>{ins.viewNames[v.view]}</p>
               <ul className="mt-2 space-y-1 text-xs">

@@ -35,6 +35,7 @@ import { isPostureEnabled } from '@/lib/features';
 import { scoreColor } from '@/components/posture/ReportParts';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
+import { withdrawPhotoConsentAction } from '@/actions/posture';
 import { InlineForm } from '@/components/InlineForm';
 import { PatientHeader } from '@/components/PatientHeader';
 import { TabDropdown } from '@/components/TabDropdown';
@@ -731,6 +732,10 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
   const existing = await getLifestyleAssessment(getDb(), patientId);
   const showPosture = isPostureEnabled();
   const postures = showPosture ? await listPostureAssessments(getDb(), patientId) : []; // newest first
+  const photoCount = postures.reduce((n, a) => n + a.photoCount, 0);
+  // Earliest withdrawal (IST day), for the note under the history.
+  const withdrawnAt = postures.flatMap((a) => (a.photosDeletedAt ? [a.photosDeletedAt.getTime()] : []));
+  const photosDeletedOn = withdrawnAt.length ? getISTDateString(0, Math.min(...withdrawnAt)) : null;
   const compareHref = (beforeId: string, afterId: string) =>
     `/patients/${patientId}/posture/compare?a=${beforeId}&b=${afterId}`;
 
@@ -785,6 +790,18 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
               <Button asChild size="sm" variant="outline">
                 <Link href={compareHref(postures[postures.length - 1].id, postures[0].id)}>{t.posture.history.compareFirstLatest}</Link>
               </Button>
+            )}
+            {(photoCount > 0 || photosDeletedOn) && (
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs text-muted-foreground">
+                <span>{photosDeletedOn && t.posture.history.photosDeleted.replace('{date}', formatFullDate(photosDeletedOn))}</span>
+                {photoCount > 0 && (
+                  <DeleteButton
+                    action={withdrawPhotoConsentAction.bind(null, patientId)}
+                    label={t.posture.history.withdraw}
+                    confirmText={t.posture.history.withdrawConfirm.replace('{count}', String(photoCount))}
+                  />
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

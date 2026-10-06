@@ -4,18 +4,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const fakeR2Upload = vi.fn().mockResolvedValue(undefined);
 const fakeR2Remove = vi.fn().mockResolvedValue(undefined);
 const fakeR2SignedUrl = vi.fn().mockResolvedValue('https://r2/signed');
+const fakeR2RemovePrefix = vi.fn().mockResolvedValue(0);
 vi.mock('@/lib/r2-storage', () => ({
   r2Storage: () => ({
     upload: fakeR2Upload,
     remove: fakeR2Remove,
     createSignedUrl: fakeR2SignedUrl,
+    removePrefix: fakeR2RemovePrefix,
   }),
 }));
 
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { r2Storage, getStorage, localFileStorage } from '@/lib/storage';
+import { r2Storage, getStorage, localFileStorage, clientFolder } from '@/lib/storage';
 
 
 const file = () => new File([new Uint8Array([1])], 'a.pdf', { type: 'application/pdf' });
@@ -69,6 +71,20 @@ describe('localFileStorage', () => {
 
   it('remove tolerates missing files', async () => {
     await expect(localFileStorage(dir).remove('does/not/exist.pdf')).resolves.toBeUndefined();
+  });
+
+  it("removePrefix deletes one client's folder only, and counts the files", async () => {
+    const storage = localFileStorage(dir);
+    const a = clientFolder('11111111-1111-4111-8111-111111111111');
+    const b = clientFolder('22222222-2222-4222-8222-222222222222');
+    await storage.upload(`${a}photo-1.jpg`, file());
+    await storage.upload(`${a}posture/x/front.jpg`, file());
+    await storage.upload(`${b}photo-1.jpg`, file());
+    expect(await storage.removePrefix(a)).toBe(2);
+    await expect(stat(join(dir, a))).rejects.toThrow();
+    expect((await stat(join(dir, `${b}photo-1.jpg`))).isFile()).toBe(true);
+    expect(await storage.removePrefix(a)).toBe(0); // already gone
+    await expect(storage.removePrefix('patients/')).rejects.toThrow('Invalid storage prefix');
   });
 
   it('rejects path traversal, absolute paths, and backslashes', async () => {

@@ -64,9 +64,9 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 
 ### Phase 2 — workflow (≈3–4 days)
 5. ✅ **C1 Prescribe from report** (done — `feat/posture-prescribe`; appends at library defaults instead of opening the form) — "Add to prescription" per focus category (pre-selects library exercises of that category in the existing prescription form / `savePrescribedExercisesAction`).
-6. **C2 Share** — signed short-lived link or PDF; WhatsApp deep link via `src/lib/whatsapp.ts` (no PHI in the message text beyond the link).
+6. ✅ **C2 Share** (done as client share links — specs `2026-10-05-share-posture-report-design.md`, `2026-10-05-progress-report-link-design.md`) — signed short-lived link or PDF; WhatsApp deep link via `src/lib/whatsapp.ts` (no PHI in the message text beyond the link).
 7. ✅ **C3 + C7 Score on Overview, report client context** (spec `2026-10-05-posture-score-overview-design.md`, branch `feat/posture-overview-score`): latest score + trend on the Overview tab and client list; report gets weight/BMI/goal/pain and BMI + stress gauges.
-8. **E1 + E2 storage cleanup** — delete posture + document files when a client is deleted (collect paths before the cascade); "withdraw photo consent" deletes photos and blanks `file_path` while keeping metrics if the client agrees.
+8. ✅ **E1 + E2 storage cleanup** (done — `feat/storage-cleanup`, spec `2026-10-06-storage-cleanup-design.md`: Delete client wipes `patients/<id>/`; withdraw consent deletes all of a client's posture photos, keeps metrics) — delete posture + document files when a client is deleted (collect paths before the cascade); "withdraw photo consent" deletes photos and blanks `file_path` while keeping metrics if the client agrees.
 9. ✅ **E3** — seed exercises in mock mode (done with C1: `seedExercises` runs at mock DB startup).
 
 ### Phase 3 — accuracy (needs real-device data)
