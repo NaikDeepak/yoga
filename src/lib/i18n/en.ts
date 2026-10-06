@@ -47,15 +47,16 @@ export const en = {
   dashboard: {
     quiet: {
       title: 'Quiet clients',
-      subtitle: 'Exercise link live, but no check-in for 3+ days',
+      subtitle: 'Exercise link live, but no check-in for {days}+ days',
       empty: 'Everyone with an exercise link has checked in recently.',
       days: '{days} days quiet',
       lastCheckin: 'last check-in {date}',
       never: 'never checked in',
       nudge: 'Nudge',
       nudgedToday: 'nudged today',
+      nudgedYesterday: 'nudged yesterday',
       nudgedDaysAgo: 'nudged {days} days ago',
-      more: '+{count} more — see each client’s Treatment tab',
+      nudgeFailed: 'Could not record the nudge — {error}',
     },
     title: 'Dashboard',
     subtitle: 'Manage your clinic, clients, and tasks with ease.',

@@ -1,15 +1,15 @@
 // Clients who have stopped logging their home exercises (spec 2026-10-06-quiet-client-alerts), for the
 // dashboard card. Same rule and threshold as the Treatment tab's Home exercise card.
-import { and, eq, gt, isNull, max } from 'drizzle-orm';
+import { and, eq, inArray, max } from 'drizzle-orm';
 import { exerciseCheckins, patients, shareLinks } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { getISTDateString } from '@/lib/dates';
 import { QUIET_AFTER_DAYS, quietDays } from '@/lib/adherence';
+import { live } from './share-links';
 
 export interface QuietClient {
   patientId: string;
   fullName: string;
-  patientCode: string;
   mobile: string;
   quietDays: number;
   /** Latest check-in ever, or null if they never checked in. */
@@ -26,11 +26,14 @@ export async function listQuietClients(
   db: Db,
   today: string,
   now: Date,
-  { branch, limit = 8 }: { branch?: string; limit?: number } = {},
+  { branch, limit = Infinity }: { branch?: string; limit?: number } = {},
 ): Promise<{ clients: QuietClient[]; total: number }> {
+  const liveExercise = and(eq(shareLinks.kind, 'exercises'), live(now));
+  // Latest check-in, only for clients who have a live exercise link (not the whole check-in history).
   const lastCheckins = db
     .select({ patientId: exerciseCheckins.patientId, last: max(exerciseCheckins.checkinDate).as('last') })
     .from(exerciseCheckins)
+    .where(inArray(exerciseCheckins.patientId, db.select({ id: shareLinks.patientId }).from(shareLinks).where(liveExercise)))
     .groupBy(exerciseCheckins.patientId)
     .as('last_checkins');
 
@@ -38,7 +41,6 @@ export async function listQuietClients(
     .select({
       patientId: patients.id,
       fullName: patients.fullName,
-      patientCode: patients.patientCode,
       mobile: patients.mobile,
       sharedAt: shareLinks.createdAt,
       nudgedAt: shareLinks.nudgedAt,
@@ -47,20 +49,14 @@ export async function listQuietClients(
     .from(shareLinks)
     .innerJoin(patients, eq(patients.id, shareLinks.patientId))
     .leftJoin(lastCheckins, eq(lastCheckins.patientId, patients.id))
-    .where(and(
-      eq(shareLinks.kind, 'exercises'),
-      isNull(shareLinks.revokedAt),
-      gt(shareLinks.expiresAt, now),
-      branch ? eq(patients.branch, branch) : undefined,
-    ));
+    .where(and(liveExercise, branch ? eq(patients.branch, branch) : undefined));
 
   const quiet = rows
     .map((r) => ({
       patientId: r.patientId,
       fullName: r.fullName,
-      patientCode: r.patientCode,
       mobile: r.mobile,
-      quietDays: quietDays(today, r.lastCheckin, getISTDateString(0, r.sharedAt)) ?? 0,
+      quietDays: quietDays(today, r.lastCheckin, getISTDateString(0, r.sharedAt))!, // non-null: a live link is passed
       lastCheckin: r.lastCheckin,
       nudgedAt: r.nudgedAt,
     }))

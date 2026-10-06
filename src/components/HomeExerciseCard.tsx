@@ -6,8 +6,6 @@ import { adherence, dayStrip, painSeries, QUIET_AFTER_DAYS, quietDays } from '@/
 import { formatDueDate, formatFullDate } from '@/lib/dates';
 import type { Translations } from '@/lib/i18n/en';
 
-/** Days without a check-in (while a link is live) before the card flags it. */
-
 /** Treatment tab: adherence and home pain from the client's daily check-ins (last 30 days). */
 export function HomeExerciseCard({ checkins, lastCheckin, today, since, liveLinkSince, t }: {
   checkins: Checkin[]; // last 30 days, oldest first

@@ -277,7 +277,7 @@ export default async function DashboardPage({
       {/* Bottom Row */}
       <div className="grid gap-6 sm:grid-cols-2">
         {/* Quiet clients: home check-ins stopped, one-tap WhatsApp nudge */}
-        <QuietClientsCard clients={quiet.clients} total={quiet.total} today={today} t={t} />
+        <QuietClientsCard clients={quiet.clients} today={today} t={t} className="sm:col-span-2" />
 
         {/* Pending Assessments */}
         <Card className="rounded-2xl shadow-sm border-border">

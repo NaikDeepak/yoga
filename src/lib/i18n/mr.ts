@@ -49,15 +49,16 @@ export const mr: Translations = {
   dashboard: {
     quiet: {
       title: 'शांत साधक',
-      subtitle: 'व्यायाम लिंक सुरू आहे, पण ३+ दिवस नोंद नाही',
+      subtitle: 'व्यायाम लिंक सुरू आहे, पण {days}+ दिवस नोंद नाही',
       empty: 'व्यायाम लिंक असलेल्या सर्वांनी अलीकडे नोंद केली आहे.',
       days: '{days} दिवस नोंद नाही',
       lastCheckin: 'शेवटची नोंद {date}',
       never: 'कधीही नोंद नाही',
       nudge: 'आठवण',
       nudgedToday: 'आज आठवण दिली',
+      nudgedYesterday: 'काल आठवण दिली',
       nudgedDaysAgo: '{days} दिवसांपूर्वी आठवण दिली',
-      more: '+{count} आणखी — प्रत्येक साधकाचा उपचार टॅब पाहा',
+      nudgeFailed: 'आठवण नोंदवता आली नाही — {error}',
     },
     title: 'डॅशबोर्ड',
     subtitle: 'आपले क्लिनिक, साधक आणि कार्ये सहजपणे व्यवस्थापित करा.',

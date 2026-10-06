@@ -4,7 +4,8 @@ import type { Db } from '@/db/types';
 import { hashShareToken, newShareToken, shareLinkExpiry } from '@/lib/share-token';
 import { getISTDateString } from '@/lib/dates';
 
-const live = (now: Date) => and(isNull(shareLinks.revokedAt), gt(shareLinks.expiresAt, now));
+/** Not revoked and not expired. */
+export const live = (now: Date) => and(isNull(shareLinks.revokedAt), gt(shareLinks.expiresAt, now));
 
 /**
  * New link for a client; the previous one of the same kind stops working (only the hash is stored,

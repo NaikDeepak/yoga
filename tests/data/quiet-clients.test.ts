@@ -57,11 +57,12 @@ describe('listQuietClients', () => {
     expect(await names()).toEqual([]);
   });
 
-  it('respects the branch filter and the limit, and reports the full total', async () => {
+  it('respects the branch filter; lists everyone by default, or up to a limit with the full total', async () => {
     await client('A1', '2026-10-01', [], 'Manjari BK');
     await client('A2', '2026-10-02', [], 'Manjari BK');
     await client('B1', '2026-10-01', [], 'Kharadi');
     expect((await names({ branch: 'Manjari BK' })).sort()).toEqual(['A1', 'A2']);
+    expect(await names()).toHaveLength(3);
     const limited = await listQuietClients(db, today, now, { limit: 1 });
     expect(limited.clients).toHaveLength(1);
     expect(limited.total).toBe(3);
