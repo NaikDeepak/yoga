@@ -171,7 +171,8 @@ export async function saveFlexibilityTestsAction(
     saved = await saveFlexibilityShots(getDb(), getStorage(), patientId, assessmentId, parsed.data.shots.map((s) => ({
       ...s, photo: photos.get(s.shot)!,
     })));
-  } catch {
+  } catch (error) {
+    console.error('Failed to save flexibility tests:', error instanceof Error ? error.message : String(error));
     return { ok: false, error: 'Could not save flexibility tests / लवचिकता चाचण्या जतन करता आल्या नाहीत' };
   }
   if (!saved) return NOT_FOUND;
