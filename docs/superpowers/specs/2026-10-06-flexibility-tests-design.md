@@ -71,9 +71,9 @@ The bands, flags and thresholds live in one table, like `THRESHOLDS` for posture
   - `scoreFlexibility(shots)`, giving per test `{ score, band, sides?, flags }`;
   - `FLEX_SCORING`;
   - `flexBand(score)`.
-- `src/lib/posture-capture.ts` / `posture-overlay.ts`: shot-aware frame checks, stillness keypoints, overlay and editor points.
+- `src/lib/capture-shots.ts`: one dispatcher per shot. Posture views go to the unchanged posture functions; flexibility shots get their own frame checks, stillness keypoints, overlay and editor points.
 - `src/data/flexibility.ts`: `saveFlexibilityTests` (upload, then one transaction upserting the shots; old files removed after commit), `getFlexibility(db, assessmentId)`, and its use in `listPostureAssessments`/compare.
-- `src/actions/flexibility.ts`: `saveFlexibilityTestsAction(patientId, assessmentId, formData)`, which requires auth, validates with zod, and checks that the assessment belongs to this client.
+- `src/actions/posture.ts`: `saveFlexibilityTestsAction(patientId, assessmentId, formData)` (next to the posture actions, to reuse their payload and photo parsing). It requires auth, validates with zod, and checks that the assessment belongs to this client.
 - UI:
   - a **Flexibility** section on the posture report: three score cards (photo + figure with the measured angle, score, band, plain-language line, flags), and per-side detail for the shoulder;
   - a flexibility row on the compare page (before → after scores);

@@ -13,6 +13,8 @@ import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
 import { SharePanel } from '@/components/SharePanel';
 import { activeShareLink } from '@/data/share-links';
 import { isPostureEnabled } from '@/lib/features';
+import { getFlexibility } from '@/data/flexibility';
+import { FlexibilitySection } from '@/components/posture/FlexibilitySection';
 import { deletePostureAssessmentAction } from '@/actions/posture';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
@@ -70,6 +72,10 @@ export default async function PostureReportPage({
     photoUrl: v.filePath ? await storage.createSignedUrl(v.filePath).catch(() => null) : null,
     photoDeleted: v.filePath === null,
   })));
+
+  const flexibility = await getFlexibility(db, assessmentId);
+  const flexPhotoUrls = Object.fromEntries(await Promise.all(flexibility.shots.map(async (s) =>
+    [s.shot, s.filePath ? await storage.createSignedUrl(s.filePath).catch(() => null) : null] as const)));
 
   // Front/back and left/right readings of the same measure are averaged for scoring and patterns.
   const combined = combineViews(views);
@@ -337,6 +343,14 @@ export default async function PostureReportPage({
           </figure>
         ))}
       </div>
+
+      {/* ── FLEXIBILITY ── */}
+      <FlexibilitySection
+        flexibility={flexibility}
+        photoUrls={flexPhotoUrls}
+        captureHref={isPostureEnabled() ? `/patients/${id}/posture/${assessmentId}/flexibility` : null}
+        t={t}
+      />
 
       {/* ── DETAIL ── */}
       <details className="mt-8 rounded-lg border p-4 print:hidden" style={{ borderColor: BRAND.sand }}>

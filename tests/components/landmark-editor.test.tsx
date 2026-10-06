@@ -23,7 +23,7 @@ function setup() {
   landmarks[LM.LEFT_EAR] = { x: 0.6, y: 0.1, visibility: 0.1 }; // missed by the detector
   const onChange = vi.fn();
   const { container } = render(
-    <LandmarkEditor imageUrl="data:," width={POSTURE_W} height={POSTURE_H} view="front" landmarks={landmarks} onChange={onChange} />,
+    <LandmarkEditor imageUrl="data:," width={POSTURE_W} height={POSTURE_H} shot="front" landmarks={landmarks} onChange={onChange} />,
   );
   return { container, onChange };
 }
