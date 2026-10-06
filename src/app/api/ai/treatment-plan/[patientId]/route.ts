@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { safeErrorMessage } from '@/lib/log';
 import { getSessionUser } from '@/lib/auth';
 import { safeErrorMessage } from '@/lib/log';
 import { getDb } from '@/db/client';
