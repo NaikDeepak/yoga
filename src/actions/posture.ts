@@ -7,9 +7,12 @@ import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { getStorage } from '@/lib/storage';
 import { MAX_FILE_BYTES, validatePhoto } from '@/lib/files';
-import { firstError, postureAssessmentSchema, postureRetakeSchema } from '@/lib/validation';
+import { firstError, flexibilityShotsSchema, postureAssessmentSchema, postureRetakeSchema } from '@/lib/validation';
+import { saveFlexibilityShots } from '@/data/flexibility';
+import type { FlexShot } from '@/lib/flexibility';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { getPatient } from '@/data/patients';
+import { safeErrorMessage } from '@/lib/log';
 import {
   addPostureAssessment, deletePostureAssessment, deletePosturePhotos, getPostureAssessment, replacePostureViews, saveAiReport,
   type PostureViewInput,
@@ -25,6 +28,8 @@ import type { ActionResult } from '@/actions/patients';
 
 const INVALID_PARAMS: ActionResult = { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
 const INVALID_DATA: ActionResult = { ok: false, error: 'Invalid posture data / चुकीची पोश्चर माहिती' };
+// Photos of this assessment were deleted (consent withdrawn); new ones need the consent tick again.
+const CONSENT_REQUIRED: ActionResult = { ok: false, error: 'Photo consent required / फोटोसाठी संमती आवश्यक' };
 const SAVE_FAILED: ActionResult = { ok: false, error: 'Could not save posture assessment / पोश्चर मूल्यांकन जतन करता आले नाही' };
 
 function parsePayload(formData: FormData): unknown {
@@ -36,8 +41,8 @@ function parsePayload(formData: FormData): unknown {
 }
 
 /** `photo_<view>` files for the given views: JPG/PNG, non-empty, ≤4 MB combined (Vercel body cap). */
-function collectPhotos(formData: FormData, views: PostureView[]): Map<PostureView, File> | ActionResult {
-  const photos = new Map<PostureView, File>();
+function collectPhotos<K extends PostureView | FlexShot>(formData: FormData, views: K[]): Map<K, File> | ActionResult {
+  const photos = new Map<K, File>();
   for (const view of views) {
     const photo = formData.get(`photo_${view}`);
     if (!(photo instanceof File) || photo.size === 0) {
@@ -125,6 +130,7 @@ export async function replacePostureViewsAction(
 
   let updated;
   try {
+    const freshConsent = parsed.data.consent === true;
     updated = await replacePostureViews(getDb(), getStorage(), patientId, assessmentId, parsed.data.views.map((v) => ({
       view: v.view,
       photo: photos.get(v.view)!,
@@ -133,11 +139,49 @@ export async function replacePostureViewsAction(
       landmarks: v.landmarks,
       landmarksEdited: v.landmarksEdited,
       cameraCheck: v.cameraCheck,
-    })));
+    })), { freshConsent });
   } catch {
     return SAVE_FAILED;
   }
+  if (updated === 'consentRequired') return CONSENT_REQUIRED;
   if (!updated) return NOT_FOUND;
+
+  revalidatePath(`/patients/${patientId}`);
+  redirect(`/patients/${patientId}/posture/${assessmentId}`);
+}
+
+/**
+ * Flexibility tests for an existing assessment (first capture or retakes). Form: `payload` (JSON
+ * `{ shots: [...] }`) and `photo_<shot>` for each. Consent was recorded with the assessment. Redirects
+ * back to the report on success.
+ */
+export async function saveFlexibilityTestsAction(
+  patientId: string,
+  assessmentId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireUser();
+  if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
+    return INVALID_PARAMS;
+  }
+  const raw = parsePayload(formData);
+  if (raw === undefined) return INVALID_DATA;
+  const parsed = flexibilityShotsSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  const photos = collectPhotos(formData, parsed.data.shots.map((s) => s.shot));
+  if (!(photos instanceof Map)) return photos;
+
+  let saved;
+  try {
+    saved = await saveFlexibilityShots(getDb(), getStorage(), patientId, assessmentId, parsed.data.shots.map((s) => ({
+      ...s, photo: photos.get(s.shot)!,
+    })), { freshConsent: parsed.data.consent === true });
+  } catch (error) {
+    console.error('Failed to save flexibility tests:', safeErrorMessage(error));
+    return { ok: false, error: 'Could not save flexibility tests / लवचिकता चाचण्या जतन करता आल्या नाहीत' };
+  }
+  if (saved === 'consentRequired') return CONSENT_REQUIRED;
+  if (saved === 'notFound') return NOT_FOUND;
 
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);
@@ -175,7 +219,7 @@ export async function withdrawPhotoConsentAction(
     }
     return { ok: true, deleted };
   } catch (error) {
-    console.error('Failed to withdraw photo consent:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to withdraw photo consent:', safeErrorMessage(error));
     return { ok: false, error: 'Could not delete the photos / फोटो हटवता आले नाहीत' };
   }
 }
@@ -235,7 +279,7 @@ export async function generatePostureAiAction(patientId: string, assessmentId: s
     report = await generatePostureAnalysis(context);
   } catch (err) {
     // Message only (HTTP status / validation issue) — never the context, which holds health data.
-    console.error('[posture-ai] generation failed:', err instanceof Error ? err.message : 'unknown error');
+    console.error('[posture-ai] generation failed:', safeErrorMessage(err));
     return { ok: false, error: 'AI analysis failed. Please try again. / AI विश्लेषण अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.' };
   }
   await saveAiReport(db, patientId, assessmentId, report, { approved: false });

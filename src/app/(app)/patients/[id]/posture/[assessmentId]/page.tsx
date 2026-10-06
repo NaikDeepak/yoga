@@ -13,6 +13,8 @@ import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
 import { SharePanel } from '@/components/SharePanel';
 import { activeShareLink } from '@/data/share-links';
 import { isPostureEnabled } from '@/lib/features';
+import { getFlexibility } from '@/data/flexibility';
+import { FlexibilitySection } from '@/components/posture/FlexibilitySection';
 import { deletePostureAssessmentAction } from '@/actions/posture';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
@@ -86,11 +88,14 @@ export default async function PostureReportPage({
     library.filter((e) => e.category === category).slice(0, EXERCISES_PER_CATEGORY);
 
   // Client context (FlexifyMe-style profile strip + wellbeing gauges). Display-only: not sent to the AI.
-  const [vitals, lifestyle, share] = await Promise.all([
+  const [vitals, lifestyle, share, flexibility] = await Promise.all([
     visitVitalsOn(db, id, assessment.assessedOn),
     getLifestyleAssessmentSnapshot(db, id),
     activeShareLink(db, id, 'posture', new Date()),
+    getFlexibility(db, assessmentId),
   ]);
+  const flexPhotoUrls = Object.fromEntries(await Promise.all(flexibility.shots.map(async (s) =>
+    [s.shot, s.filePath ? await storage.createSignedUrl(s.filePath).catch(() => null) : null] as const)));
   // The client's live posture link may show a different (older/newer) report.
   const sharedOtherOn = share && share.postureAssessmentId !== assessmentId && share.postureAssessmentId
     ? await postureAssessedOn(db, share.postureAssessmentId)
@@ -337,6 +342,14 @@ export default async function PostureReportPage({
           </figure>
         ))}
       </div>
+
+      {/* ── FLEXIBILITY ── */}
+      <FlexibilitySection
+        flexibility={flexibility}
+        photoUrls={flexPhotoUrls}
+        captureHref={isPostureEnabled() ? `/patients/${id}/posture/${assessmentId}/flexibility` : null}
+        t={t}
+      />
 
       {/* ── DETAIL ── */}
       <details className="mt-8 rounded-lg border p-4 print:hidden" style={{ borderColor: BRAND.sand }}>

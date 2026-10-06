@@ -10,12 +10,13 @@ import { useLocale, useTranslations } from '@/lib/i18n/context';
 import { en } from '@/lib/i18n/en';
 import { mr } from '@/lib/i18n/mr';
 import { advanceHint, firstFailingCheck, type HintKey, type HintState } from '@/lib/posture-voice';
-import { replacePostureViewsAction, savePostureAssessmentAction } from '@/actions/posture';
-import { buildOverlay, editablePoints } from '@/lib/posture-overlay';
+import { replacePostureViewsAction, saveFlexibilityTestsAction, savePostureAssessmentAction } from '@/actions/posture';
 import { POSTURE_VIEWS, type Landmark, type PostureView } from '@/lib/posture';
+import { isFlexShot, shotEditablePoints, shotFrameChecks, shotOverlay, shotStillKeypoints, type CaptureShot } from '@/lib/capture-shots';
+import type { FlexShot } from '@/lib/flexibility';
 import {
-  advanceCountdown, bodyCropRect, bodyFill, BODY_FILL_TARGET, checkFrame, isLevel, isStill, medianLandmarks,
-  remapToCrop, rollFromReferenceLine, stillKeypoints, type CameraCheck, type CountdownState, type FrameChecks,
+  advanceCountdown, bodyCropRect, bodyFill, BODY_FILL_TARGET, isLevel, isStill, medianLandmarks,
+  remapToCrop, rollFromReferenceLine, type CameraCheck, type CountdownState, type FrameChecks,
 } from '@/lib/posture-capture';
 import { createPoseDetector, toLandmarks } from './pose-detector';
 import { requestMotionPermission, useCamera, useDeviceLevel } from './hooks';
@@ -53,11 +54,17 @@ export function PostureCapture({
   patientId,
   patientName,
   retake,
+  flexibility,
+  reconsent = false,
 }: {
   patientId: string;
   patientName: string;
   /** Retake mode: capture only these views of an existing assessment (consent was given originally). */
   retake?: { assessmentId: string; views: PostureView[] };
+  /** Flexibility mode: capture these flexibility shots for an existing assessment (consent was given originally). */
+  flexibility?: { assessmentId: string; shots: FlexShot[] };
+  /** Retake/flexibility on an assessment whose photos were deleted (consent withdrawn): ask again. */
+  reconsent?: boolean;
 }) {
   const t = useTranslations();
   const p = t.posture;
@@ -81,12 +88,19 @@ export function PostureCapture({
   };
 
   const [step, setStep] = useState<Step>('setup');
-  const order: readonly PostureView[] = retake?.views ?? POSTURE_VIEWS;
-  const [consent, setConsent] = useState(!!retake);
+  const order: readonly CaptureShot[] = flexibility?.shots ?? retake?.views ?? POSTURE_VIEWS;
+  // Consent was recorded with an existing assessment, unless the client withdrew it since.
+  const askConsent = !(retake || flexibility) || reconsent;
+  const [consent, setConsent] = useState(!askConsent);
+  const label = (s: CaptureShot) => (isFlexShot(s) ? p.flex.shots[s] : p.views[s]);
+  const instruction = (s: CaptureShot) => (isFlexShot(s) ? p.flex.instructions[s] : c.instructions[s]);
+  const spoken = (s: CaptureShot) => (isFlexShot(s)
+    ? { en: en.posture.flex.voice[s], mr: mr.posture.flex.voice[s] }
+    : { en: en.posture.voice.instructions[s], mr: mr.posture.voice.instructions[s] });
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
   const [viewIdx, setViewIdx] = useState(0);
   const view = order[viewIdx];
-  const [captures, setCaptures] = useState<Partial<Record<PostureView, Capture>>>({});
+  const [captures, setCaptures] = useState<Partial<Record<CaptureShot, Capture>>>({});
   const [draft, setDraft] = useState<Capture | null>(null);
   const [referenceRoll, setReferenceRoll] = useState<number | null>(null);
   const [recalibrating, setRecalibrating] = useState(false);
@@ -145,7 +159,7 @@ export function PostureCapture({
     // The view instruction is spoken as this loop starts, so hints wait their turn after it.
     let hint: HintState = { failing: null, since: null, lastSpokenAt: performance.now() };
     const hintText = (key: HintKey) => key === 'facing'
-      ? { en: en.posture.voice.instructions[view], mr: mr.posture.voice.instructions[view] }
+      ? spoken(view)
       : { en: en.posture.voice.hints[key], mr: mr.posture.voice.hints[key] };
     const loop = () => {
       const video = videoRef.current;
@@ -158,12 +172,13 @@ export function PostureCapture({
         let still = false;
         if (lms) {
           history.current = [...history.current.slice(-(HISTORY_FRAMES - 1)), lms];
-          frame = checkFrame(view, lms, size);
-          still = isStill(history.current, stillKeypoints(view, lms));
+          frame = shotFrameChecks(view, lms, size);
+          still = isStill(history.current, shotStillKeypoints(view, lms));
         } else {
           history.current = [];
         }
-        setLive({ landmarks: lms, frame, still, fill: lms ? bodyFill(lms) : null });
+        // Body fill (eye-to-heel span) assumes standing upright: not for the fold or the seated butterfly.
+        setLive({ landmarks: lms, frame, still, fill: lms && !isFlexShot(view) ? bodyFill(lms) : null });
         const step = advanceCountdown(cd, frame.inFrame && frame.facing && still && levelOkRef.current, ts);
         cd = step.state;
         setCountdown(step.remaining);
@@ -186,7 +201,7 @@ export function PostureCapture({
 
   useEffect(() => {
     if (step === 'live' && !needsCalibration) {
-      voice.current?.say({ en: en.posture.voice.instructions[view], mr: mr.posture.voice.instructions[view] }, { interrupt: true });
+      voice.current?.say(spoken(view), { interrupt: true });
     }
   }, [step, view, needsCalibration]);
 
@@ -274,14 +289,31 @@ export function PostureCapture({
 
   function save() {
     const fd = new FormData();
-    const views = order.map((v) => {
+    if (flexibility) {
+      const shots = order.map((s) => {
+        const cap = captures[s]!;
+        return {
+          shot: s, imageWidth: cap.width, imageHeight: cap.height,
+          landmarks: cap.landmarks, landmarksEdited: cap.edited, cameraCheck: cap.cameraCheck,
+        };
+      });
+      fd.set('payload', JSON.stringify(reconsent ? { consent: true, shots } : { shots }));
+      for (const s of order) fd.set(`photo_${s}`, new File([captures[s]!.blob], `${s}.jpg`, { type: 'image/jpeg' }));
+      setError(null);
+      startSaving(async () => {
+        const result = await saveFlexibilityTestsAction(patientId, flexibility.assessmentId, fd); // redirects to the report
+        if (result && !result.ok) setError(result.error);
+      });
+      return;
+    }
+    const views = (order as readonly PostureView[]).map((v) => {
       const cap = captures[v]!;
       return {
         view: v, imageWidth: cap.width, imageHeight: cap.height,
         landmarks: cap.landmarks, landmarksEdited: cap.edited, cameraCheck: cap.cameraCheck,
       };
     });
-    fd.set('payload', JSON.stringify(retake ? { views } : { consent: true, note, views }));
+    fd.set('payload', JSON.stringify(retake ? (reconsent ? { consent: true, views } : { views }) : { consent: true, note, views }));
     for (const v of order) fd.set(`photo_${v}`, new File([captures[v]!.blob], `${v}.jpg`, { type: 'image/jpeg' }));
     setError(null);
     startSaving(async () => {
@@ -305,7 +337,7 @@ export function PostureCapture({
   return (
     <div className="mx-auto max-w-3xl space-y-4 pb-24">
       <div>
-        <h1 className="text-xl font-semibold">{retake ? c.retakeTitle : c.title}</h1>
+        <h1 className="text-xl font-semibold">{flexibility ? p.flex.captureTitle : retake ? c.retakeTitle : c.title}</h1>
         <p className="text-sm text-muted-foreground">{patientName}</p>
       </div>
 
@@ -317,7 +349,7 @@ export function PostureCapture({
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
             {c.tips.map((tip) => <li key={tip}>{tip}</li>)}
           </ul>
-          {!retake && (
+          {askConsent && (
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-0.5 h-4 w-4" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
               <span>{c.consent}</span>
@@ -337,10 +369,10 @@ export function PostureCapture({
         <div className="space-y-3">
           {!needsCalibration && (
             <div className="flex items-baseline justify-between gap-2">
-              <p className="font-medium">{p.views[view]} <span className="text-sm font-normal text-muted-foreground">· {c.step.replace('{n}', String(viewIdx + 1)).replace('{total}', String(order.length))}</span></p>
+              <p className="font-medium">{label(view)} <span className="text-sm font-normal text-muted-foreground">· {c.step.replace('{n}', String(viewIdx + 1)).replace('{total}', String(order.length))}</span></p>
             </div>
           )}
-          <p className="text-sm">{needsCalibration ? c.calibrateHelp : c.instructions[view]}</p>
+          <p className="text-sm">{needsCalibration ? c.calibrateHelp : instruction(view)}</p>
 
           <div className="relative mx-auto overflow-hidden rounded-md bg-black" style={size ? stageStyle(size.width, size.height) : { aspectRatio: '3 / 4', width: 'min(100%, calc(70vh * 3 / 4))' }}>
             <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-contain" />
@@ -348,7 +380,7 @@ export function PostureCapture({
               <Calibration width={size.width} height={size.height} onConfirm={(roll) => { setReferenceRoll(roll); setRecalibrating(false); }} c={c} />
             )}
             {size && !needsCalibration && (
-              <OverlaySvg overlay={live.landmarks ? buildOverlay(view, live.landmarks, size.width, size.height) : { width: size.width, height: size.height, points: [], lines: [] }}>
+              <OverlaySvg overlay={live.landmarks ? shotOverlay(view, live.landmarks, size.width, size.height) : { width: size.width, height: size.height, points: [], lines: [] }}>
                 {/* framing guide: centre plumb line and head/heel margins */}
                 <line x1={size.width / 2} x2={size.width / 2} y1={0} y2={size.height} stroke="#facc15" strokeOpacity={0.6} strokeWidth={size.width / 400} />
                 <line x1={0} x2={size.width} y1={size.height * 0.02} y2={size.height * 0.02} stroke="#facc15" strokeOpacity={0.4} strokeWidth={size.width / 500} />
@@ -407,9 +439,9 @@ export function PostureCapture({
 
       {step === 'review' && draft && (
         <div className="space-y-3">
-          <p className="font-medium">{p.views[view]}</p>
+          <p className="font-medium">{label(view)}</p>
           <p className="text-sm text-muted-foreground">{c.reviewHelp}</p>
-          {editablePoints(view, draft.landmarks, draft.width, draft.height).some((pt) => !pt.detected) && (
+          {shotEditablePoints(view, draft.landmarks, draft.width, draft.height).some((pt) => !pt.detected) && (
             <p className="text-sm text-orange-700">{c.missedPointsHelp}</p>
           )}
           <div className="mx-auto" style={stageStyle(draft.width, draft.height)}>
@@ -417,7 +449,7 @@ export function PostureCapture({
               imageUrl={draft.url}
               width={draft.width}
               height={draft.height}
-              view={view}
+              shot={view}
               landmarks={draft.landmarks}
               onChange={(landmarks) => setDraft({ ...draft, landmarks, edited: true })}
             />
@@ -439,10 +471,10 @@ export function PostureCapture({
                 <button key={v} type="button" onClick={() => retakeView(i)} className="space-y-1 text-left">
                   <div className="relative overflow-hidden rounded-md bg-black" style={{ aspectRatio: `${cap.width} / ${cap.height}` }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={cap.url} alt={p.views[v]} className="absolute inset-0 h-full w-full object-contain" />
-                    <OverlaySvg overlay={buildOverlay(v, cap.landmarks, cap.width, cap.height)} />
+                    <img src={cap.url} alt={label(v)} className="absolute inset-0 h-full w-full object-contain" />
+                    <OverlaySvg overlay={shotOverlay(v, cap.landmarks, cap.width, cap.height)} />
                   </div>
-                  <p className="text-xs font-medium">{p.views[v]}</p>
+                  <p className="text-xs font-medium">{label(v)}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {cap.cameraCheck.method === 'sensor' ? c.cameraLevelSensor : c.cameraLevelReference}
                   </p>
@@ -450,7 +482,7 @@ export function PostureCapture({
               );
             })}
           </div>
-          {!retake && (
+          {!(retake || flexibility) && (
             <div className="space-y-2">
               <Label htmlFor="posture-note">{p.note}</Label>
               <Textarea id="posture-note" value={note} maxLength={1000} onChange={(e) => setNote(e.target.value)} />

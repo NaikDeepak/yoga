@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
-import { getPostureAssessment } from '@/data/posture';
+import { consentWithdrawn, getPostureAssessment } from '@/data/posture';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { PostureCapture } from '@/components/posture/PostureCapture';
 
@@ -28,6 +28,7 @@ export default async function RetakePostureViewsPage({
       patientId={id}
       patientName={`${patient.fullName} · ${patient.patientCode}`}
       retake={{ assessmentId, views }}
+      reconsent={consentWithdrawn(assessment)}
     />
   );
 }

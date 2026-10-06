@@ -53,8 +53,8 @@ export function rollFromReferenceLine(a: { x: number; y: number }, b: { x: numbe
 
 export interface FrameChecks { inFrame: boolean; facing: boolean }
 
-const EDGE = 0.02; // normalised margin the body must keep from the frame edges
-const FRONTAL_MIN_WIDTH_RATIO = 0.3;  // shoulder width ÷ torso height when square to the camera
+export const EDGE = 0.02; // normalised margin the body must keep from the frame edges
+export const FRONTAL_MIN_WIDTH_RATIO = 0.3;  // shoulder width ÷ torso height when square to the camera
 const SAGITTAL_MAX_WIDTH_RATIO = 0.2; // ... and when side-on
 
 const FRONTAL_REQUIRED = [

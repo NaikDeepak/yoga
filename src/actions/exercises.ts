@@ -7,6 +7,7 @@ import { prescribedExercisesListSchema } from '@/lib/validation';
 import { addPrescribedExercises, savePrescribedExercises } from '@/data/exercises';
 import { z } from 'zod';
 import type { ActionResult } from './patients';
+import { safeErrorMessage } from '@/lib/log';
 
 export async function savePrescribedExercisesAction(
   patientId: string,
@@ -34,7 +35,7 @@ export async function savePrescribedExercisesAction(
     revalidatePath(`/patients/${patientId}`);
     return { ok: true };
   } catch (error) {
-    console.error('Failed to save prescribed exercises:', error);
+    console.error('Failed to save prescribed exercises:', safeErrorMessage(error));
     return { ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी' };
   }
 }
@@ -61,7 +62,7 @@ export async function addPrescribedExercisesAction(
     revalidatePath(`/patients/${patientId}`);
     return { ok: true, ...result };
   } catch (error) {
-    console.error('Failed to add prescribed exercises:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to add prescribed exercises:', safeErrorMessage(error));
     return { ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी' };
   }
 }

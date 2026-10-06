@@ -8,6 +8,7 @@ import { getPrescribedExercises } from '@/data/exercises';
 import { resolveShareLink } from '@/data/share-links';
 import { checkinDay } from '@/lib/adherence';
 import { checkinSchema } from '@/lib/validation';
+import { safeErrorMessage } from '@/lib/log';
 
 /**
  * Daily check-in from the client's public exercise page. The one mutation without `requireUser()`:
@@ -33,7 +34,7 @@ export async function saveCheckinAction(token: string, lang: string, formData: F
   try {
     await saveCheckin(db, link, parsed.data, checkinDay(parsed.data.day ?? null, new Date()));
   } catch (error) {
-    console.error('Failed to save check-in:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to save check-in:', safeErrorMessage(error));
     redirect(`${page}${query}&edit=1&error=1`);
   }
   revalidatePath(`/patients/${link.patientId}`);

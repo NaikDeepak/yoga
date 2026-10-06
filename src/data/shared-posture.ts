@@ -13,6 +13,7 @@ import type { PostureAiReport } from '@/lib/posture-ai';
 import { getPostureAssessment } from './posture';
 import { visitVitalsOn } from './visits';
 import { getLifestyleAssessmentSnapshot } from './lifestyle';
+import { safeErrorMessage } from '@/lib/log';
 
 /** Signed photo URLs on the public page expire quickly; the page is re-signed on every load. */
 export const SHARED_PHOTO_URL_SECONDS = 600;
@@ -65,7 +66,7 @@ export async function getSharedPostureReport(
     photoUrl: link.includePhotos && v.filePath
       ? await storage.createSignedUrl(v.filePath, SHARED_PHOTO_URL_SECONDS).catch((err: unknown) => {
         // The page then says "Photo unavailable". Message only: no paths or ids in logs.
-        console.error('Shared posture photo URL failed:', err instanceof Error ? err.message : String(err));
+        console.error('Shared posture photo URL failed:', safeErrorMessage(err));
         return null;
       })
       : null,

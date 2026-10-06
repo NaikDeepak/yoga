@@ -1,6 +1,6 @@
 import { and, desc, eq, getTableColumns, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import {
-  postureAssessments, postureViews, shareLinks, type PostureAssessmentRow, type PostureViewRow,
+  flexibilityTests, postureAssessments, postureViews, shareLinks, type PostureAssessmentRow, type PostureViewRow,
 } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { FileStorage } from '@/lib/storage';
@@ -35,7 +35,7 @@ export type PostureAssessmentSummary = PostureAssessmentRow & {
   markedCount: number;
   score: number | null;
   grade: Grade | null;
-  /** Views that still have a photo (0 once photo consent was withdrawn). */
+  /** Posture views + flexibility shots that still have a photo (0 once photo consent was withdrawn). */
   photoCount: number;
 };
 
@@ -114,8 +114,12 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
 /** Score + mild/marked counts on the combined findings, for each assessment (one views query). */
 async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<PostureAssessmentSummary[]> {
   if (!assessments.length) return [];
-  const views = await db.select().from(postureViews)
-    .where(inArray(postureViews.assessmentId, assessments.map((a) => a.id)));
+  const ids = assessments.map((a) => a.id);
+  const [views, flexPhotos] = await Promise.all([
+    db.select().from(postureViews).where(inArray(postureViews.assessmentId, ids)),
+    db.select({ assessmentId: flexibilityTests.assessmentId }).from(flexibilityTests)
+      .where(and(inArray(flexibilityTests.assessmentId, ids), isNotNull(flexibilityTests.filePath))),
+  ]);
 
   return assessments.map((a) => {
     const own = views.filter((v) => v.assessmentId === a.id);
@@ -128,7 +132,7 @@ async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<P
       markedCount: combined.filter((m) => m.severity === 'marked').length,
       score: overall,
       grade,
-      photoCount: own.filter((v) => v.filePath !== null).length,
+      photoCount: own.filter((v) => v.filePath !== null).length + flexPhotos.filter((f) => f.assessmentId === a.id).length,
     };
   });
 }
@@ -204,11 +208,13 @@ export async function deletePostureAssessment(
   const [owned] = await db.select({ id: postureAssessments.id }).from(postureAssessments)
     .where(and(eq(postureAssessments.id, id), eq(postureAssessments.patientId, patientId)));
   if (!owned) return;
-  const views = await db.select({ filePath: postureViews.filePath }).from(postureViews)
-    .where(eq(postureViews.assessmentId, id));
-  await db.delete(postureAssessments).where(eq(postureAssessments.id, id)); // cascades to views
+  const files = (await Promise.all([
+    db.select({ filePath: postureViews.filePath }).from(postureViews).where(eq(postureViews.assessmentId, id)),
+    db.select({ filePath: flexibilityTests.filePath }).from(flexibilityTests).where(eq(flexibilityTests.assessmentId, id)),
+  ])).flat();
+  await db.delete(postureAssessments).where(eq(postureAssessments.id, id)); // cascades to views + flexibility tests
   // Best effort: the record is already gone, so a storage hiccup must not report the delete as failed.
-  await Promise.allSettled(views.flatMap((v) => (v.filePath ? [storage.remove(v.filePath)] : [])));
+  await Promise.allSettled(files.flatMap((f) => (f.filePath ? [storage.remove(f.filePath)] : [])));
 }
 
 /**
@@ -224,10 +230,14 @@ export async function deletePosturePhotos(
   patientId: string,
   now: Date,
 ): Promise<{ deleted: number; failed: number }> {
-  const views = await db.select({ id: postureViews.id, assessmentId: postureViews.assessmentId, filePath: postureViews.filePath })
-    .from(postureViews)
-    .innerJoin(postureAssessments, eq(postureViews.assessmentId, postureAssessments.id))
-    .where(and(eq(postureAssessments.patientId, patientId), isNotNull(postureViews.filePath)));
+  // Posture views and flexibility shots alike: every photo row of this client's assessments.
+  const photoRows = async (table: typeof postureViews | typeof flexibilityTests) => (await db
+    .select({ id: table.id, assessmentId: table.assessmentId, filePath: table.filePath })
+    .from(table)
+    .innerJoin(postureAssessments, eq(table.assessmentId, postureAssessments.id))
+    .where(and(eq(postureAssessments.patientId, patientId), isNotNull(table.filePath))))
+    .map((r) => ({ ...r, table }));
+  const views = (await Promise.all([photoRows(postureViews), photoRows(flexibilityTests)])).flat();
   const results = await Promise.allSettled(views.map((v) => storage.remove(v.filePath!)));
   const gone = views.filter((_, i) => results[i].status === 'fulfilled');
   const failed = views.length - gone.length;
@@ -237,8 +247,8 @@ export async function deletePosturePhotos(
     await db.transaction(async (tx) => {
       // Only if the view still points at the deleted file: a retake that landed meanwhile keeps its new photo.
       for (const v of gone) {
-        await tx.update(postureViews).set({ filePath: null })
-          .where(and(eq(postureViews.id, v.id), eq(postureViews.filePath, v.filePath!)));
+        await tx.update(v.table).set({ filePath: null })
+          .where(and(eq(v.table.id, v.id), eq(v.table.filePath, v.filePath!)));
       }
       await tx.update(postureAssessments).set({ photosDeletedAt: now })
         .where(and(inArray(postureAssessments.id, [...new Set(gone.map((v) => v.assessmentId))]), isNull(postureAssessments.photosDeletedAt)));
@@ -247,6 +257,25 @@ export async function deletePosturePhotos(
     });
   }
   return { deleted: gone.length, failed };
+}
+
+/**
+ * New photos for an existing assessment need fresh consent when its photos were deleted (consent
+ * withdrawn) after the last consent. Giving it updates `consent_at`, so it's asked once.
+ */
+export const consentWithdrawn = (a: { photosDeletedAt: Date | null; consentAt: Date }) =>
+  a.photosDeletedAt !== null && a.photosDeletedAt >= a.consentAt;
+
+/** The assessment row alone (no views or metric recomputation) — for ownership/consent checks. */
+export async function getPostureAssessmentRow(db: Db, id: string): Promise<PostureAssessmentRow | null> {
+  const [row] = await db.select().from(postureAssessments).where(eq(postureAssessments.id, id));
+  return row ?? null;
+}
+
+export async function needsFreshConsent(db: Db, assessmentId: string): Promise<boolean> {
+  const [a] = await db.select({ photosDeletedAt: postureAssessments.photosDeletedAt, consentAt: postureAssessments.consentAt })
+    .from(postureAssessments).where(eq(postureAssessments.id, assessmentId));
+  return !!a && consentWithdrawn(a);
 }
 
 /**
@@ -260,22 +289,28 @@ export async function replacePostureViews(
   patientId: string,
   assessmentId: string,
   views: PostureViewInput[],
-): Promise<PostureAssessment | null> {
+  opts: { freshConsent?: boolean } = {},
+): Promise<PostureAssessment | null | 'consentRequired'> {
   const [assessment] = await db.select().from(postureAssessments)
     .where(and(eq(postureAssessments.id, assessmentId), eq(postureAssessments.patientId, patientId)));
   if (!assessment) return null;
+  if (consentWithdrawn(assessment) && !opts.freshConsent) return 'consentRequired';
 
-  const existing = await db.select({ view: postureViews.view, filePath: postureViews.filePath }).from(postureViews)
-    .where(and(eq(postureViews.assessmentId, assessmentId), inArray(postureViews.view, views.map((v) => v.view))));
   const version = crypto.randomUUID().slice(0, 8);
   const pathFor = (v: PostureView) => posturePhotoPath(patientId, assessmentId, v, version);
   const uploaded: string[] = [];
+  let existing: { filePath: string | null }[];
   try {
     for (const v of views) {
       await storage.upload(pathFor(v.view), v.photo);
       uploaded.push(pathFor(v.view));
     }
-    await db.transaction(async (tx) => {
+    existing = await db.transaction(async (tx) => {
+      // Lock the assessment so overlapping retakes run one after the other, and read the photos being
+      // replaced inside the lock: each save then removes exactly the file it replaced (no orphans).
+      await tx.select({ id: postureAssessments.id }).from(postureAssessments).where(eq(postureAssessments.id, assessmentId)).for('update');
+      const replaced = await tx.select({ filePath: postureViews.filePath }).from(postureViews)
+        .where(and(eq(postureViews.assessmentId, assessmentId), inArray(postureViews.view, views.map((v) => v.view))));
       for (const v of views) {
         const [row] = await tx.update(postureViews).set({
           filePath: pathFor(v.view),
@@ -293,7 +328,10 @@ export async function replacePostureViews(
       }
       // An approved AI analysis described the old measurements: back to draft until re-approved
       // (it also stops it reaching the client's shared report).
-      await tx.update(postureAssessments).set({ aiApprovedAt: null }).where(eq(postureAssessments.id, assessmentId));
+      await tx.update(postureAssessments)
+        .set({ aiApprovedAt: null, ...(opts.freshConsent && { consentAt: new Date() }) })
+        .where(eq(postureAssessments.id, assessmentId));
+      return replaced;
     });
   } catch (err) {
     await Promise.allSettled(uploaded.map((p) => storage.remove(p)));

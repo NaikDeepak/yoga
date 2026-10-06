@@ -76,7 +76,7 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 13. **C4 Ideal-posture figure** and **C6 curve estimate** (qualitative, from shoulder/hip/ear offsets; flagged approx).
 
 ### Phase 4 — scope expansion (separate spec each)
-14. **D1 Flexibility tests** — new capture mode per pose with MediaPipe angles (e.g. hip-flexion angle in forward fold, knee height in butterfly, shoulder extension angle), 0–100 score bands, combined "overall /300"-style score next to posture.
+14. ✅ **D1 Flexibility tests** (done — `feat/flexibility-tests`, spec `2026-10-06-flexibility-tests-design.md`; cut-offs in `FLEX_SCORING` await physio tuning) — new capture mode per pose with MediaPipe angles (e.g. hip-flexion angle in forward fold, knee height in butterfly, shoulder extension angle), 0–100 score bands, combined "overall /300"-style score next to posture.
 14b. **C8 Combined score** after D1; **C9 Phased programme** on the report (separate spec).
 15. ✅ **D3 AI analysis** (done — `feat/posture-ai-analysis`, spec `2026-10-04-posture-ai-analysis.md`) and and **D2 gait** — scope separately.
 

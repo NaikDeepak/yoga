@@ -252,8 +252,28 @@ export const postureViews = pgTable('posture_views', {
   check('posture_views_view_check', sql`${table.view} IN ('front', 'back', 'left', 'right')`),
 ]).enableRLS();
 
+// Flexibility tests captured with a posture assessment (spec 2026-10-06-flexibility-tests). Scores are
+// never stored: they're recomputed from the landmarks on every read.
+export const flexibilityTests = pgTable('flexibility_tests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  assessmentId: uuid('assessment_id').notNull()
+    .references(() => postureAssessments.id, { onDelete: 'cascade' }),
+  shot: text('shot').notNull(), // FlexShot
+  filePath: text('file_path'), // private bucket; null once the photo was deleted (consent withdrawn)
+  imageWidth: integer('image_width').notNull(),
+  imageHeight: integer('image_height').notNull(),
+  landmarks: jsonb('landmarks').$type<Landmark[]>().notNull(),
+  landmarksEdited: boolean('landmarks_edited').default(false).notNull(),
+  cameraCheck: jsonb('camera_check').$type<CameraCheck>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex('flexibility_tests_assessment_shot_uq').on(table.assessmentId, table.shot),
+  check('flexibility_tests_shot_check', sql`${table.shot} IN ('shoulderExtLeft', 'shoulderExtRight', 'forwardFold', 'butterfly')`),
+]).enableRLS();
+
 export type PostureAssessmentRow = typeof postureAssessments.$inferSelect;
 export type PostureViewRow = typeof postureViews.$inferSelect;
+export type FlexibilityTestRow = typeof flexibilityTests.$inferSelect;
 
 // Client share links (spec 2026-10-05-client-exercise-link). Only the token's SHA-256 is stored.
 export const shareLinks = pgTable('share_links', {

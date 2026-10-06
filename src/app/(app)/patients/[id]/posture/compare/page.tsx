@@ -4,6 +4,8 @@ import { ArrowLeft } from 'lucide-react';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { getPostureAssessment, type PostureAssessment } from '@/data/posture';
+import { getFlexibility } from '@/data/flexibility';
+import { FLEX_TESTS, flexBand } from '@/lib/flexibility';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
 import { buildOverlay } from '@/lib/posture-overlay';
@@ -18,7 +20,7 @@ import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { PrintButton } from '@/components/PrintButton';
 import { Button } from '@/components/ui/button';
 import { PostureFigure } from '@/components/posture/PostureFigure';
-import { BRAND, SectionHeader, SeverityDot, scoreColor } from '@/components/posture/ReportParts';
+import { BRAND, FLEX_BAND_COLOR, SectionHeader, SeverityDot, scoreColor } from '@/components/posture/ReportParts';
 
 const TREND_STYLE: Record<Trend, { bg: string; fg: string }> = {
   better: { bg: '#E6F0EA', fg: BRAND.green },
@@ -56,6 +58,7 @@ export default async function PostureComparePage({
   const ca = combineViews(views(after));
   const scores = compareScores(scorePosture(cb), scorePosture(ca));
   const rows = compareMetrics(cb, ca);
+  const [flexBefore, flexAfter] = await Promise.all([getFlexibility(db, before.id), getFlexibility(db, after.id)]);
 
   const photos = await Promise.all([before, after].map(async (asmt) => Object.fromEntries(await Promise.all(
     asmt.views.map(async (v) => [v.view, {
@@ -69,6 +72,10 @@ export default async function PostureComparePage({
   const signed = (n: number | null, unit = '') => (n === null ? cmp.notMeasured : `${n > 0 ? '+' : ''}${n}${unit}`);
   const scoreCell = (n: number | null) => (
     <span className="tabular-nums font-semibold" style={{ color: n === null ? '#9ca3af' : scoreColor(n) }}>{n ?? cmp.notMeasured}</span>
+  );
+  // Flexibility uses its own bands (0–35 / 36–70 / 71–100), not the posture score colours.
+  const flexCell = (n: number | null) => (
+    <span className="tabular-nums font-semibold" style={{ color: n === null ? '#9ca3af' : FLEX_BAND_COLOR[flexBand(n)!] }}>{n ?? cmp.notMeasured}</span>
   );
   const changeCell = (n: number | null) => (
     <span className="tabular-nums font-semibold" style={{ color: n === null || n === 0 ? '#6b7280' : n > 0 ? BRAND.green : BRAND.red }}>
@@ -179,6 +186,36 @@ export default async function PostureComparePage({
           </tbody>
         </table>
       </div>
+
+      {/* ── FLEXIBILITY ── (only when either assessment has flexibility tests) */}
+      {(flexBefore.shots.length > 0 || flexAfter.shots.length > 0) && (
+        <>
+          <SectionHeader>{t.posture.flex.title}</SectionHeader>
+          <table className="w-full max-w-xl border-collapse text-sm">
+            <thead>
+              <tr className="border-b text-left text-xs text-gray-500">
+                <th className="py-1.5 font-medium" />
+                <th className="py-1.5 text-right font-medium">{cmp.before}</th>
+                <th className="py-1.5 text-right font-medium">{cmp.after}</th>
+                <th className="py-1.5 text-right font-medium">{cmp.change}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {FLEX_TESTS.map((test) => {
+                const b = flexBefore.scores[test]?.score ?? null, a = flexAfter.scores[test]?.score ?? null;
+                return (
+                  <tr key={test} className="border-b border-gray-100">
+                    <td className="py-1.5 text-gray-700">{t.posture.flex.tests[test]}</td>
+                    <td className="py-1.5 text-right">{flexCell(b)}</td>
+                    <td className="py-1.5 text-right">{flexCell(a)}</td>
+                    <td className="py-1.5 text-right">{changeCell(b !== null && a !== null ? a - b : null)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </>
+      )}
 
       {/* ── PHOTOS ── */}
       <SectionHeader>{cmp.photos}</SectionHeader>

@@ -4,6 +4,7 @@ import { getISTDateString } from './dates';
 import { FEE_TYPE_KEYS } from './feeTypes';
 import { POSE_LANDMARK_COUNT, POSTURE_VIEWS } from './posture';
 import { isLevel } from './posture-capture';
+import { FLEX_SHOTS } from './flexibility';
 
 const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
@@ -169,8 +170,7 @@ const POSTURE_DATA_ERR = { error: 'Invalid posture data / चुकीची प
 // them to this range when cropping (remapToCrop), so anything beyond it is malformed.
 const landmarkCoord = z.number(POSTURE_DATA_ERR).min(-0.5, POSTURE_DATA_ERR).max(1.5, POSTURE_DATA_ERR);
 
-const postureViewSchema = z.object({
-  view: z.enum(POSTURE_VIEWS, POSTURE_DATA_ERR),
+const capturedPhotoFields = {
   imageWidth: z.number(POSTURE_DATA_ERR).int(POSTURE_DATA_ERR).min(1, POSTURE_DATA_ERR).max(4096, POSTURE_DATA_ERR),
   imageHeight: z.number(POSTURE_DATA_ERR).int(POSTURE_DATA_ERR).min(1, POSTURE_DATA_ERR).max(4096, POSTURE_DATA_ERR),
   landmarks: z.array(z.object({
@@ -187,7 +187,9 @@ const postureViewSchema = z.object({
     (c) => isLevel(c),
     'Camera was not level — retake the photo / कॅमेरा सरळ नव्हता — फोटो पुन्हा घ्या',
   ),
-}, POSTURE_DATA_ERR);
+};
+
+const postureViewSchema = z.object({ view: z.enum(POSTURE_VIEWS, POSTURE_DATA_ERR), ...capturedPhotoFields }, POSTURE_DATA_ERR);
 
 export const postureAssessmentSchema = z.object({
   consent: z.literal(true, { error: 'Photo consent required / फोटोसाठी संमती आवश्यक' }),
@@ -208,11 +210,24 @@ export type PostureAssessmentPayload = z.infer<typeof postureAssessmentSchema>;
 
 /** Retaking some views of an existing assessment (consent was recorded with the original). */
 export const postureRetakeSchema = z.object({
+  /** Only sent when the assessment's photos were deleted (consent withdrawn) and the client agreed again. */
+  consent: z.literal(true).optional(),
   views: z.array(postureViewSchema, POSTURE_DATA_ERR)
     .min(1, POSTURE_DATA_ERR)
     .max(POSTURE_VIEWS.length, POSTURE_DATA_ERR)
     .refine((views) => new Set(views.map((v) => v.view)).size === views.length, POSTURE_DATA_ERR),
 });
+
+/** Flexibility shots for an existing assessment: any 1–4 distinct shots (first capture or retakes). */
+export const flexibilityShotsSchema = z.object({
+  /** Only sent when the assessment's photos were deleted (consent withdrawn) and the client agreed again. */
+  consent: z.literal(true).optional(),
+  shots: z.array(z.object({ shot: z.enum(FLEX_SHOTS, POSTURE_DATA_ERR), ...capturedPhotoFields }, POSTURE_DATA_ERR), POSTURE_DATA_ERR)
+    .min(1, POSTURE_DATA_ERR)
+    .max(FLEX_SHOTS.length, POSTURE_DATA_ERR)
+    .refine((shots) => new Set(shots.map((s) => s.shot)).size === shots.length, POSTURE_DATA_ERR),
+});
+export type FlexibilityShotsPayload = z.infer<typeof flexibilityShotsSchema>;
 
 // Daily home-exercise check-in from the public share page. No free text; date and client come from the server.
 export const checkinSchema = z.object({
