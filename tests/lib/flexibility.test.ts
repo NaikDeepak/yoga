@@ -1,43 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { alignedLandmarks, POSTURE_W, POSTURE_H } from '../helpers/posture';
-import { flexBand, FLEX_FINGER, measureShot, scoreFlexibility, type FlexMeasures } from '@/lib/flexibility';
-import { LM, type Landmark } from '@/lib/posture';
+import { at, butterfly, fold, shoulderShot } from '../helpers/flexibility';
+import { flexBand, measureShot, scoreFlexibility, type FlexMeasures } from '@/lib/flexibility';
+import { LM } from '@/lib/posture';
 
 const size = { width: POSTURE_W, height: POSTURE_H };
-const rad = (deg: number) => (deg * Math.PI) / 180;
-const at = (from: [number, number], len: number, degFromDown: number, forward: 1 | -1 = 1): [number, number] =>
-  [Math.round(from[0] + forward * len * Math.sin(rad(degFromDown))), Math.round(from[1] + len * Math.cos(rad(degFromDown)))];
-
-// Side shot base (alignedLandmarks 'left'): near side LEFT, facing image-right (+x). Shoulder (500,500), hip (500,1000).
-const shoulderShot = (extensionDeg: number) => alignedLandmarks('left', {
-  LEFT_ELBOW: at([500, 500], 250, extensionDeg, -1),
-  LEFT_WRIST: at([500, 500], 450, extensionDeg, -1), // behind the body = image-left
-});
-
-function withFinger(lms: Landmark[], side: 'LEFT' | 'RIGHT', [x, y]: [number, number]): Landmark[] {
-  const out = lms.map((l) => ({ ...l }));
-  out[FLEX_FINGER[side]] = { x: x / POSTURE_W, y: y / POSTURE_H, visibility: 1 };
-  return out;
-}
-
-// Forward fold: hip (500,1000), knee (500,1450), ankle (500,1850), heel line 1880–1900.
-const fold = (hipAngle: number, finger: [number, number], knee: [number, number] = [500, 1450]) => withFinger(alignedLandmarks('left', {
-  LEFT_KNEE: knee,
-  LEFT_SHOULDER: at([500, 1000], 450, hipAngle), // hip angle = trunk vs thigh (pointing down)
-  LEFT_EAR: at([500, 1000], 600, hipAngle),
-  LEFT_WRIST: [finger[0], finger[1] - 60],
-}), 'LEFT', finger);
-
-// Butterfly (front shot, seated): shoulders 400–600 (width 200), hips at y 1500; heels (floor line) at `heels`.
-const butterfly = (kneeHeightLeft: number, kneeHeightRight: number, heels: [number, number] = [500, 1600]) => alignedLandmarks('front', {
-  LEFT_SHOULDER: [600, 1100], RIGHT_SHOULDER: [400, 1100],
-  LEFT_HIP: [560, 1500], RIGHT_HIP: [440, 1500],
-  LEFT_KNEE: [780, heels[1] - kneeHeightLeft], RIGHT_KNEE: [220, heels[1] - kneeHeightRight],
-  LEFT_ANKLE: [heels[0] + 20, heels[1] - 20], RIGHT_ANKLE: [heels[0] - 20, heels[1] - 20],
-  LEFT_HEEL: [heels[0] + 15, heels[1]], RIGHT_HEEL: [heels[0] - 15, heels[1]],
-  LEFT_FOOT_INDEX: [heels[0] + 10, heels[1] - 10], RIGHT_FOOT_INDEX: [heels[0] - 10, heels[1] - 10],
-});
-
 describe('measureShot — shoulder extension', () => {
   it('arms hanging = 0°, swept back = the angle behind the trunk', () => {
     expect(measureShot('shoulderExtLeft', shoulderShot(0), size).shoulderExtensionDeg).toBe(0);

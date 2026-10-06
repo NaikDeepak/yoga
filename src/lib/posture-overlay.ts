@@ -46,8 +46,13 @@ export interface EditablePoint extends OverlayPoint {
  * detector's guess but kept inside the photo so the handle is always reachable.
  */
 export function editablePoints(view: PostureView, landmarks: Landmark[], width: number, height: number): EditablePoint[] {
+  return editablePointsFor(pointIndices(view, landmarks), landmarks, width, height);
+}
+
+/** Editor handles for the given landmark indices (shared with the flexibility shots). */
+export function editablePointsFor(indices: number[], landmarks: Landmark[], width: number, height: number): EditablePoint[] {
   const clamp = (v: number, max: number) => Math.min(max, Math.max(0, v));
-  return pointIndices(view, landmarks).map((i) => ({
+  return indices.map((i) => ({
     index: i,
     x: clamp(landmarks[i].x * width, width),
     y: clamp(landmarks[i].y * height, height),
