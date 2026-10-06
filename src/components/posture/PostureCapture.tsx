@@ -177,7 +177,8 @@ export function PostureCapture({
         } else {
           history.current = [];
         }
-        setLive({ landmarks: lms, frame, still, fill: lms ? bodyFill(lms) : null });
+        // Body fill (eye-to-heel span) assumes standing upright: not for the fold or the seated butterfly.
+        setLive({ landmarks: lms, frame, still, fill: lms && !isFlexShot(view) ? bodyFill(lms) : null });
         const step = advanceCountdown(cd, frame.inFrame && frame.facing && still && levelOkRef.current, ts);
         cd = step.state;
         setCountdown(step.remaining);

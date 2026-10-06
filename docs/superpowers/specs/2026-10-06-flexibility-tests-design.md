@@ -48,6 +48,8 @@ The bands, flags and thresholds live in one table, like `THRESHOLDS` for posture
 - New route `posture/[assessmentId]/flexibility` (optional `?shots=` for retakes). It captures the four shots and saves, then goes back to the report.
 - **Seated butterfly framing:** the "head to heels" margins don't apply. The in-frame check uses head, shoulders, hips, knees and heels.
 
+- **After a consent withdrawal (added in review):** a flexibility capture or posture retake on that assessment shows the consent tick again, and the server refuses new photos without it (`'consentRequired'`). Giving it updates `consent_at`, so it's asked only once.
+
 ## Data model (migration 0022)
 
 - New table `flexibility_tests`:

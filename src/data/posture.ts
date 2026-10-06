@@ -208,10 +208,10 @@ export async function deletePostureAssessment(
   const [owned] = await db.select({ id: postureAssessments.id }).from(postureAssessments)
     .where(and(eq(postureAssessments.id, id), eq(postureAssessments.patientId, patientId)));
   if (!owned) return;
-  const files = [
-    ...await db.select({ filePath: postureViews.filePath }).from(postureViews).where(eq(postureViews.assessmentId, id)),
-    ...await db.select({ filePath: flexibilityTests.filePath }).from(flexibilityTests).where(eq(flexibilityTests.assessmentId, id)),
-  ];
+  const files = (await Promise.all([
+    db.select({ filePath: postureViews.filePath }).from(postureViews).where(eq(postureViews.assessmentId, id)),
+    db.select({ filePath: flexibilityTests.filePath }).from(flexibilityTests).where(eq(flexibilityTests.assessmentId, id)),
+  ])).flat();
   await db.delete(postureAssessments).where(eq(postureAssessments.id, id)); // cascades to views + flexibility tests
   // Best effort: the record is already gone, so a storage hiccup must not report the delete as failed.
   await Promise.allSettled(files.flatMap((f) => (f.filePath ? [storage.remove(f.filePath)] : [])));
@@ -237,7 +237,7 @@ export async function deletePosturePhotos(
     .innerJoin(postureAssessments, eq(table.assessmentId, postureAssessments.id))
     .where(and(eq(postureAssessments.patientId, patientId), isNotNull(table.filePath))))
     .map((r) => ({ ...r, table }));
-  const views = [...await photoRows(postureViews), ...await photoRows(flexibilityTests)];
+  const views = (await Promise.all([photoRows(postureViews), photoRows(flexibilityTests)])).flat();
   const results = await Promise.allSettled(views.map((v) => storage.remove(v.filePath!)));
   const gone = views.filter((_, i) => results[i].status === 'fulfilled');
   const failed = views.length - gone.length;
@@ -265,6 +265,12 @@ export async function deletePosturePhotos(
  */
 export const consentWithdrawn = (a: { photosDeletedAt: Date | null; consentAt: Date }) =>
   a.photosDeletedAt !== null && a.photosDeletedAt >= a.consentAt;
+
+/** The assessment row alone (no views or metric recomputation) — for ownership/consent checks. */
+export async function getPostureAssessmentRow(db: Db, id: string): Promise<PostureAssessmentRow | null> {
+  const [row] = await db.select().from(postureAssessments).where(eq(postureAssessments.id, id));
+  return row ?? null;
+}
 
 export async function needsFreshConsent(db: Db, assessmentId: string): Promise<boolean> {
   const [a] = await db.select({ photosDeletedAt: postureAssessments.photosDeletedAt, consentAt: postureAssessments.consentAt })

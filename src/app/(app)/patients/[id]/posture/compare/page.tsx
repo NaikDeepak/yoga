@@ -20,7 +20,7 @@ import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { PrintButton } from '@/components/PrintButton';
 import { Button } from '@/components/ui/button';
 import { PostureFigure } from '@/components/posture/PostureFigure';
-import { BRAND, SectionHeader, SeverityDot, scoreColor } from '@/components/posture/ReportParts';
+import { BRAND, FLEX_BAND_COLOR, SectionHeader, SeverityDot, scoreColor } from '@/components/posture/ReportParts';
 
 const TREND_STYLE: Record<Trend, { bg: string; fg: string }> = {
   better: { bg: '#E6F0EA', fg: BRAND.green },
@@ -74,9 +74,8 @@ export default async function PostureComparePage({
     <span className="tabular-nums font-semibold" style={{ color: n === null ? '#9ca3af' : scoreColor(n) }}>{n ?? cmp.notMeasured}</span>
   );
   // Flexibility uses its own bands (0–35 / 36–70 / 71–100), not the posture score colours.
-  const FLEX_COLOR = { veryInflexible: BRAND.red, moderate: BRAND.saffron, flexible: BRAND.green } as const;
   const flexCell = (n: number | null) => (
-    <span className="tabular-nums font-semibold" style={{ color: n === null ? '#9ca3af' : FLEX_COLOR[flexBand(n)!] }}>{n ?? cmp.notMeasured}</span>
+    <span className="tabular-nums font-semibold" style={{ color: n === null ? '#9ca3af' : FLEX_BAND_COLOR[flexBand(n)!] }}>{n ?? cmp.notMeasured}</span>
   );
   const changeCell = (n: number | null) => (
     <span className="tabular-nums font-semibold" style={{ color: n === null || n === 0 ? '#6b7280' : n > 0 ? BRAND.green : BRAND.red }}>

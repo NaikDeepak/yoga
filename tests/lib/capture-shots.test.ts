@@ -78,6 +78,10 @@ describe('butterfly shot', () => {
     expect(shotFrameChecks('butterfly', lms, size).facing).toBe(false);
   });
 
+  it('needs the head in view (sitting tall is part of the pose)', () => {
+    expect(shotFrameChecks('butterfly', hide(butterfly(30, 30), LM.NOSE, LM.LEFT_EAR, LM.RIGHT_EAR), size).inFrame).toBe(false);
+  });
+
   it('needs both knees', () => {
     expect(shotFrameChecks('butterfly', hide(butterfly(30, 30), LM.RIGHT_KNEE), size).inFrame).toBe(false);
   });

@@ -73,10 +73,6 @@ export default async function PostureReportPage({
     photoDeleted: v.filePath === null,
   })));
 
-  const flexibility = await getFlexibility(db, assessmentId);
-  const flexPhotoUrls = Object.fromEntries(await Promise.all(flexibility.shots.map(async (s) =>
-    [s.shot, s.filePath ? await storage.createSignedUrl(s.filePath).catch(() => null) : null] as const)));
-
   // Front/back and left/right readings of the same measure are averaged for scoring and patterns.
   const combined = combineViews(views);
   const score = scorePosture(combined);
@@ -92,11 +88,14 @@ export default async function PostureReportPage({
     library.filter((e) => e.category === category).slice(0, EXERCISES_PER_CATEGORY);
 
   // Client context (FlexifyMe-style profile strip + wellbeing gauges). Display-only: not sent to the AI.
-  const [vitals, lifestyle, share] = await Promise.all([
+  const [vitals, lifestyle, share, flexibility] = await Promise.all([
     visitVitalsOn(db, id, assessment.assessedOn),
     getLifestyleAssessmentSnapshot(db, id),
     activeShareLink(db, id, 'posture', new Date()),
+    getFlexibility(db, assessmentId),
   ]);
+  const flexPhotoUrls = Object.fromEntries(await Promise.all(flexibility.shots.map(async (s) =>
+    [s.shot, s.filePath ? await storage.createSignedUrl(s.filePath).catch(() => null) : null] as const)));
   // The client's live posture link may show a different (older/newer) report.
   const sharedOtherOn = share && share.postureAssessmentId !== assessmentId && share.postureAssessmentId
     ? await postureAssessedOn(db, share.postureAssessmentId)

@@ -13,6 +13,9 @@ export const BRAND = {
 
 const GRADE_COLOR: Record<Grade, string> = { good: BRAND.green, fair: BRAND.saffron, needsAttention: BRAND.red };
 
+/** Flexibility bands (0–35 / 36–70 / 71–100), used by the report and the compare page. */
+export const FLEX_BAND_COLOR = { veryInflexible: BRAND.red, moderate: BRAND.saffron, flexible: BRAND.green } as const;
+
 export const scoreColor = (score: number) => (score >= 85 ? BRAND.green : score >= 65 ? BRAND.saffron : BRAND.red);
 
 /** Donut gauge for the overall posture score. */

@@ -2,9 +2,7 @@
 // it's a posture view (delegated unchanged to posture-capture / posture-overlay / posture) or a
 // flexibility shot (spec 2026-10-06-flexibility-tests). Pure — no camera or DOM access.
 import { LM, MIN_VISIBILITY, computeViewMetrics, sagittalLandmarks, type Landmark, type Metric, type PostureView } from './posture';
-import {
-  checkFrame, EDGE, FRONTAL_MIN_WIDTH_RATIO, SAGITTAL_MAX_WIDTH_RATIO, stillKeypoints, type FrameChecks,
-} from './posture-capture';
+import { checkFrame, EDGE, FRONTAL_MIN_WIDTH_RATIO, stillKeypoints, type FrameChecks } from './posture-capture';
 import { buildOverlay, editablePoints, editablePointsFor, type EditablePoint, type Overlay, type OverlayLine } from './posture-overlay';
 import { FLEX_FINGER, FLEX_SHOTS, type FlexShot } from './flexibility';
 
@@ -42,7 +40,8 @@ function flexFrame(shot: FlexShot, lms: Landmark[], size: Size): FrameChecks {
   if (shot === 'butterfly') {
     const required = [LM.LEFT_SHOULDER, LM.RIGHT_SHOULDER, LM.LEFT_HIP, LM.RIGHT_HIP, LM.LEFT_KNEE, LM.RIGHT_KNEE];
     const feet = [LM.LEFT_HEEL, LM.RIGHT_HEEL].every(ok) || [LM.LEFT_ANKLE, LM.RIGHT_ANKLE].every(ok);
-    const inFrame = required.every(ok) && feet;
+    const head = [LM.NOSE, LM.LEFT_EAR, LM.RIGHT_EAR].some(ok); // "sit tall" needs the head in view
+    const inFrame = head && required.every(ok) && feet;
     if (!vis(LM.LEFT_SHOULDER) || !vis(LM.RIGHT_SHOULDER) || !vis(LM.LEFT_HIP) || !vis(LM.RIGHT_HIP)) return { inFrame, facing: false };
     const ls = px(LM.LEFT_SHOULDER), rs = px(LM.RIGHT_SHOULDER);
     const torso = Math.abs((px(LM.LEFT_HIP).y + px(LM.RIGHT_HIP).y) / 2 - (ls.y + rs.y) / 2);
@@ -70,17 +69,8 @@ function flexFrame(shot: FlexShot, lms: Landmark[], size: Size): FrameChecks {
   // Shoulder extension: standing side-on like the posture side views, with the arm in frame.
   const head = [LM.NOSE, s.ear].some(ok);
   const inFrame = head && hand && [s.shoulder, s.hip, s.knee, s.ankle].every(ok);
-  const view: PostureView = shot === 'shoulderExtRight' ? 'right' : 'left';
-  const side = checkFrame(view, lms, size); // facing direction + side-on, same rules as the posture side views
-  let facing = side.facing;
-  if (!facing && vis(s.shoulder) && vis(s.hip)) {
-    // Arms swept back can hide the toes; fall back to nose vs ear for the direction.
-    const dir = vis(LM.NOSE) && vis(s.ear) ? Math.sign(px(LM.NOSE).x - px(s.ear).x) : 0;
-    const far = s.shoulder === LM.LEFT_SHOULDER ? LM.RIGHT_SHOULDER : LM.LEFT_SHOULDER;
-    const torso = Math.abs(px(s.hip).y - px(s.shoulder).y);
-    const width = vis(far) ? Math.abs(px(s.shoulder).x - px(far).x) : 0;
-    facing = dir === (view === 'right' ? 1 : -1) && torso > 0 && width / torso <= SAGITTAL_MAX_WIDTH_RATIO;
-  }
+  // Facing direction and side-on: the posture side-view rules (toes first, then nose vs ear).
+  const { facing } = checkFrame(shot === 'shoulderExtRight' ? 'right' : 'left', lms, size);
   return { inFrame, facing };
 }
 

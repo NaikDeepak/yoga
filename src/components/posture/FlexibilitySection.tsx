@@ -3,12 +3,11 @@ import { Activity } from 'lucide-react';
 import type { Flexibility } from '@/data/flexibility';
 import type { Translations } from '@/lib/i18n/en';
 import { shotOverlay } from '@/lib/capture-shots';
-import { FLEX_TESTS, type FlexBand, type FlexResult, type FlexShot, type FlexTest } from '@/lib/flexibility';
+import { FLEX_TESTS, type FlexResult, type FlexShot, type FlexTest } from '@/lib/flexibility';
 import { Button } from '@/components/ui/button';
 import { PostureFigure } from './PostureFigure';
-import { BRAND, SectionHeader } from './ReportParts';
+import { BRAND, FLEX_BAND_COLOR, SectionHeader } from './ReportParts';
 
-const BAND_COLOR: Record<FlexBand, string> = { veryInflexible: BRAND.red, moderate: BRAND.saffron, flexible: BRAND.green };
 const SHOTS_OF: Record<FlexTest, FlexShot[]> = {
   shoulderExtension: ['shoulderExtLeft', 'shoulderExtRight'],
   forwardFold: ['forwardFold'],
@@ -104,9 +103,9 @@ function TestCard({
       </div>
       {result && result.score !== null && result.band ? (
         <p className="mt-3 flex items-baseline gap-2">
-          <span className="text-3xl font-bold tabular-nums" style={{ color: BAND_COLOR[result.band] }}>{result.score}</span>
+          <span className="text-3xl font-bold tabular-nums" style={{ color: FLEX_BAND_COLOR[result.band] }}>{result.score}</span>
           <span className="text-xs text-gray-500">{f.outOf}</span>
-          <span className="text-sm font-medium" style={{ color: BAND_COLOR[result.band] }}>{f.bands[result.band]}</span>
+          <span className="text-sm font-medium" style={{ color: FLEX_BAND_COLOR[result.band] }}>{f.bands[result.band]}</span>
         </p>
       ) : (
         <p className="mt-3 text-sm text-gray-500">{f.notMeasured}</p>
