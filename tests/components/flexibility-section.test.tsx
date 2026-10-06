@@ -36,6 +36,11 @@ describe('FlexibilitySection', () => {
     expect(screen.getByRole('link', { name: new RegExp(en.posture.flex.retake) })).toBeTruthy();
   });
 
+  it('shows the ideal pose beside each test', () => {
+    render(<FlexibilitySection flexibility={flexibility()} photoUrls={{}} captureHref={null} t={en} />);
+    expect(screen.getAllByRole('img', { name: en.posture.ideal })).toHaveLength(3);
+  });
+
   it('shows quality flags', () => {
     const lms = fold(60, [700, 1700], [620, 1420]);
     const f = flexibility();

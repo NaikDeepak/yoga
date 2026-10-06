@@ -73,7 +73,7 @@ Ordered by value ÷ effort. Each item follows the repo pattern (TDD in `src/lib`
 10. **B4 Roll correction** — after A2 confirms sensor signs per platform, rotate landmarks by recorded roll before metrics (frontal views); re-score history automatically (reads already recompute).
 11. **B5 Stricter checks, one at a time** (lenient-first policy): front/back discrimination, confident head-in-frame from behind, then make body-fill blocking — each behind a quick device test.
 12. **B7 Offline models** — service-worker cache (PWA already installable) for `/mediapipe/*` and the two `.task` models.
-13. **C4 Ideal-posture figure** and **C6 curve estimate** (qualitative, from shoulder/hip/ear offsets; flagged approx).
+13. ✅ **C4 Ideal-posture figure** (done — `feat/ideal-figure`, spec `2026-10-06-ideal-figure-design.md`; separate generic figure beside each view + flexibility target pose) and **C6 curve estimate** (qualitative, from shoulder/hip/ear offsets; flagged approx).
 
 ### Phase 4 — scope expansion (separate spec each)
 14. ✅ **D1 Flexibility tests** (done — `feat/flexibility-tests`, spec `2026-10-06-flexibility-tests-design.md`; cut-offs in `FLEX_SCORING` await physio tuning) — new capture mode per pose with MediaPipe angles (e.g. hip-flexion angle in forward fold, knee height in butterfly, shoulder extension angle), 0–100 score bands, combined "overall /300"-style score next to posture.

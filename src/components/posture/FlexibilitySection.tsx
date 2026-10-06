@@ -6,8 +6,11 @@ import { shotOverlay } from '@/lib/capture-shots';
 import { FLEX_TESTS, type FlexResult, type FlexShot, type FlexTest } from '@/lib/flexibility';
 import { Button } from '@/components/ui/button';
 import { PostureFigure } from './PostureFigure';
+import { IdealFigure } from './IdealFigure';
 import { BRAND, FLEX_BAND_COLOR, SectionHeader } from './ReportParts';
 
+/** Which ideal pose illustrates each test (one side is enough for shoulder extension). */
+const IDEAL_SHOT: Record<FlexTest, FlexShot> = { shoulderExtension: 'shoulderExtRight', forwardFold: 'forwardFold', butterfly: 'butterfly' };
 const SHOTS_OF: Record<FlexTest, FlexShot[]> = {
   shoulderExtension: ['shoulderExtLeft', 'shoulderExtRight'],
   forwardFold: ['forwardFold'],
@@ -89,7 +92,8 @@ function TestCard({
   return (
     <article className="rounded-xl border p-3 print:break-inside-avoid" style={{ borderColor: BRAND.sand }}>
       <h3 className="text-sm font-semibold" style={{ color: BRAND.green }}>{f.tests[test]}</h3>
-      <div className={`mt-2 grid gap-2 ${shots.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      {/* The client's shot(s), then the ideal pose for the test (score 100). */}
+      <div className={`mt-2 grid items-start gap-2 ${shots.length > 1 ? 'grid-cols-3' : 'grid-cols-2'}`}>
         {shots.map((s) => (
           <PostureFigure
             key={s.shot}
@@ -100,6 +104,7 @@ function TestCard({
             noPhotoLabel={s.filePath === null ? t.posture.photoDeleted : t.posture.noPhoto}
           />
         ))}
+        {shots.length > 0 && <IdealFigure shot={IDEAL_SHOT[test]} label={t.posture.ideal} />}
       </div>
       {result && result.score !== null && result.band ? (
         <p className="mt-3 flex items-baseline gap-2">

@@ -6,6 +6,7 @@ import { REGIONS } from '@/lib/posture-insights';
 import { formatMetric } from '@/lib/posture-format';
 import { bmiBand, genderLabel, painBand, stressBand } from '@/lib/wellbeing';
 import { PostureFigure } from '@/components/posture/PostureFigure';
+import { IdealFigure } from '@/components/posture/IdealFigure';
 import { BRAND, RegionBars, ScoreRing, SectionHeader, SeverityDot } from '@/components/posture/ReportParts';
 import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
 
@@ -75,10 +76,14 @@ export function PostureReportBody({ report, t }: { report: SharedPostureReport; 
 
       <section>
         <SectionHeader>{s.findingsTitle}</SectionHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           {report.views.map((v) => (
             <figure key={v.view}>
-              <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={report.photosShared ? p.noPhoto : s.noPhotoShared} />
+              {/* Their figure beside the ideal one for the same view. */}
+              <div className="grid grid-cols-2 items-start gap-2">
+                <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={report.photosShared ? p.noPhoto : s.noPhotoShared} />
+                <IdealFigure shot={v.view} label={p.ideal} />
+              </div>
               <figcaption className="mt-1.5">
                 <p className="text-center text-sm font-semibold" style={{ color: BRAND.green }}>{ins.viewNames[v.view]}</p>
                 <ul className="mt-1 space-y-0.5 text-xs">
