@@ -3,6 +3,7 @@ import { patients, type Patient } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { nextPatientCode } from '@/lib/patient-code';
 import type { PatientInput } from '@/lib/validation';
+import { clientFolder, type FileStorage } from '@/lib/storage';
 
 export async function createPatient(db: Db, input: PatientInput): Promise<Patient> {
   return db.transaction(async (tx) => {
@@ -69,6 +70,23 @@ export async function countPatients(db: Db, branch?: string, q?: string): Promis
   return value;
 }
 
-export async function deletePatient(db: Db, id: string): Promise<void> {
-  await db.delete(patients).where(eq(patients.id, id));
+/**
+ * Permanently erases a client: the row (every child table cascades, so their share links stop at
+ * once), then every file in their storage folder — by prefix, so files the DB no longer knows about
+ * (replaced profile photos, leftovers) go too. Storage is best effort once the client is gone:
+ * `filesRemoved` is null when the cleanup failed (logged as a message only, no ids or paths).
+ */
+export async function deletePatientAndFiles(
+  db: Db,
+  storage: FileStorage,
+  id: string,
+): Promise<{ deleted: boolean; filesRemoved: number | null }> {
+  const gone = await db.delete(patients).where(eq(patients.id, id)).returning({ id: patients.id });
+  if (!gone.length) return { deleted: false, filesRemoved: 0 };
+  try {
+    return { deleted: true, filesRemoved: await storage.removePrefix(clientFolder(id)) };
+  } catch (err) {
+    console.error('Client deleted but storage cleanup failed:', err instanceof Error ? err.message : String(err));
+    return { deleted: true, filesRemoved: null };
+  }
 }

@@ -81,8 +81,9 @@ describe('deleteCharge', () => {
   it('cascades when the patient is deleted', async () => {
     const p = await createPatient(db, PATIENT);
     await addCharge(db, p.id, 'consultation', 'Consultation Fee / सल्ला शुल्क', 500, '2026-08-10', null);
-    const { deletePatient } = await import('@/data/patients');
-    await deletePatient(db, p.id);
+    const { deletePatientAndFiles } = await import('@/data/patients');
+    const { FakeStorage } = await import('../helpers/fake-storage');
+    await deletePatientAndFiles(db, new FakeStorage(), p.id);
     expect(await listCharges(db, p.id)).toEqual([]);
   });
 

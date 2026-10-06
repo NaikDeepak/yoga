@@ -570,6 +570,7 @@ export const en = {
     mildCount: '{count} mild',
     edited: 'Points adjusted by therapist',
     noPhoto: 'Photo unavailable',
+    photoDeleted: 'Photo deleted (consent withdrawn)',
     deleteConfirm: 'This permanently deletes this posture assessment and its photos.',
     disclaimer: 'Screening aid only — not a medical diagnosis. Values are estimated from 2D photos and should be confirmed by clinical examination.',
     approx: 'approx',

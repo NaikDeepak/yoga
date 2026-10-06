@@ -52,7 +52,7 @@ describe('addPostureAssessment', () => {
     expect(a.views.map((v) => v.view)).toEqual(['front', 'right', 'back', 'left']);
     for (const v of a.views) {
       expect(v.filePath).toBe(`patients/${patientId}/posture/${a.id}/${v.view}.jpg`);
-      expect(storage.files.has(v.filePath)).toBe(true);
+      expect(storage.files.has(v.filePath!)).toBe(true);
       expect(v.landmarks).toHaveLength(33);
     }
   });
@@ -237,8 +237,8 @@ describe('replacePostureViews', () => {
     const back = updated!.views.find((v) => v.view === 'back')!;
     expect(back.filePath).not.toBe(oldBack.filePath);
     expect(back.filePath).toMatch(new RegExp(`^patients/${patientId}/posture/${a.id}/back-[a-z0-9]+\\.jpg$`));
-    expect(storage.files.has(back.filePath)).toBe(true);
-    expect(storage.files.has(oldBack.filePath)).toBe(false);
+    expect(storage.files.has(back.filePath!)).toBe(true);
+    expect(storage.files.has(oldBack.filePath!)).toBe(false);
     expect(back.cameraCheck).toEqual({ method: 'sensor', rollDeg: -0.3, pitchDeg: 0.5 });
     expect(back.metrics.find((m) => m.key === 'shoulderLevel')?.value).toBeGreaterThan(0);
     expect(updated!.views.find((v) => v.view === 'front')).toMatchObject({ filePath: oldFront.filePath });

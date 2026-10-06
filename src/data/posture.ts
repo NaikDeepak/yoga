@@ -1,6 +1,6 @@
-import { and, desc, eq, getTableColumns, inArray, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, getTableColumns, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import {
-  postureAssessments, postureViews, type PostureAssessmentRow, type PostureViewRow,
+  postureAssessments, postureViews, shareLinks, type PostureAssessmentRow, type PostureViewRow,
 } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { FileStorage } from '@/lib/storage';
@@ -204,7 +204,34 @@ export async function deletePostureAssessment(
     .where(eq(postureViews.assessmentId, id));
   await db.delete(postureAssessments).where(eq(postureAssessments.id, id)); // cascades to views
   // Best effort: the record is already gone, so a storage hiccup must not report the delete as failed.
-  await Promise.allSettled(views.map((v) => storage.remove(v.filePath)));
+  await Promise.allSettled(views.flatMap((v) => (v.filePath ? [storage.remove(v.filePath)] : [])));
+}
+
+/**
+ * The client withdrew photo consent: deletes all their posture photos but keeps every assessment's
+ * points, measurements and scores (figures are drawn from the points). Stamps `photos_deleted_at`
+ * (the first withdrawal is kept) and turns photos off on their posture share link, in one
+ * transaction; files are removed afterwards, best effort. Returns how many photos were deleted.
+ */
+export async function deletePosturePhotos(db: Db, storage: FileStorage, patientId: string, now: Date): Promise<number> {
+  const paths = await db.transaction(async (tx) => {
+    const ids = (await tx.select({ id: postureAssessments.id }).from(postureAssessments)
+      .where(eq(postureAssessments.patientId, patientId)).for('update')).map((a) => a.id);
+    if (!ids.length) return [];
+    const rows = await tx.select({ filePath: postureViews.filePath }).from(postureViews)
+      .where(and(inArray(postureViews.assessmentId, ids), isNotNull(postureViews.filePath)));
+    await tx.update(postureViews).set({ filePath: null }).where(inArray(postureViews.assessmentId, ids));
+    await tx.update(postureAssessments).set({ photosDeletedAt: now })
+      .where(and(inArray(postureAssessments.id, ids), isNull(postureAssessments.photosDeletedAt)));
+    await tx.update(shareLinks).set({ includePhotos: false })
+      .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, 'posture')));
+    return rows.map((r) => r.filePath!);
+  });
+  // Only after the rows no longer point at them; best effort (logged as a count, no paths).
+  const results = await Promise.allSettled(paths.map((p) => storage.remove(p)));
+  const failed = results.filter((r) => r.status === 'rejected').length;
+  if (failed) console.error(`Posture photos withdrawn but ${failed} file(s) could not be removed`);
+  return paths.length;
 }
 
 /**
@@ -258,7 +285,7 @@ export async function replacePostureViews(
     throw err;
   }
   // Only after the rows point at the new photos; best effort, the retake itself has succeeded.
-  await Promise.allSettled(existing.map((e) => storage.remove(e.filePath)));
+  await Promise.allSettled(existing.flatMap((e) => (e.filePath ? [storage.remove(e.filePath)] : [])));
   return getPostureAssessment(db, assessmentId);
 }
 

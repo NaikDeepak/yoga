@@ -62,7 +62,7 @@ export async function getSharedPostureReport(
     view: v.view as PostureView,
     overlay: buildOverlay(v.view as PostureView, v.landmarks, v.imageWidth, v.imageHeight),
     metrics: v.metrics,
-    photoUrl: link.includePhotos
+    photoUrl: link.includePhotos && v.filePath
       ? await storage.createSignedUrl(v.filePath, SHARED_PHOTO_URL_SECONDS).catch((err: unknown) => {
         // The page then says "Photo unavailable". Message only: no paths or ids in logs.
         console.error('Shared posture photo URL failed:', err instanceof Error ? err.message : String(err));
@@ -83,7 +83,7 @@ export async function getSharedPostureReport(
   return {
     firstName: firstName(patient.fullName),
     assessedOn: assessment.assessedOn,
-    photosShared: link.includePhotos,
+    photosShared: link.includePhotos && assessment.views.some((v) => v.filePath !== null),
     score: scorePosture(combined),
     patterns: detectPatterns(combined.filter((m) => !m.lowConfidence)).map((p) => ({ key: p.key, severity: p.severity })),
     views: clientViews,

@@ -61,7 +61,8 @@ export default async function PostureComparePage({
     asmt.views.map(async (v) => [v.view, {
       overlay: buildOverlay(v.view as PostureView, v.landmarks, v.imageWidth, v.imageHeight),
       metrics: v.metrics,
-      url: await storage.createSignedUrl(v.filePath).catch(() => null),
+      url: v.filePath ? await storage.createSignedUrl(v.filePath).catch(() => null) : null,
+      deleted: v.filePath === null,
     }] as const),
   ))));
 
@@ -191,7 +192,7 @@ export default async function PostureComparePage({
                 return (
                   <figure key={i}>
                     {ph
-                      ? <PostureFigure overlay={ph.overlay} photoUrl={ph.url} metrics={ph.metrics} alt={`${ins.viewNames[v]} — ${i === 0 ? cmp.before : cmp.after}`} noPhotoLabel={p.noPhoto} />
+                      ? <PostureFigure overlay={ph.overlay} photoUrl={ph.url} metrics={ph.metrics} alt={`${ins.viewNames[v]} — ${i === 0 ? cmp.before : cmp.after}`} noPhotoLabel={ph.deleted ? p.photoDeleted : p.noPhoto} />
                       : <div className="aspect-[1/2] rounded-md bg-muted" />}
                     <figcaption className="mt-1 text-center text-xs text-gray-500">
                       {i === 0 ? cmp.before : cmp.after} · {formatFullDate((i === 0 ? before : after).assessedOn)}

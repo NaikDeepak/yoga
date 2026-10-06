@@ -222,6 +222,8 @@ export const postureAssessments = pgTable('posture_assessments', {
   heightCm: real('height_cm'), // snapshot of client height used for cm conversion
   note: text('note'),
   consentAt: timestamp('consent_at').notNull(), // when the photo-consent checkbox was ticked
+  // Client withdrew photo consent: the photos were deleted (views keep points + metrics, file_path null).
+  photosDeletedAt: timestamp('photos_deleted_at'),
   // AI-written analysis (see lib/posture-ai.ts). Draft until the physio approves it.
   aiReport: jsonb('ai_report').$type<PostureAiReport>(),
   aiGeneratedAt: timestamp('ai_generated_at'),
@@ -236,7 +238,7 @@ export const postureViews = pgTable('posture_views', {
   assessmentId: uuid('assessment_id').notNull()
     .references(() => postureAssessments.id, { onDelete: 'cascade' }),
   view: text('view').notNull(), // 'front' | 'back' | 'left' | 'right'
-  filePath: text('file_path').notNull(), // private bucket; signed URLs only
+  filePath: text('file_path'), // private bucket; signed URLs only. Null once the photo was deleted (consent withdrawn).
   imageWidth: integer('image_width').notNull(),
   imageHeight: integer('image_height').notNull(),
   landmarks: jsonb('landmarks').$type<Landmark[]>().notNull(), // 33 × {x,y,visibility}, normalised 0–1
