@@ -90,13 +90,13 @@ export async function getSharedProgressReport(
     listCheckins(db, link.patientId, shiftDate(today, -(HOME_WINDOW_DAYS - 1)), today),
     isPostureEnabled(env) ? postureProgress(db, link.patientId) : null,
   ]);
-  const oldestFirst = [...visits].reverse();
+  const oldestFirst = visits.filter((v) => v.visitDate <= today).reverse(); // live, but only up to today
 
   return {
     firstName: firstName(patient.fullName),
     since: oldestFirst[0]?.visitDate ?? null,
     goal: lifestyle?.primaryGoal?.trim() || null,
-    sessions: visits.length,
+    sessions: oldestFirst.length,
     pain: progressSeries(oldestFirst.map((v) => ({ date: v.visitDate, value: v.painScale }))),
     weight: link.hideWeight ? null : progressSeries(oldestFirst.map((v) => ({ date: v.visitDate, value: v.weightKg === null ? null : Number(v.weightKg) }))),
     home: since ? {

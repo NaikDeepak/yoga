@@ -69,6 +69,13 @@ describe('getSharedProgressReport', () => {
     expect(r.weight!.series).toHaveLength(3);
   });
 
+  it('is up to today: a visit dated in the future is left out', async () => {
+    await visit('2026-10-20', 1, 70);
+    const r = (await getSharedProgressReport(db, await link(), now, env))!;
+    expect(r.sessions).toBe(5);
+    expect(r.pain!.latest).toEqual({ date: '2026-09-20', value: 3 });
+  });
+
   it('"hide weight" leaves no weight anywhere in the report', async () => {
     const r = (await getSharedProgressReport(db, await link({ hideWeight: true }), now, env))!;
     expect(r.weight).toBeNull();

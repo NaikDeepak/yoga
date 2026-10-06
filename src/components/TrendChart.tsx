@@ -38,7 +38,8 @@ export function TrendChart({
           {c.segments.map((pts, i) => (
             <polyline key={i} points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
           ))}
-          {c.points.map((p) => <circle key={p.date} cx={p.x} cy={p.y} r="3" fill={color} />)}
+          {/* Index keys: two visits can share a day. */}
+          {c.points.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="3" fill={color} />)}
         </g>
       </svg>
     </figure>
