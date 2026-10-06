@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
@@ -10,7 +11,7 @@ import { firstError, postureAssessmentSchema, postureRetakeSchema } from '@/lib/
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { getPatient } from '@/data/patients';
 import {
-  addPostureAssessment, deletePostureAssessment, getPostureAssessment, replacePostureViews, saveAiReport,
+  addPostureAssessment, deletePostureAssessment, deletePosturePhotos, getPostureAssessment, replacePostureViews, saveAiReport,
   type PostureViewInput,
 } from '@/data/posture';
 import { listProblems } from '@/data/problems';
@@ -155,6 +156,25 @@ export async function deletePostureAssessmentAction(patientId: string, assessmen
   revalidatePath(`/patients/${patientId}`);
   // Redirect server-side: the caller is the report page of the record that no longer exists.
   redirect(`/patients/${patientId}?tab=assessment`);
+}
+
+/**
+ * The client withdrew photo consent: deletes all their posture photos, keeping points, measurements
+ * and scores. New assessments ask for consent again as usual.
+ */
+export async function withdrawPhotoConsentAction(
+  patientId: string,
+): Promise<{ ok: true; deleted: number } | { ok: false; error: string }> {
+  await requireUser();
+  if (!z.string().uuid().safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  try {
+    const deleted = await deletePosturePhotos(getDb(), getStorage(), patientId, new Date());
+    revalidatePath(`/patients/${patientId}`, 'layout');
+    return { ok: true, deleted };
+  } catch (error) {
+    console.error('Failed to withdraw photo consent:', error instanceof Error ? error.message : String(error));
+    return { ok: false, error: 'Could not delete the photos / फोटो हटवता आले नाहीत' };
+  }
 }
 
 const NOT_FOUND: ActionResult = { ok: false, error: 'Assessment not found / मूल्यांकन सापडले नाही' };
