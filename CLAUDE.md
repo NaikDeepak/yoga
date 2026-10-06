@@ -7,6 +7,7 @@ Single-clinic patient management app. Next.js 15 + Drizzle; production = Neon (D
 ## Read these instead of scanning code
 - `docs/architecture.md` — **code index**: module map, invariants, how-to-add-a-feature. Start here.
 - `docs/environments.md` — **environments & operations**: where is what (Vercel/Neon/Supabase Auth/R2/Gemini), every env var, adding/removing Vercel env vars, release flow, `*:prod` scripts, troubleshooting.
+- `docs/backlog.md` — **what's next**: open items, things waiting on people, remaining roadmap. Update it when something is done or deferred.
 - `docs/setup.md` — first-time setup (Neon/R2/Supabase-login/Vercel) + manual QA checklist.
 - `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md` — what Phase 1 is and isn't; Phase 2/3 roadmap.
 

@@ -46,8 +46,8 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `CRON_SECRET` | If set, the daily `/api/ping` keepalive cron must send it | — | optional |
 | `PROD_DATABASE_URL`, `PROD_SITE_URL` | Used **only** by the `npm run *:prod` scripts on your Mac | Neon pooled URL / live URL | not used |
 
-As of 2026-10-06: `GEMINI_API_KEY` **is set** in Production (added that day; before that the AI
-buttons failed on the live site). **`FEATURE_POSTURE` is not set**, so posture/flexibility is hidden.
+As of 2026-10-06: `GEMINI_API_KEY` **and** `FEATURE_POSTURE=true` are set in Production (both added
+that day), so AI features, posture analysis, flexibility tests and the ideal reference photos are live.
 Check with `vercel env ls production`. Remember: a local demo (`LOCAL_MOCK=true`) without a key returns a
 fixed dummy AI plan, so "it works locally" doesn't prove production has the key.
 
