@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { getSharedExerciseProgramme } from '@/data/exercises';
 import { getSharedPostureReport } from '@/data/shared-posture';
+import { getSharedProgressReport } from '@/data/shared-progress';
 import { recordShareView, resolveAnyShareLink } from '@/data/share-links';
 import { CLINIC } from '@/lib/clinic';
 import { isLinkPreviewBot } from '@/lib/share-token';
@@ -12,9 +13,10 @@ import { isPostureEnabled } from '@/lib/features';
 import { getTranslations } from '@/lib/i18n/translations';
 import { ExercisesBody } from './ExercisesBody';
 import { PostureReportBody } from './PostureReportBody';
+import { ProgressReportBody } from './ProgressReportBody';
 
 // Public, token-checked page. Each kind of link gets only its whitelisted view model
-// (SharedExerciseProgramme / SharedPostureReport), never database rows.
+// (SharedExerciseProgramme / SharedPostureReport / SharedProgressReport), never database rows.
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: "Pawar's Yog Therapy",
@@ -45,6 +47,11 @@ export default async function SharedLinkPage({
     const report = await getSharedPostureReport(db, getStorage(), link);
     if (!report) notFound();
     body = <PostureReportBody report={report} t={tr} />;
+  } else if (link.kind === 'progress') {
+    // Posture analysis switched off only hides the posture part; the rest of the report stays.
+    const report = await getSharedProgressReport(db, link, now);
+    if (!report) notFound();
+    body = <ProgressReportBody report={report} t={tr} />;
   } else {
     const programme = await getSharedExerciseProgramme(db, link, lang, now);
     if (!programme) notFound();

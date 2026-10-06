@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useTranslations } from '@/lib/i18n/context';
 import { formatFullDate, getISTDateString } from '@/lib/dates';
 import {
-  createExerciseShareLinkAction, createPostureShareLinkAction,
-  revokeExerciseShareLinkAction, revokePostureShareLinkAction,
+  createExerciseShareLinkAction, createPostureShareLinkAction, createProgressShareLinkAction,
+  revokeExerciseShareLinkAction, revokePostureShareLinkAction, revokeProgressShareLinkAction,
 } from '@/actions/share-links';
 
 export interface ActiveShare {
@@ -17,28 +17,34 @@ export interface ActiveShare {
   viewCount: number;
   lastViewedAt: string | null; // ISO
   includePhotos?: boolean; // posture links
+  hideWeight?: boolean; // progress links
 }
 
-/** What is being shared: the client's exercise programme, or one posture report. */
+/** What is being shared: the client's exercise programme, one posture report, or their progress report. */
 export type ShareTarget =
-  | { kind: 'exercises'; patientId: string; canShare: boolean }
+  | { kind: 'exercises' | 'progress'; patientId: string; canShare: boolean }
   | { kind: 'posture'; patientId: string; assessmentId: string; otherReportOn: string | null };
 
 const day = (iso: string) => formatFullDate(getISTDateString(0, new Date(iso)));
 
 /**
- * Send the client a link (exercise programme on the Treatment tab, or a posture report); status,
- * re-share and stop. Posture shares can include photos only when the physio ticks "client agreed".
+ * Send the client a link (exercise programme or progress report on the Treatment tab, or a posture
+ * report); status, re-share and stop. Posture shares can include photos only when the physio ticks
+ * "client agreed"; progress shares can leave weight out ("Hide weight").
  */
 export function SharePanel({ target, active }: { target: ShareTarget; active: ActiveShare | null }) {
   const tr = useTranslations();
   const t = tr.shareExercises;
   const tp = tr.sharePosture;
+  const tg = tr.shareProgress;
   const { patientId } = target;
   const posture = target.kind === 'posture' ? target : null;
-  const canShare = target.kind === 'posture' || target.canShare; // exercises need a prescription
-  // Start from the live link's choice, so "Share again" doesn't silently drop (or add) photos.
+  const progress = target.kind === 'progress';
+  // Exercises need a prescription; progress needs pain or weight from a visit.
+  const canShare = target.kind === 'posture' || target.canShare;
+  // Start from the live link's choice, so "Share again" doesn't silently drop (or add) photos or weight.
   const [includePhotos, setIncludePhotos] = useState(active?.includePhotos ?? false);
+  const [hideWeight, setHideWeight] = useState(active?.hideWeight ?? false);
   const [pending, start] = useTransition();
   const [fresh, setFresh] = useState<{ url: string; whatsappUrl: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -49,14 +55,18 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
     setCopied(false);
     const r = posture
       ? await createPostureShareLinkAction(posture.assessmentId, includePhotos)
-      : await createExerciseShareLinkAction(patientId);
+      : progress
+        ? await createProgressShareLinkAction(patientId, { hideWeight })
+        : await createExerciseShareLinkAction(patientId);
     if (!r.ok) return setError(r.error);
     setFresh({ url: r.url, whatsappUrl: r.whatsappUrl });
   });
 
   const stop = () => start(async () => {
     setError(null);
-    const r = posture ? await revokePostureShareLinkAction(patientId) : await revokeExerciseShareLinkAction(patientId);
+    const r = posture
+      ? await revokePostureShareLinkAction(patientId)
+      : progress ? await revokeProgressShareLinkAction(patientId) : await revokeExerciseShareLinkAction(patientId);
     if (!r.ok) return setError(r.error);
     setFresh(null);
   });
@@ -76,11 +86,11 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Link2 className="h-4 w-4" aria-hidden="true" />
-          {t.title}
+          {progress ? tg.title : t.title}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
-        <p className="text-muted-foreground">{posture ? tp.hint : t.hint}</p>
+        <p className="text-muted-foreground">{posture ? tp.hint : progress ? tg.hint : t.hint}</p>
         {posture?.otherReportOn && (
           <p className="text-xs text-amber-700">{tp.otherReport.replace('{date}', formatFullDate(posture.otherReportOn))}</p>
         )}
@@ -90,6 +100,7 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
             <p>
               {t.status.replace('{created}', day(active.createdAt)).replace('{expires}', day(active.expiresAt))}
               {posture && ` · ${active.includePhotos ? tp.withPhotos : tp.withoutPhotos}`}
+              {progress && active.hideWeight && ` · ${tg.weightHidden}`}
             </p>
             <p className="text-muted-foreground">
               {active.lastViewedAt
@@ -118,18 +129,24 @@ export function SharePanel({ target, active }: { target: ShareTarget; active: Ac
           </div>
         )}
 
-        {!canShare && target.kind === 'exercises' && <p className="text-xs text-muted-foreground">{t.noExercises}</p>}
+        {!canShare && <p className="text-xs text-muted-foreground">{progress ? tg.noData : t.noExercises}</p>}
         {posture && (
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={includePhotos} onChange={(e) => setIncludePhotos(e.target.checked)} />
             {tp.includePhotos}
           </label>
         )}
+        {progress && canShare && (
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={hideWeight} onChange={(e) => setHideWeight(e.target.checked)} />
+            {tg.hideWeight}
+          </label>
+        )}
         {(canShare || active || fresh) && <div className="flex flex-wrap items-center gap-2">
           {canShare && (
             <Button size="sm" variant={active || fresh ? 'outline' : 'default'} onClick={share} disabled={pending}>
               <Link2 className="mr-1.5 h-4 w-4" aria-hidden="true" />
-              {active || fresh ? t.shareAgain : t.share}
+              {active || fresh ? t.shareAgain : progress ? tg.share : t.share}
             </Button>
           )}
           {/* Stop stays available even if the prescription was emptied while a link is live. */}

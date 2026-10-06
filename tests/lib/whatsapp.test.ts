@@ -7,6 +7,7 @@ import {
   digestUrl,
   exerciseShareMessage,
   postureShareMessage,
+  progressShareMessage,
   type DigestEntry,
 } from '@/lib/whatsapp';
 import { CLINIC } from '@/lib/clinic';
@@ -125,5 +126,14 @@ describe('postureShareMessage', () => {
     const msg = postureShareMessage('https://clinic.example/s/tok');
     expect(msg).toContain('https://clinic.example/s/tok');
     expect(msg).not.toMatch(/shoulder|head|pelvis|knee|score/i);
+  });
+});
+
+describe('progressShareMessage', () => {
+  it('carries the link and no personal or health details', () => {
+    const msg = progressShareMessage('https://clinic.example/s/tok');
+    expect(msg).toContain('https://clinic.example/s/tok');
+    expect(msg).toContain('progress');
+    expect(msg).not.toMatch(/pain|weight|kg|score|दुखी|वजन/i);
   });
 });

@@ -10,6 +10,8 @@ vi.mock('@/actions/share-links', () => ({
   revokeExerciseShareLinkAction: vi.fn(),
   createPostureShareLinkAction: vi.fn(),
   revokePostureShareLinkAction: vi.fn(),
+  createProgressShareLinkAction: vi.fn(),
+  revokeProgressShareLinkAction: vi.fn(),
 }));
 
 const active = { createdAt: '2026-10-05T04:30:00Z', expiresAt: '2027-01-03T04:30:00Z', viewCount: 0, lastViewedAt: null };
@@ -54,5 +56,28 @@ describe('SharePanel (posture)', () => {
   it('starts "Include photos" from the live link, so Share again keeps the photos choice', () => {
     render(<SharePanel target={target} active={{ ...active, includePhotos: true }} />);
     expect((screen.getByRole('checkbox', { name: en.sharePosture.includePhotos }) as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+describe('SharePanel (progress)', () => {
+  const target = { kind: 'progress' as const, patientId: 'p1', canShare: true };
+
+  it('offers sharing with weight shown unless "Hide weight" is ticked', () => {
+    render(<SharePanel target={target} active={null} />);
+    expect(screen.getByText(en.shareProgress.hint)).toBeTruthy();
+    expect(screen.getByRole('button', { name: en.shareProgress.share })).toBeTruthy();
+    expect((screen.getByRole('checkbox', { name: en.shareProgress.hideWeight }) as HTMLInputElement).checked).toBe(false);
+  });
+
+  it('starts "Hide weight" from the live link and says so in the status', () => {
+    render(<SharePanel target={target} active={{ ...active, hideWeight: true }} />);
+    expect((screen.getByRole('checkbox', { name: en.shareProgress.hideWeight }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText(new RegExp(en.shareProgress.weightHidden))).toBeTruthy();
+  });
+
+  it('explains there is nothing to show before any pain or weight is recorded', () => {
+    render(<SharePanel target={{ ...target, canShare: false }} active={null} />);
+    expect(screen.getByText(en.shareProgress.noData)).toBeTruthy();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 });

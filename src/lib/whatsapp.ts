@@ -45,3 +45,8 @@ export function digestUrl(entries: DigestEntry[], dateISO: string, targetMobile:
 export function postureShareMessage(url: string): string {
   return `Namaskar 🙏 Your posture report from Pawar's Yog Therapy: ${url} / नमस्कार 🙏 आपला पोश्चर अहवाल: ${url}`;
 }
+
+/** Progress report link for the client. Only the link — no name, pain, weight or other health detail. */
+export function progressShareMessage(url: string): string {
+  return `Namaskar 🙏 Your progress report from Pawar's Yog Therapy: ${url} / नमस्कार 🙏 आपला प्रगती अहवाल: ${url}`;
+}
