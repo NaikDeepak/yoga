@@ -50,3 +50,8 @@ export function postureShareMessage(url: string): string {
 export function progressShareMessage(url: string): string {
   return `Namaskar 🙏 Your progress report from Pawar's Yog Therapy: ${url} / नमस्कार 🙏 आपला प्रगती अहवाल: ${url}`;
 }
+
+/** Nudge for a client whose home check-ins stopped. First name only; no ailment or other health detail. */
+export function quietNudgeMessage(firstName: string): string {
+  return `Namaskar ${firstName} 🙏 A gentle reminder from Pawar's Yog Therapy: please do your home exercises today and tick them off on the exercise link we sent you. / नमस्कार ${firstName} 🙏 आज आपले घरगुती व्यायाम करा आणि आम्ही पाठवलेल्या लिंकवर नोंद करा.`;
+}

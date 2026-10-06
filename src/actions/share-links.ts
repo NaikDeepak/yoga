@@ -9,7 +9,7 @@ import { shareUrl } from '@/lib/share-token';
 import { exerciseShareMessage, postureShareMessage, progressShareMessage, waMeUrl } from '@/lib/whatsapp';
 import { getPatient } from '@/data/patients';
 import { getPrescribedExercises } from '@/data/exercises';
-import { createShareLink, revokeShareLinks } from '@/data/share-links';
+import { createShareLink, recordNudge, revokeShareLinks } from '@/data/share-links';
 import { getPostureAssessment } from '@/data/posture';
 import { listVisitsWithData } from '@/data/visits';
 import { isPostureEnabled } from '@/lib/features';
@@ -144,5 +144,21 @@ export async function revokeProgressShareLinkAction(patientId: string): Promise<
   } catch (error) {
     console.error('Failed to revoke progress share link:', safeErrorMessage(error));
     return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
+  }
+}
+
+/** "WhatsApp nudge" tapped on the dashboard: remember when, so the card shows it (the message opens client-side). */
+export async function recordNudgeAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireUser();
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  try {
+    if (!(await recordNudge(getDb(), patientId, new Date()))) {
+      return { ok: false, error: 'No live exercise link / सक्रिय व्यायाम लिंक नाही' };
+    }
+    revalidatePath('/dashboard');
+    return { ok: true };
+  } catch (error) {
+    console.error('Failed to record nudge:', safeErrorMessage(error));
+    return { ok: false, error: 'Could not save / जतन करता आले नाही' };
   }
 }
