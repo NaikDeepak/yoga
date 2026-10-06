@@ -82,7 +82,7 @@ export function PostureReportBody({ report, t }: { report: SharedPostureReport; 
               {/* Their figure beside the ideal one for the same view. */}
               <div className="grid grid-cols-2 items-start gap-2">
                 <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={report.photosShared ? p.noPhoto : s.noPhotoShared} />
-                <IdealFigure shot={v.view} label={p.ideal} />
+                <IdealFigure shot={v.view} label={p.ideal} name={ins.viewNames[v.view]} />
               </div>
               <figcaption className="mt-1.5">
                 <p className="text-center text-sm font-semibold" style={{ color: BRAND.green }}>{ins.viewNames[v.view]}</p>

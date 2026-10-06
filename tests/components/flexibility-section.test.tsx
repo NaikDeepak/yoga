@@ -36,18 +36,16 @@ describe('FlexibilitySection', () => {
     expect(screen.getByRole('link', { name: new RegExp(en.posture.flex.retake) })).toBeTruthy();
   });
 
-  it('shows the ideal pose beside each test', () => {
+  it('shows the reference photo beside the fold and the butterfly, named', () => {
     render(<FlexibilitySection flexibility={flexibility()} photoUrls={{}} captureHref={null} t={en} />);
-    expect(screen.getAllByRole('img', { name: en.posture.ideal })).toHaveLength(3);
+    const ideals = screen.getAllByRole('img', { name: new RegExp(`^${en.posture.ideal} — `) }).map((i) => i.getAttribute('alt'));
+    expect(ideals).toEqual([`Ideal — ${en.posture.flex.tests.forwardFold}`, `Ideal — ${en.posture.flex.tests.butterfly}`]);
   });
 
-  it('shows the left-side shoulder ideal when only the left side was captured', () => {
-    const f = flexibility();
-    f.shots = f.shots.filter((s) => s.shot !== 'shoulderExtRight');
-    const { container } = render(<FlexibilitySection flexibility={f} photoUrls={{}} captureHref={null} t={en} />);
+  it('shows no reference photo for shoulder extension (none reached the 60° target)', () => {
+    const { container } = render(<FlexibilitySection flexibility={flexibility()} photoUrls={{}} captureHref={null} t={en} />);
     const srcs = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'));
-    expect(srcs).toContain('/ideal/shoulderExtLeft.jpg');
-    expect(srcs).not.toContain('/ideal/shoulderExtRight.jpg');
+    expect(srcs.some((s) => s?.includes('shoulderExt'))).toBe(false);
   });
 
   it('shows quality flags', () => {

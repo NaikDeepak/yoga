@@ -2,7 +2,19 @@
 #   python3 scripts/ideal-photos/generate.py [front right back shoulderExtRight forwardFold butterfly]
 import base64, json, os, sys, urllib.request
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-key = next(l.split("=",1)[1].strip().strip('"\'') for l in open(f"{ROOT}/.env") if l.startswith("GEMINI_API_KEY="))
+def read_key():
+    """GEMINI_API_KEY from the environment, else from .env (plain or `export` lines)."""
+    if os.environ.get("GEMINI_API_KEY"):
+        return os.environ["GEMINI_API_KEY"]
+    try:
+        for line in open(f"{ROOT}/.env"):
+            line = line.strip().removeprefix("export ").strip()
+            if line.startswith("GEMINI_API_KEY="):
+                return line.split("=", 1)[1].strip().strip('"\'')
+    except FileNotFoundError:
+        pass
+    sys.exit("GEMINI_API_KEY not set (environment or .env)")
+key = read_key()
 # Raw PNGs go to a scratch folder (not the repo); pick finals into public/ideal/ by hand.
 OUT = os.environ.get("IDEAL_OUT", "/tmp/ideal-photos")
 os.makedirs(OUT, exist_ok=True)
@@ -24,6 +36,7 @@ POSES = {
 }
 
 def generate(name, ref=None):
+    """One image; returns its path, or None (reason printed) so the rest of the batch still runs."""
     aspect, pose = POSES[name]
     parts = []
     if ref:
@@ -36,14 +49,29 @@ def generate(name, ref=None):
     try:
         d = json.load(urllib.request.urlopen(req, timeout=180))
     except urllib.error.HTTPError as e:
-        print(name, "HTTP", e.code, json.load(e).get("error", {}).get("message", "")[:200]); return None
-    for p in d["candidates"][0]["content"]["parts"]:
-        inline = p.get("inlineData") or p.get("inline_data")
-        if inline:
-            path = f"{OUT}/{name}.png"; open(path,"wb").write(base64.b64decode(inline["data"])); print(name, "ok"); return path
-    print(name, "no image", str(d)[:200]); return None
+        raw = e.read().decode("utf-8", "replace")
+        try:
+            msg = json.loads(raw).get("error", {}).get("message", "")
+        except ValueError:
+            msg = raw[:120]  # HTML error page from a gateway
+        print(name, "HTTP", e.code, msg[:200]); return None
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        print(name, "network error:", e); return None
+    for cand in d.get("candidates") or []:
+        for p in (cand.get("content") or {}).get("parts") or []:
+            inline = p.get("inlineData") or p.get("inline_data")
+            if inline:
+                path = f"{OUT}/{name}.png"; open(path,"wb").write(base64.b64decode(inline["data"])); print(name, "ok"); return path
+    print(name, "no image:", json.dumps(d.get("promptFeedback") or d.get("candidates") or d)[:200]); return None
 
 names = sys.argv[1:] or list(POSES)
 anchor = f"{OUT}/front.png"
+if "front" in names:  # the reference for every other pose: generate it first
+    names = ["front"] + [n for n in names if n != "front"]
 for n in names:
-    generate(n, None if n == "front" else (anchor if os.path.exists(anchor) else None))
+    if n not in POSES:
+        sys.exit(f"Unknown pose {n!r}; choose from {', '.join(POSES)}")
+    if n != "front" and not os.path.exists(anchor):
+        # Without the reference the model comes out as a different person; refuse rather than mismatch.
+        sys.exit(f"{anchor} missing: generate 'front' first, or copy public/ideal/front.jpg there as a PNG")
+    generate(n, None if n == "front" else anchor)

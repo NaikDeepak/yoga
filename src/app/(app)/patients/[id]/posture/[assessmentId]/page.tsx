@@ -309,7 +309,7 @@ export default async function PostureReportPage({
             {/* Client photo beside the ideal reference figure for the same view. */}
             <div className="grid grid-cols-[3fr_2fr] items-start gap-2">
               <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={v.photoDeleted ? p.photoDeleted : p.noPhoto} />
-              <IdealFigure shot={v.view} label={p.ideal} />
+              <IdealFigure shot={v.view} label={p.ideal} name={ins.viewNames[v.view]} />
             </div>
             <figcaption className="mt-2">
               <p className="text-center text-sm font-semibold" style={{ color: BRAND.green }}>{ins.viewNames[v.view]}</p>
