@@ -21,7 +21,13 @@ vi.mock('@aws-sdk/client-s3', () => {
   const GetObjectCommand = vi.fn(function(input: unknown) {
     return { _type: 'Get', input };
   });
-  return { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand };
+  const ListObjectsV2Command = vi.fn(function(input: unknown) {
+    return { _type: 'List', input };
+  });
+  const DeleteObjectsCommand = vi.fn(function(input: unknown) {
+    return { _type: 'DeleteMany', input };
+  });
+  return { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand };
 });
 
 vi.mock('@aws-sdk/s3-request-presigner', () => ({
@@ -140,6 +146,50 @@ describe('r2Storage', () => {
       mockGetSignedUrl.mockRejectedValue(new Error('presign failed'));
       await expect(r2Storage().createSignedUrl('x.pdf'))
         .rejects.toThrow('presign failed');
+    });
+  });
+
+  describe('removePrefix', () => {
+    const prefix = 'patients/11111111-1111-4111-8111-111111111111/';
+    const keys = (n: number, from = 0) => Array.from({ length: n }, (_, i) => ({ Key: `${prefix}f${from + i}` }));
+    type Cmd = { _type: string; input: { Delete?: { Objects: unknown[] }; ContinuationToken?: string } };
+
+    it('lists page by page and deletes every key in batches of up to 1000', async () => {
+      mockSend.mockImplementation(async (cmd: Cmd) => {
+        if (cmd._type === 'List') {
+          return cmd.input.ContinuationToken
+            ? { Contents: keys(5, 1500), IsTruncated: false }
+            : { Contents: keys(1500), IsTruncated: true, NextContinuationToken: 'next' };
+        }
+        return { Errors: [] };
+      });
+      const { ListObjectsV2Command } = await import('@aws-sdk/client-s3');
+
+      expect(await r2Storage().removePrefix(prefix)).toBe(1505);
+
+      expect(ListObjectsV2Command).toHaveBeenCalledWith({ Bucket: 'patient-files', Prefix: prefix, ContinuationToken: undefined });
+      expect(ListObjectsV2Command).toHaveBeenCalledWith({ Bucket: 'patient-files', Prefix: prefix, ContinuationToken: 'next' });
+      const batches = mockSend.mock.calls.map(([c]) => c as Cmd).filter((c) => c._type === 'DeleteMany');
+      expect(batches.map((b) => b.input.Delete!.Objects.length)).toEqual([1000, 500, 5]);
+    });
+
+    it('does nothing for an empty folder', async () => {
+      mockSend.mockResolvedValue({ IsTruncated: false });
+      expect(await r2Storage().removePrefix(prefix)).toBe(0);
+      expect(mockSend).toHaveBeenCalledOnce();
+    });
+
+    it('fails when R2 reports per-key errors', async () => {
+      mockSend.mockImplementation(async (cmd: Cmd) =>
+        cmd._type === 'List' ? { Contents: keys(2), IsTruncated: false } : { Errors: [{ Key: `${prefix}f0`, Code: 'AccessDenied' }] });
+      await expect(r2Storage().removePrefix(prefix)).rejects.toThrow('1 file(s) could not be deleted');
+    });
+
+    it('refuses anything but a client folder (never the whole bucket)', async () => {
+      for (const bad of ['', 'patients/', 'patients/x/', 'patients/11111111-1111-4111-8111-111111111111', 'other/11111111-1111-4111-8111-111111111111/']) {
+        await expect(r2Storage().removePrefix(bad)).rejects.toThrow('Invalid storage prefix');
+      }
+      expect(mockSend).not.toHaveBeenCalled();
     });
   });
 });

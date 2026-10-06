@@ -1,7 +1,10 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import { r2Storage } from './r2-storage';
 import { isLocalMock } from './local-mock';
+import { assertClientFolder } from './storage-paths';
+
+export { clientFolder } from './storage-paths';
 
 export const LOCAL_UPLOADS_DIR = 'public/uploads';
 
@@ -9,6 +12,8 @@ export interface FileStorage {
   upload(path: string, file: File): Promise<void>;
   remove(path: string): Promise<void>;
   createSignedUrl(path: string, expiresInSeconds?: number): Promise<string>;
+  /** Deletes every file under one client's folder (`patients/<id>/`); returns how many. */
+  removePrefix(prefix: string): Promise<number>;
 }
 
 export { r2Storage };
@@ -39,6 +44,13 @@ export function localFileStorage(baseDir: string = LOCAL_UPLOADS_DIR): FileStora
     async createSignedUrl(path) {
       safeTarget(path);
       return `/uploads/${path}`;
+    },
+    async removePrefix(prefix) {
+      assertClientFolder(prefix);
+      const target = safeTarget(prefix);
+      const entries = await readdir(target, { recursive: true, withFileTypes: true }).catch(() => []);
+      await rm(target, { recursive: true, force: true });
+      return entries.filter((e) => e.isFile()).length;
     },
   };
 }
