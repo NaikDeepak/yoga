@@ -235,7 +235,11 @@ export async function deletePosturePhotos(
 
   if (gone.length) {
     await db.transaction(async (tx) => {
-      await tx.update(postureViews).set({ filePath: null }).where(inArray(postureViews.id, gone.map((v) => v.id)));
+      // Only if the view still points at the deleted file: a retake that landed meanwhile keeps its new photo.
+      for (const v of gone) {
+        await tx.update(postureViews).set({ filePath: null })
+          .where(and(eq(postureViews.id, v.id), eq(postureViews.filePath, v.filePath!)));
+      }
       await tx.update(postureAssessments).set({ photosDeletedAt: now })
         .where(and(inArray(postureAssessments.id, [...new Set(gone.map((v) => v.assessmentId))]), isNull(postureAssessments.photosDeletedAt)));
       await tx.update(shareLinks).set({ includePhotos: false })

@@ -12,7 +12,7 @@ import {
 } from '@/data/posture';
 import { createShareLink, resolveAnyShareLink } from '@/data/share-links';
 import { getSharedPostureReport } from '@/data/shared-posture';
-import { patients, postureAssessments, shareLinks, visits } from '@/db/schema';
+import { patients, postureAssessments, postureViews, shareLinks, visits } from '@/db/schema';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -123,6 +123,24 @@ describe('deletePosturePhotos (consent withdrawn)', () => {
     storage.failRemove.clear();
     expect(await deletePosturePhotos(db, storage, patientId, now)).toEqual({ deleted: 1, failed: 0 });
     expect(storage.files.has(front)).toBe(false);
+  });
+
+  it('leaves a view alone if it was retaken while the photos were being deleted', async () => {
+    const a = await addAssessment(db, patientId, '2026-10-04', {}, storage);
+    const back = a.views.find((v) => v.view === 'back')!;
+    const retaken = `patients/${patientId}/posture/${a.id}/back-new.jpg`;
+    const remove = storage.remove.bind(storage);
+    storage.remove = async (path: string) => {
+      await remove(path);
+      if (path === back.filePath) { // a retake lands mid-withdrawal (fresh consent, new photo)
+        await storage.upload(retaken, jpeg());
+        await db.update(postureViews).set({ filePath: retaken }).where(eq(postureViews.id, back.id));
+      }
+    };
+    expect(await deletePosturePhotos(db, storage, patientId, now)).toEqual({ deleted: 4, failed: 0 });
+    const after = (await getPostureAssessment(db, a.id))!;
+    expect(after.views.find((v) => v.view === 'back')!.filePath).toBe(retaken);
+    expect(after.views.filter((v) => v.filePath === null)).toHaveLength(3);
   });
 
   it('is a no-op the second time', async () => {
