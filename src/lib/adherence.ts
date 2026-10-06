@@ -40,6 +40,9 @@ export function dayStrip(checkins: CheckinDay[], today: string, days: number): {
   });
 }
 
+/** A client is "quiet" after this many days without a check-in (Treatment tab and dashboard alike). */
+export const QUIET_AFTER_DAYS = 3;
+
 /**
  * Days without a check-in while a link is live, counted from the later of the last check-in and when
  * the current link was shared — so a client who never checked in is flagged, and a fresh re-share isn't.

@@ -287,6 +287,8 @@ export const shareLinks = pgTable('share_links', {
   includePhotos: boolean('include_photos').notNull().default(false),
   // kind 'progress': the physio ticked "Hide weight" (sensitive clients).
   hideWeight: boolean('hide_weight').notNull().default(false),
+  // kind 'exercises': when the physio last tapped "WhatsApp nudge" for this link (quiet-client alerts).
+  nudgedAt: timestamp('nudged_at'),
   tokenHash: text('token_hash').notNull().unique(),
   expiresAt: timestamp('expires_at').notNull(),
   revokedAt: timestamp('revoked_at'),

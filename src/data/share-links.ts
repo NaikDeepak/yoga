@@ -4,7 +4,8 @@ import type { Db } from '@/db/types';
 import { hashShareToken, newShareToken, shareLinkExpiry } from '@/lib/share-token';
 import { getISTDateString } from '@/lib/dates';
 
-const live = (now: Date) => and(isNull(shareLinks.revokedAt), gt(shareLinks.expiresAt, now));
+/** Not revoked and not expired. */
+export const live = (now: Date) => and(isNull(shareLinks.revokedAt), gt(shareLinks.expiresAt, now));
 
 /**
  * New link for a client; the previous one of the same kind stops working (only the hash is stored,
@@ -87,4 +88,12 @@ export async function firstShareDate(db: Db, patientId: string, kind: ShareLinkK
     .orderBy(asc(shareLinks.createdAt))
     .limit(1);
   return row ? getISTDateString(0, row.createdAt) : null;
+}
+
+/** "WhatsApp nudge" tapped for a quiet client: stamps their live exercise link. False if there is none. */
+export async function recordNudge(db: Db, patientId: string, now: Date): Promise<boolean> {
+  const rows = await db.update(shareLinks).set({ nudgedAt: now })
+    .where(and(eq(shareLinks.patientId, patientId), eq(shareLinks.kind, 'exercises'), live(now)))
+    .returning({ id: shareLinks.id });
+  return rows.length > 0;
 }

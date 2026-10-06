@@ -3,6 +3,8 @@ import { getDb } from '@/db/client';
 import { getDashboardStats, getAilmentBreakdown, getRecentVisits, getPendingAssessments, getBirthdaysToday } from '@/data/dashboard';
 import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/visits';
 import { getOutstandingBalances } from '@/data/fees';
+import { listQuietClients } from '@/data/quiet-clients';
+import { QuietClientsCard } from '@/components/QuietClientsCard';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { WeeklyVisitsChart } from '@/components/WeeklyVisitsChart';
 import { BranchFilter } from '@/components/BranchFilter';
@@ -70,7 +72,8 @@ export default async function DashboardPage({
     : await getUserLanguage(db, user.id);
   const t = getTranslations(locale);
 
-  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, birthdaysToday, savedWhatsappNumber, outstandingBalances] = await Promise.all([
+  const today = getISTDateString(0);
+  const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, birthdaysToday, savedWhatsappNumber, outstandingBalances, quiet] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
     getRecentVisits(db, 5, branch),
@@ -79,6 +82,7 @@ export default async function DashboardPage({
     getBirthdaysToday(db, branch),
     getWhatsappNumber(db, user.id),
     getOutstandingBalances(db, 5),
+    listQuietClients(db, today, new Date(), { branch }),
   ]);
   const digestTarget = savedWhatsappNumber ?? CLINIC.whatsappDigits;
 
@@ -272,6 +276,9 @@ export default async function DashboardPage({
 
       {/* Bottom Row */}
       <div className="grid gap-6 sm:grid-cols-2">
+        {/* Quiet clients: home check-ins stopped, one-tap WhatsApp nudge */}
+        <QuietClientsCard clients={quiet.clients} today={today} t={t} className="sm:col-span-2" />
+
         {/* Pending Assessments */}
         <Card className="rounded-2xl shadow-sm border-border">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
