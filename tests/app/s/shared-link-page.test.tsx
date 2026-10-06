@@ -42,6 +42,7 @@ describe('/s/[token]', () => {
     const { token } = await createShareLink(db, patientId, 'posture', new Date(), { postureAssessmentId: a.id });
     render(await page(token, 'mr'));
     expect(screen.getByText(/आपला पोश्चर अहवाल/)).toBeTruthy();
+    expect(screen.getAllByRole('img', { name: /^आदर्श — / })).toHaveLength(4); // reference photo beside each view, named
     expect(screen.queryByText('Did you do your exercises today?')).toBeNull();
     expect(document.body.textContent).not.toContain('Kulkarni');
   });

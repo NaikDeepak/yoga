@@ -32,6 +32,7 @@ import { PrintButton } from '@/components/PrintButton';
 import { DeleteButton } from '@/components/DeleteButton';
 import { Button } from '@/components/ui/button';
 import { PostureFigure } from '@/components/posture/PostureFigure';
+import { IdealFigure } from '@/components/posture/IdealFigure';
 import { PostureFindings } from '@/components/posture/PostureFindings';
 import { PostureAiPanel } from '@/components/posture/PostureAiPanel';
 import { AddToPrescriptionButton } from '@/components/posture/AddToPrescriptionButton';
@@ -302,10 +303,14 @@ export default async function PostureReportPage({
 
       {/* ── PHOTOS + FINDINGS BY VIEW ── */}
       <SectionHeader>{ins.viewFindings}</SectionHeader>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 print:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 print:grid-cols-2">
         {views.map((v) => (
           <figure key={v.view} className="print:break-inside-avoid">
-            <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={v.photoDeleted ? p.photoDeleted : p.noPhoto} />
+            {/* Client photo beside the ideal reference figure for the same view. */}
+            <div className="grid grid-cols-[3fr_2fr] items-start gap-2">
+              <PostureFigure overlay={v.overlay} photoUrl={v.photoUrl} metrics={v.metrics} alt={ins.viewNames[v.view]} noPhotoLabel={v.photoDeleted ? p.photoDeleted : p.noPhoto} />
+              <IdealFigure shot={v.view} label={p.ideal} name={ins.viewNames[v.view]} />
+            </div>
             <figcaption className="mt-2">
               <p className="text-center text-sm font-semibold" style={{ color: BRAND.green }}>{ins.viewNames[v.view]}</p>
               <ul className="mt-2 space-y-1 text-xs">

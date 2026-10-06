@@ -36,6 +36,18 @@ describe('FlexibilitySection', () => {
     expect(screen.getByRole('link', { name: new RegExp(en.posture.flex.retake) })).toBeTruthy();
   });
 
+  it('shows the reference photo beside the fold and the butterfly, named', () => {
+    render(<FlexibilitySection flexibility={flexibility()} photoUrls={{}} captureHref={null} t={en} />);
+    const ideals = screen.getAllByRole('img', { name: new RegExp(`^${en.posture.ideal} — `) }).map((i) => i.getAttribute('alt'));
+    expect(ideals).toEqual([`Ideal — ${en.posture.flex.tests.forwardFold}`, `Ideal — ${en.posture.flex.tests.butterfly}`]);
+  });
+
+  it('shows no reference photo for shoulder extension (none reached the 60° target)', () => {
+    const { container } = render(<FlexibilitySection flexibility={flexibility()} photoUrls={{}} captureHref={null} t={en} />);
+    const srcs = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'));
+    expect(srcs.some((s) => s?.includes('shoulderExt'))).toBe(false);
+  });
+
   it('shows quality flags', () => {
     const lms = fold(60, [700, 1700], [620, 1420]);
     const f = flexibility();

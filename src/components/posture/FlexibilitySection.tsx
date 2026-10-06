@@ -6,8 +6,12 @@ import { shotOverlay } from '@/lib/capture-shots';
 import { FLEX_TESTS, type FlexResult, type FlexShot, type FlexTest } from '@/lib/flexibility';
 import { Button } from '@/components/ui/button';
 import { PostureFigure } from './PostureFigure';
+import { IdealFigure } from './IdealFigure';
 import { BRAND, FLEX_BAND_COLOR, SectionHeader } from './ReportParts';
 
+const COLS: Record<number, string> = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3' };
+/** The reference photo beside a test, if there is one (shoulder extension has none; see ideal-photos.ts). */
+const IDEAL_SHOT: Partial<Record<FlexTest, FlexShot>> = { forwardFold: 'forwardFold', butterfly: 'butterfly' };
 const SHOTS_OF: Record<FlexTest, FlexShot[]> = {
   shoulderExtension: ['shoulderExtLeft', 'shoulderExtRight'],
   forwardFold: ['forwardFold'],
@@ -69,6 +73,7 @@ function TestCard({
 }) {
   const f = t.posture.flex;
   const shots = flexibility.shots.filter((s) => SHOTS_OF[test].includes(s.shot));
+  const ideal = shots.length > 0 ? IDEAL_SHOT[test] : undefined;
   const n = (x: number | null | undefined) => (x == null ? '—' : String(x));
 
   const details: string[] = [];
@@ -89,7 +94,8 @@ function TestCard({
   return (
     <article className="rounded-xl border p-3 print:break-inside-avoid" style={{ borderColor: BRAND.sand }}>
       <h3 className="text-sm font-semibold" style={{ color: BRAND.green }}>{f.tests[test]}</h3>
-      <div className={`mt-2 grid gap-2 ${shots.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      {/* The client's shot(s), then the ideal reference photo when the test has one. */}
+      <div className={`mt-2 grid items-start gap-2 ${COLS[shots.length + (ideal ? 1 : 0)] ?? 'grid-cols-3'}`}>
         {shots.map((s) => (
           <PostureFigure
             key={s.shot}
@@ -100,6 +106,7 @@ function TestCard({
             noPhotoLabel={s.filePath === null ? t.posture.photoDeleted : t.posture.noPhoto}
           />
         ))}
+        {ideal && <IdealFigure shot={ideal} label={t.posture.ideal} name={f.tests[test]} />}
       </div>
       {result && result.score !== null && result.band ? (
         <p className="mt-3 flex items-baseline gap-2">
