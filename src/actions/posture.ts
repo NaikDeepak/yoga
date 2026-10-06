@@ -12,6 +12,7 @@ import { saveFlexibilityShots } from '@/data/flexibility';
 import type { FlexShot } from '@/lib/flexibility';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { getPatient } from '@/data/patients';
+import { safeErrorMessage } from '@/lib/log';
 import {
   addPostureAssessment, deletePostureAssessment, deletePosturePhotos, getPostureAssessment, replacePostureViews, saveAiReport,
   type PostureViewInput,
@@ -172,7 +173,7 @@ export async function saveFlexibilityTestsAction(
       ...s, photo: photos.get(s.shot)!,
     })));
   } catch (error) {
-    console.error('Failed to save flexibility tests:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to save flexibility tests:', safeErrorMessage(error));
     return { ok: false, error: 'Could not save flexibility tests / लवचिकता चाचण्या जतन करता आल्या नाहीत' };
   }
   if (!saved) return NOT_FOUND;
@@ -213,7 +214,7 @@ export async function withdrawPhotoConsentAction(
     }
     return { ok: true, deleted };
   } catch (error) {
-    console.error('Failed to withdraw photo consent:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to withdraw photo consent:', safeErrorMessage(error));
     return { ok: false, error: 'Could not delete the photos / फोटो हटवता आले नाहीत' };
   }
 }
@@ -273,7 +274,7 @@ export async function generatePostureAiAction(patientId: string, assessmentId: s
     report = await generatePostureAnalysis(context);
   } catch (err) {
     // Message only (HTTP status / validation issue) — never the context, which holds health data.
-    console.error('[posture-ai] generation failed:', err instanceof Error ? err.message : 'unknown error');
+    console.error('[posture-ai] generation failed:', safeErrorMessage(err));
     return { ok: false, error: 'AI analysis failed. Please try again. / AI विश्लेषण अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.' };
   }
   await saveAiReport(db, patientId, assessmentId, report, { approved: false });

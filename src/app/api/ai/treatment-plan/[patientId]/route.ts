@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
+import { safeErrorMessage } from '@/lib/log';
 import { getSessionUser } from '@/lib/auth';
+import { safeErrorMessage } from '@/lib/log';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
@@ -83,7 +85,7 @@ export async function GET(
     const draft = await generateTreatmentDraft(context);
     return NextResponse.json(draft);
   } catch (err) {
-    console.error('AI treatment plan generation failed:', err);
+    console.error('AI treatment plan generation failed:', safeErrorMessage(err));
     return NextResponse.json({ error: 'AI generation failed. Please try again. / AI योजना तयार करण्यात त्रुटी आली. कृपया पुन्हा प्रयत्न करा.' }, { status: 500 });
   }
 }

@@ -13,6 +13,7 @@ import { createShareLink, revokeShareLinks } from '@/data/share-links';
 import { getPostureAssessment } from '@/data/posture';
 import { listVisitsWithData } from '@/data/visits';
 import { isPostureEnabled } from '@/lib/features';
+import { safeErrorMessage } from '@/lib/log';
 
 const patientIdSchema = z.string().uuid();
 
@@ -47,7 +48,7 @@ export async function createExerciseShareLinkAction(
     revalidatePath(`/patients/${patientId}`);
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, exerciseShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
-    console.error('Failed to create share link:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to create share link:', safeErrorMessage(error));
     return { ok: false, error: 'Could not create the link / लिंक तयार करता आली नाही' };
   }
 }
@@ -60,7 +61,7 @@ export async function revokeExerciseShareLinkAction(patientId: string): Promise<
     revalidatePath(`/patients/${patientId}`);
     return { ok: true };
   } catch (error) {
-    console.error('Failed to revoke share link:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to revoke share link:', safeErrorMessage(error));
     return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
   }
 }
@@ -88,7 +89,7 @@ export async function createPostureShareLinkAction(
     revalidatePath(`/patients/${patient.id}/posture/${assessment.id}`);
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, postureShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
-    console.error('Failed to create posture share link:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to create posture share link:', safeErrorMessage(error));
     return { ok: false, error: 'Could not create the link / लिंक तयार करता आली नाही' };
   }
 }
@@ -101,7 +102,7 @@ export async function revokePostureShareLinkAction(patientId: string): Promise<{
     revalidatePath(`/patients/${patientId}`, 'layout');
     return { ok: true };
   } catch (error) {
-    console.error('Failed to revoke posture share link:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to revoke posture share link:', safeErrorMessage(error));
     return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
   }
 }
@@ -128,7 +129,7 @@ export async function createProgressShareLinkAction(
     revalidatePath(`/patients/${patientId}`);
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, progressShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
-    console.error('Failed to create progress share link:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to create progress share link:', safeErrorMessage(error));
     return { ok: false, error: 'Could not create the link / लिंक तयार करता आली नाही' };
   }
 }
@@ -141,7 +142,7 @@ export async function revokeProgressShareLinkAction(patientId: string): Promise<
     revalidatePath(`/patients/${patientId}`);
     return { ok: true };
   } catch (error) {
-    console.error('Failed to revoke progress share link:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to revoke progress share link:', safeErrorMessage(error));
     return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
   }
 }

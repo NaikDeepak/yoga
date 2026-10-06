@@ -10,6 +10,7 @@ import { patientSchema, firstError } from '@/lib/validation';
 import { z } from 'zod';
 import { sameName } from '@/lib/names';
 import { createPatient, deletePatientAndFiles, getPatient, setPhotoPath, updatePatient } from '@/data/patients';
+import { safeErrorMessage } from '@/lib/log';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -81,7 +82,7 @@ export async function deletePatientAction(id: string, confirmName: string): Prom
     await deletePatientAndFiles(db, getStorage(), id);
   } catch (error) {
     // Files first: on a storage failure the client is kept, so trying again finishes the job.
-    console.error('Failed to delete client:', error instanceof Error ? error.message : String(error));
+    console.error('Failed to delete client:', safeErrorMessage(error));
     return { ok: false, error: 'Could not delete the client. Nothing is lost; please try again / साधक हटवता आला नाही. कृपया पुन्हा प्रयत्न करा' };
   }
   revalidatePath('/patients');
