@@ -11,6 +11,12 @@ Single-clinic patient management app. Next.js 15 + Drizzle; production = Neon (D
 - `docs/setup.md` — first-time setup (Neon/R2/Supabase-login/Vercel) + manual QA checklist.
 - `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md` — what Phase 1 is and isn't; Phase 2/3 roadmap.
 
+## Working alongside Antigravity (`agy`)
+Another coding agent may be working in this repo. At the start of a task run `scripts/collab.sh status`;
+claim before editing; never touch files/branches the other agent claimed; hand off and release when done.
+Full protocol: "Working with another agent" in `AGENTS.md` (that file's caveman style rules are for Antigravity —
+not for you). `CLAUDE.md` holds the project rules for every agent.
+
 ## Commands
 - `npm run dev` — local dev (needs `.env`, see docs/setup.md)
 - `npm test` / `npm run coverage` — vitest; coverage gate: 80% on `src/lib`, `src/data`, `src/actions`
