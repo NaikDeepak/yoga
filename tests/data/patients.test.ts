@@ -178,5 +178,13 @@ describe('replacePatientPhoto', () => {
     const p2After = await getPatient(db, p2.id);
     expect(p2After?.photoPath).toBe(res2.photoPath);
   });
+
+  it('unknown client: upload removed, throws', async () => {
+    const missingId = '00000000-0000-0000-0000-000000000000';
+    const file = new File([new Uint8Array([1])], 'missing.png', { type: 'image/png' });
+
+    await expect(replacePatientPhoto(db, storage, missingId, file)).rejects.toThrow();
+    expect(storage.files.size).toBe(0);
+  });
 });
 

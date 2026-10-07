@@ -33,6 +33,11 @@ export async function setPhotoPath(db: Db, id: string, photoPath: string): Promi
   await db.update(patients).set({ photoPath }).where(eq(patients.id, id));
 }
 
+/**
+ * Replaces a client's profile photo: upload first → update row (locked) → remove old photo
+ * (best effort via Promise.allSettled). If DB update or client lookup fails, the newly uploaded
+ * file is removed to avoid leaving orphan files in storage.
+ */
 export async function replacePatientPhoto(
   db: Db,
   storage: FileStorage,
@@ -50,12 +55,16 @@ export async function replacePatientPhoto(
       const [existing] = await tx
         .select({ photoPath: patients.photoPath })
         .from(patients)
-        .where(eq(patients.id, patientId));
+        .where(eq(patients.id, patientId))
+        .for('update');
+      if (!existing) {
+        throw new Error(`Patient ${patientId} not found`);
+      }
       await tx
         .update(patients)
         .set({ photoPath })
         .where(eq(patients.id, patientId));
-      return existing?.photoPath ?? null;
+      return existing.photoPath ?? null;
     });
   } catch (error) {
     await Promise.allSettled([storage.remove(photoPath)]);
