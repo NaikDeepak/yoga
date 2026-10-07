@@ -2,6 +2,8 @@
 
 > Tag new items `[core]` / `[switch]` / `[profile]` / `[extension]` (see `plans/2026-10-07-multi-clinic-direction.md`).
 
+**Feature freeze from 2026-10-07 (Deepak):** no new features; test and harden the current product. The Features table below is on hold.
+
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
 to their spec) when done. Last updated 2026-10-07.
 
@@ -15,6 +17,7 @@ to their spec) when done. Last updated 2026-10-07.
 
 ## Done recently
 - **E4 capture counters**, 2026-10-07: Settings → Posture capture health (last 30 days per photo type). Migration 0025.
+- **E5 capture screen test**, 2026-10-07: fake camera + detector walk the whole capture flow. Built by Antigravity.
 - **Clinic profile**, 2026-10-07: all clinic identity (names, logo, icons, colours, branches, signature, messages) in `src/clinics/`; guard test. Built by Antigravity, reviewed by Claude and Codex.
 - **App manifest public + colour-proof deploy script**, 2026-10-07; install checked on a phone.
 - **CSV export + audit log**, 2026-10-07: export built by Antigravity, audit log by Claude, integrated together.
@@ -38,7 +41,7 @@ to their spec) when done. Last updated 2026-10-07.
 ## Quality / ops
 | ID | Item |
 |---|---|
-| E5 | Component test for the capture state machine with a fake detector. |
+| — | Hardening phase (from 2026-10-07): real-use testing in the clinic; fix what it finds before any new feature. |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
 
