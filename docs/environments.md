@@ -87,6 +87,24 @@ npm run dev:phone      # same over HTTPS on the Wi-Fi (camera on a phone); accep
 npm run db:status:prod   # read-only: applied / pending migrations, row counts
 ```
 
+## CI (Continuous Integration)
+
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every pull request to `main` and push to `main`:
+1. `npm run typecheck` (`tsc --noEmit`).
+2. `npm run coverage` (full vitest test suite; 80% coverage gate on `src/lib`, `src/data`, `src/actions`).
+3. `npm run build` (production build with `LOCAL_MOCK=false`).
+
+Older runs on the same branch or PR ref are cancelled automatically (`concurrency`).
+
+### CI environment & secrets
+CI **never** uses real secrets or connects to production services. Placeholder environment variables are declared directly in `.github/workflows/ci.yml`:
+- `LOCAL_MOCK=false`
+- `DATABASE_URL=postgresql://ci:ci@localhost:5432/ci`
+- `NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-placeholder`
+
+No GitHub repository secrets are needed for PR checks. A red check means "do not merge".
+
 ## Release to production
 ```bash
 # 1. PR merged on GitHub
