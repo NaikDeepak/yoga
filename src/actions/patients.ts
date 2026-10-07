@@ -9,7 +9,7 @@ import { validatePhoto } from '@/lib/files';
 import { patientSchema, firstError } from '@/lib/validation';
 import { z } from 'zod';
 import { sameName } from '@/lib/names';
-import { createPatient, deletePatientAndFiles, getPatient, setPhotoPath, updatePatient } from '@/data/patients';
+import { createPatient, deletePatientAndFiles, getPatient, replacePatientPhoto, updatePatient } from '@/data/patients';
 import { safeErrorMessage } from '@/lib/log';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -33,9 +33,7 @@ export async function createPatientAction(formData: FormData): Promise<ActionRes
   const db = getDb();
   const patient = await createPatient(db, parsed.data);
   if (photo) {
-    const path = `patients/${patient.id}/photo-${Date.now()}-${photo.name.replace(/[^\w.\-]+/g, '_')}`;
-    await getStorage().upload(path, photo);
-    await setPhotoPath(db, patient.id, path);
+    await replacePatientPhoto(db, getStorage(), patient.id, photo);
   }
   revalidatePath('/patients');
   redirect(`/patients/${patient.id}`);
@@ -55,9 +53,7 @@ export async function updatePatientAction(id: string, formData: FormData): Promi
   const db = getDb();
   await updatePatient(db, id, parsed.data);
   if (photo) {
-    const path = `patients/${id}/photo-${Date.now()}-${photo.name.replace(/[^\w.\-]+/g, '_')}`;
-    await getStorage().upload(path, photo);
-    await setPhotoPath(db, id, path);
+    await replacePatientPhoto(db, getStorage(), id, photo);
   }
   revalidatePath(`/patients/${id}`);
   revalidatePath(`/patients/${id}/print`);

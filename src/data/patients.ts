@@ -33,6 +33,42 @@ export async function setPhotoPath(db: Db, id: string, photoPath: string): Promi
   await db.update(patients).set({ photoPath }).where(eq(patients.id, id));
 }
 
+export async function replacePatientPhoto(
+  db: Db,
+  storage: FileStorage,
+  patientId: string,
+  file: File,
+): Promise<{ photoPath: string }> {
+  const sanitized = file.name.replace(/[^\w.\-]+/g, '_');
+  const photoPath = `patients/${patientId}/photo-${Date.now()}-${sanitized}`;
+
+  await storage.upload(photoPath, file);
+
+  let oldPhotoPath: string | null = null;
+  try {
+    oldPhotoPath = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ photoPath: patients.photoPath })
+        .from(patients)
+        .where(eq(patients.id, patientId));
+      await tx
+        .update(patients)
+        .set({ photoPath })
+        .where(eq(patients.id, patientId));
+      return existing?.photoPath ?? null;
+    });
+  } catch (error) {
+    await Promise.allSettled([storage.remove(photoPath)]);
+    throw error;
+  }
+
+  if (oldPhotoPath && oldPhotoPath !== photoPath) {
+    await Promise.allSettled([storage.remove(oldPhotoPath)]);
+  }
+
+  return { photoPath };
+}
+
 export async function searchPatients(
   db: Db,
   q?: string,
