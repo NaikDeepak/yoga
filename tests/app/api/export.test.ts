@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('@/lib/auth', () => ({ getSessionUser: vi.fn() }));
 vi.mock('@/db/client', () => ({ getDb: vi.fn(() => ({})) }));
+vi.mock('@/data/audit', () => ({ recordAudit: vi.fn() }));
 vi.mock('@/data/export', () => ({
   exportClients: vi.fn(),
   exportVisits: vi.fn(),
@@ -9,6 +10,7 @@ vi.mock('@/data/export', () => ({
 }));
 
 import { getSessionUser } from '@/lib/auth';
+import { recordAudit } from '@/data/audit';
 import { exportClients, exportVisits, exportFees } from '@/data/export';
 import { GET } from '@/app/api/export/[kind]/route';
 
@@ -91,5 +93,19 @@ describe('GET /api/export/[kind]', () => {
     const disposition = res.headers.get('content-disposition') ?? '';
     expect(disposition).toMatch(/^attachment; filename="fees-\d{4}-\d{2}-\d{2}\.csv"$/);
     expect(exportFees).toHaveBeenCalledWith({}, { branch: undefined });
+  });
+
+  it('records each export in the audit log (kind and branch, no data)', async () => {
+    vi.mocked(recordAudit).mockClear();
+    await GET(makeRequest('fees', 'Kharadi'), makeParams('fees'));
+    expect(recordAudit).toHaveBeenCalledWith(expect.anything(), { actor: { id: 'staff-1' }, action: 'export', summary: 'fees · Kharadi' });
+  });
+
+  it('does not record a refused export', async () => {
+    vi.mocked(recordAudit).mockClear();
+    await GET(makeRequest('secrets'), makeParams('secrets'));
+    vi.mocked(getSessionUser).mockResolvedValueOnce(null);
+    await GET(makeRequest('clients'), makeParams('clients'));
+    expect(recordAudit).not.toHaveBeenCalled();
   });
 });

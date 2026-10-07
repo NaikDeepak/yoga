@@ -1,3 +1,5 @@
+import { eq } from 'drizzle-orm';
+import { addPayment } from '@/data/fees';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { exportClients, exportVisits, exportFees } from '@/data/export';
@@ -210,14 +212,22 @@ describe('exportFees', () => {
 
     expect(result.rows).toEqual([
       ['PYT-0001', 'Asha Patil', 5000, 2000, 3000, 500],
-      ['PYT-0002', 'Bhavna Shinde', null, null, null, 0],
+      ['PYT-0002', 'Bhavna Shinde', null, 0, null, 0], // no course fee: fee + balance blank, money received still shown
       ['PYT-0003', 'Chetan More', 3000, 0, 3000, 400],
     ]);
+  });
+
+  it('shows payments received even when no course fee is set', async () => {
+    const [, bhavna] = (await exportClients(db)).rows;
+    const id = (await db.select({ id: patients.id }).from(patients).where(eq(patients.patientCode, bhavna[0] as string)))[0].id;
+    await addPayment(db, id, 750, '2026-10-01', null);
+    const row = (await exportFees(db)).rows.find((r) => r[0] === bhavna[0])!;
+    expect(row.slice(2, 5)).toEqual([null, 750, null]);
   });
 
   it('filters fees by client branch', async () => {
     const result = await exportFees(db, { branch: 'Kharadi' });
     expect(result.rows).toHaveLength(1);
-    expect(result.rows[0]).toEqual(['PYT-0002', 'Bhavna Shinde', null, null, null, 0]);
+    expect(result.rows[0]).toEqual(['PYT-0002', 'Bhavna Shinde', null, 0, null, 0]);
   });
 });

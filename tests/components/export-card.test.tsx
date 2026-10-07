@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ExportCard } from '@/components/ExportCard';
 import { en } from '@/lib/i18n/en';
 
+vi.mock('@/lib/i18n/context', () => ({ useTranslations: () => en }));
+
 describe('ExportCard', () => {
   it('renders download links pointing to base export URLs by default', () => {
-    render(<ExportCard t={en} />);
+    render(<ExportCard />);
 
     expect(screen.getByText(en.export.title)).toBeTruthy();
     expect(screen.getByText(en.export.description)).toBeTruthy();
@@ -25,7 +27,7 @@ describe('ExportCard', () => {
   });
 
   it('updates all download links when branch is selected', () => {
-    render(<ExportCard t={en} />);
+    render(<ExportCard />);
 
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'Kharadi' } });

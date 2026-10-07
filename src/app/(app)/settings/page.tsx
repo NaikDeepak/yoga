@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations, LOCALES } from '@/lib/i18n/translations';
 import { saveLanguageAction, saveWhatsappNumberAction } from '@/actions/preferences';
@@ -88,7 +89,17 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <ExportCard t={t} />
+      <ExportCard />
+
+      <Card className="rounded-2xl shadow-sm border-border max-w-lg">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold">{t.settings.activity.title}</CardTitle>
+          <CardDescription>{t.settings.activity.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/settings/activity" className="text-sm font-medium text-primary hover:underline">{t.settings.activity.title} →</Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }

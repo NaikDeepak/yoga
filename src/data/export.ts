@@ -139,8 +139,9 @@ export async function exportFees(db: Db, opts?: ExportOptions): Promise<ExportRe
     rows: rows.map((r) => {
       const hasFee = r.courseFee !== null && r.courseFee !== undefined;
       const courseFee = hasFee ? Number(r.courseFee) : null;
-      const totalPaid = hasFee ? (r.totalPaid !== null ? Number(r.totalPaid) : 0) : null;
-      const balance = hasFee && courseFee !== null && totalPaid !== null ? courseFee - totalPaid : null;
+      // Money received always shows; only the fee and balance are blank without a course fee.
+      const totalPaid = r.totalPaid !== null ? Number(r.totalPaid) : 0;
+      const balance = hasFee && courseFee !== null ? courseFee - totalPaid : null;
       const chargesTotal = r.chargesTotal !== null ? Number(r.chargesTotal) : 0;
 
       return [

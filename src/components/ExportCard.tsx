@@ -5,10 +5,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Label } from '@/components/ui/label';
 import { buttonVariants } from '@/components/ui/button';
 import { BRANCHES } from '@/lib/presets';
-import type { Translations } from '@/lib/i18n/translations';
+import { useTranslations } from '@/lib/i18n/context';
 import { Download } from 'lucide-react';
 
-export function ExportCard({ t }: { t: Translations }) {
+/** Settings: download clients / visits / fees as CSV, for all branches or one (spec 2026-10-07-csv-export). */
+export function ExportCard() {
+  const t = useTranslations();
   const [branch, setBranch] = useState<string>('');
 
   const buildUrl = (kind: string) => {

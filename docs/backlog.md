@@ -12,6 +12,7 @@ to their spec) when done. Last updated 2026-10-06.
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). Make a new **Object Read & Write** token for `patient-files` only, swap the `R2_*` vars in Vercel, deploy, and delete the old token. Do this before adding more clinics. |
 
 ## Done recently
+- **CSV export + audit log**, 2026-10-07: export built by Antigravity, audit log by Claude, integrated together.
 - **Old profile photo removed on replacement**, 2026-10-07: built by Antigravity in the multi-agent pilot.
 - **C8 Total score** /400 (posture + 3 flexibility tests), 2026-10-07: spec `2026-10-07-total-score-design.md`.
 
