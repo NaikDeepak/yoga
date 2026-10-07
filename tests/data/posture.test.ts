@@ -18,6 +18,9 @@ import {
 import { patients, postureAssessments, postureViews } from '@/db/schema';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
 import { MOCK_POSTURE_AI_REPORT } from '@/lib/posture-ai';
+import { FLEX_SHOTS, type FlexShot } from '@/lib/flexibility';
+import { getFlexibility, saveFlexibilityShots } from '@/data/flexibility';
+import { flexShot } from '../helpers/flexibility';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -150,7 +153,7 @@ describe('latestPostureScores', () => {
     const [mine] = await listPostureAssessments(db, patientId);
     expect(scores.get(patientId)).toEqual({
       assessmentId: latest.id, assessedOn: '2026-10-04', score: mine.score, grade: mine.grade,
-      mildCount: 0, markedCount: 0, previousId: expect.any(String), previousOn: '2026-09-01', previousScore: 93,
+      mildCount: 0, markedCount: 0, previousId: expect.any(String), previousOn: '2026-09-01', previousScore: 93, total: null, previousTotal: null,
     });
     expect(mine.score).toBe(100);
     expect(scores.get(otherId)).toMatchObject({
@@ -319,5 +322,49 @@ describe('saveAiReport', () => {
     const otherId = (await createPatient(db, { fullName: 'Ravi', mobile: '9876500000' })).id;
     expect(await saveAiReport(db, otherId, a.id, MOCK_POSTURE_AI_REPORT, { approved: false })).toBe(false);
     expect((await getPostureAssessment(db, a.id))!.aiReport).toBeNull();
+  });
+});
+
+async function assessed(on: string, shots: readonly FlexShot[] = FLEX_SHOTS) {
+  const a = await addPostureAssessment(db, storage, input({ assessedOn: on }));
+  if (shots.length) await saveFlexibilityShots(db, storage, patientId, a.id, shots.map((s) => flexShot(s)));
+  return a.id;
+}
+
+describe('total score in posture summaries', () => {
+  it('is posture + the three flexibility scores when everything was captured', async () => {
+    const id = await assessed('2026-10-04');
+    const [summary] = await listPostureAssessments(db, patientId, { totals: true });
+    const { scores } = await getFlexibility(db, id);
+    expect(summary.total).toBe(summary.score! + scores.shoulderExtension!.score! + scores.forwardFold!.score! + scores.butterfly!.score!);
+    expect(summary.total).toBeGreaterThan(summary.score!);
+  });
+
+  it('is not computed unless asked for (the client list and progress report skip the work)', async () => {
+    await assessed('2026-10-04');
+    expect((await listPostureAssessments(db, patientId))[0].total).toBeNull();
+    expect((await latestPostureScores(db, [patientId])).get(patientId)!.total).toBeNull();
+  });
+
+  it('is null without flexibility tests, or with only some of them', async () => {
+    await assessed('2026-10-01', []);
+    await assessed('2026-10-02', ['shoulderExtLeft', 'shoulderExtRight', 'forwardFold']); // no butterfly
+    expect((await listPostureAssessments(db, patientId, { totals: true })).map((s) => s.total)).toEqual([null, null]);
+  });
+
+  it('latestPostureScores carries the latest and previous totals', async () => {
+    await assessed('2026-09-01');
+    await assessed('2026-10-01');
+    const latest = (await latestPostureScores(db, [patientId], { totals: true })).get(patientId)!;
+    expect(latest.total).not.toBeNull();
+    expect(latest.previousTotal).toBe(latest.total); // same synthetic body both times
+  });
+
+  it('previousTotal is null when the previous assessment had no flexibility tests', async () => {
+    await assessed('2026-09-01', []);
+    await assessed('2026-10-01');
+    const latest = (await latestPostureScores(db, [patientId], { totals: true })).get(patientId)!;
+    expect(latest.total).not.toBeNull();
+    expect(latest.previousTotal).toBeNull();
   });
 });

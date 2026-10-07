@@ -36,6 +36,7 @@ import { scoreColor } from '@/components/posture/ReportParts';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
 import { withdrawPhotoConsentAction } from '@/actions/posture';
+import { TOTAL_MAX } from '@/lib/total-score';
 import { InlineForm } from '@/components/InlineForm';
 import { PatientHeader } from '@/components/PatientHeader';
 import { TabDropdown } from '@/components/TabDropdown';
@@ -176,7 +177,7 @@ async function Overview({
   const [assessment, visits, postureScores] = await Promise.all([
     getLifestyleAssessmentSnapshot(db, patient.id),
     listVisits(db, patient.id),
-    showPosture ? latestPostureScores(db, [patient.id]) : null,
+    showPosture ? latestPostureScores(db, [patient.id], { totals: true }) : null,
   ]);
   const today = getISTDateString(0);
   const lastVisit = visits[0]?.visitDate ?? null; // listVisits is ordered newest-first
@@ -731,7 +732,7 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
 async function Assessment({ patientId, t }: { patientId: string; t: Translations }) {
   const existing = await getLifestyleAssessment(getDb(), patientId);
   const showPosture = isPostureEnabled();
-  const postures = showPosture ? await listPostureAssessments(getDb(), patientId) : []; // newest first
+  const postures = showPosture ? await listPostureAssessments(getDb(), patientId, { totals: true }) : []; // newest first
   const photoCount = postures.reduce((n, a) => n + a.photoCount, 0);
   // Earliest withdrawal (IST day), for the note under the history.
   const withdrawnAt = postures.flatMap((a) => (a.photosDeletedAt ? [a.photosDeletedAt.getTime()] : []));
@@ -770,6 +771,7 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
                       <p className="text-sm font-medium">{formatFullDate(a.assessedOn)}</p>
                       <p className="text-xs text-muted-foreground">
                         {t.posture.history.counts.replace('{marked}', String(a.markedCount)).replace('{mild}', String(a.mildCount))}
+                        {a.total !== null && <> · <span className="font-medium text-foreground">{t.posture.total.short.replace('{total}', String(a.total)).replace('{max}', String(TOTAL_MAX))}</span></>}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">

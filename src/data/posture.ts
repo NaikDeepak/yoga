@@ -8,6 +8,8 @@ import { computeViewMetrics, POSTURE_VIEWS, type Landmark, type PostureView } fr
 import type { CameraCheck } from '@/lib/posture-capture';
 import { combineViews, scorePosture, type Grade } from '@/lib/posture-insights';
 import type { PostureAiReport } from '@/lib/posture-ai';
+import { scoreShots } from '@/lib/flexibility';
+import { totalScore } from '@/lib/total-score';
 
 export interface PostureViewInput {
   view: PostureView;
@@ -37,6 +39,8 @@ export type PostureAssessmentSummary = PostureAssessmentRow & {
   grade: Grade | null;
   /** Posture views + flexibility shots that still have a photo (0 once photo consent was withdrawn). */
   photoCount: number;
+  /** Posture + the three flexibility scores (/400); null unless all four exist. */
+  total: number | null;
 };
 
 /** Storage key for a view photo; retakes get a `version` suffix so the old file can be removed after commit. */
@@ -104,35 +108,68 @@ export async function addPostureAssessment(
   }
 }
 
-export async function listPostureAssessments(db: Db, patientId: string): Promise<PostureAssessmentSummary[]> {
+/**
+ * `totals: true` also computes each assessment's total /400 (loads and scores the flexibility landmarks);
+ * leave it off where the total isn't shown (client list, progress report) — `total` is then null.
+ */
+export async function listPostureAssessments(
+  db: Db,
+  patientId: string,
+  opts: { totals?: boolean } = {},
+): Promise<PostureAssessmentSummary[]> {
   const assessments = await db.select().from(postureAssessments)
     .where(eq(postureAssessments.patientId, patientId))
     .orderBy(desc(postureAssessments.assessedOn), desc(postureAssessments.createdAt));
-  return summarize(db, assessments);
+  return summarize(db, assessments, opts);
 }
 
-/** Score + mild/marked counts on the combined findings, for each assessment (one views query). */
-async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<PostureAssessmentSummary[]> {
+const groupBy = <T extends { assessmentId: string }>(rows: T[]) => {
+  const map = new Map<string, T[]>();
+  for (const r of rows) map.set(r.assessmentId, [...(map.get(r.assessmentId) ?? []), r]);
+  return map;
+};
+
+/** Score + mild/marked counts on the combined findings (+ total /400 when asked), for each assessment. */
+async function summarize(
+  db: Db,
+  assessments: PostureAssessmentRow[],
+  { totals = false }: { totals?: boolean } = {},
+): Promise<PostureAssessmentSummary[]> {
   if (!assessments.length) return [];
   const ids = assessments.map((a) => a.id);
-  const [views, flexPhotos] = await Promise.all([
+  // Flexibility rows: just the photo paths, or — when a total is wanted — the landmarks too (the heavy part).
+  // Two typed queries rather than one conditional select, so the compiler checks what scoreShots receives.
+  const flexBase = { assessmentId: flexibilityTests.assessmentId, shot: flexibilityTests.shot, filePath: flexibilityTests.filePath };
+  const byIds = inArray(flexibilityTests.assessmentId, ids);
+  const [views, flexRows] = await Promise.all([
     db.select().from(postureViews).where(inArray(postureViews.assessmentId, ids)),
-    db.select({ assessmentId: flexibilityTests.assessmentId }).from(flexibilityTests)
-      .where(and(inArray(flexibilityTests.assessmentId, ids), isNotNull(flexibilityTests.filePath))),
+    totals
+      ? db.select({ ...flexBase, landmarks: flexibilityTests.landmarks, imageWidth: flexibilityTests.imageWidth, imageHeight: flexibilityTests.imageHeight })
+        .from(flexibilityTests).where(byIds)
+      : db.select(flexBase).from(flexibilityTests).where(byIds),
   ]);
+  const viewsOf = groupBy(views);
+  const flexOf = groupBy<(typeof flexRows)[number]>(flexRows);
+  const scorable = (rows: (typeof flexRows)[number][]) =>
+    rows.every((r): r is typeof r & Parameters<typeof scoreShots>[0][number] => 'landmarks' in r) ? rows : null;
 
   return assessments.map((a) => {
-    const own = views.filter((v) => v.assessmentId === a.id);
+    const own = viewsOf.get(a.id) ?? [];
+    const ownFlex = flexOf.get(a.id) ?? [];
     const combined = combineViews(own
       .map((v) => ({ view: v.view as PostureView, metrics: currentMetrics(v, a.heightCm) })));
-    const { overall, grade } = scorePosture(combined);
+    const posture = scorePosture(combined);
     return {
       ...a,
       mildCount: combined.filter((m) => m.severity === 'mild').length,
       markedCount: combined.filter((m) => m.severity === 'marked').length,
-      score: overall,
-      grade,
-      photoCount: own.filter((v) => v.filePath !== null).length + flexPhotos.filter((f) => f.assessmentId === a.id).length,
+      score: posture.overall,
+      grade: posture.grade,
+      photoCount: own.filter((v) => v.filePath !== null).length + ownFlex.filter((f) => f.filePath !== null).length,
+      total: (() => {
+        const rows = totals ? scorable(ownFlex) : null;
+        return rows ? totalScore(posture, scoreShots(rows).scores)?.total ?? null : null;
+      })(),
     };
   });
 }
@@ -147,13 +184,21 @@ export interface LatestPostureScore {
   previousId: string | null;
   previousOn: string | null;
   previousScore: number | null;
+  /** Total /400 of the latest and the previous assessment; null unless complete. */
+  total: number | null;
+  previousTotal: number | null;
 }
 
 /**
  * Latest posture score per client plus the previous one (for the trend), for the Overview card and
  * the client list. Clients without assessments are absent. Two queries regardless of client count.
  */
-export async function latestPostureScores(db: Db, patientIds: string[]): Promise<Map<string, LatestPostureScore>> {
+/** `totals: true` adds the latest and previous totals (/400); the client list leaves it off. */
+export async function latestPostureScores(
+  db: Db,
+  patientIds: string[],
+  opts: { totals?: boolean } = {},
+): Promise<Map<string, LatestPostureScore>> {
   const result = new Map<string, LatestPostureScore>();
   if (!patientIds.length) return result;
   // Only the newest two per client leave the database, however long a client's history gets.
@@ -168,7 +213,7 @@ export async function latestPostureScores(db: Db, patientIds: string[]): Promise
 
   const lastTwo = new Map<string, PostureAssessmentRow[]>();
   for (const { rank: _rank, ...a } of rows) lastTwo.set(a.patientId, [...(lastTwo.get(a.patientId) ?? []), a]);
-  const summaries = new Map((await summarize(db, [...lastTwo.values()].flat())).map((s) => [s.id, s]));
+  const summaries = new Map((await summarize(db, [...lastTwo.values()].flat(), opts)).map((s) => [s.id, s]));
 
   for (const [patientId, [latest, previous]] of lastTwo) {
     const l = summaries.get(latest.id)!;
@@ -177,6 +222,7 @@ export async function latestPostureScores(db: Db, patientIds: string[]): Promise
       assessmentId: l.id, assessedOn: l.assessedOn, score: l.score, grade: l.grade,
       mildCount: l.mildCount, markedCount: l.markedCount,
       previousId: p?.id ?? null, previousOn: p?.assessedOn ?? null, previousScore: p?.score ?? null,
+      total: l.total, previousTotal: p?.total ?? null,
     });
   }
   return result;

@@ -6,6 +6,7 @@ import { getPatient } from '@/data/patients';
 import { getPostureAssessment, type PostureAssessment } from '@/data/posture';
 import { getFlexibility } from '@/data/flexibility';
 import { FLEX_TESTS, flexBand } from '@/lib/flexibility';
+import { TOTAL_MAX, totalScore, totalTrend } from '@/lib/total-score';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
 import { buildOverlay } from '@/lib/posture-overlay';
@@ -56,9 +57,14 @@ export default async function PostureComparePage({
 
   const cb = combineViews(views(before));
   const ca = combineViews(views(after));
-  const scores = compareScores(scorePosture(cb), scorePosture(ca));
+  const [postureBefore, postureAfter] = [scorePosture(cb), scorePosture(ca)];
+  const scores = compareScores(postureBefore, postureAfter);
   const rows = compareMetrics(cb, ca);
   const [flexBefore, flexAfter] = await Promise.all([getFlexibility(db, before.id), getFlexibility(db, after.id)]);
+  // Total /400 per side, only when that assessment has posture + all three flexibility scores.
+  const totalBefore = totalScore(postureBefore, flexBefore.scores)?.total ?? null;
+  const totalAfter = totalScore(postureAfter, flexAfter.scores)?.total ?? null;
+  const totalChange = totalTrend(totalAfter, totalBefore);
 
   const photos = await Promise.all([before, after].map(async (asmt) => Object.fromEntries(await Promise.all(
     asmt.views.map(async (v) => [v.view, {
@@ -212,6 +218,21 @@ export default async function PostureComparePage({
                   </tr>
                 );
               })}
+              {(totalBefore !== null || totalAfter !== null) && (
+                <tr className="border-t-2" style={{ backgroundColor: BRAND.sandLight }}>
+                  <td className="py-2 font-semibold" style={{ color: BRAND.green }}>{t.posture.total.title} /{TOTAL_MAX}</td>
+                  <td className="py-2 text-right tabular-nums font-semibold">{totalBefore ?? cmp.notMeasured}</td>
+                  <td className="py-2 text-right tabular-nums font-semibold">{totalAfter ?? cmp.notMeasured}</td>
+                  <td className="py-2 text-right">
+                    {/* Same verdict as the Overview card: changes under TOTAL_SAME_BAND are steady. */}
+                    {totalChange.trend && totalChange.change !== null ? (
+                      <span className="tabular-nums font-semibold" style={{ color: TREND_STYLE[totalChange.trend].fg }}>
+                        {signed(totalChange.change)} · {cmp.trend[totalChange.trend]}
+                      </span>
+                    ) : changeCell(null)}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>

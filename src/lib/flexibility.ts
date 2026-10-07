@@ -187,3 +187,14 @@ export function scoreFlexibility(m: FlexMeasures): Record<FlexTest, FlexResult |
   }
   return { shoulderExtension, forwardFold, butterfly };
 }
+
+/** Stored shots → measures and the three test scores (what every reader shows). */
+export function scoreShots(rows: { shot: string; landmarks: Landmark[]; imageWidth: number; imageHeight: number }[]): {
+  measures: FlexMeasures;
+  scores: Record<FlexTest, FlexResult | null>;
+} {
+  const measures: FlexMeasures = Object.fromEntries(rows.map((r) => [
+    r.shot, measureShot(r.shot as FlexShot, r.landmarks, { width: r.imageWidth, height: r.imageHeight }),
+  ]));
+  return { measures, scores: scoreFlexibility(measures) };
+}
