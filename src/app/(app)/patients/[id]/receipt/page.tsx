@@ -7,6 +7,8 @@ import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+import { ClinicSignature } from '@/components/ClinicSignature';
+import { clinicName } from '@/clinics';
 
 const GREEN = '#1B3A2E';
 const SAFFRON = '#C8962E';
@@ -27,7 +29,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const patientFees = await getPatientFees(db, id);
   if (patientFees.courseFee === null) redirect(`/patients/${id}`);
 
-  const t = getTranslations(await getLocale());
+  const locale = await getLocale();
+  const t = getTranslations(locale);
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
   const today = getISTDateString();
 
@@ -104,14 +107,10 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       {/* ── FOOTER ── */}
       <hr className="border-gray-200" />
       <div className="mt-8 flex justify-end">
-        <div className="w-52 border-t-2 border-gray-400 pt-2 text-right">
-          <p className="text-sm font-bold">Aachary Narayan Pawar</p>
-          <p className="text-xs text-gray-600">Founder &amp; Director of PYTC | Chief Medical Yoga Expert</p>
-          <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center</p>
-        </div>
+        <ClinicSignature />
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
-        {t.receipt.footerOfficial} | {t.receipt.footerGenerated} {today}
+        {t.receipt.footerOfficial.replaceAll('{clinic}', clinicName(locale))} | {t.receipt.footerGenerated} {today}
       </p>
     </div>
   );

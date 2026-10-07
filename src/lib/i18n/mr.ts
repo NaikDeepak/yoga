@@ -76,7 +76,7 @@ export const mr: Translations = {
     noFollowUps: 'या आठवड्यात फॉलो-अप नाहीत',
     birthdaysToday: 'आज आणि उद्याचे वाढदिवस',
     birthdayWishMsg:
-      '🎂 प्रिय {name},\n\nपवार योग थेरपी सेंटरतर्फे आपल्याला वाढदिवसाच्या हार्दिक शुभेच्छा! 🎉\nआपले आगामी वर्ष उत्तम आरोग्य, आनंद आणि यशाने भरलेले जावो. 🌸\n\n🎁 आपल्या वाढदिवसानिमित्त खास भेट!\nआपले Birthday Special Gift मिळवण्यासाठी आजच आमच्याशी संपर्क साधा. 🎈\n\nआपला,\nआचार्य नारायण पवार\nPawar\'s Yog Therapy Center',
+      '🎂 प्रिय {name},\n\n{clinic}तर्फे आपल्याला वाढदिवसाच्या हार्दिक शुभेच्छा! 🎉\nआपले आगामी वर्ष उत्तम आरोग्य, आनंद आणि यशाने भरलेले जावो. 🌸\n\n🎁 आपल्या वाढदिवसानिमित्त खास भेट!\nआपले Birthday Special Gift मिळवण्यासाठी आजच आमच्याशी संपर्क साधा. 🎈\n\nआपला,\n{clinic}',
     sendWish: 'शुभेच्छा पाठवा',
     birthdayWishSubtext: 'त्यांचे वर्ष आरोग्यदायी जावो! / Wish them a healthy year!',
     noBirthdays: 'आज किंवा उद्या वाढदिवस नाहीत',
@@ -379,7 +379,7 @@ export const mr: Translations = {
     },
   },
   auth: {
-    loginTitle: 'पावरचे योग थेरपी',
+    loginTitle: '{clinic}',
     loginSubtitle: 'प्रवेश',
     email: 'ईमेल',
     password: 'पासवर्ड',
@@ -478,7 +478,7 @@ export const mr: Translations = {
     visitColPain: 'वेदना',
     visitColNotes: 'टिप्पण्या',
     noVisitRecords: 'भेटींची नोंद नाही',
-    footerText: 'ही अधिकृत अहवाल पावर योग थेरपी केंद्राने जारी केली आहे.',
+    footerText: 'ही अधिकृत अहवाल {clinic}ने जारी केली आहे.',
     downloadPdf: 'PDF डाउनलोड करा',
   },
   receipt: {
@@ -494,14 +494,14 @@ export const mr: Translations = {
     date: 'तारीख',
     description: 'तपशील',
     amount: 'रक्कम (₹)',
-    footerOfficial: 'ही अधिकृत पावती पावर योग थेरपी केंद्राने जारी केली आहे.',
+    footerOfficial: 'ही अधिकृत पावती {clinic}ने जारी केली आहे.',
     footerGenerated: 'तयार केले',
   },
   chargeReceipt: {
     title: 'शुल्क पावती',
     charge: 'शुल्क',
     date: 'तारीख',
-    footerOfficial: 'ही Pawar\'s Yog Therapy Center द्वारे जारी केलेली अधिकृत पावती आहे.',
+    footerOfficial: 'ही {clinic} द्वारे जारी केलेली अधिकृत पावती आहे.',
     footerGenerated: 'तयार केले',
   },
   shareExercises: {

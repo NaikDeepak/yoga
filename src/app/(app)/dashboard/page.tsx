@@ -20,6 +20,7 @@ import { cookies } from 'next/headers';
 import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
 import { getUserLanguage, getWhatsappNumber } from '@/data/preferences';
 import { CLINIC } from '@/lib/clinic';
+import { clinicName } from '@/clinics';
 import { requireUser } from '@/lib/auth';
 
 const MONTHLY_TARGET = 100;
@@ -169,7 +170,7 @@ export default async function DashboardPage({
                   </div>
                 </div>
                 <Button asChild size="sm" variant="outline" className="rounded-full h-9 px-3 text-xs border-brand-accent/30 text-brand-accent hover:bg-brand-accent/10 hover:text-brand-accent">
-                  <a href={birthdayWhatsappUrl(patient.mobile, patient.fullName, t)} target="_blank" rel="noopener noreferrer">
+                  <a href={birthdayWhatsappUrl(patient.mobile, patient.fullName, t, locale)} target="_blank" rel="noopener noreferrer">
                     {t.dashboard.sendWish}
                   </a>
                 </Button>
@@ -498,7 +499,9 @@ function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: 
   return t.dashboard.pendingReason.treatment;
 }
 
-function birthdayWhatsappUrl(mobile: string, fullName: string, t: Translations): string {
-  const text = t.dashboard.birthdayWishMsg.replaceAll('{name}', fullName);
+function birthdayWhatsappUrl(mobile: string, fullName: string, t: Translations, locale: Locale): string {
+  const text = t.dashboard.birthdayWishMsg
+    .replaceAll('{name}', fullName)
+    .replaceAll('{clinic}', clinicName(locale));
   return `https://api.whatsapp.com/send?phone=91${mobile}&text=${encodeURIComponent(text)}`;
 }

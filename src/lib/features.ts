@@ -1,6 +1,21 @@
 // Feature flags. Server-side only (read at request time from the environment).
+import { clinicProfile } from '@/clinics';
+import type { ClinicProfile } from '@/clinics/types';
 
-type Env = { NODE_ENV?: string; FEATURE_POSTURE?: string };
+export type ClinicFeature = keyof ClinicProfile['features'];
+
+type Env = Record<string, string | undefined>;
+
+export function isFeatureEnabled(name: ClinicFeature, env: Env = process.env): boolean {
+  const envVal =
+    env[`FEATURE_${name.toUpperCase()}`] ??
+    env[`FEATURE_${name.replace(/([A-Z])/g, '_$1').toUpperCase()}`];
+
+  if (envVal === 'true') return true;
+  if (envVal === 'false') return false;
+
+  return Boolean(clinicProfile.features[name]) && env.NODE_ENV === 'development';
+}
 
 /**
  * AI posture analysis is a premium feature still being built on. It's visible in local development
@@ -9,7 +24,5 @@ type Env = { NODE_ENV?: string; FEATURE_POSTURE?: string };
  * the posture routes themselves stay reachable by URL for signed-in staff.
  */
 export function isPostureEnabled(env: Env = process.env): boolean {
-  if (env.FEATURE_POSTURE === 'true') return true;
-  if (env.FEATURE_POSTURE === 'false') return false;
-  return env.NODE_ENV === 'development';
+  return isFeatureEnabled('posture', env);
 }

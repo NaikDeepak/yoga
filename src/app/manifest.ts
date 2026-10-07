@@ -1,10 +1,12 @@
 import type { MetadataRoute } from 'next';
+import { clinicName, clinicProfile } from '@/clinics';
 
 export default function manifest(): MetadataRoute.Manifest {
+  const name = clinicProfile.appName ?? clinicName('en');
   return {
-    name: 'Pawar Yoga Therapy',
-    short_name: 'PYT',
-    description: 'Patient management for Pawar Yoga Therapy',
+    name,
+    short_name: clinicProfile.patientCodePrefix,
+    description: `Patient management for ${name}`,
     start_url: '/',
     display: 'standalone',
     background_color: '#F9F6F0',

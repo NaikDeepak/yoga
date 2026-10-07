@@ -11,6 +11,7 @@ import { isLinkPreviewBot } from '@/lib/share-token';
 import { getStorage } from '@/lib/storage';
 import { isPostureEnabled } from '@/lib/features';
 import { getTranslations } from '@/lib/i18n/translations';
+import { clinicProfile, clinicName } from '@/clinics';
 import { ExercisesBody } from './ExercisesBody';
 import { PostureReportBody } from './PostureReportBody';
 import { ProgressReportBody } from './ProgressReportBody';
@@ -19,7 +20,7 @@ import { ProgressReportBody } from './ProgressReportBody';
 // (SharedExerciseProgramme / SharedPostureReport / SharedProgressReport), never database rows.
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: "Pawar's Yog Therapy",
+  title: clinicName('en', true),
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
 };
@@ -71,7 +72,7 @@ export default async function SharedLinkPage({
     <main className="mx-auto max-w-xl space-y-5 px-4 py-6" lang={lang}>
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <img src="/pytc-logo.png" alt="" className="h-10 w-10" referrerPolicy="no-referrer" />
+          <img src={clinicProfile.logo.src} alt="" className="h-10 w-10" referrerPolicy="no-referrer" />
           <span className="text-sm font-semibold">{CLINIC.name}</span>
         </div>
         <nav className="flex rounded-full border text-xs" aria-label="Language">

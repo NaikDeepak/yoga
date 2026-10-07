@@ -1,3 +1,5 @@
+import { clinicProfile } from '@/clinics';
+
 // 18 preset ailments from the proposal (Module 2), shown in Marathi.
 export const PRESET_PROBLEMS = [
   'कंबर दुखी', 'मान दुखी', 'सायटिका', 'थायरॉईड', 'PCOD/PCOS', 'डायबिटीस',
@@ -8,22 +10,5 @@ export const PRESET_PROBLEMS = [
 export const DOC_TYPES = ['MRI', 'X-Ray', 'Blood Report', 'Prescription', 'Other'] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 
-export const BRANCHES = [
-  {
-    key: 'Manjari BK',
-    label: 'Manjari BK',
-    fullAddress: 'Shop No 8, Greenoak Society, Cement Road, near Mhasoba Mandir, Manjari Budruk, Pune, Maharashtra 412307',
-  },
-  {
-    key: 'Kharadi',
-    label: 'Kharadi',
-    fullAddress: 'Survey no. 24/2B, Opposite of Konark Eureka, Sainath Nagar, Kharadi, Pune, Maharashtra 411014',
-  },
-  {
-    key: 'Morgaon',
-    label: 'Morgaon',
-    fullAddress: 'Morgaon Pawarwadi, Tal-Dodamarg, Sindhudurg - 416511',
-  },
-] as const;
-
-export type BranchKey = typeof BRANCHES[number]['key'];
+export const BRANCHES = clinicProfile.branches;
+export type BranchKey = (typeof BRANCHES)[number]['key'];

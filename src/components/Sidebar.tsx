@@ -15,6 +15,7 @@ import { signOutAction } from '@/actions/auth';
 import { Button } from '@/components/ui/button';
 import { WellnessTipCard } from '@/components/WellnessTipCard';
 import { useTranslations } from '@/lib/i18n/context';
+import { clinicProfile, clinicName } from '@/clinics';
 
 interface SidebarProps {
   className?: string;
@@ -43,8 +44,8 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
       <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-transparent">
         <Link href="/dashboard" className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/pytc-logo.png" alt="PYTC" width={32} height={32} className="object-contain" />
-          <span className="text-lg font-bold tracking-tight">Pawar&apos;s Yog Therapy</span>
+          <img src={clinicProfile.logo.src} alt={clinicProfile.logo.alt} width={32} height={32} className="object-contain" />
+          <span className="text-lg font-bold tracking-tight">{clinicName('en', true)}</span>
         </Link>
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose} className="md:hidden" aria-label={t.nav.closeMenu}>

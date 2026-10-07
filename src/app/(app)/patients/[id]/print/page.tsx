@@ -13,6 +13,8 @@ import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations, type Translations } from '@/lib/i18n/translations';
 import { getPrescribedExercises } from '@/data/exercises';
+import { ClinicSignature } from '@/components/ClinicSignature';
+import { clinicName } from '@/clinics';
 
 const GREEN = '#1B3A2E';
 const SAFFRON = '#C8962E';
@@ -277,14 +279,10 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── FOOTER ── */}
       <hr className="border-gray-200" />
       <div className="mt-8 flex justify-end">
-        <div className="w-52 border-t-2 border-gray-400 pt-2 text-right">
-          <p className="text-sm font-bold">Aachary Narayan Pawar</p>
-          <p className="text-xs text-gray-600">Founder &amp; Director of PYTC | Chief Medical Yoga Expert</p>
-          <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center</p>
-        </div>
+        <ClinicSignature />
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
-        {t.print.footerText} | {t.print.generatedOn} {today}
+        {t.print.footerText.replaceAll('{clinic}', clinicName(locale))} | {t.print.generatedOn} {today}
       </p>
     </div>
   );

@@ -5,21 +5,23 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+import { clinicProfile, clinicName } from '@/clinics';
 
 export default async function LoginPage({
   searchParams,
 }: { searchParams: Promise<{ error?: string; registered?: string }> }) {
   const { error, registered } = await searchParams;
-  const t = getTranslations(await getLocale());
+  const locale = await getLocale();
+  const t = getTranslations(locale);
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/pytc-logo.png" alt="PYTC Logo" width={48} height={48} className="object-contain" />
+            <img src={clinicProfile.logo.src} alt={`${clinicProfile.logo.alt} Logo`} width={48} height={48} className="object-contain" />
           </div>
-          <CardTitle>{t.auth.loginTitle}</CardTitle>
+          <CardTitle>{t.auth.loginTitle.replaceAll('{clinic}', clinicName(locale, true))}</CardTitle>
           <CardDescription>{t.auth.loginSubtitle}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

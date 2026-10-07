@@ -1,0 +1,59 @@
+import { z } from 'zod';
+
+export const clinicBranchSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  fullAddress: z.string().min(1),
+});
+
+export type ClinicBranch = z.infer<typeof clinicBranchSchema>;
+
+export const clinicProfileSchema = z.object({
+  slug: z.string().min(1),
+  name: z.object({
+    en: z.string().min(1),
+    mr: z.string().min(1),
+  }),
+  shortName: z.object({
+    en: z.string().min(1),
+    mr: z.string().min(1),
+  }),
+  logo: z.object({
+    src: z.string().min(1),
+    alt: z.string().min(1),
+  }),
+  contact: z.object({
+    phone: z.string().min(1),
+    whatsappDigits: z.string().min(1),
+    email: z.string().email(),
+    hours: z.string().min(1),
+  }),
+  signature: z.object({
+    name: z.string().min(1),
+    lines: z.array(z.string()),
+  }),
+  branches: z
+    .array(clinicBranchSchema)
+    .min(1, 'At least one branch is required')
+    .refine(
+      (branches) => {
+        const keys = branches.map((b) => b.key);
+        return new Set(keys).size === keys.length;
+      },
+      { message: 'Branch keys must be unique' }
+    ),
+  patientCodePrefix: z
+    .string()
+    .min(1)
+    .regex(/^[A-Za-z]+$/, 'patientCodePrefix must contain letters only'),
+  appName: z.string().optional(),
+  features: z.object({
+    posture: z.boolean(),
+    flexibility: z.boolean(),
+    ai: z.boolean(),
+    shareLinks: z.boolean(),
+    checkins: z.boolean(),
+  }),
+});
+
+export type ClinicProfile = z.infer<typeof clinicProfileSchema>;

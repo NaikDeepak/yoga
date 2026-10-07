@@ -1,0 +1,58 @@
+import type { ClinicProfile } from './types';
+
+export const pawar: ClinicProfile = {
+  slug: 'pawar',
+  name: {
+    en: "Pawar's Yog Therapy Center",
+    mr: 'पवार योग थेरपी सेंटर',
+  },
+  shortName: {
+    en: "Pawar's Yog Therapy",
+    mr: 'पवार योग थेरपी',
+  },
+  logo: {
+    src: '/pytc-logo.png',
+    alt: 'PYTC',
+  },
+  contact: {
+    phone: '+91 85509 21037',
+    whatsappDigits: '918550921037',
+    email: 'pawarsyog@gmail.com',
+    hours: 'Mon–Sat, 6:00 AM – 8:00 PM',
+  },
+  signature: {
+    name: 'Aachary Narayan Pawar',
+    lines: [
+      'Founder & Director of PYTC | Chief Medical Yoga Expert',
+      "Pawar's Yog Therapy Center",
+    ],
+  },
+  branches: [
+    {
+      key: 'Manjari BK',
+      label: 'Manjari BK',
+      fullAddress:
+        'Shop No 8, Greenoak Society, Cement Road, near Mhasoba Mandir, Manjari Budruk, Pune, Maharashtra 412307',
+    },
+    {
+      key: 'Kharadi',
+      label: 'Kharadi',
+      fullAddress:
+        'Survey no. 24/2B, Opposite of Konark Eureka, Sainath Nagar, Kharadi, Pune, Maharashtra 411014',
+    },
+    {
+      key: 'Morgaon',
+      label: 'Morgaon',
+      fullAddress: 'Morgaon Pawarwadi, Tal-Dodamarg, Sindhudurg - 416511',
+    },
+  ],
+  patientCodePrefix: 'PYT',
+  appName: 'Pawar Yoga Therapy',
+  features: {
+    posture: true,
+    flexibility: true,
+    ai: true,
+    shareLinks: true,
+    checkins: true,
+  },
+};

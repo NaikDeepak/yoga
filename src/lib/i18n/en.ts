@@ -74,7 +74,7 @@ export const en = {
     noFollowUps: 'No follow-ups this week',
     birthdaysToday: 'Birthdays Today & Tomorrow',
     birthdayWishMsg:
-      '🎂 Dear {name},\n\nPawar\'s Yog Therapy Center wishes you a very Happy Birthday! 🎉\n\nMay this special day bring you good health, happiness, peace, and success. 🌸 Wishing you a wonderful year ahead filled with wellness and positivity. ✨\n\n🎁 A Special Birthday Gift Awaits You!\nContact us today to claim your Birthday Special Offer. 🎈\n\nWarm Regards,\nAcharya Narayan Pawar\nPawar\'s Yog Therapy Center',
+      '🎂 Dear {name},\n\n{clinic} wishes you a very Happy Birthday! 🎉\n\nMay this special day bring you good health, happiness, peace, and success. 🌸 Wishing you a wonderful year ahead filled with wellness and positivity. ✨\n\n🎁 A Special Birthday Gift Awaits You!\nContact us today to claim your Birthday Special Offer. 🎈\n\nWarm Regards,\n{clinic}',
     sendWish: 'Send Wish',
     birthdayWishSubtext: 'Wish them a healthy year! / त्यांचे वर्ष आरोग्यदायी जावो!',
     noBirthdays: 'No birthdays today or tomorrow',
@@ -377,7 +377,7 @@ export const en = {
     },
   },
   auth: {
-    loginTitle: "Pawar's Yog Therapy",
+    loginTitle: '{clinic}',
     loginSubtitle: 'Admin Login',
     email: 'Email',
     password: 'Password',
@@ -476,7 +476,7 @@ export const en = {
     visitColPain: 'PAIN LEVEL',
     visitColNotes: 'SESSION NOTES',
     noVisitRecords: 'No visit records found',
-    footerText: 'This is an official report issued by Pawar\'s Yog Therapy Center.',
+    footerText: 'This is an official report issued by {clinic}.',
     downloadPdf: 'Download PDF',
   },
   receipt: {
@@ -492,14 +492,14 @@ export const en = {
     date: 'DATE',
     description: 'DESCRIPTION',
     amount: 'AMOUNT (₹)',
-    footerOfficial: 'This is an official receipt issued by Pawar\'s Yog Therapy Center.',
+    footerOfficial: 'This is an official receipt issued by {clinic}.',
     footerGenerated: 'Generated on',
   },
   chargeReceipt: {
     title: 'Charge Receipt',
     charge: 'CHARGE',
     date: 'Date',
-    footerOfficial: 'This is an official receipt issued by Pawar\'s Yog Therapy Center.',
+    footerOfficial: 'This is an official receipt issued by {clinic}.',
     footerGenerated: 'Generated on',
   },
   shareExercises: {
