@@ -9,7 +9,7 @@ sweeps the folder eventually, but until then they pile up.
 
 ## Required behaviour
 1. **Data layer:** add `replacePatientPhoto(db, storage, patientId, file)` in `src/data/patients.ts`:
-   - build the storage key exactly as today: `patients/<id>/photo-<Date.now()>-<sanitised name>` (sanitise as now: `name.replace(/[^\w.\-]+/g, '_')`);
+   - build the storage key as today plus a random suffix (added in review so same-millisecond uploads can't collide): `patients/<id>/photo-<Date.now()>-<8 hex>-<sanitised name>` (sanitise as now: `name.replace(/[^\w.\-]+/g, '_')`);
    - **upload the new file first**, then update `patients.photo_path`, reading the previous path inside the same statement or transaction;
    - **only after the row points at the new file**, remove the previous file. This is best effort: use `Promise.allSettled`, and a failed removal must not fail the call;
    - if the DB update fails, remove the newly uploaded file and rethrow (no orphan);

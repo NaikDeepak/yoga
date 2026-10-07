@@ -108,7 +108,7 @@ describe('replacePatientPhoto', () => {
     const file = new File([new Uint8Array([1, 2, 3])], 'avatar.png', { type: 'image/png' });
     const res = await replacePatientPhoto(db, storage, p.id, file);
 
-    expect(res.photoPath).toMatch(new RegExp(`^patients/${p.id}/photo-\\d+-avatar\\.png$`));
+    expect(res.photoPath).toMatch(new RegExp(`^patients/${p.id}/photo-\\d+-[0-9a-f]{8}-avatar\\.png$`));
     const updated = await getPatient(db, p.id);
     expect(updated?.photoPath).toBe(res.photoPath);
     expect(storage.files.has(res.photoPath)).toBe(true);
@@ -183,7 +183,7 @@ describe('replacePatientPhoto', () => {
     const missingId = '00000000-0000-0000-0000-000000000000';
     const file = new File([new Uint8Array([1])], 'missing.png', { type: 'image/png' });
 
-    await expect(replacePatientPhoto(db, storage, missingId, file)).rejects.toThrow();
+    await expect(replacePatientPhoto(db, storage, missingId, file)).rejects.toThrow('Client not found');
     expect(storage.files.size).toBe(0);
   });
 });

@@ -35,7 +35,7 @@ export async function setPhotoPath(db: Db, id: string, photoPath: string): Promi
 
 /**
  * Replaces a client's profile photo: upload first → update row (locked) → remove old photo
- * (best effort via Promise.allSettled). If DB update or client lookup fails, the newly uploaded
+ * (best effort). If DB update or client lookup fails, the newly uploaded
  * file is removed to avoid leaving orphan files in storage.
  */
 export async function replacePatientPhoto(
@@ -45,7 +45,8 @@ export async function replacePatientPhoto(
   file: File,
 ): Promise<{ photoPath: string }> {
   const sanitized = file.name.replace(/[^\w.\-]+/g, '_');
-  const photoPath = `patients/${patientId}/photo-${Date.now()}-${sanitized}`;
+  // Timestamp + random suffix: two uploads in the same millisecond can't collide.
+  const photoPath = `patients/${patientId}/photo-${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${sanitized}`;
 
   await storage.upload(photoPath, file);
 
@@ -58,7 +59,7 @@ export async function replacePatientPhoto(
         .where(eq(patients.id, patientId))
         .for('update');
       if (!existing) {
-        throw new Error(`Patient ${patientId} not found`);
+        throw new Error('Client not found'); // no id in the message: errors reach the logs
       }
       await tx
         .update(patients)
@@ -67,12 +68,12 @@ export async function replacePatientPhoto(
       return existing.photoPath ?? null;
     });
   } catch (error) {
-    await Promise.allSettled([storage.remove(photoPath)]);
+    await storage.remove(photoPath).catch(() => {});
     throw error;
   }
 
   if (oldPhotoPath && oldPhotoPath !== photoPath) {
-    await Promise.allSettled([storage.remove(oldPhotoPath)]);
+    await storage.remove(oldPhotoPath).catch(() => {}); // best effort: the save already succeeded
   }
 
   return { photoPath };
