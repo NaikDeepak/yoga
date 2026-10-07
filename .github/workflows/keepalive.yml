@@ -15,8 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Keepalive Endpoint
-        # If CRON_SECRET is set on Vercel, add a matching CRON_SECRET repo secret here too —
-        # otherwise the route's auth check (route.ts) will 401 this request.
+        # CRON_SECRET repo secret must match CRON_SECRET on Vercel — the route (route.ts)
+        # refuses every call without it.
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |

@@ -6,14 +6,12 @@ import { safeErrorMessage } from '@/lib/log';
 // hosts **login** from auto-pausing (free tier pauses after 7 days without database activity, which
 // would take sign-in down). Supabase is used for auth only — data is on Neon, files on R2.
 // Vercel cron calls this once a day (see vercel.json) and automatically sends
-// Authorization: Bearer <CRON_SECRET> when CRON_SECRET is set in the project.
+// Authorization: Bearer <CRON_SECRET>; the GitHub keepalive workflow sends the same secret.
+// Fails closed: without CRON_SECRET set, every call is refused.
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers.get('authorization');
-    if (auth !== `Bearer ${secret}`) {
-      return Response.json({ ok: false }, { status: 401 });
-    }
+  if (!secret || req.headers.get('authorization') !== `Bearer ${secret}`) {
+    return Response.json({ ok: false }, { status: 401 });
   }
 
   // 1. Keep the app database (Neon) warm
