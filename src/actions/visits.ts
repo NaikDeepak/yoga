@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { visitSchema, firstError } from '@/lib/validation';
@@ -8,7 +9,7 @@ import { addVisit } from '@/data/visits';
 import type { ActionResult } from './patients';
 
 export async function addVisitAction(patientId: string, formData: FormData): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = visitSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
   try {
@@ -16,6 +17,7 @@ export async function addVisitAction(patientId: string, formData: FormData): Pro
   } catch {
     return { ok: false, error: 'Could not save visit / भेट जतन झाली नाही' };
   }
+  await recordAudit(getDb(), { actor: user, action: 'visit.add', patientId, summary: parsed.data.visitDate });
   revalidatePath(`/patients/${patientId}`);
   revalidatePath('/dashboard');
   return { ok: true };

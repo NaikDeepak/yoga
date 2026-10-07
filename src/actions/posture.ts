@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { recordAudit } from '@/data/audit';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { getDb } from '@/db/client';
@@ -66,7 +67,7 @@ function collectPhotos<K extends PostureView | FlexShot>(formData: FormData, vie
  * On success redirects to the new assessment's report.
  */
 export async function savePostureAssessmentAction(patientId: string, formData: FormData): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (typeof patientId !== 'string' || !patientId) return INVALID_PARAMS;
 
   const raw = parsePayload(formData);
@@ -104,6 +105,7 @@ export async function savePostureAssessmentAction(patientId: string, formData: F
     return SAVE_FAILED;
   }
 
+  await recordAudit(getDb(), { actor: user, action: 'posture.add', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);
 }
@@ -117,7 +119,7 @@ export async function replacePostureViewsAction(
   assessmentId: string,
   formData: FormData,
 ): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
   }
@@ -146,6 +148,7 @@ export async function replacePostureViewsAction(
   if (updated === 'consentRequired') return CONSENT_REQUIRED;
   if (!updated) return NOT_FOUND;
 
+  await recordAudit(getDb(), { actor: user, action: 'posture.retake', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);
 }
@@ -160,7 +163,7 @@ export async function saveFlexibilityTestsAction(
   assessmentId: string,
   formData: FormData,
 ): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
   }
@@ -183,12 +186,13 @@ export async function saveFlexibilityTestsAction(
   if (saved === 'consentRequired') return CONSENT_REQUIRED;
   if (saved === 'notFound') return NOT_FOUND;
 
+  await recordAudit(getDb(), { actor: user, action: 'flexibility.save', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
   redirect(`/patients/${patientId}/posture/${assessmentId}`);
 }
 
 export async function deletePostureAssessmentAction(patientId: string, assessmentId: string): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
   }
@@ -197,6 +201,7 @@ export async function deletePostureAssessmentAction(patientId: string, assessmen
   } catch {
     return { ok: false, error: 'Could not delete posture assessment / पोश्चर मूल्यांकन हटवता आले नाही' };
   }
+  await recordAudit(getDb(), { actor: user, action: 'posture.delete', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
   // Redirect server-side: the caller is the report page of the record that no longer exists.
   redirect(`/patients/${patientId}?tab=assessment`);
@@ -209,10 +214,11 @@ export async function deletePostureAssessmentAction(patientId: string, assessmen
 export async function withdrawPhotoConsentAction(
   patientId: string,
 ): Promise<{ ok: true; deleted: number } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   if (!z.string().uuid().safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
     const { deleted, failed } = await deletePosturePhotos(getDb(), getStorage(), patientId, new Date());
+    await recordAudit(getDb(), { actor: user, action: 'photos.withdraw', patientId, summary: `${deleted} photo(s) deleted${failed ? `, ${failed} failed` : ""}` });
     revalidatePath(`/patients/${patientId}`, 'layout');
     if (failed) {
       return { ok: false, error: `${failed} photo(s) could not be deleted; please try again / ${failed} फोटो हटवता आले नाहीत; कृपया पुन्हा प्रयत्न करा` };
@@ -297,7 +303,7 @@ export async function savePostureAiAction(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
   }
@@ -322,6 +328,7 @@ export async function savePostureAiAction(
   }
   const saved = await saveAiReport(getDb(), patientId, assessmentId, parsed.data, { approved: true });
   if (!saved) return NOT_FOUND;
+  await recordAudit(getDb(), { actor: user, action: 'posture.ai_approve', patientId, summary: null });
   revalidatePath(`/patients/${patientId}/posture/${assessmentId}`);
   return { ok: true };
 }

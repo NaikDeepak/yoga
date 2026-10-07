@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { prescribedExercisesListSchema } from '@/lib/validation';
@@ -14,12 +15,13 @@ export async function savePrescribedExercisesAction(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    await requireUser();
+    const user = await requireUser();
 
     const jsonStr = formData.get('prescribedExercisesJson') as string;
     if (!jsonStr) {
       // If no input, set to empty array
       await savePrescribedExercises(getDb(), patientId, []);
+      await recordAudit(getDb(), { actor: user, action: 'exercises.save', patientId, summary: null });
       revalidatePath(`/patients/${patientId}`);
       return { ok: true };
     }
@@ -32,6 +34,7 @@ export async function savePrescribedExercisesAction(
     }
 
     await savePrescribedExercises(getDb(), patientId, parsed.data);
+    await recordAudit(getDb(), { actor: user, action: 'exercises.save', patientId, summary: null });
     revalidatePath(`/patients/${patientId}`);
     return { ok: true };
   } catch (error) {
@@ -54,11 +57,12 @@ export async function addPrescribedExercisesAction(
   patientId: string,
   exerciseIds: string[],
 ): Promise<{ ok: true; added: number; alreadyPrescribed: number } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   const parsed = exerciseIdsSchema.safeParse({ patientId, exerciseIds });
   if (!parsed.success) return { ok: false, error: 'Invalid exercise selection / अमान्य व्यायाम निवड' };
   try {
     const result = await addPrescribedExercises(getDb(), patientId, parsed.data.exerciseIds);
+    await recordAudit(getDb(), { actor: user, action: 'exercises.save', patientId, summary: null });
     revalidatePath(`/patients/${patientId}`);
     return { ok: true, ...result };
   } catch (error) {

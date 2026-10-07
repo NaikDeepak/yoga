@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { getStorage } from '@/lib/storage';
@@ -10,7 +11,7 @@ import { addDocument, deleteDocument } from '@/data/documents';
 import type { ActionResult } from './patients';
 
 export async function uploadDocumentAction(patientId: string, formData: FormData): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   const docType = docTypeSchema.safeParse(formData.get('docType'));
   if (!docType.success) return { ok: false, error: 'Choose a document type / प्रकार निवडा' };
   const file = formData.get('file');
@@ -21,13 +22,15 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
   if (err) return { ok: false, error: err };
 
   await addDocument(getDb(), getStorage(), { patientId, docType: docType.data, file });
+  await recordAudit(getDb(), { actor: user, action: 'document.upload', patientId, summary: docType.data });
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }
 
 export async function deleteDocumentAction(patientId: string, documentId: string): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   await deleteDocument(getDb(), getStorage(), documentId);
+  await recordAudit(getDb(), { actor: user, action: 'document.delete', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }
