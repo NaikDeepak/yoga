@@ -150,7 +150,7 @@ describe('latestPostureScores', () => {
     const [mine] = await listPostureAssessments(db, patientId);
     expect(scores.get(patientId)).toEqual({
       assessmentId: latest.id, assessedOn: '2026-10-04', score: mine.score, grade: mine.grade,
-      mildCount: 0, markedCount: 0, previousId: expect.any(String), previousOn: '2026-09-01', previousScore: 93,
+      mildCount: 0, markedCount: 0, previousId: expect.any(String), previousOn: '2026-09-01', previousScore: 93, total: null, previousTotal: null,
     });
     expect(mine.score).toBe(100);
     expect(scores.get(otherId)).toMatchObject({

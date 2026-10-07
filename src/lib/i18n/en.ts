@@ -624,6 +624,12 @@ export const en = {
       painBands: { none: 'No pain', mild: 'Mild', moderate: 'Moderate', severe: 'Severe' },
       source: 'Stress and goal are from the lifestyle assessment; weight and pain from the nearest visit on or before the assessment date.',
     },
+    total: {
+      title: 'Total score',
+      posture: 'Posture',
+      note: 'Posture + 3 flexibility tests, each out of 100',
+      short: 'Total {total}/400',
+    },
     flex: {
       title: 'Flexibility',
       add: 'Add flexibility tests',

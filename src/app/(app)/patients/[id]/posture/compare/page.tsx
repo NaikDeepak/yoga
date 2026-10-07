@@ -6,6 +6,7 @@ import { getPatient } from '@/data/patients';
 import { getPostureAssessment, type PostureAssessment } from '@/data/posture';
 import { getFlexibility } from '@/data/flexibility';
 import { FLEX_TESTS, flexBand } from '@/lib/flexibility';
+import { TOTAL_MAX, totalScore } from '@/lib/total-score';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
 import { buildOverlay } from '@/lib/posture-overlay';
@@ -59,6 +60,9 @@ export default async function PostureComparePage({
   const scores = compareScores(scorePosture(cb), scorePosture(ca));
   const rows = compareMetrics(cb, ca);
   const [flexBefore, flexAfter] = await Promise.all([getFlexibility(db, before.id), getFlexibility(db, after.id)]);
+  // Total /400 per side, only when that assessment has posture + all three flexibility scores.
+  const totalBefore = totalScore(scores.overall.before, flexBefore.scores)?.total ?? null;
+  const totalAfter = totalScore(scores.overall.after, flexAfter.scores)?.total ?? null;
 
   const photos = await Promise.all([before, after].map(async (asmt) => Object.fromEntries(await Promise.all(
     asmt.views.map(async (v) => [v.view, {
@@ -212,6 +216,14 @@ export default async function PostureComparePage({
                   </tr>
                 );
               })}
+              {(totalBefore !== null || totalAfter !== null) && (
+                <tr className="border-t-2" style={{ backgroundColor: BRAND.sandLight }}>
+                  <td className="py-2 font-semibold" style={{ color: BRAND.green }}>{t.posture.total.title} /{TOTAL_MAX}</td>
+                  <td className="py-2 text-right tabular-nums font-semibold">{totalBefore ?? cmp.notMeasured}</td>
+                  <td className="py-2 text-right tabular-nums font-semibold">{totalAfter ?? cmp.notMeasured}</td>
+                  <td className="py-2 text-right">{changeCell(totalBefore !== null && totalAfter !== null ? totalAfter - totalBefore : null)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>

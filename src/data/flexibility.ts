@@ -8,7 +8,7 @@ import { consentWithdrawn } from './posture';
 import type { Landmark } from '@/lib/posture';
 import type { CameraCheck } from '@/lib/posture-capture';
 import {
-  FLEX_SHOTS, measureShot, scoreFlexibility, type FlexMeasures, type FlexResult, type FlexShot, type FlexTest, type ShotMeasure,
+  FLEX_SHOTS, scoreShots, type FlexResult, type FlexShot, type FlexTest, type ShotMeasure,
 } from '@/lib/flexibility';
 
 export interface FlexShotInput {
@@ -33,15 +33,11 @@ export const flexPhotoPath = (patientId: string, assessmentId: string, shot: Fle
   `patients/${patientId}/posture/${assessmentId}/flex-${shot}-${version}.jpg`;
 
 function withScores(rows: FlexibilityTestRow[]): Flexibility {
+  const { measures, scores } = scoreShots(rows);
   const shots = rows
-    .map((r) => ({
-      ...r,
-      shot: r.shot as FlexShot,
-      measure: measureShot(r.shot as FlexShot, r.landmarks, { width: r.imageWidth, height: r.imageHeight }),
-    }))
+    .map((r) => ({ ...r, shot: r.shot as FlexShot, measure: measures[r.shot as FlexShot]! }))
     .sort((a, b) => FLEX_SHOTS.indexOf(a.shot) - FLEX_SHOTS.indexOf(b.shot));
-  const measures: FlexMeasures = Object.fromEntries(shots.map((s) => [s.shot, s.measure]));
-  return { shots, scores: scoreFlexibility(measures) };
+  return { shots, scores };
 }
 
 export async function getFlexibility(db: Db, assessmentId: string): Promise<Flexibility> {

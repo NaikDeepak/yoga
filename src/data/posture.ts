@@ -8,6 +8,8 @@ import { computeViewMetrics, POSTURE_VIEWS, type Landmark, type PostureView } fr
 import type { CameraCheck } from '@/lib/posture-capture';
 import { combineViews, scorePosture, type Grade } from '@/lib/posture-insights';
 import type { PostureAiReport } from '@/lib/posture-ai';
+import { scoreShots } from '@/lib/flexibility';
+import { totalScore } from '@/lib/total-score';
 
 export interface PostureViewInput {
   view: PostureView;
@@ -37,6 +39,8 @@ export type PostureAssessmentSummary = PostureAssessmentRow & {
   grade: Grade | null;
   /** Posture views + flexibility shots that still have a photo (0 once photo consent was withdrawn). */
   photoCount: number;
+  /** Posture + the three flexibility scores (/400); null unless all four exist. */
+  total: number | null;
 };
 
 /** Storage key for a view photo; retakes get a `version` suffix so the old file can be removed after commit. */
@@ -115,14 +119,17 @@ export async function listPostureAssessments(db: Db, patientId: string): Promise
 async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<PostureAssessmentSummary[]> {
   if (!assessments.length) return [];
   const ids = assessments.map((a) => a.id);
-  const [views, flexPhotos] = await Promise.all([
+  const [views, flexRows] = await Promise.all([
     db.select().from(postureViews).where(inArray(postureViews.assessmentId, ids)),
-    db.select({ assessmentId: flexibilityTests.assessmentId }).from(flexibilityTests)
-      .where(and(inArray(flexibilityTests.assessmentId, ids), isNotNull(flexibilityTests.filePath))),
+    db.select({
+      assessmentId: flexibilityTests.assessmentId, shot: flexibilityTests.shot, filePath: flexibilityTests.filePath,
+      landmarks: flexibilityTests.landmarks, imageWidth: flexibilityTests.imageWidth, imageHeight: flexibilityTests.imageHeight,
+    }).from(flexibilityTests).where(inArray(flexibilityTests.assessmentId, ids)),
   ]);
 
   return assessments.map((a) => {
     const own = views.filter((v) => v.assessmentId === a.id);
+    const ownFlex = flexRows.filter((f) => f.assessmentId === a.id);
     const combined = combineViews(own
       .map((v) => ({ view: v.view as PostureView, metrics: currentMetrics(v, a.heightCm) })));
     const { overall, grade } = scorePosture(combined);
@@ -132,7 +139,8 @@ async function summarize(db: Db, assessments: PostureAssessmentRow[]): Promise<P
       markedCount: combined.filter((m) => m.severity === 'marked').length,
       score: overall,
       grade,
-      photoCount: own.filter((v) => v.filePath !== null).length + flexPhotos.filter((f) => f.assessmentId === a.id).length,
+      photoCount: own.filter((v) => v.filePath !== null).length + ownFlex.filter((f) => f.filePath !== null).length,
+      total: totalScore(overall, scoreShots(ownFlex).scores)?.total ?? null,
     };
   });
 }
@@ -147,6 +155,9 @@ export interface LatestPostureScore {
   previousId: string | null;
   previousOn: string | null;
   previousScore: number | null;
+  /** Total /400 of the latest and the previous assessment; null unless complete. */
+  total: number | null;
+  previousTotal: number | null;
 }
 
 /**
@@ -177,6 +188,7 @@ export async function latestPostureScores(db: Db, patientIds: string[]): Promise
       assessmentId: l.id, assessedOn: l.assessedOn, score: l.score, grade: l.grade,
       mildCount: l.mildCount, markedCount: l.markedCount,
       previousId: p?.id ?? null, previousOn: p?.assessedOn ?? null, previousScore: p?.score ?? null,
+      total: l.total, previousTotal: p?.total ?? null,
     });
   }
   return result;

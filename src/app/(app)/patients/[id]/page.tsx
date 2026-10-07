@@ -770,6 +770,7 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
                       <p className="text-sm font-medium">{formatFullDate(a.assessedOn)}</p>
                       <p className="text-xs text-muted-foreground">
                         {t.posture.history.counts.replace('{marked}', String(a.markedCount)).replace('{mild}', String(a.mildCount))}
+                        {a.total !== null && <> · <span className="font-medium text-foreground">{t.posture.total.short.replace('{total}', String(a.total))}</span></>}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">

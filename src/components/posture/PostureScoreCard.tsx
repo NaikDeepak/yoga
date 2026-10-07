@@ -4,6 +4,7 @@ import type { LatestPostureScore } from '@/data/posture';
 import { formatFullDate } from '@/lib/dates';
 import type { Translations } from '@/lib/i18n/en';
 import { scoreTrend } from '@/lib/posture-compare';
+import { totalTrend } from '@/lib/total-score';
 import { scoreColor } from './ReportParts';
 import { ScoreTrend } from './ScoreTrend';
 
@@ -17,6 +18,7 @@ export function PostureScoreCard({ patientId, latest, t }: {
   const oc = p.overviewCard;
   const reportHref = latest && `/patients/${patientId}/posture/${latest.assessmentId}`;
   const { change, trend } = scoreTrend(latest?.score ?? null, latest?.previousScore ?? null);
+  const total = totalTrend(latest?.total ?? null, latest?.previousTotal ?? null);
 
   return (
     <Card className="rounded-2xl sm:col-span-2">
@@ -53,6 +55,14 @@ export function PostureScoreCard({ patientId, latest, t }: {
                 ) : null}
                 <span>· {p.history.counts.replace('{marked}', String(latest.markedCount)).replace('{mild}', String(latest.mildCount))}</span>
               </p>
+              {latest.total !== null && (
+                <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs">
+                  <span className="font-semibold tabular-nums">{p.total.short.replace('{total}', String(latest.total))}</span>
+                  {total.trend && total.change !== null && (
+                    <ScoreTrend change={total.change} trend={total.trend} label={oc.trend[total.trend]} compact />
+                  )}
+                </p>
+              )}
             </div>
             <div className="flex gap-3 text-xs">
               <Link href={reportHref!} className="text-primary hover:underline">{p.history.viewReport}</Link>

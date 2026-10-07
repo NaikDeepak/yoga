@@ -15,6 +15,8 @@ import { activeShareLink } from '@/data/share-links';
 import { isPostureEnabled } from '@/lib/features';
 import { getFlexibility } from '@/data/flexibility';
 import { FlexibilitySection } from '@/components/posture/FlexibilitySection';
+import { TotalScore } from '@/components/posture/TotalScore';
+import { totalScore } from '@/lib/total-score';
 import { deletePostureAssessmentAction } from '@/actions/posture';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
@@ -95,6 +97,7 @@ export default async function PostureReportPage({
     activeShareLink(db, id, 'posture', new Date()),
     getFlexibility(db, assessmentId),
   ]);
+  const total = totalScore(score.overall, flexibility.scores);
   const flexPhotoUrls = Object.fromEntries(await Promise.all(flexibility.shots.map(async (s) =>
     [s.shot, s.filePath ? await storage.createSignedUrl(s.filePath).catch(() => null) : null] as const)));
   // The client's live posture link may show a different (older/newer) report.
@@ -186,6 +189,9 @@ export default async function PostureReportPage({
           <p className="mt-3 text-[11px] text-gray-500">{ins.averaged}</p>
         </div>
       </section>
+
+      {/* ── TOTAL ── posture + 3 flexibility tests (/400), only when all four exist */}
+      {total && <TotalScore total={total.total} parts={total.parts} t={t} />}
 
       {/* ── WELLBEING ── (hidden when neither BMI nor stress is known) */}
       {(bmiKey || stress) && (

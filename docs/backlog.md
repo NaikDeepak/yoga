@@ -11,10 +11,12 @@ to their spec) when done. Last updated 2026-10-06.
 | Shoulder-extension reference photo | Clinic | The AI model never reached 60°, so that card shows no reference. A clinic photo (consent for use with all clients) → `public/ideal/` + `src/lib/ideal-photos.ts`. See `scripts/ideal-photos/README.md`. |
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). Make a new **Object Read & Write** token for `patient-files` only, swap the `R2_*` vars in Vercel, deploy, and delete the old token. Do this before adding more clinics. |
 
+## Done recently
+- **C8 Total score** /400 (posture + 3 flexibility tests), 2026-10-07: spec `2026-10-07-total-score-design.md`.
+
 ## Features
 | ID | Item | Size | Notes |
 |---|---|---|---|
-| C8 | Combined score: posture + 3 flexibility tests (FlexifyMe "206/300") on the report and Overview, with a trend | M | Both inputs exist now (D1 done). |
 | C9 | Phased programme on the report (Initiation wk 1–6 → Adoption 7–10 → Alleviation 11–16 → Retention 17–18) with a reassessment booked at each phase end | L | Needs its own spec. |
 | — | Delete the old profile photo from R2 when a new one is uploaded | S | Gap found while building Delete client; until then, Delete client sweeps leftovers. |
 | C6 | Spinal curve read (kyphosis / lordosis), qualitative and flagged approx | M | From shoulder/hip/ear offsets. |
