@@ -10,7 +10,10 @@
 #   scripts/collab.sh release <agent> ["<note>"]
 #   scripts/collab.sh handoff <from> <to> "<branch · what's done · what's next>"
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# One notepad for the whole repo: worktrees share git's common dir, so resolve the MAIN checkout from it
+# (an agent working in a worktree must write to the same notepad as everyone else).
+COMMON="$(git -C "$(dirname "$0")" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+if [[ -n "$COMMON" ]]; then ROOT="$(dirname "$COMMON")"; else ROOT="$(cd "$(dirname "$0")/.." && pwd)"; fi
 DIR="$ROOT/.collab"
 PAD="$DIR/notepad.md"
 LOCK="$DIR/.lock"
