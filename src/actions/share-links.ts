@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { recordAudit } from '@/data/audit';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { getDb } from '@/db/client';
@@ -34,7 +35,7 @@ async function publicUrl(token: string): Promise<string> {
 export async function createExerciseShareLinkAction(
   patientId: string,
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
     const db = getDb();
@@ -45,6 +46,7 @@ export async function createExerciseShareLinkAction(
     }
     const { token, link } = await createShareLink(db, patientId, 'exercises', new Date());
     const url = await publicUrl(token);
+    await recordAudit(getDb(), { actor: user, action: 'share.create', patientId, summary: 'exercises link' });
     revalidatePath(`/patients/${patientId}`);
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, exerciseShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
@@ -54,10 +56,11 @@ export async function createExerciseShareLinkAction(
 }
 
 export async function revokeExerciseShareLinkAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
     await revokeShareLinks(getDb(), patientId, 'exercises', new Date());
+    await recordAudit(getDb(), { actor: user, action: 'share.revoke', patientId, summary: 'exercises link' });
     revalidatePath(`/patients/${patientId}`);
     return { ok: true };
   } catch (error) {
@@ -74,7 +77,7 @@ export async function createPostureShareLinkAction(
   assessmentId: string,
   includePhotos: boolean,
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   if (!isPostureEnabled()) return { ok: false, error: 'Posture analysis is switched off / पोश्चर विश्लेषण बंद आहे' };
   if (!patientIdSchema.safeParse(assessmentId).success) return { ok: false, error: 'Report not found / अहवाल सापडला नाही' };
   try {
@@ -86,6 +89,7 @@ export async function createPostureShareLinkAction(
       postureAssessmentId: assessment.id, includePhotos: includePhotos === true,
     });
     const url = await publicUrl(token);
+    await recordAudit(getDb(), { actor: user, action: 'share.create', patientId: patient.id, summary: `posture link${includePhotos === true ? ' (with photos)' : ''}` });
     revalidatePath(`/patients/${patient.id}/posture/${assessment.id}`);
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, postureShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
@@ -95,10 +99,11 @@ export async function createPostureShareLinkAction(
 }
 
 export async function revokePostureShareLinkAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
     await revokeShareLinks(getDb(), patientId, 'posture', new Date());
+    await recordAudit(getDb(), { actor: user, action: 'share.revoke', patientId, summary: 'posture link' });
     revalidatePath(`/patients/${patientId}`, 'layout');
     return { ok: true };
   } catch (error) {
@@ -115,7 +120,7 @@ export async function createProgressShareLinkAction(
   patientId: string,
   opts: { hideWeight: boolean },
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
     const db = getDb();
@@ -126,6 +131,7 @@ export async function createProgressShareLinkAction(
     }
     const { token, link } = await createShareLink(db, patientId, 'progress', new Date(), { hideWeight: opts?.hideWeight === true });
     const url = await publicUrl(token);
+    await recordAudit(getDb(), { actor: user, action: 'share.create', patientId, summary: `progress link${opts?.hideWeight === true ? ' (weight hidden)' : ''}` });
     revalidatePath(`/patients/${patientId}`);
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, progressShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
@@ -135,10 +141,11 @@ export async function createProgressShareLinkAction(
 }
 
 export async function revokeProgressShareLinkAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  await requireUser();
+  const user = await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
     await revokeShareLinks(getDb(), patientId, 'progress', new Date());
+    await recordAudit(getDb(), { actor: user, action: 'share.revoke', patientId, summary: 'progress link' });
     revalidatePath(`/patients/${patientId}`);
     return { ok: true };
   } catch (error) {

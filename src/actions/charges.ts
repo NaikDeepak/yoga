@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { chargeSchema, firstError } from '@/lib/validation';
@@ -13,7 +14,7 @@ export async function addChargeAction(
   _prevState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (typeof patientId !== 'string' || !patientId) {
     return { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
   }
@@ -27,12 +28,13 @@ export async function addChargeAction(
   } catch {
     return { ok: false, error: 'Could not record charge / शुल्क नोंदवता आले नाही' };
   }
+  await recordAudit(getDb(), { actor: user, action: 'charge.add', patientId, summary: `${feeType} ₹${amount} on ${chargeDate}` });
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }
 
 export async function deleteChargeAction(patientId: string, chargeId: string): Promise<ActionResult> {
-  await requireUser();
+  const user = await requireUser();
   if (typeof patientId !== 'string' || typeof chargeId !== 'string' || !patientId || !chargeId) {
     return { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
   }
@@ -42,6 +44,7 @@ export async function deleteChargeAction(patientId: string, chargeId: string): P
   } catch {
     return { ok: false, error: 'Could not delete charge / शुल्क हटवता आले नाही' };
   }
+  await recordAudit(getDb(), { actor: user, action: 'charge.delete', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }

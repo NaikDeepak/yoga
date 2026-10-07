@@ -42,8 +42,8 @@ describe('listDocuments / deleteDocument', () => {
     expect(await listDocuments(db, patientId)).toHaveLength(0);
     expect(storage.files.size).toBe(0);
   });
-  it('ignores delete of unknown id', async () => {
+  it('ignores delete of unknown id (returns false: nothing to record)', async () => {
     await expect(deleteDocument(db, storage, '00000000-0000-0000-0000-000000000000'))
-      .resolves.toBeUndefined();
+      .resolves.toBe(false);
   });
 });

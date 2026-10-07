@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations, LOCALES } from '@/lib/i18n/translations';
 import { saveLanguageAction, saveWhatsappNumberAction } from '@/actions/preferences';
@@ -11,6 +12,7 @@ import { requireUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { getWhatsappNumber } from '@/data/preferences';
 import { CLINIC } from '@/lib/clinic';
+import { ExportCard } from '@/components/ExportCard';
 
 export default async function SettingsPage() {
   const locale = await getLocale();
@@ -84,6 +86,18 @@ export default async function SettingsPage() {
               {t.settings.saveBtn}
             </SubmitButton>
           </InlineForm>
+        </CardContent>
+      </Card>
+
+      <ExportCard />
+
+      <Card className="rounded-2xl shadow-sm border-border max-w-lg">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold">{t.settings.activity.title}</CardTitle>
+          <CardDescription>{t.settings.activity.description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/settings/activity" className="text-sm font-medium text-primary hover:underline">{t.settings.activity.title} →</Link>
         </CardContent>
       </Card>
     </div>

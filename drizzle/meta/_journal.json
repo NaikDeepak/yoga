@@ -169,6 +169,13 @@
       "when": 1791292341406,
       "tag": "0023_public_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791354895576,
+      "tag": "0024_fuzzy_boom_boom",
+      "breakpoints": true
     }
   ]
 }

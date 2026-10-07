@@ -1,5 +1,5 @@
 import {
-  pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index, uniqueIndex, check, jsonb,
+  bigserial, pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index, uniqueIndex, check, jsonb,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import type { Landmark, Metric } from '@/lib/posture';
@@ -326,3 +326,22 @@ export const exerciseCheckins = pgTable('exercise_checkins', {
 ]).enableRLS();
 
 export type ExerciseCheckinRow = typeof exerciseCheckins.$inferSelect;
+
+// Who changed what (spec 2026-10-07-audit-log). No foreign key to patients on purpose: entries must survive a
+// client's permanent deletion, keeping only the client code — never names or health details.
+export const auditLog = pgTable('audit_log', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // Strictly increasing write order: stable newest-first order and paging even within the same instant.
+  seq: bigserial('seq', { mode: 'number' }).notNull(),
+  at: timestamp('at').defaultNow().notNull(),
+  actorId: text('actor_id').notNull(),
+  actorEmail: text('actor_email'),
+  action: text('action').notNull(), // AuditAction, e.g. 'client.delete'
+  patientId: uuid('patient_id'),
+  clientCode: text('client_code'),
+  summary: text('summary'),
+}, (table) => [
+  uniqueIndex('audit_log_seq_uq').on(table.seq),
+]).enableRLS();
+
+export type AuditRow = typeof auditLog.$inferSelect;
