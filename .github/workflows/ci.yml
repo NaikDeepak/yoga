@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Typecheck, Test & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test suite with coverage gate
+        run: npm run coverage
+
+      - name: Build
+        run: npm run build
+        # Fake values only: the build must never need real secrets. Tests run with no env at all.
+        env:
+          LOCAL_MOCK: "false"
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-placeholder"
