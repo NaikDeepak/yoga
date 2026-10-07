@@ -20,7 +20,7 @@ import { cookies } from 'next/headers';
 import { getTranslations, type Translations, LOCALES, type Locale } from '@/lib/i18n/translations';
 import { getUserLanguage, getWhatsappNumber } from '@/data/preferences';
 import { CLINIC } from '@/lib/clinic';
-import { clinicName } from '@/clinics';
+import { birthdayWishText } from '@/lib/whatsapp';
 import { requireUser } from '@/lib/auth';
 
 const MONTHLY_TARGET = 100;
@@ -500,8 +500,6 @@ function pendingReason(missingLifestyle: boolean, missingTreatment: boolean, t: 
 }
 
 function birthdayWhatsappUrl(mobile: string, fullName: string, t: Translations, locale: Locale): string {
-  const text = t.dashboard.birthdayWishMsg
-    .replaceAll('{name}', fullName)
-    .replaceAll('{clinic}', clinicName(locale));
+  const text = birthdayWishText(t.dashboard.birthdayWishMsg, fullName, locale);
   return `https://api.whatsapp.com/send?phone=91${mobile}&text=${encodeURIComponent(text)}`;
 }

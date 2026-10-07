@@ -26,6 +26,10 @@ export const pawar: ClinicProfile = {
       'Founder & Director of PYTC | Chief Medical Yoga Expert',
       "Pawar's Yog Therapy Center",
     ],
+    wishSignOff: {
+      en: "Acharya Narayan Pawar\nPawar's Yog Therapy Center",
+      mr: "आचार्य नारायण पवार\nPawar's Yog Therapy Center",
+    },
   },
   branches: [
     {

@@ -31,6 +31,8 @@ export const clinicProfileSchema = z.object({
   signature: z.object({
     name: z.string().min(1),
     lines: z.array(z.string()),
+    // Sign-off lines under greetings sent to clients (e.g. the birthday wish), per language.
+    wishSignOff: z.object({ en: z.string().min(1), mr: z.string().min(1) }),
   }),
   branches: z
     .array(clinicBranchSchema)

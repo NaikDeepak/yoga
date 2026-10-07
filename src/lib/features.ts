@@ -6,15 +6,12 @@ export type ClinicFeature = keyof ClinicProfile['features'];
 
 type Env = Record<string, string | undefined>;
 
+/** FEATURE_<NAME> ("true"/"false", e.g. FEATURE_SHARE_LINKS) overrides the clinic profile's switch. */
 export function isFeatureEnabled(name: ClinicFeature, env: Env = process.env): boolean {
-  const envVal =
-    env[`FEATURE_${name.toUpperCase()}`] ??
-    env[`FEATURE_${name.replace(/([A-Z])/g, '_$1').toUpperCase()}`];
-
-  if (envVal === 'true') return true;
-  if (envVal === 'false') return false;
-
-  return Boolean(clinicProfile.features[name]) && env.NODE_ENV === 'development';
+  const override = env[`FEATURE_${name.replace(/([A-Z])/g, '_$1').toUpperCase()}`];
+  if (override === 'true') return true;
+  if (override === 'false') return false;
+  return clinicProfile.features[name];
 }
 
 /**
@@ -24,5 +21,7 @@ export function isFeatureEnabled(name: ClinicFeature, env: Env = process.env): b
  * the posture routes themselves stay reachable by URL for signed-in staff.
  */
 export function isPostureEnabled(env: Env = process.env): boolean {
-  return isFeatureEnabled('posture', env);
+  if (env.FEATURE_POSTURE === 'true') return true;
+  if (env.FEATURE_POSTURE === 'false') return false;
+  return clinicProfile.features.posture && env.NODE_ENV === 'development';
 }
