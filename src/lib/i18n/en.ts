@@ -973,6 +973,15 @@ export const en = {
     visits: 'Visits',
     fees: 'Fees & payments',
   },
+  errors: {
+    errorTitle: 'Something went wrong',
+    errorBody: 'Your work up to the last save is safe. Try again; if it keeps happening, tell us the reference below.',
+    notFoundTitle: 'Page not found',
+    notFoundBody: 'This page does not exist or was removed.',
+    retry: 'Try again',
+    home: 'Go to dashboard',
+    reference: 'Reference',
+  },
 };
 
 export type Translations = typeof en;
