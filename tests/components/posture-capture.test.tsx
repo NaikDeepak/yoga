@@ -502,4 +502,48 @@ describe('PostureCapture Component', () => {
       expect(screen.getByRole('button', { name: new RegExp(en.posture.capture.capture) })).toBeInTheDocument();
     });
   });
+
+  describe('Capture counters (E4)', () => {
+    const sent = () => vi.mocked(navigator.sendBeacon).mock.calls.map(([, blob]) => blob as Blob);
+    const counts = async () => (await Promise.all(sent().map(async (b) => JSON.parse(await b.text()).counts))).flat();
+
+    beforeEach(() => {
+      Object.defineProperty(navigator, 'sendBeacon', { value: vi.fn(() => true), configurable: true });
+    });
+
+    it('sends one batch on save: tries, capture and the save tap, by photo type — nothing about the client', async () => {
+      autoLandmarks = true;
+      renderPosture({ patientId: 'p1', patientName: 'Asha Kulkarni', retake: { assessmentId: 'a1', views: ['front'] } });
+      await startCameraAndReady();
+      await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(en.posture.capture.capture) }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(350); });
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(en.posture.capture.usePhoto) }));
+      await act(async () => { fireEvent.click(screen.getByRole('button', { name: new RegExp(en.posture.capture.save) })); });
+
+      expect(sent()).toHaveLength(1);
+      const c = await counts();
+      expect(c).toEqual(expect.arrayContaining([
+        { event: 'attemptManual', shot: 'front', n: 1 },
+        { event: 'captured', shot: 'front', n: 1 },
+        { event: 'saveTapped', shot: null, n: 1 },
+      ]));
+      const body = await sent()[0].text();
+      expect(body).not.toContain('p1');
+      expect(body).not.toContain('Asha');
+    });
+
+    it('counts a blocked capture and sends it when the screen closes', async () => {
+      liveLandmarks = alignedLandmarks('front');
+      stillLandmarks = null;
+      const { unmount } = renderPosture({ patientId: 'p1', patientName: 'Asha Kulkarni', retake: { assessmentId: 'a1', views: ['front'] } });
+      await startCameraAndReady();
+      fireEvent.click(screen.getByRole('button', { name: new RegExp(en.posture.capture.capture) }));
+      await act(async () => { await vi.advanceTimersByTimeAsync(350); });
+      expect(sent()).toHaveLength(0);
+      unmount();
+      expect(await counts()).toEqual(expect.arrayContaining([{ event: 'blockedNoPerson', shot: 'front', n: 1 }]));
+    });
+  });
 });
+
