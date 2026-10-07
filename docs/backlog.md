@@ -41,9 +41,13 @@ to their spec) when done. Last updated 2026-10-07.
 ## Quality / ops
 | ID | Item |
 |---|---|
-| — | Hardening phase (from 2026-10-07): real-use testing in the clinic; fix what it finds before any new feature. |
+| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
+
+## Bugs (found in real use)
+| Date | What you did | What you saw | Phone / browser | Status |
+|---|---|---|---|---|
 
 ## Low priority / parked
 | ID | Item | Size | Notes |
