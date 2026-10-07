@@ -48,3 +48,8 @@ scripts/collab.sh release <me> "<note>"
 6. **Finishing or pausing:** write a `handoff` (branch, what's done, what's next), then `release`.
 7. **Never write secrets, keys, connection strings or patient data** (names, phone numbers, health details) in the notepad.
 8. **Deploys and production migrations** (`npm run db:migrate:prod`, `npm run deploy:prod`) only when Deepak asks, and never while the other agent has a claim on `main` or a release branch.
+
+**Setup (once per machine):** headless `agy -p` can't ask permission, so allow just the notepad script in
+`~/.gemini/antigravity-cli/settings.json`: `"permissions": { "allow": ["command(scripts/collab.sh)", "command(./scripts/collab.sh)"] }`.
+Tested 2026-10-07: chained commands (`scripts/collab.sh … && …`) and any other command stay blocked.
+Claude Code can drive agy with `agy -p "<task>" [--mode plan]`, and continue with `--continue`.
