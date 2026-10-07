@@ -11,10 +11,11 @@ Single-clinic patient management app. Next.js 15 + Drizzle; production = Neon (D
 - `docs/setup.md` — first-time setup (Neon/R2/Supabase-login/Vercel) + manual QA checklist.
 - `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md` — what Phase 1 is and isn't; Phase 2/3 roadmap.
 
-## Working alongside Antigravity (`agy`)
-Another coding agent may be working in this repo. At the start of a task run `scripts/collab.sh status`;
+## Working alongside Antigravity (`agy`) and Codex (`codex`)
+You lead the agents (Deepak's decision, 2026-10-07): plan, delegate via the notepad, review and merge their work.
+Other coding agents may be working in this repo. At the start of a task run `scripts/collab.sh status`;
 claim before editing; never touch files/branches the other agent claimed; hand off and release when done.
-Full protocol: "Working with another agent" in `AGENTS.md` (that file's caveman style rules are for Antigravity —
+Full protocol: "Working with another agent" in `AGENTS.md` (that file's caveman style rules are for Antigravity and Codex —
 not for you). `CLAUDE.md` holds the project rules for every agent.
 
 ## Commands
