@@ -137,17 +137,21 @@ async function summarize(
 ): Promise<PostureAssessmentSummary[]> {
   if (!assessments.length) return [];
   const ids = assessments.map((a) => a.id);
-  const flexCols = {
-    assessmentId: flexibilityTests.assessmentId, shot: flexibilityTests.shot, filePath: flexibilityTests.filePath,
-    // Landmarks only when a total is wanted: they're the heavy part.
-    ...(totals && { landmarks: flexibilityTests.landmarks, imageWidth: flexibilityTests.imageWidth, imageHeight: flexibilityTests.imageHeight }),
-  };
+  // Flexibility rows: just the photo paths, or — when a total is wanted — the landmarks too (the heavy part).
+  // Two typed queries rather than one conditional select, so the compiler checks what scoreShots receives.
+  const flexBase = { assessmentId: flexibilityTests.assessmentId, shot: flexibilityTests.shot, filePath: flexibilityTests.filePath };
+  const byIds = inArray(flexibilityTests.assessmentId, ids);
   const [views, flexRows] = await Promise.all([
     db.select().from(postureViews).where(inArray(postureViews.assessmentId, ids)),
-    db.select(flexCols).from(flexibilityTests).where(inArray(flexibilityTests.assessmentId, ids)),
+    totals
+      ? db.select({ ...flexBase, landmarks: flexibilityTests.landmarks, imageWidth: flexibilityTests.imageWidth, imageHeight: flexibilityTests.imageHeight })
+        .from(flexibilityTests).where(byIds)
+      : db.select(flexBase).from(flexibilityTests).where(byIds),
   ]);
   const viewsOf = groupBy(views);
-  const flexOf = groupBy(flexRows as (typeof flexRows[number] & { assessmentId: string })[]);
+  const flexOf = groupBy<(typeof flexRows)[number]>(flexRows);
+  const scorable = (rows: (typeof flexRows)[number][]) =>
+    rows.every((r): r is typeof r & Parameters<typeof scoreShots>[0][number] => 'landmarks' in r) ? rows : null;
 
   return assessments.map((a) => {
     const own = viewsOf.get(a.id) ?? [];
@@ -162,9 +166,10 @@ async function summarize(
       score: posture.overall,
       grade: posture.grade,
       photoCount: own.filter((v) => v.filePath !== null).length + ownFlex.filter((f) => f.filePath !== null).length,
-      total: totals
-        ? totalScore(posture, scoreShots(ownFlex as Parameters<typeof scoreShots>[0]).scores)?.total ?? null
-        : null,
+      total: (() => {
+        const rows = totals ? scorable(ownFlex) : null;
+        return rows ? totalScore(posture, scoreShots(rows).scores)?.total ?? null : null;
+      })(),
     };
   });
 }
