@@ -8,7 +8,7 @@ Drizzle ORM everywhere; tests run the same migrations on in-memory PGlite.
 
 **Local mock mode** (`LOCAL_MOCK=true`, dev-only): file-backed PGlite at `.local-db/` (migrated +
 seeded at startup via `src/instrumentation.ts`), cookie-based mock auth
-(`dr.pawar@example.com` / `password`), files under `public/uploads/`, canned Gemini draft when no
+(`dr.demo@example.com` / `password`), files under `public/uploads/`, canned Gemini draft when no
 API key. All branches gate on `isLocalMock()` (`src/lib/local-mock.ts`), which throws in production.
 
 Request flow: page (server component) → `src/actions/*` ('use server': auth → zod → repo → revalidate)
@@ -30,13 +30,14 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/bmi.ts` | BMI math | `computeBmi`, `bmiCategory` |
 | `src/lib/names.ts` | `firstName` — the only part of a client's name client-facing pages use | `firstName` |
 | `src/lib/wellbeing.ts` | bands for Overview + posture report (+ `genderLabel`): stress 1–4/5–7/8–10, pain 0/1–3/4–6/7–10, BMI (same cut-offs as `bmiCategory`), gauge needle fraction | `stressBand`, `painBand`, `bmiBand`, `gaugeFraction` |
-| `src/lib/patient-code.ts` | PYT-0001 sequence | `nextPatientCode`, `formatPatientCode` |
-| `src/lib/presets.ts` | 18 Marathi ailments, doc types | `PRESET_PROBLEMS`, `DOC_TYPES` |
+| `src/clinics/` | **clinic profile** — everything clinic-specific (names en/mr, tagline, logo + app icons — files in `public/clinics/<slug>/`, print/app brand colours, contact, signature + wish sign-off, branches, patient-code prefix, feature switches; mock seed data follows it too). `types.ts` (zod schema), `pawar.ts`, `index.ts` (registry; picks `CLINIC_PROFILE`, default `pawar`, validated at import; inlined at build via `next.config.ts` so client components agree) | `clinicProfile`, `clinicName(locale, short?)` |
+| `src/lib/patient-code.ts` | `<prefix>-0001` sequence (prefix from the clinic profile) | `nextPatientCode`, `formatPatientCode` |
+| `src/lib/presets.ts` | 18 Marathi ailments, doc types, branches (from the clinic profile) | `PRESET_PROBLEMS`, `DOC_TYPES`, `BRANCHES` |
 | `src/lib/feeTypes.ts` | preset fee types (Consultation, Monthly Yoga Fee, Package, Other) for standalone charges | `FEE_TYPES`, `FeeTypeKey`, `FEE_TYPE_KEYS`, `feeTypeLabel` |
 | `src/lib/calendar.ts` | pure month-grid date math | `buildMonthGrid`, `shiftMonth`, `parseMonth`, `monthRange` |
 | `src/lib/dates.ts` | IST date strings + display formats (`formatDueDate` = "14 Jul" for near-term, `formatFullDate` = "14 Jul 2026" for histories) | `getISTDateString`, `formatDueDate`, `formatFullDate` |
 | `src/lib/wellness.ts` | bilingual health-tip library (`wellness-messages.json`) + wa.me share URL without number (opens WhatsApp contact/broadcast picker) | `WELLNESS_MESSAGES`, `wellnessMessageForDay`, `buildWellnessMessage`, `wellnessShareUrl` |
-| `src/lib/clinic.ts` | clinic identity constant (name, phone, wa.me digits; used by letterhead + digest) | `CLINIC` |
+| `src/lib/clinic.ts` | clinic identity constant derived from the clinic profile (name, phone, wa.me digits; used by letterhead + digest) | `CLINIC` |
 | `src/lib/adherence.ts` | home-exercise adherence from check-ins: All = 1, Some = ½; window shortened to days since the first exercise link; day strip; days since last check-in | `adherence`, `dayStrip`, `daysSince`, `shiftDate`, `QUIET_AFTER_DAYS` (3; Treatment tab + dashboard), `quietDays` (from the later of last check-in / current link's share day), `checkinDay` (IST today; a form shown yesterday keeps yesterday within 60 min after midnight), `painSeries` (every day, gaps as null), `CheckinDone` |
 | `src/lib/share-token.ts` | client share-link tokens: 32 random bytes base64url, SHA-256 hash for storage, 90-day expiry, public URL from `APP_URL` or the request host | `newShareToken`, `hashShareToken`, `shareLinkExpiry`, `shareUrl`, `SHARE_LINK_TTL_DAYS` |
 | `src/lib/progress.ts` | client progress report helpers: first → latest recorded value (+ change, 1 dp); SVG chart points spaced true to time, fixed or data range, line split at gaps | `firstLatest`, `chartPoints`, `DatedValue` |
@@ -48,7 +49,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/posture-insights.ts` | `combineViews` averages each measure over front+back / left+right (signed, so opposite sides cancel) and flags low confidence when views fall in different severity bands and differ > 2.5° / 2 cm; rule-based posture score over the combined measures (5 regions: 100 − 15/mild − 35/marked; each measure counted once after averaging its views; overall = mean of measured regions, grade good ≥85 / fair ≥65) + pattern detection (10 patterns → i18n causes/effects in `t.posture.insights.patterns`) + exercise-library focus categories | `combineViews`, `CombinedMetric`, `scorePosture`, `detectPatterns`, `focusCategories`, `REGION_OF` |
 | `src/lib/posture-compare.ts` | before/after on combined findings: per rated measure (per leg for knee/heel) change + trend (≤0.5° / 0.5 cm = same, else band change or direction of change); score deltas overall + per region; overall-score trend for the Overview/client list (|change| < 3 = same) | `compareMetrics`, `compareScores`, `scoreTrend` (band parameter; 3 for posture, 12 for the total), `SCORE_SAME_BAND`, `Trend` |
 | `src/lib/log.ts` | log-safe error text: Drizzle query errors → `Database error <code> (<constraint>)`, never SQL/params | `safeErrorMessage` |
-| `src/lib/features.ts` | feature flags (server-side): posture analysis on in `next dev`, off in production unless `FEATURE_POSTURE=true` | `isPostureEnabled` |
+| `src/lib/features.ts` | feature switches (server-side): `isFeatureEnabled(name)` = env `FEATURE_<NAME>` ("true"/"false") else the clinic profile's switch (not wired into UI yet); posture analysis is special — on in `next dev`, off in production unless `FEATURE_POSTURE=true` | `isFeatureEnabled`, `isPostureEnabled` |
 | `src/lib/flexibility.ts` | flexibility tests (pure, pixel-space): shoulder extension (arm behind trunk line, near side), forward fold (hip angle, knee angle → `kneesBent`, fingertip reach level), butterfly (knee height above floor ÷ shoulder width per side, `heelsFar`); linear 0–100 scores from `FLEX_SCORING` (proposed cut-offs, physio tunes), FlexifyMe bands 0–35/36–70/71–100, shoulder `sideGap` ≥15° | `measureShot`, `scoreFlexibility`, `scoreShots` (stored rows → measures + scores; shared by the flexibility and posture repos), `flexBand`, `FLEX_SCORING`, `FLEX_SHOTS`, `FLEX_TESTS`, `FLEX_FINGER` |
 | `src/lib/total-score.ts` | total score per assessment: posture overall + 3 flexibility scores = /400, null unless all four exist; trend vs previous total (<12 = steady) (each part must itself be complete: both shoulder sides, both knees, all posture regions) | `totalScore`, `totalTrend`, `TOTAL_MAX`, `TOTAL_SAME_BAND` |
 | `src/lib/csv.ts` | CSV: RFC 4180 quoting, CRLF, UTF-8 BOM (Excel + Marathi), formula-injection guard (text starting `= + - @` tab CR gets a leading `'`; numbers untouched) | `toCsv`, `csvFilename` |
@@ -122,6 +123,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 - Every file of a client lives under `patients/<id>/`; deleting a client (`deletePatientAndFiles`) wipes that folder. Keep new uploads under it.
 - Every mutation goes through a server action that calls `requireUser()` first (auth actions excepted — they create/end the session itself). **One public exception:** `saveCheckinAction`, keyed by a share-link token that it re-resolves on every call; the client and date come from the server, input is two enums (no free text), one row per client per day.
 - Public pages (`src/app/s/*`) receive whitelisted view models only (`SharedExerciseProgramme`, `SharedPostureReport`, `SharedProgressReport`), never DB rows; share tokens are never stored or logged, only their SHA-256; unknown/expired/revoked links render the same not-found page.
+- No clinic-specific text (names, logo, phone, addresses, signatures) outside `src/clinics/`: read it from `clinicProfile` / `CLINIC` / `BRANCHES`; translations use `{clinic}` placeholders filled at the use site. Guarded by `tests/clinics/no-hardcoded-clinic.test.ts`.
 - Mock mode never runs in production: `isLocalMock()` throws when `LOCAL_MOCK=true` under `NODE_ENV=production`; never read `process.env.LOCAL_MOCK` directly.
 
 ## How to add a feature (pattern)

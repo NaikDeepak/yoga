@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+import { clinicProfile } from '@/clinics';
 
 export default async function RegisterPage({
   searchParams,
@@ -18,7 +19,7 @@ export default async function RegisterPage({
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/pytc-logo.png" alt="PYTC Logo" width={48} height={48} className="object-contain" />
+            <img src={clinicProfile.logo.src} alt={`${clinicProfile.logo.alt} Logo`} width={48} height={48} className="object-contain" />
           </div>
           <CardTitle>{t.auth.registerTitle}</CardTitle>
           <CardDescription>{t.auth.registerSubtitle}</CardDescription>

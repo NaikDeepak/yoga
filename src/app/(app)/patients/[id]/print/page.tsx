@@ -13,10 +13,12 @@ import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations, type Translations } from '@/lib/i18n/translations';
 import { getPrescribedExercises } from '@/data/exercises';
+import { ClinicSignature } from '@/components/ClinicSignature';
+import { clinicName, clinicProfile } from '@/clinics';
 
-const GREEN = '#1B3A2E';
-const SAFFRON = '#C8962E';
-const CREAM = '#FDF8F0';
+const GREEN = clinicProfile.brand.primary;
+const SAFFRON = clinicProfile.brand.accent;
+const CREAM = clinicProfile.brand.cream;
 
 function translateGender(gender: string, t: Translations): string {
   if (gender === 'male') return t.form.genderMale;
@@ -277,14 +279,10 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── FOOTER ── */}
       <hr className="border-gray-200" />
       <div className="mt-8 flex justify-end">
-        <div className="w-52 border-t-2 border-gray-400 pt-2 text-right">
-          <p className="text-sm font-bold">Aachary Narayan Pawar</p>
-          <p className="text-xs text-gray-600">Founder &amp; Director of PYTC | Chief Medical Yoga Expert</p>
-          <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center</p>
-        </div>
+        <ClinicSignature />
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
-        {t.print.footerText} | {t.print.generatedOn} {today}
+        {t.print.footerText.replaceAll('{clinic}', clinicName(locale))} | {t.print.generatedOn} {today}
       </p>
     </div>
   );
@@ -350,7 +348,7 @@ function FeeBox({
   label, amount, variant,
 }: { label: string; amount: number; variant: 'neutral' | 'green' | 'orange' }) {
   const bg = { neutral: CREAM, green: '#DCFCE7', orange: '#FFF3E0' }[variant];
-  const color = { neutral: '#374151', green: '#1B3A2E', orange: '#C2410C' }[variant];
+  const color = { neutral: '#374151', green: GREEN, orange: '#C2410C' }[variant];
   const borderColor = { neutral: '#E5D5B5', green: '#86EFAC', orange: '#FED7AA' }[variant];
   return (
     <div className="rounded border p-4 text-center" style={{ backgroundColor: bg, borderColor }}>

@@ -6,7 +6,7 @@ import { FakeStorage } from '../helpers/fake-storage';
 import type { Db } from '@/db/types';
 
 let db: Db;
-const actor = { id: 'u1', email: 'dr.pawar@example.com' };
+const actor = { id: 'u1', email: 'dr.demo@example.com' };
 
 beforeEach(async () => { db = await createTestDb(); });
 
@@ -17,7 +17,7 @@ describe('recordAudit / listAudit', () => {
     await recordAudit(db, { actor, action: 'payment.add', patientId: p.id, summary: '₹2000 on 2026-10-07' });
     const rows = await listAudit(db);
     expect(rows.map((r) => r.action)).toEqual(['payment.add', 'client.create']);
-    expect(rows[0]).toMatchObject({ actorEmail: 'dr.pawar@example.com', clientCode: p.patientCode, summary: '₹2000 on 2026-10-07' });
+    expect(rows[0]).toMatchObject({ actorEmail: 'dr.demo@example.com', clientCode: p.patientCode, summary: '₹2000 on 2026-10-07' });
   });
 
   it('keeps entries (code only, no name) after the client is permanently deleted', async () => {

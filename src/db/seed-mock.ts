@@ -4,10 +4,14 @@ import {
 } from './schema';
 import type { Db } from './types';
 import { getISTDateString } from '@/lib/dates';
+import { formatPatientCode } from '@/lib/patient-code';
+import { BRANCHES } from '@/lib/presets';
 
 // Dates relative to today (IST, matching the app's date math) so charts,
 // agenda, and calendar always show data.
 const isoDate = (offsetDays: number): string => getISTDateString(offsetDays);
+// Demo clients spread over the clinic profile's branches (wraps if it has fewer than three).
+const branch = (i: number): string => BRANCHES[i % BRANCHES.length].key;
 
 // Seeds demo data for local mock mode. Idempotent: no-op unless the DB is empty.
 // Documents are deliberately not seeded — their rows must reference real files.
@@ -16,12 +20,12 @@ export async function seedMockData(db: Db): Promise<void> {
   if (Number(n) > 0) return;
 
   const rows = await db.insert(patients).values([
-    { patientCode: 'PYT-0001', fullName: 'Asha Kulkarni', age: 46, gender: 'female', weightKg: 68, heightCm: 158, mobile: '9000000001', occupation: 'Teacher', branch: 'Manjari BK', birthDate: '1980-07-16' },
-    { patientCode: 'PYT-0002', fullName: 'Ramesh Patil', age: 55, gender: 'male', weightKg: 82, heightCm: 172, mobile: '9000000002', occupation: 'Farmer', branch: 'Manjari BK' },
-    { patientCode: 'PYT-0003', fullName: 'Sunita Deshmukh', age: 38, gender: 'female', weightKg: 74, heightCm: 162, mobile: '9000000003', occupation: 'Software engineer', branch: 'Kharadi', birthDate: '1990-07-16' },
-    { patientCode: 'PYT-0004', fullName: 'Vikram Joshi', age: 42, gender: 'male', weightKg: 90, heightCm: 175, mobile: '9000000004', occupation: 'Bank manager', branch: 'Kharadi' },
-    { patientCode: 'PYT-0005', fullName: 'Meera Pawar', age: 29, gender: 'female', weightKg: 58, heightCm: 155, mobile: '9000000005', occupation: 'Homemaker', branch: 'Morgaon' },
-    { patientCode: 'PYT-0006', fullName: 'Dattatray Shinde', age: 63, gender: 'male', weightKg: 70, heightCm: 165, mobile: '9000000006', occupation: 'Retired', branch: 'Morgaon' },
+    { patientCode: formatPatientCode(1), fullName: 'Asha Kulkarni', age: 46, gender: 'female', weightKg: 68, heightCm: 158, mobile: '9000000001', occupation: 'Teacher', branch: branch(0), birthDate: '1980-07-16' },
+    { patientCode: formatPatientCode(2), fullName: 'Ramesh Patil', age: 55, gender: 'male', weightKg: 82, heightCm: 172, mobile: '9000000002', occupation: 'Farmer', branch: branch(0) },
+    { patientCode: formatPatientCode(3), fullName: 'Sunita Deshmukh', age: 38, gender: 'female', weightKg: 74, heightCm: 162, mobile: '9000000003', occupation: 'Software engineer', branch: branch(1), birthDate: '1990-07-16' },
+    { patientCode: formatPatientCode(4), fullName: 'Vikram Joshi', age: 42, gender: 'male', weightKg: 90, heightCm: 175, mobile: '9000000004', occupation: 'Bank manager', branch: branch(1) },
+    { patientCode: formatPatientCode(5), fullName: 'Meera Jadhav', age: 29, gender: 'female', weightKg: 58, heightCm: 155, mobile: '9000000005', occupation: 'Homemaker', branch: branch(2) },
+    { patientCode: formatPatientCode(6), fullName: 'Dattatray Shinde', age: 63, gender: 'male', weightKg: 70, heightCm: 165, mobile: '9000000006', occupation: 'Retired', branch: branch(2) },
   ]).returning({ id: patients.id });
   const [asha, ramesh, sunita, vikram, meera, datta] = rows.map((r) => r.id);
 

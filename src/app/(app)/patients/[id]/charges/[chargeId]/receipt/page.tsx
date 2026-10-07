@@ -7,10 +7,12 @@ import { PrintButton } from '@/components/PrintButton';
 import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+import { ClinicSignature } from '@/components/ClinicSignature';
+import { clinicName, clinicProfile } from '@/clinics';
 import { getISTDateString } from '@/lib/dates';
 
-const GREEN = '#1B3A2E';
-const SAFFRON = '#C8962E';
+const GREEN = clinicProfile.brand.primary;
+const SAFFRON = clinicProfile.brand.accent;
 
 function formatCurrency(n: number): string {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -29,7 +31,8 @@ export default async function ChargeReceiptPage({
   const charge = await getCharge(db, id, chargeId);
   if (!charge) notFound();
 
-  const t = getTranslations(await getLocale());
+  const locale = await getLocale();
+  const t = getTranslations(locale);
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
   const today = getISTDateString();
 
@@ -77,14 +80,10 @@ export default async function ChargeReceiptPage({
       {/* ── FOOTER ── */}
       <hr className="border-gray-200" />
       <div className="mt-8 flex justify-end">
-        <div className="w-52 border-t-2 border-gray-400 pt-2 text-right">
-          <p className="text-sm font-bold">Aachary Narayan Pawar</p>
-          <p className="text-xs text-gray-600">Founder &amp; Director of PYTC | Chief Medical Yoga Expert</p>
-          <p className="text-xs italic text-gray-500">Pawar&apos;s Yog Therapy Center</p>
-        </div>
+        <ClinicSignature />
       </div>
       <p className="mt-4 text-center text-xs text-gray-400">
-        {t.chargeReceipt.footerOfficial} | {t.chargeReceipt.footerGenerated} {today}
+        {t.chargeReceipt.footerOfficial.replaceAll('{clinic}', clinicName(locale))} | {t.chargeReceipt.footerGenerated} {today}
       </p>
     </div>
   );

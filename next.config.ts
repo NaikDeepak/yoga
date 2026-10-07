@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Which clinic this deployment is (src/clinics/). Inlined at build time so client components agree with the server.
+  env: { CLINIC_PROFILE: process.env.CLINIC_PROFILE ?? 'pawar' },
   // PGlite (local mock DB) ships WASM assets that must not be bundled
   serverExternalPackages: ['@electric-sql/pglite'],
   // Dev only: lets a phone on the same Wi-Fi load the dev server (`npm run dev:phone`) to test

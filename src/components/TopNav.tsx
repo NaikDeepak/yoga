@@ -15,7 +15,7 @@ interface TopNavProps {
   onMenuClick?: () => void;
 }
 
-// "dr.pawar@example.com" → "Dr Pawar" — best-effort display name from the login email.
+// "dr.someone@example.com" → "Dr Someone" — best-effort display name from the login email.
 function displayNameFromEmail(email: string | null): string {
   if (!email) return 'Admin';
   const words = email

@@ -1,8 +1,9 @@
 import { BRANCHES } from '@/lib/presets';
 import { CLINIC } from '@/lib/clinic';
+import { clinicProfile } from '@/clinics';
 
-const GREEN = '#1B3A2E';
-const SAFFRON = '#C8962E';
+const GREEN = clinicProfile.brand.primary;
+const SAFFRON = clinicProfile.brand.accent;
 
 interface ReportLetterheadProps {
   badgeLabel: string;
@@ -21,14 +22,16 @@ export function ReportLetterhead({ badgeLabel, patientCode, branch, today }: Rep
         {/* Left: logo + clinic info */}
         <div className="flex items-center gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/pytc-logo.png" alt="PYTC" className="h-16 w-auto object-contain" />
+          <img src={clinicProfile.logo.src} alt={clinicProfile.logo.alt} className="h-16 w-auto object-contain" />
           <div>
             <h1 className="text-2xl font-bold" style={{ color: GREEN }}>
               {CLINIC.name}
             </h1>
-            <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON }}>
-              LIVE PAIN-FREE · EMBRACE HEALTH AND HAPPINESS
-            </p>
+            {clinicProfile.tagline && (
+              <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON }}>
+                {clinicProfile.tagline}
+              </p>
+            )}
             {branch && (
               <p className="mt-1 text-xs text-gray-500">📍 {branch.fullAddress}</p>
             )}

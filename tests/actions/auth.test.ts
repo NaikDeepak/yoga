@@ -75,7 +75,7 @@ describe('local mock mode', () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it('signs in with the mock credentials and sets an httpOnly session cookie', async () => {
-    await expect(signInAction(fd({ email: 'dr.pawar@example.com', password: 'password' })))
+    await expect(signInAction(fd({ email: 'dr.demo@example.com', password: 'password' })))
       .rejects.toThrow('REDIRECT:/dashboard');
     expect(cookieSet).toHaveBeenCalledWith(
       MOCK_SESSION_COOKIE, '1', { httpOnly: true, sameSite: 'lax', path: '/' },
@@ -84,7 +84,7 @@ describe('local mock mode', () => {
   });
 
   it('rejects wrong mock credentials without setting a cookie', async () => {
-    await expect(signInAction(fd({ email: 'dr.pawar@example.com', password: 'nope' })))
+    await expect(signInAction(fd({ email: 'dr.demo@example.com', password: 'nope' })))
       .rejects.toThrow('REDIRECT:/login?error=1');
     expect(cookieSet).not.toHaveBeenCalled();
   });

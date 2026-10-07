@@ -31,4 +31,5 @@ not for you). `CLAUDE.md` holds the project rules for every agent.
 - Tests never touch real services: PGlite (`tests/helpers/db.ts`) + fakes (`tests/helpers/`).
 - Bilingual UI: every user-facing label/error is "English / मराठी".
   Exception (decided 2026-10-04): clinical posture pattern text (`posture.insights.patterns`) is English-only in both locales — the physio explains it in the client's language; avoids translation errors in clinical wording.
+- **Multi-clinic triage** (plan `docs/superpowers/plans/2026-10-07-multi-clinic-direction.md`): everyone → core; some clinics → core behind a feature switch (default off for others); one clinic's wording/look → its profile in `src/clinics/`; one clinic's behaviour → discuss, then core behind a switch. Never fork per clinic; no clinic-specific text outside `src/clinics/`.
 - Keep `docs/architecture.md` updated in the same commit as any structural change — it is the index future sessions rely on.

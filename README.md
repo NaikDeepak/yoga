@@ -23,7 +23,7 @@ How to add or remove Vercel environment variables, deploy, roll back, and what e
 ```bash
 cp .env.example .env      # keep LOCAL_MOCK=true
 npm install
-npm run dev               # http://localhost:3000 · sign in: dr.pawar@example.com / password
+npm run dev               # http://localhost:3000 · sign in: dr.demo@example.com / password
 npm run dev:phone         # same over HTTPS on your Wi-Fi, to use a phone's camera
 ```
 

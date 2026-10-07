@@ -12,6 +12,9 @@ import {
   type DigestEntry,
 } from '@/lib/whatsapp';
 import { CLINIC } from '@/lib/clinic';
+import { birthdayWishText } from '@/lib/whatsapp';
+import { en } from '@/lib/i18n/en';
+import { mr } from '@/lib/i18n/mr';
 
 describe('waMeUrl', () => {
   it('prefixes 91 to a 10-digit mobile', () => {
@@ -147,5 +150,16 @@ describe('quietNudgeMessage', () => {
     expect(msg).toMatch(/exercise/i);
     expect(msg).toContain('व्यायाम');
     expect(msg).not.toMatch(/pain|back|knee|neck|weight|दुख/i);
+  });
+});
+
+describe('birthdayWishText', () => {
+  // The Pawar wording from before the clinic profile existed — the profile must reproduce it exactly.
+  const PAWAR_EN = '🎂 Dear {name},\n\nPawar\'s Yog Therapy Center wishes you a very Happy Birthday! 🎉\n\nMay this special day bring you good health, happiness, peace, and success. 🌸 Wishing you a wonderful year ahead filled with wellness and positivity. ✨\n\n🎁 A Special Birthday Gift Awaits You!\nContact us today to claim your Birthday Special Offer. 🎈\n\nWarm Regards,\nAcharya Narayan Pawar\nPawar\'s Yog Therapy Center'.replaceAll('{name}', 'Asha Patil');
+  const PAWAR_MR = '🎂 प्रिय {name},\n\nपवार योग थेरपी सेंटरतर्फे आपल्याला वाढदिवसाच्या हार्दिक शुभेच्छा! 🎉\nआपले आगामी वर्ष उत्तम आरोग्य, आनंद आणि यशाने भरलेले जावो. 🌸\n\n🎁 आपल्या वाढदिवसानिमित्त खास भेट!\nआपले Birthday Special Gift मिळवण्यासाठी आजच आमच्याशी संपर्क साधा. 🎈\n\nआपला,\nआचार्य नारायण पवार\nPawar\'s Yog Therapy Center'.replaceAll('{name}', 'Asha Patil');
+
+  it('reproduces the clinic wording exactly in both languages', () => {
+    expect(birthdayWishText(en.dashboard.birthdayWishMsg, 'Asha Patil', 'en')).toBe(PAWAR_EN);
+    expect(birthdayWishText(mr.dashboard.birthdayWishMsg, 'Asha Patil', 'mr')).toBe(PAWAR_MR);
   });
 });

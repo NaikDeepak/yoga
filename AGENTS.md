@@ -24,6 +24,8 @@ agent, not just Claude. It covers the stack, the docs to read instead of scannin
 [`docs/architecture.md`](docs/architecture.md); environments and env vars are in [`docs/environments.md`](docs/environments.md);
 what's next is in [`docs/backlog.md`](docs/backlog.md).
 
+**Multi-clinic rule:** one codebase for every clinic. Clinic-specific names, contacts, logos and wording go only in `src/clinics/<slug>.ts`; modules some clinics don't want go behind a feature switch. Never hard-code a clinic's details in `src/` (see `docs/superpowers/plans/2026-10-07-multi-clinic-direction.md`).
+
 # Working with another agent (shared notepad)
 
 Three coding agents may work on this repo at the same time: **Claude Code (`claude`)**, **Antigravity (`agy`)**

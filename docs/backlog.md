@@ -1,5 +1,7 @@
 # Backlog
 
+> Tag new items `[core]` / `[switch]` / `[profile]` / `[extension]` (see `plans/2026-10-07-multi-clinic-direction.md`).
+
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
 to their spec) when done. Last updated 2026-10-06.
 
