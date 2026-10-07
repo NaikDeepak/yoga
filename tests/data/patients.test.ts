@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { createPatient, getPatient, searchPatients, updatePatient, setPhotoPath, countPatients } from '@/data/patients';
+import { FakeStorage } from '../helpers/fake-storage';
+import { createPatient, getPatient, searchPatients, updatePatient, setPhotoPath, countPatients, replacePatientPhoto } from '@/data/patients';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -95,3 +96,95 @@ describe('countPatients', () => {
     expect(await countPatients(db, 'pune', 'ravi')).toBe(0);
   });
 });
+
+describe('replacePatientPhoto', () => {
+  let storage: FakeStorage;
+  beforeEach(() => {
+    storage = new FakeStorage();
+  });
+
+  it('stores and sets the first photo', async () => {
+    const p = await createPatient(db, asha);
+    const file = new File([new Uint8Array([1, 2, 3])], 'avatar.png', { type: 'image/png' });
+    const res = await replacePatientPhoto(db, storage, p.id, file);
+
+    expect(res.photoPath).toMatch(new RegExp(`^patients/${p.id}/photo-\\d+-[0-9a-f]{8}-avatar\\.png$`));
+    const updated = await getPatient(db, p.id);
+    expect(updated?.photoPath).toBe(res.photoPath);
+    expect(storage.files.has(res.photoPath)).toBe(true);
+  });
+
+  it('deletes old file and keeps new one when replacing', async () => {
+    const p = await createPatient(db, asha);
+    const file1 = new File([new Uint8Array([1])], 'one.png', { type: 'image/png' });
+    const res1 = await replacePatientPhoto(db, storage, p.id, file1);
+    expect(storage.files.has(res1.photoPath)).toBe(true);
+
+    const file2 = new File([new Uint8Array([2])], 'two.png', { type: 'image/png' });
+    const res2 = await replacePatientPhoto(db, storage, p.id, file2);
+
+    expect(res2.photoPath).not.toBe(res1.photoPath);
+    expect(storage.files.has(res1.photoPath)).toBe(false);
+    expect(storage.files.has(res2.photoPath)).toBe(true);
+    const updated = await getPatient(db, p.id);
+    expect(updated?.photoPath).toBe(res2.photoPath);
+  });
+
+  it('still succeeds if removing old file fails, and row points at new one', async () => {
+    const p = await createPatient(db, asha);
+    const file1 = new File([new Uint8Array([1])], 'one.png', { type: 'image/png' });
+    const res1 = await replacePatientPhoto(db, storage, p.id, file1);
+
+    storage.failRemove.add(res1.photoPath);
+
+    const file2 = new File([new Uint8Array([2])], 'two.png', { type: 'image/png' });
+    const res2 = await replacePatientPhoto(db, storage, p.id, file2);
+
+    expect(res2.photoPath).toBeDefined();
+    expect(storage.files.has(res2.photoPath)).toBe(true);
+    const updated = await getPatient(db, p.id);
+    expect(updated?.photoPath).toBe(res2.photoPath);
+  });
+
+  it('removes newly uploaded file and throws if DB update fails', async () => {
+    const p = await createPatient(db, asha);
+    const failingDb = {
+      ...db,
+      transaction: vi.fn().mockRejectedValue(new Error('db write error')),
+    } as unknown as Db;
+    const file = new File([new Uint8Array([1])], 'fail.png', { type: 'image/png' });
+
+    await expect(replacePatientPhoto(failingDb, storage, p.id, file)).rejects.toThrow('db write error');
+    expect(storage.files.size).toBe(0);
+  });
+
+  it('leaves another client’s photo untouched', async () => {
+    const p1 = await createPatient(db, asha);
+    const p2 = await createPatient(db, { fullName: 'Ravi Joshi', mobile: '9000000001' });
+
+    const file1 = new File([new Uint8Array([1])], 'asha.png', { type: 'image/png' });
+    const res1 = await replacePatientPhoto(db, storage, p1.id, file1);
+
+    const file2 = new File([new Uint8Array([2])], 'ravi.png', { type: 'image/png' });
+    const res2 = await replacePatientPhoto(db, storage, p2.id, file2);
+
+    const file3 = new File([new Uint8Array([3])], 'asha2.png', { type: 'image/png' });
+    const res3 = await replacePatientPhoto(db, storage, p1.id, file3);
+
+    expect(storage.files.has(res1.photoPath)).toBe(false);
+    expect(storage.files.has(res3.photoPath)).toBe(true);
+    expect(storage.files.has(res2.photoPath)).toBe(true);
+
+    const p2After = await getPatient(db, p2.id);
+    expect(p2After?.photoPath).toBe(res2.photoPath);
+  });
+
+  it('unknown client: upload removed, throws', async () => {
+    const missingId = '00000000-0000-0000-0000-000000000000';
+    const file = new File([new Uint8Array([1])], 'missing.png', { type: 'image/png' });
+
+    await expect(replacePatientPhoto(db, storage, missingId, file)).rejects.toThrow('Client not found');
+    expect(storage.files.size).toBe(0);
+  });
+});
+

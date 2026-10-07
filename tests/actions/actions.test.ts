@@ -7,7 +7,7 @@ import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents'
 import { saveTreatmentPlanAction } from '@/actions/treatment';
 import { addVisitAction } from '@/actions/visits';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
-import { createPatient, searchPatients, getPatient } from '@/data/patients';
+import { createPatient, searchPatients, getPatient, setPhotoPath } from '@/data/patients';
 import { listProblems } from '@/data/problems';
 import { listDocuments } from '@/data/documents';
 import { getTreatmentPlan } from '@/data/treatment';
@@ -65,12 +65,17 @@ describe('updatePatientAction', () => {
   });
   it('replaces photo when provided', async () => {
     const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    const oldPath = `patients/${p.id}/photo-old.png`;
+    storage.files.set(oldPath, new Uint8Array([1]));
+    await setPhotoPath(db, p.id, oldPath);
+
     const photo = new File([new Uint8Array([9])], 'new.png', { type: 'image/png' });
     expect(await updatePatientAction(p.id, fd({ fullName: 'Asha', mobile: '9876543210', photo })))
       .toEqual({ ok: true });
     const updated = await getPatient(db, p.id);
     expect(updated?.photoPath).toContain(`patients/${p.id}/`);
     expect(storage.files.has(updated!.photoPath!)).toBe(true);
+    expect(storage.files.has(oldPath)).toBe(false);
   });
   it('rejects bad photo type without updating', async () => {
     const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });

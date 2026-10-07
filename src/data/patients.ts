@@ -33,6 +33,52 @@ export async function setPhotoPath(db: Db, id: string, photoPath: string): Promi
   await db.update(patients).set({ photoPath }).where(eq(patients.id, id));
 }
 
+/**
+ * Replaces a client's profile photo: upload first → update row (locked) → remove old photo
+ * (best effort). If DB update or client lookup fails, the newly uploaded
+ * file is removed to avoid leaving orphan files in storage.
+ */
+export async function replacePatientPhoto(
+  db: Db,
+  storage: FileStorage,
+  patientId: string,
+  file: File,
+): Promise<{ photoPath: string }> {
+  const sanitized = file.name.replace(/[^\w.\-]+/g, '_');
+  // Timestamp + random suffix: two uploads in the same millisecond can't collide.
+  const photoPath = `patients/${patientId}/photo-${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${sanitized}`;
+
+  await storage.upload(photoPath, file);
+
+  let oldPhotoPath: string | null = null;
+  try {
+    oldPhotoPath = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ photoPath: patients.photoPath })
+        .from(patients)
+        .where(eq(patients.id, patientId))
+        .for('update');
+      if (!existing) {
+        throw new Error('Client not found'); // no id in the message: errors reach the logs
+      }
+      await tx
+        .update(patients)
+        .set({ photoPath })
+        .where(eq(patients.id, patientId));
+      return existing.photoPath ?? null;
+    });
+  } catch (error) {
+    await storage.remove(photoPath).catch(() => {});
+    throw error;
+  }
+
+  if (oldPhotoPath && oldPhotoPath !== photoPath) {
+    await storage.remove(oldPhotoPath).catch(() => {}); // best effort: the save already succeeded
+  }
+
+  return { photoPath };
+}
+
 export async function searchPatients(
   db: Db,
   q?: string,
