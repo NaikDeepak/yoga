@@ -6,6 +6,7 @@ Roadmap: **C8** (backlog). Note: FlexifyMe's "206/300" is the three flexibility 
 ## Decisions (Deepak)
 - **Total = posture score + shoulder extension + forward fold + butterfly, out of 400.**
 - **Only when complete:** the total appears only when the posture score and all three flexibility scores exist. No partial totals, so the number is always comparable between sessions.
+- **"Complete" also means each part is complete** (added in review): both shoulder sides captured and measured, both butterfly knees measured, and every posture region measured. A score averaged from partial data doesn't count.
 
 ## Rules
 - The parts are the same scores the report already shows:
@@ -13,7 +14,7 @@ Roadmap: **C8** (backlog). Note: FlexifyMe's "206/300" is the three flexibility 
   - each flexibility test, 0–100.
 
   They're recomputed on every read, so tuning `FLEX_SCORING` or the posture thresholds re-totals history.
-- **Trend:** against the previous assessment's total.
+- **Trend:** against the previous assessment's total. It uses the same `scoreTrend` as the posture score, with band 12, and the compare page colours its total row from the same rule, so the Overview and compare never disagree.
   - A change under **12 points** (3% of 400, the same tolerance as the posture score's 3/100) is "steady".
   - If the previous assessment has no total, there's no trend.
 - **Not on client share links:** they don't show flexibility.
@@ -27,7 +28,7 @@ Roadmap: **C8** (backlog). Note: FlexifyMe's "206/300" is the three flexibility 
 ## Code
 - `src/lib/total-score.ts` (pure): `totalScore(posture, flexScores)` gives `{ total, parts } | null`; `TOTAL_MAX`; `totalTrend(latest, previous)`.
 - `src/lib/flexibility.ts`: `scoreShots(rows)` (measure + score stored shots), shared by `src/data/flexibility.ts` and `src/data/posture.ts`.
-- `src/data/posture.ts`: `listPostureAssessments` / `latestPostureScores` gain `total` (and `previousTotal`), computed in the same query batch.
+- `src/data/posture.ts`: `listPostureAssessments` / `latestPostureScores` gain `total` (and `previousTotal`), **only with `{ totals: true }`**. That's the Overview and the Assessment history; the client list and the progress report skip loading the flexibility landmarks.
 - UI: a `TotalScore` strip component; the Overview card, history list and compare row.
 
 ## Tests

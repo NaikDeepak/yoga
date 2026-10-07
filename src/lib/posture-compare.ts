@@ -69,10 +69,14 @@ export function compareScores(before: PostureScore, after: PostureScore): {
 /** Overall-score changes smaller than this are retake noise, not progress (spec 2026-10-05). */
 export const SCORE_SAME_BAND = 3;
 
-/** Latest vs previous overall score (higher = better posture). */
-export function scoreTrend(latest: number | null, previous: number | null): { change: number | null; trend: Trend | null } {
+/** Latest vs previous score (higher = better); changes under `band` are steady. Also used for the total /400. */
+export function scoreTrend(
+  latest: number | null,
+  previous: number | null,
+  band = SCORE_SAME_BAND,
+): { change: number | null; trend: Trend | null } {
   if (latest === null || previous === null) return { change: null, trend: null };
   const change = latest - previous;
-  if (Math.abs(change) < SCORE_SAME_BAND) return { change, trend: 'same' };
+  if (Math.abs(change) < band) return { change, trend: 'same' };
   return { change, trend: change > 0 ? 'better' : 'worse' };
 }

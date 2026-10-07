@@ -628,7 +628,7 @@ export const en = {
       title: 'Total score',
       posture: 'Posture',
       note: 'Posture + 3 flexibility tests, each out of 100',
-      short: 'Total {total}/400',
+      short: 'Total {total}/{max}',
     },
     flex: {
       title: 'Flexibility',

@@ -630,7 +630,7 @@ export const mr: Translations = {
       title: 'एकूण गुण',
       posture: 'पोश्चर',
       note: 'पोश्चर + ३ लवचिकता चाचण्या, प्रत्येकी १०० पैकी',
-      short: 'एकूण {total}/400',
+      short: 'एकूण {total}/{max}',
     },
     flex: {
       title: 'लवचिकता',

@@ -97,7 +97,7 @@ export default async function PostureReportPage({
     activeShareLink(db, id, 'posture', new Date()),
     getFlexibility(db, assessmentId),
   ]);
-  const total = totalScore(score.overall, flexibility.scores);
+  const total = totalScore(score, flexibility.scores);
   const flexPhotoUrls = Object.fromEntries(await Promise.all(flexibility.shots.map(async (s) =>
     [s.shot, s.filePath ? await storage.createSignedUrl(s.filePath).catch(() => null) : null] as const)));
   // The client's live posture link may show a different (older/newer) report.

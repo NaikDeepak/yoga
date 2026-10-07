@@ -4,7 +4,7 @@ import type { LatestPostureScore } from '@/data/posture';
 import { formatFullDate } from '@/lib/dates';
 import type { Translations } from '@/lib/i18n/en';
 import { scoreTrend } from '@/lib/posture-compare';
-import { totalTrend } from '@/lib/total-score';
+import { TOTAL_MAX, totalTrend } from '@/lib/total-score';
 import { scoreColor } from './ReportParts';
 import { ScoreTrend } from './ScoreTrend';
 
@@ -57,7 +57,7 @@ export function PostureScoreCard({ patientId, latest, t }: {
               </p>
               {latest.total !== null && (
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs">
-                  <span className="font-semibold tabular-nums">{p.total.short.replace('{total}', String(latest.total))}</span>
+                  <span className="font-semibold tabular-nums">{p.total.short.replace('{total}', String(latest.total)).replace('{max}', String(TOTAL_MAX))}</span>
                   {total.trend && total.change !== null && (
                     <ScoreTrend change={total.change} trend={total.trend} label={oc.trend[total.trend]} compact />
                   )}
