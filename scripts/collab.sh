@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Shared notepad for the coding agents working on this repo (Claude Code = "claude", Antigravity = "agy")
-# and Deepak ("deepak"). Append-only log in .collab/notepad.md (gitignored). See AGENTS.md → "Working with
+# Shared notepad for the coding agents working on this repo (Claude Code = "claude", Antigravity = "agy",
+# OpenAI Codex = "codex") and Deepak ("deepak"). Claude Code leads and assigns work. Append-only log in .collab/notepad.md (gitignored). See AGENTS.md → "Working with
 # another agent".
 #
 #   scripts/collab.sh read [N]                    last N entries (default 30)
 #   scripts/collab.sh status                      active claims + entries addressed to each agent
-#   scripts/collab.sh post <from> <to> "<text>"   message (to: claude | agy | deepak | all)
+#   scripts/collab.sh post <from> <to> "<text>"   message (to: claude | agy | codex | deepak | all)
 #   scripts/collab.sh claim <agent> "<branch · area/files>"
 #   scripts/collab.sh release <agent> ["<note>"]
 #   scripts/collab.sh handoff <from> <to> "<branch · what's done · what's next>"
@@ -14,7 +14,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DIR="$ROOT/.collab"
 PAD="$DIR/notepad.md"
 LOCK="$DIR/.lock"
-AGENTS="claude agy deepak all"
+AGENTS="claude agy codex deepak all"
 mkdir -p "$DIR"
 [[ -f "$PAD" ]] || printf '# Agent notepad (append-only; newest at the bottom)\n# time | from → to | KIND | text\n\n' > "$PAD"
 
@@ -40,7 +40,7 @@ case "$cmd" in
     awk -F' \\| ' '$3 ~ /^CLAIM/ { split($2, p, " "); c[p[1]] = $1 " — " $4 }
                    $3 ~ /^RELEASE/ { split($2, p, " "); delete c[p[1]] }
                    END { n = 0; for (a in c) { print "  " a ": " c[a]; n++ } if (!n) print "  (none)" }' "$PAD"
-    for a in claude agy deepak; do
+    for a in claude agy codex deepak; do
       n=$(grep -c " → \(${a}\|all\) |" "$PAD" || true)
       echo "Entries to $a (or all): $n — last: $(grep " → \(${a}\|all\) |" "$PAD" | tail -n1 | cut -c1-120)"
     done ;;
