@@ -9,13 +9,13 @@ export default function manifest(): MetadataRoute.Manifest {
     description: `Patient management for ${name}`,
     start_url: '/',
     display: 'standalone',
-    background_color: '#F9F6F0',
-    theme_color: '#3B6954',
+    background_color: clinicProfile.brand.background,
+    theme_color: clinicProfile.brand.themeColor,
     icons: [
-      { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: clinicProfile.icons.icon192, sizes: '192x192', type: 'image/png' },
+      { src: clinicProfile.icons.icon512, sizes: '512x512', type: 'image/png' },
       {
-        src: '/icons/icon-512-maskable.png',
+        src: clinicProfile.icons.maskable512,
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',

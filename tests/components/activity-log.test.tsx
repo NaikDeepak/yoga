@@ -5,14 +5,14 @@ import { ActivityLog } from '@/components/ActivityLog';
 import { en } from '@/lib/i18n/en';
 import { mr } from '@/lib/i18n/mr';
 
-const row = (o: object) => ({ id: 'a1', seq: 1, at: new Date('2026-10-07T06:30:00Z'), actorId: 'u1', actorEmail: 'dr.pawar@example.com',
+const row = (o: object) => ({ id: 'a1', seq: 1, at: new Date('2026-10-07T06:30:00Z'), actorId: 'u1', actorEmail: 'dr.demo@example.com',
   action: 'payment.add', patientId: null, clientCode: 'PYT-0042', summary: '₹2000 on 2026-10-07', ...o });
 
 describe('ActivityLog', () => {
   it('shows when (IST), who, what (translated), client code and detail', () => {
     render(<ActivityLog rows={[row({})]} olderHref="/settings/activity?before=a1" t={en} />);
     expect(screen.getByText(/07 Oct 2026, 12:00/)).toBeTruthy(); // 06:30 UTC = 12:00 IST
-    expect(screen.getByText('dr.pawar@example.com')).toBeTruthy();
+    expect(screen.getByText('dr.demo@example.com')).toBeTruthy();
     expect(screen.getByText('Payment recorded')).toBeTruthy();
     expect(screen.getByText('PYT-0042')).toBeTruthy();
     expect(screen.getByText('₹2000 on 2026-10-07')).toBeTruthy();

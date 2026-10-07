@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const hex = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Expected a #RRGGBB colour');
+
 export const clinicBranchSchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
@@ -23,6 +25,20 @@ export const clinicProfileSchema = z.object({
   logo: z.object({
     src: z.string().min(1),
     alt: z.string().min(1),
+  }),
+  // Home-screen app icons (PWA manifest); files live in public/clinics/<slug>/.
+  icons: z.object({
+    icon192: z.string().min(1),
+    icon512: z.string().min(1),
+    maskable512: z.string().min(1),
+  }),
+  // Printed reports/receipts and the installed app's chrome. The in-app theme stays in globals.css.
+  brand: z.object({
+    primary: hex,
+    accent: hex,
+    cream: hex,
+    themeColor: hex,
+    background: hex,
   }),
   contact: z.object({
     phone: z.string().min(1),

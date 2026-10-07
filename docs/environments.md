@@ -25,7 +25,7 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 |---|---|---|
 | URL | https://localhost:3000 (`dev:phone`) or http://localhost:3000 (`dev`) | https://yoga-ten-tau.vercel.app |
 | Database | PGlite file DB in `.local-db/` (demo data) | **Neon** (`PROD_DATABASE_URL` locally, `DATABASE_URL` in Vercel) |
-| Login | Mock: `dr.pawar@example.com` / `password` | **Supabase Auth** |
+| Login | Mock: `dr.demo@example.com` / `password` | **Supabase Auth** |
 | Files | `public/uploads/` | **Cloudflare R2** |
 | AI | canned answers without a key | **Gemini** (needs `GEMINI_API_KEY`) |
 | Settings | `.env` (copy `.env.example`; `LOCAL_MOCK=true`) | **Vercel → Settings → Environment Variables** |

@@ -8,11 +8,11 @@ import { ReportLetterhead } from '@/components/ReportLetterhead';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
 import { ClinicSignature } from '@/components/ClinicSignature';
-import { clinicName } from '@/clinics';
+import { clinicName, clinicProfile } from '@/clinics';
 import { getISTDateString } from '@/lib/dates';
 
-const GREEN = '#1B3A2E';
-const SAFFRON = '#C8962E';
+const GREEN = clinicProfile.brand.primary;
+const SAFFRON = clinicProfile.brand.accent;
 
 function formatCurrency(n: number): string {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

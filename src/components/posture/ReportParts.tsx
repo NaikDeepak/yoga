@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import type { Grade, RegionScore } from '@/lib/posture-insights';
 import type { Severity } from '@/lib/posture';
+import { clinicProfile } from '@/clinics';
 
 // Clinic palette (matches ReportLetterhead / receipts).
 export const BRAND = {
-  green: '#1B3A2E',
-  saffron: '#C8962E',
+  green: clinicProfile.brand.primary,
+  saffron: clinicProfile.brand.accent,
   sand: '#E5D5B5',
   sandLight: '#FAF6EE',
   red: '#B42318',

@@ -23,17 +23,17 @@ describe('PWA manifest', () => {
   it('declares 192, 512, and maskable icons', () => {
     const icons = m.icons ?? [];
     expect(icons).toContainEqual({
-      src: '/icons/icon-192.png',
+      src: '/clinics/pawar/icons/icon-192.png',
       sizes: '192x192',
       type: 'image/png',
     });
     expect(icons).toContainEqual({
-      src: '/icons/icon-512.png',
+      src: '/clinics/pawar/icons/icon-512.png',
       sizes: '512x512',
       type: 'image/png',
     });
     expect(icons).toContainEqual({
-      src: '/icons/icon-512-maskable.png',
+      src: '/clinics/pawar/icons/icon-512-maskable.png',
       sizes: '512x512',
       type: 'image/png',
       purpose: 'maskable',

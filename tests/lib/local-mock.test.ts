@@ -36,7 +36,7 @@ describe('isLocalMock', () => {
 describe('mock constants', () => {
   it('exposes a stable mock identity', () => {
     expect(MOCK_USER.id).toBe('local-mock-user');
-    expect(MOCK_USER.email).toBe('dr.pawar@example.com');
+    expect(MOCK_USER.email).toBe('dr.demo@example.com');
     expect(MOCK_PASSWORD).toBe('password');
     expect(MOCK_SESSION_COOKIE).toBe('mock_session');
   });

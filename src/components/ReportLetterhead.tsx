@@ -2,8 +2,8 @@ import { BRANCHES } from '@/lib/presets';
 import { CLINIC } from '@/lib/clinic';
 import { clinicProfile } from '@/clinics';
 
-const GREEN = '#1B3A2E';
-const SAFFRON = '#C8962E';
+const GREEN = clinicProfile.brand.primary;
+const SAFFRON = clinicProfile.brand.accent;
 
 interface ReportLetterheadProps {
   badgeLabel: string;

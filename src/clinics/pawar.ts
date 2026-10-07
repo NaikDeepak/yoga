@@ -12,8 +12,20 @@ export const pawar: ClinicProfile = {
   },
   tagline: 'LIVE PAIN-FREE · EMBRACE HEALTH AND HAPPINESS',
   logo: {
-    src: '/pytc-logo.png',
+    src: '/clinics/pawar/logo.png',
     alt: 'PYTC',
+  },
+  icons: {
+    icon192: '/clinics/pawar/icons/icon-192.png',
+    icon512: '/clinics/pawar/icons/icon-512.png',
+    maskable512: '/clinics/pawar/icons/icon-512-maskable.png',
+  },
+  brand: {
+    primary: '#1B3A2E',
+    accent: '#C8962E',
+    cream: '#FDF8F0',
+    themeColor: '#3B6954',
+    background: '#F9F6F0',
   },
   contact: {
     phone: '+91 85509 21037',

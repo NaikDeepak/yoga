@@ -6,7 +6,7 @@ No accounts or keys needed — fully offline:
 
 1. `npm install`
 2. Copy `.env.example` → `.env` and set only `LOCAL_MOCK=true` (all other vars may stay blank).
-3. `npm run dev` → sign in at `/login` as **dr.pawar@example.com** / **password**.
+3. `npm run dev` → sign in at `/login` as **dr.demo@example.com** / **password**.
 
 What you get: a file-backed PGlite Postgres at `.local-db/` (migrated + seeded with demo
 patients, visits, fees on first start), file uploads under `public/uploads/`, and a canned AI

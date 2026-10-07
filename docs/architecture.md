@@ -8,7 +8,7 @@ Drizzle ORM everywhere; tests run the same migrations on in-memory PGlite.
 
 **Local mock mode** (`LOCAL_MOCK=true`, dev-only): file-backed PGlite at `.local-db/` (migrated +
 seeded at startup via `src/instrumentation.ts`), cookie-based mock auth
-(`dr.pawar@example.com` / `password`), files under `public/uploads/`, canned Gemini draft when no
+(`dr.demo@example.com` / `password`), files under `public/uploads/`, canned Gemini draft when no
 API key. All branches gate on `isLocalMock()` (`src/lib/local-mock.ts`), which throws in production.
 
 Request flow: page (server component) → `src/actions/*` ('use server': auth → zod → repo → revalidate)
@@ -30,7 +30,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/bmi.ts` | BMI math | `computeBmi`, `bmiCategory` |
 | `src/lib/names.ts` | `firstName` — the only part of a client's name client-facing pages use | `firstName` |
 | `src/lib/wellbeing.ts` | bands for Overview + posture report (+ `genderLabel`): stress 1–4/5–7/8–10, pain 0/1–3/4–6/7–10, BMI (same cut-offs as `bmiCategory`), gauge needle fraction | `stressBand`, `painBand`, `bmiBand`, `gaugeFraction` |
-| `src/clinics/` | **clinic profile** — everything clinic-specific (names en/mr, logo, contact, signature + wish sign-off, branches, patient-code prefix, feature switches). `types.ts` (zod schema), `pawar.ts`, `index.ts` (registry; picks `CLINIC_PROFILE`, default `pawar`, validated at import; inlined at build via `next.config.ts` so client components agree) | `clinicProfile`, `clinicName(locale, short?)` |
+| `src/clinics/` | **clinic profile** — everything clinic-specific (names en/mr, tagline, logo + app icons — files in `public/clinics/<slug>/`, print/app brand colours, contact, signature + wish sign-off, branches, patient-code prefix, feature switches; mock seed data follows it too). `types.ts` (zod schema), `pawar.ts`, `index.ts` (registry; picks `CLINIC_PROFILE`, default `pawar`, validated at import; inlined at build via `next.config.ts` so client components agree) | `clinicProfile`, `clinicName(locale, short?)` |
 | `src/lib/patient-code.ts` | `<prefix>-0001` sequence (prefix from the clinic profile) | `nextPatientCode`, `formatPatientCode` |
 | `src/lib/presets.ts` | 18 Marathi ailments, doc types, branches (from the clinic profile) | `PRESET_PROBLEMS`, `DOC_TYPES`, `BRANCHES` |
 | `src/lib/feeTypes.ts` | preset fee types (Consultation, Monthly Yoga Fee, Package, Other) for standalone charges | `FEE_TYPES`, `FeeTypeKey`, `FEE_TYPE_KEYS`, `feeTypeLabel` |
