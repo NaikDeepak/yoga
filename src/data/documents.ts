@@ -34,9 +34,11 @@ export async function listDocuments(db: Db, patientId: string): Promise<Document
     .orderBy(desc(documents.createdAt));
 }
 
-export async function deleteDocument(db: Db, storage: FileStorage, id: string): Promise<void> {
+/** True if a document was deleted (false for an unknown id — nothing to record). */
+export async function deleteDocument(db: Db, storage: FileStorage, id: string): Promise<boolean> {
   const [row] = await db.select().from(documents).where(eq(documents.id, id));
-  if (!row) return;
+  if (!row) return false;
   await db.delete(documents).where(eq(documents.id, id));
   await storage.remove(row.filePath);
+  return true;
 }

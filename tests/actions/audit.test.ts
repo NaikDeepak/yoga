@@ -71,4 +71,16 @@ describe('audit trail across actions', () => {
     await addVisitAction(p.id, form({ visitDate: 'not-a-date', progressNote: 'x' }));
     expect(await listAudit(db)).toEqual([]);
   });
+
+  it('deleting an unknown document, or a withdrawal that deleted nothing, is not recorded (Codex review)', async () => {
+    const p = await createPatient(db, { fullName: 'Asha Kulkarni', mobile: '9876543210' });
+    const { deleteDocumentAction } = await import('@/actions/documents');
+    await deleteDocumentAction(p.id, '00000000-0000-4000-8000-000000000000');
+    await withdrawPhotoConsentAction(p.id); // no photos at all
+    const a = await addAssessment(db, p.id, '2026-10-04', {}, storage);
+    for (const v of a.views) storage.failRemove.add(v.filePath!);
+    await withdrawPhotoConsentAction(p.id); // every removal fails
+    storage.failRemove.clear();
+    expect(await listAudit(db)).toEqual([]);
+  });
 });

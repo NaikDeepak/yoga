@@ -218,7 +218,10 @@ export async function withdrawPhotoConsentAction(
   if (!z.string().uuid().safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
     const { deleted, failed } = await deletePosturePhotos(getDb(), getStorage(), patientId, new Date());
-    await recordAudit(getDb(), { actor: user, action: 'photos.withdraw', patientId, summary: `${deleted} photo(s) deleted${failed ? `, ${failed} failed` : ""}` });
+    // Recorded only if something was actually deleted (a partial run says how many failed).
+    if (deleted > 0) {
+      await recordAudit(getDb(), { actor: user, action: 'photos.withdraw', patientId, summary: `${deleted} photo(s) deleted${failed ? `, ${failed} failed` : ''}` });
+    }
     revalidatePath(`/patients/${patientId}`, 'layout');
     if (failed) {
       return { ok: false, error: `${failed} photo(s) could not be deleted; please try again / ${failed} फोटो हटवता आले नाहीत; कृपया पुन्हा प्रयत्न करा` };

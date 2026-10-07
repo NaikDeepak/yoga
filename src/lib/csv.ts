@@ -11,7 +11,8 @@ function formatCell(val: string | number | null | undefined): string {
     return String(val);
   }
   let s = String(val);
-  if (/^[=+\-@\t\r]/.test(s)) {
+  // Formula-injection guard, including formulas hidden behind leading whitespace (spaces, NBSP, tabs).
+  if (/^[\s\u00a0]*[=+\-@]/.test(s) || /^[\t\r]/.test(s)) {
     s = `'${s}`;
   }
   if (/[",\r\n]/.test(s)) {

@@ -68,4 +68,12 @@ describe('csvFilename', () => {
     expect(csvFilename('visits', '2026-10-07')).toBe('visits-2026-10-07.csv');
     expect(csvFilename('fees', '2026-10-07')).toBe('fees-2026-10-07.csv');
   });
+
+  it('also guards formulas hidden behind leading spaces (Codex review)', () => {
+    const csv = toCsv(['h'], [[' =HYPERLINK("x")'], ['  +1'], ['\u00a0@SUM(1)'], ['plain text']]);
+    expect(csv).toContain(`"' =HYPERLINK(""x"")"`);
+    expect(csv).toContain("'  +1");
+    expect(csv).toContain("'\u00a0@SUM(1)");
+    expect(csv).toContain('\r\nplain text');
+  });
 });

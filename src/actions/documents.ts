@@ -29,8 +29,9 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
 
 export async function deleteDocumentAction(patientId: string, documentId: string): Promise<ActionResult> {
   const user = await requireUser();
-  await deleteDocument(getDb(), getStorage(), documentId);
-  await recordAudit(getDb(), { actor: user, action: 'document.delete', patientId, summary: null });
+  if (await deleteDocument(getDb(), getStorage(), documentId)) {
+    await recordAudit(getDb(), { actor: user, action: 'document.delete', patientId, summary: null });
+  }
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }
