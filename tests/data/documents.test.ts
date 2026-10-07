@@ -38,12 +38,12 @@ describe('listDocuments / deleteDocument', () => {
   it('lists by patient and deletes row + file', async () => {
     const doc = await addDocument(db, storage, { patientId, docType: 'Prescription', file: pdf() });
     expect(await listDocuments(db, patientId)).toHaveLength(1);
-    await deleteDocument(db, storage, doc.id);
+    await deleteDocument(db, storage, patientId, doc.id);
     expect(await listDocuments(db, patientId)).toHaveLength(0);
     expect(storage.files.size).toBe(0);
   });
   it('ignores delete of unknown id (returns false: nothing to record)', async () => {
-    await expect(deleteDocument(db, storage, '00000000-0000-0000-0000-000000000000'))
+    await expect(deleteDocument(db, storage, patientId, '00000000-0000-0000-0000-000000000000'))
       .resolves.toBe(false);
   });
 });

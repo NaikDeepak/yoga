@@ -7,7 +7,7 @@ import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { getStorage } from '@/lib/storage';
 import { validatePhoto } from '@/lib/files';
-import { patientSchema, firstError } from '@/lib/validation';
+import { patientSchema, firstError, isId, INVALID_PARAMS } from '@/lib/validation';
 import { z } from 'zod';
 import { sameName } from '@/lib/names';
 import { createPatient, deletePatientAndFiles, getPatient, replacePatientPhoto, updatePatient } from '@/data/patients';
@@ -43,6 +43,7 @@ export async function createPatientAction(formData: FormData): Promise<ActionRes
 
 export async function updatePatientAction(id: string, formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
+  if (!isId(id)) return { ok: false, error: INVALID_PARAMS };
   const parsed = patientSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
@@ -53,7 +54,9 @@ export async function updatePatientAction(id: string, formData: FormData): Promi
   }
 
   const db = getDb();
-  await updatePatient(db, id, parsed.data);
+  if (!(await updatePatient(db, id, parsed.data))) {
+    return { ok: false, error: 'This client no longer exists / हा साधक आता अस्तित्वात नाही' };
+  }
   if (photo) {
     await replacePatientPhoto(db, getStorage(), id, photo);
   }

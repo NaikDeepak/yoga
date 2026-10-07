@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { documents, type DocumentRow } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { FileStorage } from '@/lib/storage';
@@ -35,8 +35,9 @@ export async function listDocuments(db: Db, patientId: string): Promise<Document
 }
 
 /** True if a document was deleted (false for an unknown id — nothing to record). */
-export async function deleteDocument(db: Db, storage: FileStorage, id: string): Promise<boolean> {
-  const [row] = await db.select().from(documents).where(eq(documents.id, id));
+export async function deleteDocument(db: Db, storage: FileStorage, patientId: string, id: string): Promise<boolean> {
+  const [row] = await db.select().from(documents)
+    .where(and(eq(documents.id, id), eq(documents.patientId, patientId)));
   if (!row) return false;
   await db.delete(documents).where(eq(documents.id, id));
   await storage.remove(row.filePath);

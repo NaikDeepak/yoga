@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
-import { courseFeeSchema, paymentSchema, firstError } from '@/lib/validation';
+import { courseFeeSchema, paymentSchema, firstError, isId, INVALID_PARAMS } from '@/lib/validation';
 import { setCourseFee, addPayment, deletePayment } from '@/data/fees';
 import type { ActionResult } from '@/actions/patients';
 
@@ -49,16 +49,16 @@ export async function addPaymentAction(
 
 export async function deletePaymentAction(patientId: string, paymentId: string): Promise<ActionResult> {
   const user = await requireUser();
-  if (typeof patientId !== 'string' || typeof paymentId !== 'string' || !patientId || !paymentId) {
-    return { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
-  }
+  if (!isId(patientId) || !isId(paymentId)) return { ok: false, error: INVALID_PARAMS };
   const db = getDb();
+  let deleted: boolean;
   try {
-    await deletePayment(db, patientId, paymentId);
+    deleted = await deletePayment(db, patientId, paymentId);
   } catch {
     return { ok: false, error: 'Could not delete payment / पेमेंट हटवता आले नाही' };
   }
-  await recordAudit(getDb(), { actor: user, action: 'payment.delete', patientId, summary: null });
+  // Already gone (e.g. a double tap) is still ok, but there is nothing to record.
+  if (deleted) await recordAudit(getDb(), { actor: user, action: 'payment.delete', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }

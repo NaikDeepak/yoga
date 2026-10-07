@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { patientProblems, type PatientProblem } from '@/db/schema';
 import type { Db } from '@/db/types';
 import type { ProblemInput } from '@/lib/validation';
@@ -14,8 +14,12 @@ export async function listProblems(db: Db, patientId: string): Promise<PatientPr
     .orderBy(asc(patientProblems.createdAt));
 }
 
-export async function removeProblem(db: Db, problemId: string): Promise<void> {
-  await db.delete(patientProblems).where(eq(patientProblems.id, problemId));
+/** Removes one of this client's problems; false when there was no such problem for this client. */
+export async function removeProblem(db: Db, patientId: string, problemId: string): Promise<boolean> {
+  const rows = await db.delete(patientProblems)
+    .where(and(eq(patientProblems.id, problemId), eq(patientProblems.patientId, patientId)))
+    .returning({ id: patientProblems.id });
+  return rows.length > 0;
 }
 
 export async function problemsForPatients(

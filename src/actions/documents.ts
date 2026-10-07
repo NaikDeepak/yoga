@@ -6,7 +6,7 @@ import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { getStorage } from '@/lib/storage';
 import { validateUpload } from '@/lib/files';
-import { docTypeSchema } from '@/lib/validation';
+import { docTypeSchema, isId, INVALID_PARAMS } from '@/lib/validation';
 import { addDocument, deleteDocument } from '@/data/documents';
 import type { ActionResult } from './patients';
 
@@ -29,7 +29,8 @@ export async function uploadDocumentAction(patientId: string, formData: FormData
 
 export async function deleteDocumentAction(patientId: string, documentId: string): Promise<ActionResult> {
   const user = await requireUser();
-  if (await deleteDocument(getDb(), getStorage(), documentId)) {
+  if (!isId(patientId) || !isId(documentId)) return { ok: false, error: INVALID_PARAMS };
+  if (await deleteDocument(getDb(), getStorage(), patientId, documentId)) {
     await recordAudit(getDb(), { actor: user, action: 'document.delete', patientId, summary: null });
   }
   revalidatePath(`/patients/${patientId}`);

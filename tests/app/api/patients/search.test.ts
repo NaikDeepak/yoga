@@ -56,3 +56,12 @@ describe('GET /api/patients/search', () => {
     expect(searchPatients).toHaveBeenCalledWith({}, 'asha', 8);
   });
 });
+
+describe('H4: over-long query', () => {
+  it('returns no results without touching the database', async () => {
+    vi.mocked(searchPatients).mockClear();
+    const res = await GET(makeRequest('a'.repeat(101)));
+    expect(await res.json()).toEqual({ results: [] });
+    expect(searchPatients).not.toHaveBeenCalled();
+  });
+});

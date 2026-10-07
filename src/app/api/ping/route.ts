@@ -1,5 +1,6 @@
 import { getDb } from '@/db/client';
 import { sql } from 'drizzle-orm';
+import { safeErrorMessage } from '@/lib/log';
 
 // Daily cron target. Keeps the production database (Neon) warm, and keeps the Supabase project that
 // hosts **login** from auto-pausing (free tier pauses after 7 days without database activity, which
@@ -22,7 +23,7 @@ export async function GET(req: Request) {
     await db.execute(sql`SELECT 1`);
   } catch (dbErr) {
     dbOk = false;
-    console.error('Database keepalive query failed:', dbErr);
+    console.error('Database keepalive query failed:', safeErrorMessage(dbErr));
   }
 
   // 2. Keep the Supabase login project active — prevent its 7-day auto-pause.
@@ -45,7 +46,7 @@ export async function GET(req: Request) {
         }
       } catch (authErr) {
         authOk = false;
-        console.error('Supabase Auth keepalive failed:', authErr);
+        console.error('Supabase Auth keepalive failed:', safeErrorMessage(authErr));
       }
     } else {
       authOk = false;
@@ -68,7 +69,7 @@ export async function GET(req: Request) {
         }
       } catch (restErr) {
         authOk = false;
-        console.error('Supabase PostgREST keepalive failed:', restErr);
+        console.error('Supabase PostgREST keepalive failed:', safeErrorMessage(restErr));
       }
     } else {
       authOk = false;

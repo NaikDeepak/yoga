@@ -57,6 +57,11 @@ describe('saveCheckinAction', () => {
     expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
   });
 
+  it('refuses an over-long token before any lookup (H4)', async () => {
+    await expect(saveCheckinAction('x'.repeat(5000), 'en', form({ done: 'all' }))).rejects.toThrow('REDIRECT:/s/x?lang=en');
+    expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
+  });
+
   it('saves nothing for an unknown or stopped link', async () => {
     await expect(saveCheckinAction('not-a-real-token', 'mr', form({ done: 'all' }))).rejects.toThrow('REDIRECT:/s/not-a-real-token?lang=mr');
     await revokeShareLinks(db, patientId, 'exercises', new Date());

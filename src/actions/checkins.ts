@@ -20,6 +20,7 @@ import { safeErrorMessage } from '@/lib/log';
 export async function saveCheckinAction(token: string, lang: string, formData: FormData): Promise<never> {
   const page = `/s/${encodeURIComponent(token)}`;
   const query = `?lang=${lang === 'mr' ? 'mr' : 'en'}`;
+  if (token.length > 100) redirect(`/s/x${query}`); // real tokens are 43 characters
   const db = getDb();
   const link = await resolveShareLink(db, token, 'exercises', new Date());
   if (!link) redirect(`${page}${query}`); // the page shows the same "link expired" screen
