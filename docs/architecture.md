@@ -63,6 +63,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/lib/storage.ts` | file storage abstraction: R2 in production (throws if the 4 R2 vars are missing — no Supabase fallback), local fs in mock mode; `removePrefix` wipes one client folder (R2: paged list + 1000-key batch deletes) and refuses anything but `patients/<uuid>/` (`src/lib/storage-paths.ts`) | `FileStorage`, `getStorage()`, `localFileStorage`, `clientFolder` |
 | `src/lib/prod-ops.ts` | pure helpers for the production scripts: pending migrations, release guards (clean/pushed/up-to-date main), smoke-test check, masked DB host | `pendingMigrations`, `releaseProblems`, `smokeFailures`, `maskDbUrl` |
 | `scripts/prod/*` | `db:status:prod` (read-only), `db:migrate:prod`, `deploy:prod` (worktree build → promote → smoke → auto-rollback); read only `PROD_DATABASE_URL`/`PROD_SITE_URL` from `.env` | — |
+| `.github/workflows/ci.yml` | CI on PR / push to main: typecheck → coverage (80% gate) → build (fake env, no secrets) | — |
 | `src/lib/r2-storage.ts` | Cloudflare R2 storage implementation | `r2Storage` |
 | `src/lib/gemini.ts` | Gemini 2.5 Flash REST client wrapper (shared structured-JSON call; mock outputs in local mock mode without a key) | `generateTreatmentDraft`, `generatePostureAnalysis` |
 | `src/lib/auth.ts` / `auth-paths.ts` | session guard; `/login` + `/register` + `/s/*` (client share links, token-checked by the page) are public; API routes use the non-redirecting check | `requireUser`, `getSessionUser`, `isPublicPath` |
@@ -144,6 +145,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 - `tests/helpers/action-mocks.ts` — vi.mocks for db client, storage, auth, next/cache, next/navigation.
 - Auth glue is unit-tested with mocked Supabase clients (`tests/actions/auth.test.ts`, `tests/lib/auth.test.ts`); storage selection in `tests/lib/storage.test.ts`.
 - Coverage: 80% enforced on lib/data/actions. UI = component test (PatientForm) + `next build` + manual checklist in `docs/setup.md`.
+- CI: `.github/workflows/ci.yml` runs typecheck, coverage gate, and production build on PR / push to `main` (see `docs/environments.md`).
 
 ## Phase roadmap
 Spec: `docs/superpowers/specs/2026-06-11-yoga-patient-management-phase1-design.md`.
