@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import '../helpers/action-mocks';
-import { freshTestDb } from '../helpers/action-mocks';
+import { freshTestDb, storage } from '../helpers/action-mocks';
 import { updatePatientAction } from '@/actions/patients';
 import { addProblemAction, removeProblemAction } from '@/actions/problems';
 import { uploadDocumentAction, deleteDocumentAction } from '@/actions/documents';
@@ -52,6 +52,7 @@ describe('deletes stay inside the client they were asked for', () => {
     const before = (await listAudit(db)).length;
     expect(await deleteDocumentAction(b.id, doc.id)).toEqual({ ok: true });
     expect(await listDocuments(db, a.id)).toHaveLength(1);
+    expect(storage.files.has(doc.filePath)).toBe(true);
     expect(await listAudit(db)).toHaveLength(before);
   });
 
