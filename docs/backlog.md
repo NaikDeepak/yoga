@@ -3,7 +3,7 @@
 > Tag new items `[core]` / `[switch]` / `[profile]` / `[extension]` (see `plans/2026-10-07-multi-clinic-direction.md`).
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
-to their spec) when done. Last updated 2026-10-06.
+to their spec) when done. Last updated 2026-10-07.
 
 ## Waiting on people (not code)
 | Item | Who | Notes |
@@ -14,6 +14,8 @@ to their spec) when done. Last updated 2026-10-06.
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). Make a new **Object Read & Write** token for `patient-files` only, swap the `R2_*` vars in Vercel, deploy, and delete the old token. Do this before adding more clinics. |
 
 ## Done recently
+- **Clinic profile**, 2026-10-07: all clinic identity (names, logo, icons, colours, branches, signature, messages) in `src/clinics/`; guard test. Built by Antigravity, reviewed by Claude and Codex.
+- **App manifest public + colour-proof deploy script**, 2026-10-07; install checked on a phone.
 - **CSV export + audit log**, 2026-10-07: export built by Antigravity, audit log by Claude, integrated together.
 - **Old profile photo removed on replacement**, 2026-10-07: built by Antigravity in the multi-agent pilot.
 - **C8 Total score** /400 (posture + 3 flexibility tests), 2026-10-07: spec `2026-10-07-total-score-design.md`.
@@ -21,7 +23,6 @@ to their spec) when done. Last updated 2026-10-06.
 ## Features
 | ID | Item | Size | Notes |
 |---|---|---|---|
-| C9 | Phased programme on the report (Initiation wk 1–6 → Adoption 7–10 → Alleviation 11–16 → Retention 17–18) with a reassessment booked at each phase end | L | Needs its own spec. |
 | C6 | Spinal curve read (kyphosis / lordosis), qualitative and flagged approx | M | From shoulder/hip/ear offsets. |
 | D2 | Gait analysis (video) | L | Scope separately. |
 
@@ -40,3 +41,8 @@ to their spec) when done. Last updated 2026-10-06.
 | E5 | Component test for the capture state machine with a fake detector. |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
+
+## Low priority / parked
+| ID | Item | Size | Notes |
+|---|---|---|---|
+| C9 | Phased programme on the report (Initiation wk 1–6 → Adoption 7–10 → Alleviation 11–16 → Retention 17–18) with a reassessment booked at each phase end | L | Parked 2026-10-07 (Deepak): too big, and 18 weeks is longer than most clients stay, so it would rarely be used. Revisit only if the clinic asks. |
