@@ -895,4 +895,13 @@ export const mr: Translations = {
     genericError: 'काहीतरी चुकले. पुन्हा प्रयत्न करा.',
     errorPrefix: 'त्रुटी:',
   },
+  export: {
+    title: 'डेटा निर्यात',
+    description: 'क्लिनिकच्या नोंदी CSV स्प्रेडशीट म्हणून डाउनलोड करा.',
+    branchLabel: 'शाखा',
+    allBranches: 'सर्व शाखा',
+    clients: 'साधक',
+    visits: 'भेटी',
+    fees: 'शुल्क आणि देयके',
+  },
 };
