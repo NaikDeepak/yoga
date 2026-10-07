@@ -41,6 +41,10 @@ export async function getCharge(db: Db, patientId: string, id: string): Promise<
   return row ? toChargeRecord(row) : null;
 }
 
-export async function deleteCharge(db: Db, patientId: string, id: string): Promise<void> {
-  await db.delete(charges).where(and(eq(charges.id, id), eq(charges.patientId, patientId)));
+/** False when this client has no such charge (already deleted, or another client's). */
+export async function deleteCharge(db: Db, patientId: string, id: string): Promise<boolean> {
+  const rows = await db.delete(charges)
+    .where(and(eq(charges.id, id), eq(charges.patientId, patientId)))
+    .returning({ id: charges.id });
+  return rows.length > 0;
 }

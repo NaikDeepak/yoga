@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
-import { problemSchema, firstError } from '@/lib/validation';
+import { problemSchema, firstError, isId, INVALID_PARAMS } from '@/lib/validation';
 import { addProblem, removeProblem } from '@/data/problems';
 import type { ActionResult } from './patients';
 
@@ -20,8 +20,10 @@ export async function addProblemAction(patientId: string, formData: FormData): P
 
 export async function removeProblemAction(patientId: string, problemId: string): Promise<ActionResult> {
   const user = await requireUser();
-  await removeProblem(getDb(), problemId);
-  await recordAudit(getDb(), { actor: user, action: 'problem.remove', patientId, summary: null });
+  if (!isId(patientId) || !isId(problemId)) return { ok: false, error: INVALID_PARAMS };
+  if (await removeProblem(getDb(), patientId, problemId)) {
+    await recordAudit(getDb(), { actor: user, action: 'problem.remove', patientId, summary: null });
+  }
   revalidatePath(`/patients/${patientId}`);
   return { ok: true };
 }

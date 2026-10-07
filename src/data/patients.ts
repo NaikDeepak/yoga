@@ -25,8 +25,10 @@ export async function getPatient(db: Db, id: string): Promise<Patient | undefine
   return row;
 }
 
-export async function updatePatient(db: Db, id: string, input: PatientInput): Promise<void> {
-  await db.update(patients).set(input).where(eq(patients.id, id));
+/** False when the client no longer exists. */
+export async function updatePatient(db: Db, id: string, input: PatientInput): Promise<boolean> {
+  const rows = await db.update(patients).set(input).where(eq(patients.id, id)).returning({ id: patients.id });
+  return rows.length > 0;
 }
 
 export async function setPhotoPath(db: Db, id: string, photoPath: string): Promise<void> {

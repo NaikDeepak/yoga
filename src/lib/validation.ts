@@ -6,6 +6,11 @@ import { POSE_LANDMARK_COUNT, POSTURE_VIEWS } from './posture';
 import { isLevel } from './posture-capture';
 import { FLEX_SHOTS } from './flexibility';
 
+/** True for a record id (UUID). Checked before any id from the browser reaches the database. */
+export const isId = (v: unknown): v is string => z.string().uuid().safeParse(v).success;
+
+export const INVALID_PARAMS = 'Invalid parameters / अवैध पॅरामीटर्स';
+
 const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
 const opt = <T extends z.ZodTypeAny>(s: T) => z.preprocess(blankToUndef, s.optional());
@@ -18,7 +23,7 @@ function isCalendarValid(val: string): boolean {
 }
 
 export const patientSchema = z.object({
-  fullName: z.string().trim().min(1, 'Name required / नाव आवश्यक'),
+  fullName: z.string().trim().min(1, 'Name required / नाव आवश्यक').max(120, 'Name too long / नाव खूप मोठे'),
   mobile: z.string().trim().regex(/^\d{10}$/, '10-digit mobile required / १० अंकी मोबाईल आवश्यक'),
   age: opt(z.coerce.number().int().min(1).max(120)),
   gender: opt(z.enum(['male', 'female', 'other'])),
@@ -122,13 +127,17 @@ export const lifestyleSchema = z.object({
 });
 export type LifestyleInput = z.infer<typeof lifestyleSchema>;
 
+/** Upper limit for any one fee, payment or charge (₹10 lakh): catches a slipped finger, and stays well inside numeric(12,2). */
+export const MAX_AMOUNT = 1_000_000;
+const TOO_LARGE = 'Amount too large / रक्कम खूप मोठी आहे';
+
 export const courseFeeSchema = z.object({
-  courseFee: z.coerce.number().positive('Fee must be positive / शुल्क सकारात्मक असणे आवश्यक आहे'),
+  courseFee: z.coerce.number().positive('Fee must be positive / शुल्क सकारात्मक असणे आवश्यक आहे').max(MAX_AMOUNT, TOO_LARGE),
 });
 export type CourseFeeInput = z.infer<typeof courseFeeSchema>;
 
 export const paymentSchema = z.object({
-  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे'),
+  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे').max(MAX_AMOUNT, TOO_LARGE),
   paymentDate: z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / अवैध तारीख')
     .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
@@ -139,7 +148,7 @@ export type PaymentInput = z.infer<typeof paymentSchema>;
 export const chargeSchema = z.object({
   feeType: z.enum(FEE_TYPE_KEYS, { message: 'Invalid fee type / अवैध शुल्क प्रकार' }),
   customLabel: opt(z.string().trim().max(100, 'Label too long / लेबल खूप मोठे')),
-  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे'),
+  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे').max(MAX_AMOUNT, TOO_LARGE),
   chargeDate: z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / अवैध तारीख')
     .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
@@ -234,6 +243,6 @@ export const checkinSchema = z.object({
   done: z.enum(['all', 'some', 'none']),
   pain: opt(z.coerce.number().int().min(0).max(10)),
   /** Day the form was shown; only honoured just after midnight (see checkinDay). */
-  day: opt(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  day: opt(z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isCalendarValid)),
 });
 export type CheckinInput = z.infer<typeof checkinSchema>;

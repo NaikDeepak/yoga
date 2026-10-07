@@ -3,6 +3,8 @@ import { getSessionUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { searchPatients } from '@/data/patients';
 
+const MAX_QUERY = 100;
+
 export async function GET(req: Request) {
   const user = await getSessionUser();
   if (!user) {
@@ -10,7 +12,8 @@ export async function GET(req: Request) {
   }
 
   const q = new URL(req.url).searchParams.get('q')?.trim();
-  if (!q) {
+  // Names and mobiles are short; a longer query can't match anything worth the database work.
+  if (!q || q.length > MAX_QUERY) {
     return NextResponse.json({ results: [] });
   }
 

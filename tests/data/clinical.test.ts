@@ -18,7 +18,7 @@ describe('problems', () => {
     const p = await addProblem(db, patientId, { problem: 'कंबर दुखी', isCustom: false });
     await addProblem(db, patientId, { problem: 'Vertigo', isCustom: true, note: 'mild' });
     expect(await listProblems(db, patientId)).toHaveLength(2);
-    await removeProblem(db, p.id);
+    await removeProblem(db, patientId, p.id);
     expect((await listProblems(db, patientId)).map((x) => x.problem)).toEqual(['Vertigo']);
   });
   it('groups problems for many patients', async () => {

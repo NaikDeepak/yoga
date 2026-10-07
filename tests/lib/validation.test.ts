@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   patientSchema, problemSchema, treatmentSchema, visitSchema, docTypeSchema,
   prescribedExercisesListSchema, postureAssessmentSchema, postureRetakeSchema, checkinSchema,
+  paymentSchema, chargeSchema, courseFeeSchema, MAX_AMOUNT, isId,
 } from '@/lib/validation';
 import { alignedLandmarks } from '../helpers/posture';
 import { getISTDateString } from '@/lib/dates';
@@ -240,5 +241,27 @@ describe('checkinSchema', () => {
 
   it('drops fields the client must not set', () => {
     expect(checkinSchema.parse({ done: 'all', checkinDate: '2020-01-01', patientId: 'x' })).toEqual({ done: 'all' });
+  });
+});
+
+describe('H4 limits', () => {
+  it('caps any one amount at MAX_AMOUNT (₹10 lakh)', () => {
+    const date = '2026-06-15';
+    expect(paymentSchema.safeParse({ amount: String(MAX_AMOUNT), paymentDate: date }).success).toBe(true);
+    expect(paymentSchema.safeParse({ amount: '10000000000', paymentDate: date }).success).toBe(false);
+    expect(chargeSchema.safeParse({ feeType: 'consultation', amount: '10000000000', chargeDate: date }).success).toBe(false);
+    expect(courseFeeSchema.safeParse({ courseFee: '10000000000' }).success).toBe(false);
+  });
+  it('limits the client name to 120 characters', () => {
+    expect(patientSchema.safeParse({ fullName: 'a'.repeat(120), mobile: '9876543210' }).success).toBe(true);
+    expect(patientSchema.safeParse({ fullName: 'a'.repeat(121), mobile: '9876543210' }).success).toBe(false);
+  });
+  it('rejects a check-in day that is not a real date', () => {
+    expect(checkinSchema.safeParse({ done: 'all', day: '2026-02-31' }).success).toBe(false);
+    expect(checkinSchema.safeParse({ done: 'all', day: '2026-02-28' }).success).toBe(true);
+  });
+  it('isId accepts only UUIDs', () => {
+    expect(isId('00000000-0000-4000-8000-000000000000')).toBe(true);
+    for (const v of ['', 'nope', "1' or '1'='1", 42, null, undefined]) expect(isId(v)).toBe(false);
   });
 });

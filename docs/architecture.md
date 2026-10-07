@@ -120,6 +120,8 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 - BMI is never stored; always computed from weight/height.
 - Patient codes are assigned only inside `createPatient`'s transaction.
 - Document rows exist only if the file upload succeeded (and vice-versa cleanup).
+- Every id from the browser is checked with `isId` (UUID) before the database. Deletes of a client's child rows (problems, documents, payments, charges) are scoped by the client id and return whether a row went; nothing deleted → still `ok` (double tap) but no activity-log entry. `updatePatient` returns false for a client that no longer exists.
+- Money: any one fee/payment/charge ≤ `MAX_AMOUNT` (₹10 lakh).
 - Posture metrics are computed server-side from stored landmarks; client-computed numbers are display-only. Reads (`getPostureAssessment`, `listPostureAssessments`) recompute with the current formulas so reports and comparisons stay consistent; `posture_views.metrics` is the save-time snapshot.
 - All file access via signed URLs; bucket is private; service-role key server-only.
 - Server logs never get raw errors: use `safeErrorMessage(err)` (`src/lib/log.ts`). A failed Drizzle query's message is the full SQL + params (patient ids, paths, landmarks); the helper keeps only the Postgres code + constraint.

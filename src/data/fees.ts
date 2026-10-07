@@ -86,6 +86,10 @@ export async function addPayment(
   await db.insert(feePayments).values({ patientId, amount: amount.toString(), paymentDate, description });
 }
 
-export async function deletePayment(db: Db, patientId: string, id: string): Promise<void> {
-  await db.delete(feePayments).where(and(eq(feePayments.id, id), eq(feePayments.patientId, patientId)));
+/** False when this client has no such payment (already deleted, or another client's). */
+export async function deletePayment(db: Db, patientId: string, id: string): Promise<boolean> {
+  const rows = await db.delete(feePayments)
+    .where(and(eq(feePayments.id, id), eq(feePayments.patientId, patientId)))
+    .returning({ id: feePayments.id });
+  return rows.length > 0;
 }
