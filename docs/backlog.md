@@ -14,6 +14,7 @@ to their spec) when done. Last updated 2026-10-07.
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). Make a new **Object Read & Write** token for `patient-files` only, swap the `R2_*` vars in Vercel, deploy, and delete the old token. Do this before adding more clinics. |
 
 ## Done recently
+- **E4 capture counters**, 2026-10-07: Settings → Posture capture health (last 30 days per photo type). Migration 0025.
 - **Clinic profile**, 2026-10-07: all clinic identity (names, logo, icons, colours, branches, signature, messages) in `src/clinics/`; guard test. Built by Antigravity, reviewed by Claude and Codex.
 - **App manifest public + colour-proof deploy script**, 2026-10-07; install checked on a phone.
 - **CSV export + audit log**, 2026-10-07: export built by Antigravity, audit log by Claude, integrated together.
@@ -37,7 +38,6 @@ to their spec) when done. Last updated 2026-10-07.
 ## Quality / ops
 | ID | Item |
 |---|---|
-| E4 | Lightweight capture counters (attempts, blocks per check, model-load failures), with no images and no PHI. |
 | E5 | Component test for the capture state machine with a fake detector. |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.

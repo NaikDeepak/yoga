@@ -13,6 +13,7 @@ import { getDb } from '@/db/client';
 import { getWhatsappNumber } from '@/data/preferences';
 import { CLINIC } from '@/lib/clinic';
 import { ExportCard } from '@/components/ExportCard';
+import { isPostureEnabled } from '@/lib/features';
 
 export default async function SettingsPage() {
   const locale = await getLocale();
@@ -100,6 +101,18 @@ export default async function SettingsPage() {
           <Link href="/settings/activity" className="text-sm font-medium text-primary hover:underline">{t.settings.activity.title} →</Link>
         </CardContent>
       </Card>
+
+      {isPostureEnabled() && (
+        <Card className="rounded-2xl shadow-sm border-border max-w-lg">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold">{t.settings.captureStats.title}</CardTitle>
+            <CardDescription>{t.settings.captureStats.description}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/settings/capture" className="text-sm font-medium text-primary hover:underline">{t.settings.captureStats.title} →</Link>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
