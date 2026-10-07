@@ -34,8 +34,11 @@ export function fail(message: string): never {
 }
 
 /** Runs a command and returns its stdout (stderr is captured, not mixed in). Times out after `timeoutMs`. */
+// Colour off: the scripts parse CLI output, and FORCE_COLOR in the caller's shell would put ANSI codes into it.
+const plainEnv = { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' };
+
 export const sh = (cmd: string, timeoutMs = 120_000) =>
-  execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs }).trim();
+  execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: timeoutMs, env: plainEnv }).trim();
 
 export function gitState(): GitState {
   sh('git fetch --quiet origin main');
