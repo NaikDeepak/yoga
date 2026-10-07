@@ -11,6 +11,7 @@ import { requireUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { getWhatsappNumber } from '@/data/preferences';
 import { CLINIC } from '@/lib/clinic';
+import { ExportCard } from '@/components/ExportCard';
 
 export default async function SettingsPage() {
   const locale = await getLocale();
@@ -86,6 +87,8 @@ export default async function SettingsPage() {
           </InlineForm>
         </CardContent>
       </Card>
+
+      <ExportCard t={t} />
     </div>
   );
 }

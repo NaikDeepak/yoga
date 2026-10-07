@@ -918,6 +918,15 @@ export const en = {
     genericError: 'Something went wrong. Please try again.',
     errorPrefix: 'Error:',
   },
+  export: {
+    title: 'Export data',
+    description: 'Download clinic records as CSV spreadsheets.',
+    branchLabel: 'Branch',
+    allBranches: 'All branches',
+    clients: 'Clients',
+    visits: 'Visits',
+    fees: 'Fees & payments',
+  },
 };
 
 export type Translations = typeof en;
