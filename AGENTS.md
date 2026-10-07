@@ -13,3 +13,43 @@ Stop: "stop caveman" or "normal mode"
 Auto-Clarity: drop caveman for security warnings, irreversible actions, user confused. Resume after.
 
 Boundaries: code/commits/PRs written normal.
+
+---
+
+# Project: Pawar Yoga Therapy — patient management
+
+**Project rules live in [`CLAUDE.md`](CLAUDE.md). Read it at the start of every session.** It is shared by every
+agent, not just Claude. It covers the stack, the docs to read instead of scanning code, commands and conventions
+(TDD, layering, bilingual UI, keeping `docs/architecture.md` current). The current module map is
+[`docs/architecture.md`](docs/architecture.md); environments and env vars are in [`docs/environments.md`](docs/environments.md);
+what's next is in [`docs/backlog.md`](docs/backlog.md).
+
+# Working with another agent (shared notepad)
+
+Two coding agents may work on this repo at the same time: **Claude Code (`claude`)** and **Antigravity (`agy`)**.
+Deepak (`deepak`) is the human owner. They coordinate through an append-only notepad, `.collab/notepad.md`
+(gitignored, local only). Always use `scripts/collab.sh`; never edit the notepad by hand.
+
+```bash
+scripts/collab.sh status                          # active claims + latest entry for each agent
+scripts/collab.sh read 30                         # last 30 entries
+scripts/collab.sh claim <me> "<branch> · <files/area>"
+scripts/collab.sh post <me> <claude|agy|deepak|all> "<message>"
+scripts/collab.sh handoff <me> <other> "<branch> · <done> · <next>"
+scripts/collab.sh release <me> "<note>"
+```
+
+**Protocol**
+1. **Start of every task:** run `scripts/collab.sh status` and read anything addressed to you or to `all`.
+2. **Claim before editing:** one claim per agent (a new claim replaces your previous one). Name the branch and the files or area.
+3. **Never edit files, or push to a branch, that the other agent has claimed.** Ask with `post` instead.
+4. **Separate branches:** each agent uses its own branch, ideally its own `git worktree`. Never commit to `main` directly; changes go through a PR, as usual.
+5. **Asking for help:** ask the other agent with `post`; ask Deepak with `post <me> deepak`. Don't block silently.
+6. **Finishing or pausing:** write a `handoff` (branch, what's done, what's next), then `release`.
+7. **Never write secrets, keys, connection strings or patient data** (names, phone numbers, health details) in the notepad.
+8. **Deploys and production migrations** (`npm run db:migrate:prod`, `npm run deploy:prod`) only when Deepak asks, and never while the other agent has a claim on `main` or a release branch.
+
+**Setup (once per machine):** headless `agy -p` can't ask permission, so allow just the notepad script in
+`~/.gemini/antigravity-cli/settings.json`: `"permissions": { "allow": ["command(scripts/collab.sh)", "command(./scripts/collab.sh)"] }`.
+Tested 2026-10-07: chained commands (`scripts/collab.sh … && …`) and any other command stay blocked.
+Claude Code can drive agy with `agy -p "<task>" [--mode plan]`, and continue with `--continue`.

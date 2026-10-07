@@ -35,3 +35,6 @@ certificates/
 
 # MediaPipe WASM runtime, copied from node_modules on install (scripts/copy-mediapipe.mjs)
 public/mediapipe/
+
+# Agent notepad (scripts/collab.sh) — local coordination, never committed
+.collab/
