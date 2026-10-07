@@ -271,7 +271,7 @@ export function PostureCapture({
       canvas.getContext('2d')!.drawImage(frame, rect.x, rect.y, rect.w, rect.h, 0, 0, canvas.width, canvas.height);
       const landmarks = remapToCrop(full, size.width, size.height, rect);
       const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
-      if (!blob) { setError(c.noPerson); return; }
+      if (!blob) { telemetry.count('blockedModel', view); setError(c.noPerson); return; } // photo encoding failed
       setDraft({
         blob, url: URL.createObjectURL(blob), width: canvas.width, height: canvas.height,
         landmarks, edited: false, cameraCheck,

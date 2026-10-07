@@ -333,7 +333,7 @@ export const en = {
       description: 'How the camera screen went in the last 30 days: what blocked a photo and which voice hints were needed. Counts only — no photos or clients.',
       columns: {
         shot: 'Photo', attempts: 'Tries (auto / manual)', captured: 'Captured', notLevel: 'Not level',
-        noPerson: 'No person found', model: 'Model failed', hintInFrame: 'Hint: into frame',
+        noPerson: 'No person found', model: 'Model or photo failed', hintInFrame: 'Hint: into frame',
         hintFacing: 'Hint: turn', hintStill: 'Hint: hold still', retake: 'Retakes',
       },
       saveTapped: 'Save tapped',

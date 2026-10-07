@@ -3,6 +3,7 @@ import { POSTURE_VIEWS } from '@/lib/posture';
 import { FLEX_SHOTS } from '@/lib/flexibility';
 import type { CaptureShot } from '@/lib/capture-shots';
 
+// blockedModel covers both a pose model that failed to load and a photo that failed to encode.
 // Capture counters (backlog E4): how often the camera flow blocks, nags or fails, per photo type.
 // Counts only — no images, no client, no landmarks — so they can be kept as plain daily totals.
 
