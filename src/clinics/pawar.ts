@@ -10,6 +10,7 @@ export const pawar: ClinicProfile = {
     en: "Pawar's Yog Therapy",
     mr: 'पवार योग थेरपी',
   },
+  tagline: 'LIVE PAIN-FREE · EMBRACE HEALTH AND HAPPINESS',
   logo: {
     src: '/pytc-logo.png',
     alt: 'PYTC',

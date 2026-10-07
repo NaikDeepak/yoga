@@ -18,6 +18,8 @@ export const clinicProfileSchema = z.object({
     en: z.string().min(1),
     mr: z.string().min(1),
   }),
+  // Printed under the name on report letterheads; optional.
+  tagline: z.string().min(1).optional(),
   logo: z.object({
     src: z.string().min(1),
     alt: z.string().min(1),

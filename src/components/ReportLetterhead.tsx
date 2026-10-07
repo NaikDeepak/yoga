@@ -27,9 +27,11 @@ export function ReportLetterhead({ badgeLabel, patientCode, branch, today }: Rep
             <h1 className="text-2xl font-bold" style={{ color: GREEN }}>
               {CLINIC.name}
             </h1>
-            <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON }}>
-              LIVE PAIN-FREE · EMBRACE HEALTH AND HAPPINESS
-            </p>
+            {clinicProfile.tagline && (
+              <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON }}>
+                {clinicProfile.tagline}
+              </p>
+            )}
             {branch && (
               <p className="mt-1 text-xs text-gray-500">📍 {branch.fullAddress}</p>
             )}

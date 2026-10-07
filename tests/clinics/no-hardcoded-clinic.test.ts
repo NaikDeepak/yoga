@@ -12,6 +12,7 @@ const FORBIDDEN = [
   'pawarsyog',
   'Dodamarg',
   'Yog Therapy',
+  'LIVE PAIN-FREE',
 ];
 
 function getAllSourceFiles(dir: string): string[] {
