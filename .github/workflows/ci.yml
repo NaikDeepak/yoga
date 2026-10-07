@@ -17,13 +17,7 @@ jobs:
   ci:
     name: Typecheck, Test & Build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    env:
-      LOCAL_MOCK: "false"
-      DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
-      NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-placeholder"
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -46,3 +40,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        # Fake values only: the build must never need real secrets. Tests run with no env at all.
+        env:
+          LOCAL_MOCK: "false"
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-placeholder"
