@@ -8,6 +8,9 @@ describe('isPublicPath', () => {
     expect(isPublicPath('/_next/static/x.js')).toBe(true);
     expect(isPublicPath('/favicon.ico')).toBe(true);
   });
+  it('the app manifest is public (phones fetch it without the login cookie to install the app)', () => {
+    expect(isPublicPath('/manifest.webmanifest')).toBe(true);
+  });
   it('app pages are protected', () => {
     expect(isPublicPath('/')).toBe(false);
     expect(isPublicPath('/patients')).toBe(false);
