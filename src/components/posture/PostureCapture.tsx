@@ -25,8 +25,11 @@ import { DragHandles } from './DragHandles';
 import { LandmarkEditor } from './LandmarkEditor';
 import { LevelIndicator } from './LevelIndicator';
 import { createVoiceGuide, loadMuted, saveMuted, type VoiceGuide } from './voice';
+import { createCaptureCounter } from './capture-telemetry';
 
 type Step = 'setup' | 'live' | 'review' | 'summary';
+
+const HINT_EVENT = { inFrame: 'hintInFrame', facing: 'hintFacing', still: 'hintStill' } as const satisfies Record<HintKey, string>;
 
 interface Capture {
   blob: Blob;
@@ -87,6 +90,19 @@ export function PostureCapture({
     voice.current?.setMuted(next);
   };
 
+  // ── capture counters (counts only; sent as one batch when the page is hidden/closed or on save) ──
+  const [telemetry] = useState(createCaptureCounter);
+  useEffect(() => {
+    const onHide = () => { if (document.visibilityState === 'hidden') telemetry.flush(); };
+    window.addEventListener('pagehide', telemetry.flush);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', telemetry.flush);
+      document.removeEventListener('visibilitychange', onHide);
+      telemetry.flush();
+    };
+  }, [telemetry]);
+
   const [step, setStep] = useState<Step>('setup');
   const order: readonly CaptureShot[] = flexibility?.shots ?? retake?.views ?? POSTURE_VIEWS;
   // Consent was recorded with an existing assessment, unless the client withdrew it since.
@@ -126,10 +142,10 @@ export function PostureCapture({
     setStep('live');
     if (!liveDetector.current) {
       createPoseDetector('live').then((d) => { liveDetector.current = d; setModelReady(true); })
-        .catch(() => setError(c.cameraError));
+        .catch(() => { telemetry.count('modelLoadFailed'); setError(c.cameraError); });
       stillDetector.current = createPoseDetector('still'); // warms up while the client gets into position
     }
-  }, [c.cameraError]);
+  }, [c.cameraError, telemetry]);
 
   useEffect(() => () => {
     liveDetector.current?.close();
@@ -147,7 +163,7 @@ export function PostureCapture({
   // The loop reads these through refs so it isn't torn down and restarted every render.
   const levelOkRef = useRef(levelOk);
   levelOkRef.current = levelOk;
-  const captureRef = useRef<() => void>(() => {});
+  const captureRef = useRef<(source: 'auto' | 'manual') => void>(() => {});
   const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
@@ -188,16 +204,19 @@ export function PostureCapture({
 
         const h = advanceHint(hint, firstFailingCheck({ inFrame: frame.inFrame, facing: frame.facing, still }), ts);
         hint = h.state;
-        if (h.speak) voice.current?.say(hintText(h.speak));
+        if (h.speak) {
+          voice.current?.say(hintText(h.speak));
+          telemetry.count(HINT_EVENT[h.speak], view);
+        }
         // capture() sets busy, which pauses this loop; if it bails out (e.g. camera moved) the loop keeps
         // running and the countdown needs a fresh 3 s before firing again.
-        if (step.fire) captureRef.current();
+        if (step.fire) captureRef.current('auto');
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [cameraOn, size, modelReady, needsCalibration, busy, view, videoRef]);
+  }, [cameraOn, size, modelReady, needsCalibration, busy, view, videoRef, telemetry]);
 
   useEffect(() => {
     if (step === 'live' && !needsCalibration) {
@@ -206,13 +225,14 @@ export function PostureCapture({
   }, [step, view, needsCalibration]);
 
   // ── capture ──
-  const capture = useCallback(async () => {
+  const capture = useCallback(async (source: 'auto' | 'manual') => {
     const video = videoRef.current;
     if (!video || !size || busy) return;
+    telemetry.count(source === 'auto' ? 'attemptAuto' : 'attemptManual', view);
     const cameraCheck: CameraCheck | null = sensorMode
       ? sensor.level && { method: 'sensor', ...sensor.level }
       : referenceRoll !== null ? { method: 'reference', rollDeg: referenceRoll, pitchDeg: null } : null;
-    if (!cameraCheck || !isLevel(cameraCheck)) { setError(c.notLevel); return; }
+    if (!cameraCheck || !isLevel(cameraCheck)) { telemetry.count('blockedNotLevel', view); setError(c.notLevel); return; }
 
     setBusy(true);
     setError(null);
@@ -228,6 +248,7 @@ export function PostureCapture({
       } catch {
         // Model download failed (offline / CDN blocked): say so, and retry the load on the next capture.
         stillDetector.current = createPoseDetector('still');
+        telemetry.count('blockedModel', view);
         setError(c.modelError);
         return;
       }
@@ -238,7 +259,7 @@ export function PostureCapture({
         const found = toLandmarks(det.detect(frame));
         if (found) detections.push(found);
       }
-      if (!detections.length) { setError(c.noPerson); return; }
+      if (!detections.length) { telemetry.count('blockedNoPerson', view); setError(c.noPerson); return; }
       const full = medianLandmarks(detections);
 
       // Save a crop around the body (laptop frames are mostly background), capped at MAX_EDGE.
@@ -250,19 +271,20 @@ export function PostureCapture({
       canvas.getContext('2d')!.drawImage(frame, rect.x, rect.y, rect.w, rect.h, 0, 0, canvas.width, canvas.height);
       const landmarks = remapToCrop(full, size.width, size.height, rect);
       const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/jpeg', JPEG_QUALITY));
-      if (!blob) { setError(c.noPerson); return; }
+      if (!blob) { telemetry.count('blockedModel', view); setError(c.noPerson); return; } // photo encoding failed
       setDraft({
         blob, url: URL.createObjectURL(blob), width: canvas.width, height: canvas.height,
         landmarks, edited: false, cameraCheck,
       });
+      telemetry.count('captured', view);
       voice.current?.say({ en: en.posture.voice.captured, mr: mr.posture.voice.captured }, { interrupt: true });
       setStep('review');
     } finally {
       setBusy(false);
     }
-  }, [videoRef, size, busy, sensorMode, sensor.level, referenceRoll, c.notLevel, c.noPerson, c.modelError]);
+  }, [videoRef, size, busy, sensorMode, sensor.level, referenceRoll, c.notLevel, c.noPerson, c.modelError, telemetry, view]);
 
-  captureRef.current = () => void capture();
+  captureRef.current = (source) => void capture(source);
 
   // Free photo memory when leaving the page.
   const urls = useRef<string[]>([]);
@@ -281,6 +303,7 @@ export function PostureCapture({
   }
 
   function retakeView(idx: number) {
+    telemetry.count('retake', order[idx]);
     setViewIdx(idx);
     setDraft(null);
     history.current = [];
@@ -288,6 +311,8 @@ export function PostureCapture({
   }
 
   function save() {
+    telemetry.count('saveTapped');
+    telemetry.flush(); // the save redirects to the report
     const fd = new FormData();
     if (flexibility) {
       const shots = order.map((s) => {
@@ -416,7 +441,7 @@ export function PostureCapture({
               </div>
               {live.fill !== null && live.fill < BODY_FILL_TARGET && <p className="text-xs text-muted-foreground">{c.moveCloser}</p>}
               <div className="flex flex-wrap gap-2">
-                <Button onClick={() => void capture()} disabled={busy || !modelReady || !levelOk || !live.frame.inFrame}>
+                <Button onClick={() => void capture('manual')} disabled={busy || !modelReady || !levelOk || !live.frame.inFrame}>
                   <Camera className="mr-2 h-4 w-4" aria-hidden="true" />
                   {c.capture}
                 </Button>

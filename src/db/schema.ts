@@ -1,5 +1,5 @@
 import {
-  bigserial, pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index, uniqueIndex, check, jsonb,
+  bigserial, pgTable, uuid, text, integer, real, numeric, boolean, date, timestamp, index, uniqueIndex, check, jsonb, primaryKey,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import type { Landmark, Metric } from '@/lib/posture';
@@ -345,3 +345,14 @@ export const auditLog = pgTable('audit_log', {
 ]).enableRLS();
 
 export type AuditRow = typeof auditLog.$inferSelect;
+
+// Capture counters (backlog E4): daily totals per event and photo type. Counts only — no client, no images.
+// `shot` is '' for session events (saved, model load failed).
+export const captureStats = pgTable('capture_stats', {
+  day: date('day', { mode: 'string' }).notNull(),
+  event: text('event').notNull(),
+  shot: text('shot').notNull().default(''),
+  count: integer('count').notNull().default(0),
+}, (table) => [
+  primaryKey({ columns: [table.day, table.event, table.shot] }),
+]).enableRLS();
