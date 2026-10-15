@@ -31,7 +31,7 @@ export function OverlaySvg({
   className?: string;
 }) {
   const { width, height } = overlay;
-  const sw = width / 250; // stroke width scales with the image, so lines look the same at any size
+  const sw = width / 150; // stroke width scales with the image, so lines look the same at any size
   const severityOf = (key?: string) => metrics.find((m) => m.key === key)?.severity ?? 'none';
   const coords = (l: { x1: number; y1: number; x2: number; y2: number }) => ({ x1: l.x1, y1: l.y1, x2: l.x2, y2: l.y2 });
 
