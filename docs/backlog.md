@@ -5,7 +5,7 @@
 **Feature freeze from 2026-10-07 (Deepak):** no new features; test and harden the current product. The Features table below is on hold.
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
-to their spec) when done. Last updated 2026-10-15.
+to their spec) when done. Last updated 2026-10-21.
 
 ## Waiting on people (not code)
 | Item | Who | Notes |
@@ -62,7 +62,7 @@ nose deviation (cosmetic; breathing obstruction isn't visible externally).
 ## Quality / ops
 | ID | Item |
 |---|---|
-| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H4 done and deployed 2026-10-08; next H5. |
+| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); next H7 (needs Deepak: Neon console or `neonctl`), H8. |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
 
