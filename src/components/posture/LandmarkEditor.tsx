@@ -35,7 +35,7 @@ export function LandmarkEditor({
         <DragHandles
           // Every point this shot uses — missed ones too, so the therapist can place them.
           handles={shotEditablePoints(shot, landmarks, width, height).map((p) => ({ id: p.index, x: p.x, y: p.y, missed: !p.detected }))}
-          radius={width / 140}
+          radius={width / 90}
           color="#ffffff"
           onMove={(index, x, y) => {
             const next = landmarks.slice();

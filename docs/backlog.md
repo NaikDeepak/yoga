@@ -5,7 +5,7 @@
 **Feature freeze from 2026-10-07 (Deepak):** no new features; test and harden the current product. The Features table below is on hold.
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
-to their spec) when done. Last updated 2026-10-07.
+to their spec) when done. Last updated 2026-10-15.
 
 ## Waiting on people (not code)
 | Item | Who | Notes |
@@ -14,6 +14,7 @@ to their spec) when done. Last updated 2026-10-07.
 | Tune flexibility score cut-offs | Dr Pawar | `FLEX_SCORING` in `src/lib/flexibility.ts`: shoulder 60° = 100, fold hip angle 45° = 100, butterfly knees ≤ 0.15 × shoulder width = 100. History re-scores automatically, because scores are recomputed from landmarks. |
 | Shoulder-extension reference photo | Clinic | The AI model never reached 60°, so that card shows no reference. A clinic photo (consent for use with all clients) → `public/ideal/` + `src/lib/ideal-photos.ts`. See `scripts/ideal-photos/README.md`. |
 | Branch protection on `main` | Deepak | GitHub → Settings → Branches/Rulesets for `main`: require a PR and the **Typecheck, Test & Build** check (CI live since #60, 2026-10-08). |
+| Facial palsy clients? | Dr Pawar | Decides whether F4 (facial palsy tracking) is worth building. |
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). Make a new **Object Read & Write** token for `patient-files` only, swap the `R2_*` vars in Vercel, deploy, and delete the old token. Do this before adding more clinics. |
 
 ## Done recently
@@ -30,6 +31,25 @@ to their spec) when done. Last updated 2026-10-07.
 |---|---|---|---|
 | C6 | Spinal curve read (kyphosis / lordosis), qualitative and flagged approx | M | From shoulder/hip/ear offsets. |
 | D2 | Gait analysis (video) | L | Scope separately. |
+
+## Assessment ideas — post-freeze candidates (added 2026-10-15)
+Optional add-on tests, each behind a feature switch `[switch]`. Revisit once production posture data shows the
+current pipeline is reliable. Listed in recommended order.
+| ID | Item | Size | Notes |
+|---|---|---|---|
+| F1 | Pain body map + validated questionnaires (Oswestry, Neck Disability Index, stress scale) | M | No camera, no accuracy risk; strong before/after outcome measures for the report. |
+| F2 | Neck range of motion via MediaPipe Face Landmarker | M | Head yaw/pitch/roll from the face transform. Also gives a more precise head tilt for posture. |
+| F3 | Single-leg balance (30 s sway + foot-down time) and 30 s sit-to-stand rep count | M | Reuses live capture + stillness detection. Fall-risk / strength measures. |
+| F4 | Facial palsy tracking (rest, raise brows, close eyes, smile, puff cheeks; left vs right movement) | M | Only if Dr Pawar sees these clients. Includes eyelid-opening asymmetry. Face photos need their own consent line. |
+| F5 | Jaw (TMJ) opening + sideways drift | S | Face landmarks; standard physio check. |
+| F6 | Flat feet / ankle roll-in (heel–ankle angle, back view) | S | Approximate; trend over time. After B4/B5. |
+| F7 | Overhead squat video (dynamic knee collapse, heel lift) | M | Catches what static photos miss. |
+| F8 | More ROM tests (shoulder flexion/abduction, trunk side bend, hip flexion) | M | Extend the flexibility score. |
+| F9 | Breathing pattern (shoulder vs belly rise) | M | Pranayama interest; accuracy unproven — research first. |
+| F10 | Wrist / finger ROM (Hand Landmarker) | S | Only if the clinic sees arthritis clients. |
+
+Rejected: eye alignment / squint / vision screening (unreliable from a phone photo, needs an eye specialist);
+nose deviation (cosmetic; breathing obstruction isn't visible externally).
 
 ## Posture accuracy (needs real-device data first)
 | ID | Item |
