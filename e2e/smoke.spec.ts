@@ -92,7 +92,9 @@ test('client lifecycle: add → visit → fee + receipt → exercises → share 
     await button.click();
     await page.waitForURL(/\/patients$/);
 
+    // Positive check: the client page itself is gone, not just still loading.
     await page.goto(clientUrl);
+    await expect(page.getByRole('heading', { name: 'Page not found' }).first()).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name })).toHaveCount(0);
   });
 });
