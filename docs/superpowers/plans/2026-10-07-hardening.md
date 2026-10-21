@@ -12,6 +12,9 @@ Rule for every fix: failing test first that reproduces the bug → fix → regre
 - Every server action and API route except `auth.ts` and `/api/ping` checks the session (grep). Ownership and
   validation depth not yet audited.
 
+## Status (2026-10-08)
+H1–H4 merged (#57–#61) and deployed (812189a). Branch protection (H2) waits on Deepak. Next: H5.
+
 ## Phases (in order; each is one PR)
 | ID | Work | Who | Done when |
 |---|---|---|---|
@@ -30,7 +33,7 @@ New features, the parked C9, posture accuracy items B3–B7 (they wait on real c
 ## H4 findings (Codex audit 2026-10-07, triaged by Claude)
 | # | Finding | Outcome |
 |---|---|---|
-| 1 | `/api/ping` is open when `CRON_SECRET` is unset (it is unset in Vercel today) | **Waiting on Deepak:** set `CRON_SECRET` in Vercel and as a GitHub secret, then make the route refuse without it. Failing closed now would stop the keepalive and let Supabase login pause. Low impact meanwhile (`SELECT 1` + two Supabase pings). |
+| 1 | `/api/ping` is open when `CRON_SECRET` is unset | Fixed (PR #61, 2026-10-08): Deepak set `CRON_SECRET` in Vercel + GitHub; the route now refuses every call without it. Live check: no secret → 401, keepalive workflow → success. |
 | 2–3 | Document / problem delete not scoped to the client | Fixed: scoped by client id; nothing logged when nothing deleted. |
 | 4 | Editing a client that no longer exists reported success | Fixed: "This client no longer exists" error, nothing logged. |
 | 5 | Payment / charge delete logged even when nothing deleted | Fixed. Unknown id stays `ok` on purpose (a double tap must not show an error). |
