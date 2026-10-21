@@ -5,7 +5,7 @@
 **Feature freeze from 2026-10-07 (Deepak):** no new features; test and harden the current product. The Features table below is on hold.
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
-to their spec) when done. Last updated 2026-10-15.
+to their spec) when done. Last updated 2026-10-21.
 
 ## Waiting on people (not code)
 | Item | Who | Notes |
@@ -13,7 +13,7 @@ to their spec) when done. Last updated 2026-10-15.
 | Test posture + flexibility on the clinic phone, in production | Deepak | `FEATURE_POSTURE` is on since 2026-10-06. Use a throwaway client: 4 posture views → 4 flexibility shots → AI analysis → share → withdraw consent → delete client (also proves R2 delete works in prod). Report any capture check that stays red; loosening a check is a one-line change (lenient first). |
 | Tune flexibility score cut-offs | Dr Pawar | `FLEX_SCORING` in `src/lib/flexibility.ts`: shoulder 60° = 100, fold hip angle 45° = 100, butterfly knees ≤ 0.15 × shoulder width = 100. History re-scores automatically, because scores are recomputed from landmarks. |
 | Shoulder-extension reference photo | Clinic | The AI model never reached 60°, so that card shows no reference. A clinic photo (consent for use with all clients) → `public/ideal/` + `src/lib/ideal-photos.ts`. See `scripts/ideal-photos/README.md`. |
-| Branch protection on `main` | Deepak | GitHub → Settings → Branches/Rulesets for `main`: require a PR and the **Typecheck, Test & Build** check (CI live since #60, 2026-10-08). |
+| Branch protection on `main` | Deepak | GitHub → Settings → Branches/Rulesets for `main`: require a PR and the **Typecheck, Test & Build** and **End-to-end smoke (mock mode)** checks (CI live since #60, e2e since #65). |
 | Facial palsy clients? | Dr Pawar | Decides whether F4 (facial palsy tracking) is worth building. |
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). Make a new **Object Read & Write** token for `patient-files` only, swap the `R2_*` vars in Vercel, deploy, and delete the old token. Do this before adding more clinics. |
 
@@ -62,13 +62,14 @@ nose deviation (cosmetic; breathing obstruction isn't visible externally).
 ## Quality / ops
 | ID | Item |
 |---|---|
-| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H4 done and deployed 2026-10-08; next H5. |
+| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); next H7 (needs Deepak: Neon console or `neonctl`), H8. |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
 
 ## Bugs (found in real use)
 | Date | What you did | What you saw | Phone / browser | Status |
 |---|---|---|---|---|
+| 2026-10-21 | Treatment tab → Add visit with a progress note → Add visit (found by the H5 e2e test) | Visit saved, but the note stays in the textarea, so a second tap could save a duplicate visit | Pixel 7 Chromium (Playwright), mock mode | Open — fix in H6 |
 
 ## Low priority / parked
 | ID | Item | Size | Notes |

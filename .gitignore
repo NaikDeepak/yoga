@@ -38,3 +38,7 @@ public/mediapipe/
 
 # Agent notepad (scripts/collab.sh) — local coordination, never committed
 .collab/
+
+# Playwright (e2e/) — results go to the OS temp dir; only the HTML report lands here
+playwright-report/
+test-results/

@@ -12,8 +12,11 @@ Rule for every fix: failing test first that reproduces the bug → fix → regre
 - Every server action and API route except `auth.ts` and `/api/ping` checks the session (grep). Ownership and
   validation depth not yet audited.
 
-## Status (2026-10-08)
-H1–H4 merged (#57–#61) and deployed (812189a). Branch protection (H2) waits on Deepak. Next: H5.
+## Status (2026-10-21)
+H1–H4 merged (#57–#61) and deployed (812189a). Branch protection (H2) waits on Deepak. H5 built by Claude
+(headless Antigravity can't install browsers or run commands beyond `npm run`). No second review: Codex CLI broken
+(native binary missing), Kilo rate-limited; CI green. "Withdraw" is covered as stop-sharing the exercise link; photo-consent
+withdrawal needs camera capture (E5 covers capture). Next: H7, H8.
 
 ## Phases (in order; each is one PR)
 | ID | Work | Who | Done when |
