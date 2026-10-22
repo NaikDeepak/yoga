@@ -144,6 +144,26 @@ Every change made there changes real client records. Needs the real Supabase log
 | Posture / flexibility buttons missing on the live site | `FEATURE_POSTURE=true` in Vercel Production, deploy |
 | Uploads or *Delete client* fail with an R2 error | Check the four `R2_*` vars and that the token is Object Read & Write on `patient-files` |
 
+## Restore the database (Neon point-in-time)
+- **Window: 6 hours** (free plan, `history_retention_seconds` = 21600). Older mistakes cannot be undone; a paid
+  plan raises the window. Notice a bad change fast.
+- Never restore over `production` first. Make a branch from the past, check it, then decide:
+  ```bash
+  export NEON_PROFILE=main P=late-mouse-93599929
+  neon branches create --project-id $P --name restore-YYYY-MM-DD --parent 2026-10-22T01:00:00Z --expires-at <tomorrow, UTC>
+  # --parent <UTC time> = the default branch (production) as it was at that moment
+  ```
+- Check it **with counts only** (patient data): pipe `neon connection-string restore-YYYY-MM-DD --project-id $P --pooled`
+  into a script that calls `prodStatus(url)` from `scripts/prod/common.ts`. Never print the connection string.
+- To roll production back: Neon Console → Branches → `production` → **Restore** to that time (it keeps a backup of
+  the current state), or copy the needed rows out of the restore branch by hand. Then delete the restore branch.
+- **Drill done 2026-10-22:** branch from 01:00 UTC came back with all 26 migrations and every table's row count
+  equal to production; branch deleted.
+
+**Files (R2) are not covered by the database restore.** A deleted file is gone. Orphan check 2026-10-22:
+9 files of 4 clients deleted before 2026-10-06 (when *Delete client* started wiping the folder) remain in
+`patient-files`; no database row points at a missing file.
+
 ## Secrets
 - Real values live only in `.env` (gitignored), Vercel, and your password manager. Never paste
   connection strings or keys in chats or PRs; the scripts never print them.
