@@ -17,6 +17,8 @@ H1–H4 merged (#57–#61) and deployed (812189a). Branch protection (H2) waits 
 (headless Antigravity can't install browsers or run commands beyond `npm run`). No second review: Codex CLI broken
 (native binary missing), Kilo rate-limited; CI green. "Withdraw" is covered as stop-sharing the exercise link; photo-consent
 withdrawal needs camera capture (E5 covers capture). Next: H7, H8.
+2026-10-22: branch protection on `main` set (H2 complete). H7: Neon access via CLI org key; restore drill passed (6 h window,
+free plan); 9 R2 orphans from clients deleted before 2026-10-06 await Deepak's OK to delete; R2 token tightening waits on Deepak.
 
 ## Phases (in order; each is one PR)
 | ID | Work | Who | Done when |

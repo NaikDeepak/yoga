@@ -5,7 +5,7 @@
 **Feature freeze from 2026-10-07 (Deepak):** no new features; test and harden the current product. The Features table below is on hold.
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
-to their spec) when done. Last updated 2026-10-21.
+to their spec) when done. Last updated 2026-10-22.
 
 ## Waiting on people (not code)
 | Item | Who | Notes |
@@ -13,11 +13,13 @@ to their spec) when done. Last updated 2026-10-21.
 | Test posture + flexibility on the clinic phone, in production | Deepak | `FEATURE_POSTURE` is on since 2026-10-06. Use a throwaway client: 4 posture views → 4 flexibility shots → AI analysis → share → withdraw consent → delete client (also proves R2 delete works in prod). Report any capture check that stays red; loosening a check is a one-line change (lenient first). |
 | Tune flexibility score cut-offs | Dr Pawar | `FLEX_SCORING` in `src/lib/flexibility.ts`: shoulder 60° = 100, fold hip angle 45° = 100, butterfly knees ≤ 0.15 × shoulder width = 100. History re-scores automatically, because scores are recomputed from landmarks. |
 | Shoulder-extension reference photo | Clinic | The AI model never reached 60°, so that card shows no reference. A clinic photo (consent for use with all clients) → `public/ideal/` + `src/lib/ideal-photos.ts`. See `scripts/ideal-photos/README.md`. |
-| Branch protection on `main` | Deepak | GitHub → Settings → Branches/Rulesets for `main`: require a PR and the **Typecheck, Test & Build** and **End-to-end smoke (mock mode)** checks (CI live since #60, e2e since #65). |
 | Facial palsy clients? | Dr Pawar | Decides whether F4 (facial palsy tracking) is worth building. |
+| Delete 9 orphaned R2 files | Deepak | Files of 4 clients deleted before 2026-10-06 are still in `patient-files`. Say yes and Claude deletes them (counts in `docs/environments.md`). |
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). Make a new **Object Read & Write** token for `patient-files` only, swap the `R2_*` vars in Vercel, deploy, and delete the old token. Do this before adding more clinics. |
 
 ## Done recently
+- **Branch protection on `main`**, 2026-10-22: PR required (0 approvals), checks **Typecheck, Test & Build** + **End-to-end smoke (mock mode)**; admins can still bypass in an emergency.
+- **H7 restore drill**, 2026-10-22: Neon point-in-time branch matched production; steps in `docs/environments.md`. Window is 6 h (free plan).
 - **E4 capture counters**, 2026-10-07: Settings → Posture capture health (last 30 days per photo type). Migration 0025.
 - **E5 capture screen test**, 2026-10-07: fake camera + detector walk the whole capture flow. Built by Antigravity.
 - **Clinic profile**, 2026-10-07: all clinic identity (names, logo, icons, colours, branches, signature, messages) in `src/clinics/`; guard test. Built by Antigravity, reviewed by Claude and Codex.
@@ -62,7 +64,7 @@ nose deviation (cosmetic; breathing obstruction isn't visible externally).
 ## Quality / ops
 | ID | Item |
 |---|---|
-| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); next H7 (needs Deepak: Neon console or `neonctl`), H8. |
+| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); H7 restore drill done 2026-10-22 (R2 token + orphan cleanup wait on Deepak); next H8. |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
 
