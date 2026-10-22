@@ -87,6 +87,16 @@ npm run dev:phone      # same over HTTPS on the Wi-Fi (camera on a phone); accep
 npm run db:status:prod   # read-only: applied / pending migrations, row counts
 ```
 
+### Neon CLI (`neon`) and Neon MCP
+- Project `pawar-yoga` (`late-mouse-93599929`, `aws-ap-southeast-1`).
+- The CLI signs in with an **organization API key** stored in profile `main`
+  (`~/.config/neon/credentials.main.json`); `export NEON_PROFILE=main` in `~/.zshrc` selects it.
+  Check with `neon projects list`. `neon me` always fails with org keys ("not allowed for organization API keys").
+- Browser `neon login` does not work on this Mac: the callback is hit twice, the code is reused and Neon
+  revokes the fresh token (`token_inactive`). Use an API key instead: write it to a `chmod 600` file,
+  run `neon profile create main --api-key - < file`, delete the file. Never paste a key into a chat or command line.
+- `.mcp.json` adds Neon's hosted MCP server (URL only, no key; it signs in by itself). The repo is public: never put a key there.
+
 ## CI (Continuous Integration)
 
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every pull request to `main` and push to `main`:
