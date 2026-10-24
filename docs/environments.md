@@ -163,6 +163,7 @@ Every change made there changes real client records. Needs the real Supabase log
 **Files (R2) are not covered by the database restore.** A deleted file is gone. Orphan check 2026-10-22:
 9 files of 4 clients deleted before 2026-10-06 (when *Delete client* started wiping the folder) remain in
 `patient-files`; no database row points at a missing file.
+**2026-10-24:** re-checked (same 9, none referenced) and deleted with Deepak's OK; bucket = 3 files, all referenced.
 
 ## Secrets
 - Real values live only in `.env` (gitignored), Vercel, and your password manager. Never paste
