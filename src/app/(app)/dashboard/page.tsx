@@ -136,7 +136,7 @@ export default async function DashboardPage({
       {birthdaysToday.length > 0 && (
         <div className="bg-brand-accent/10 border border-brand-accent/30 rounded-2xl p-5 flex flex-col gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-brand-accent/20 text-brand-accent rounded-full">
+            <div className="p-2 bg-brand-accent/20 text-brand-accent-text rounded-full">
               <Cake className="h-6 w-6" />
             </div>
             <div>
@@ -152,7 +152,7 @@ export default async function DashboardPage({
             {birthdaysToday.map((patient) => (
               <li key={patient.id} className="bg-card rounded-xl p-3 border border-brand-accent/20 flex items-center justify-between gap-3 shadow-xs">
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="h-9 w-9 rounded-full bg-brand-accent/15 flex items-center justify-center text-brand-accent font-bold text-xs shrink-0">
+                  <div className="h-9 w-9 rounded-full bg-brand-accent/15 flex items-center justify-center text-brand-accent-text font-bold text-xs shrink-0">
                     {initials(patient.fullName)}
                   </div>
                   <div className="flex flex-col min-w-0">
@@ -163,13 +163,13 @@ export default async function DashboardPage({
                       <span className="text-[10px] text-muted-foreground truncate">
                         {patient.patientCode}
                       </span>
-                      <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 h-4 border-none shadow-none leading-none flex items-center ${patient.isTomorrow ? 'bg-muted text-muted-foreground' : 'bg-brand-accent/15 text-brand-accent'}`}>
+                      <Badge variant="secondary" className={`text-[10px] px-1.5 py-0 h-4 border-none shadow-none leading-none flex items-center ${patient.isTomorrow ? 'bg-muted text-muted-foreground' : 'bg-brand-accent/15 text-brand-accent-text'}`}>
                         {patient.isTomorrow ? t.dashboard.tomorrow : t.dashboard.today}
                       </Badge>
                     </div>
                   </div>
                 </div>
-                <Button asChild size="sm" variant="outline" className="rounded-full h-9 px-3 text-xs border-brand-accent/30 text-brand-accent hover:bg-brand-accent/10 hover:text-brand-accent">
+                <Button asChild size="sm" variant="outline" className="rounded-full h-9 px-3 text-xs border-brand-accent/30 text-brand-accent-text hover:bg-brand-accent/10 hover:text-brand-accent-text">
                   <a href={birthdayWhatsappUrl(patient.mobile, patient.fullName, t, locale)} target="_blank" rel="noopener noreferrer">
                     {t.dashboard.sendWish}
                   </a>
@@ -418,7 +418,7 @@ export default async function DashboardPage({
                         </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="outline" className="border-brand-accent/50 text-brand-accent bg-brand-accent/5 shadow-none">{v.patientCode}</Badge>
+                        <Badge variant="outline" className="border-brand-accent/50 text-brand-accent-text bg-brand-accent/5 shadow-none">{v.patientCode}</Badge>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{formatFullDate(v.visitDate)}</td>
                       <td className="px-4 py-3 text-muted-foreground">{v.weightKg ? `${v.weightKg} kg` : '—'}</td>

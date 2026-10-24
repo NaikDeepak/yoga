@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -44,7 +45,7 @@ export function Sidebar({ className, onClose, patientCount }: SidebarProps) {
       <div className="flex h-16 shrink-0 items-center justify-between px-6 border-b border-transparent">
         <Link href="/dashboard" className="flex items-center gap-2 text-foreground hover:opacity-80 transition-opacity">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={clinicProfile.logo.src} alt={clinicProfile.logo.alt} width={32} height={32} className="object-contain" />
+          <Image src={clinicProfile.logo.src} alt={clinicProfile.logo.alt} width={32} height={32} className="object-contain" />
           <span className="text-lg font-bold tracking-tight">{clinicName('en', true)}</span>
         </Link>
         {onClose && (

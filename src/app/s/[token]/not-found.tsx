@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { CLINIC } from '@/lib/clinic';
 import { en } from '@/lib/i18n/en';
 import { mr } from '@/lib/i18n/mr';
@@ -7,7 +8,7 @@ import { clinicProfile } from '@/clinics';
 export default function SharedLinkNotFound() {
   return (
     <main className="mx-auto max-w-xl space-y-4 px-4 py-16 text-center">
-      <img src={clinicProfile.logo.src} alt="" className="mx-auto h-14 w-14" referrerPolicy="no-referrer" />
+      <Image src={clinicProfile.logo.src} alt="" width={56} height={56} className="mx-auto h-14 w-14 object-contain" referrerPolicy="no-referrer" />
       {[en, mr].map(({ sharedPage: t }) => (
         <div key={t.expiredTitle}>
           <h1 className="text-xl font-bold">{t.expiredTitle}</h1>

@@ -49,7 +49,7 @@ export function PatientHeader({
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold">{patient.fullName}</h1>
-            <Badge variant="outline" className="border-brand-accent text-brand-accent">
+            <Badge variant="outline" className="border-brand-accent text-brand-accent-text">
               {patient.patientCode}
             </Badge>
           </div>
@@ -105,7 +105,7 @@ export function PatientHeader({
             </AvatarFallback>
           </Avatar>
           <span className="font-medium">{patient.fullName}</span>
-          <Badge variant="outline" className="border-brand-accent text-brand-accent">
+          <Badge variant="outline" className="border-brand-accent text-brand-accent-text">
             {patient.patientCode}
           </Badge>
         </div>
