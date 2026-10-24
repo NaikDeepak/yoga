@@ -14,11 +14,11 @@ to their spec) when done. Last updated 2026-10-22.
 | Tune flexibility score cut-offs | Dr Pawar | `FLEX_SCORING` in `src/lib/flexibility.ts`: shoulder 60° = 100, fold hip angle 45° = 100, butterfly knees ≤ 0.15 × shoulder width = 100. History re-scores automatically, because scores are recomputed from landmarks. |
 | Shoulder-extension reference photo | Clinic | The AI model never reached 60°, so that card shows no reference. A clinic photo (consent for use with all clients) → `public/ideal/` + `src/lib/ideal-photos.ts`. See `scripts/ideal-photos/README.md`. |
 | Facial palsy clients? | Dr Pawar | Decides whether F4 (facial palsy tracking) is worth building. |
-| Delete 9 orphaned R2 files | Deepak | Files of 4 clients deleted before 2026-10-06 are still in `patient-files`: 6 documents (screenshots, a proposal PDF, an empty `regression-test.pdf`) and 3 profile photos, nearly all test data from setup day (14 Jun) and the 11 Aug regression. Only one 3.2 MB photo (23 Jun) might be a real client. Reply "delete" and Claude removes them. |
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). **Deepak:** Cloudflare → R2 Object Storage → Manage API tokens → Create Account API token, named `yoga-patient-files-rw`, permission **Object Read & Write**, buckets: specific → `patient-files`, TTL Forever. Put the two values in `~/.config/yoga-r2-token` (`chmod 600`, lines `R2_ACCESS_KEY_ID=…` / `R2_SECRET_ACCESS_KEY=…`), never in chat. **Claude:** tests the token (patient-files only), updates `.env` + Vercel Production, `deploy:prod`, checks upload/delete live, deletes the file. **Then Deepak** deletes the old Admin token. Do this before adding more clinics. |
 | Restore window: 6 h only | Deepak | Neon free plan can rewind the database only 6 hours (see `docs/environments.md` → Restore). Choose: **A** paid Neon plan (several days of history; check neon.com/pricing) or **B** free nightly `pg_dump` into private R2 (daily restore points for weeks; Claude builds it, counts as hardening). Claude recommends B. |
 
 ## Done recently
+- **R2 orphans deleted**, 2026-10-24 (Deepak's OK): re-checked against production first (9 files, 4 deleted clients, none referenced), deleted; bucket now holds only the 3 files the database points to.
 - **Branch protection on `main`**, 2026-10-22: PR required (0 approvals), checks **Typecheck, Test & Build** + **End-to-end smoke (mock mode)**; admins can still bypass in an emergency.
 - **H7 restore drill**, 2026-10-22: Neon point-in-time branch matched production; steps in `docs/environments.md`. Window is 6 h (free plan).
 - **E4 capture counters**, 2026-10-07: Settings → Posture capture health (last 30 days per photo type). Migration 0025.
@@ -65,7 +65,7 @@ nose deviation (cosmetic; breathing obstruction isn't visible externally).
 ## Quality / ops
 | ID | Item |
 |---|---|
-| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); H7 restore drill done 2026-10-22 (R2 token + orphan cleanup wait on Deepak); H8 done 2026-10-24 (no red Lighthouse; report gold darkened; prod check after deploy). |
+| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); H7 restore drill done 2026-10-22 (orphans deleted 2026-10-24; R2 token waits on Deepak); H8 done 2026-10-24 (no red Lighthouse; report gold darkened; prod check after deploy). |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
 

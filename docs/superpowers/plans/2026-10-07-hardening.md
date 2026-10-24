@@ -20,6 +20,7 @@ withdrawal needs camera capture (E5 covers capture). Next: H7, H8.
 2026-10-22: branch protection on `main` set (H2 complete). H7: Neon access via CLI org key; restore drill passed (6 h window,
 free plan); 9 R2 orphans from clients deleted before 2026-10-06 await Deepak's OK to delete; R2 token tightening waits on Deepak.
 2026-10-24: H8 measured and fixed (findings below). No red Lighthouse score on any page. Production check after deploy waits on Deepak.
+2026-10-24: the 9 R2 orphans deleted (Deepak's OK). H7 now only waits on the R2 token.
 
 ## Phases (in order; each is one PR)
 | ID | Work | Who | Done when |
