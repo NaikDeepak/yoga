@@ -63,7 +63,7 @@ export function PatientCard({
               <span className="font-semibold text-foreground truncate">{fullName}</span>
               <Badge
                 variant="outline"
-                className="border-brand-accent text-brand-accent shrink-0"
+                className="border-brand-accent text-brand-accent-text shrink-0"
               >
                 {patientCode}
               </Badge>

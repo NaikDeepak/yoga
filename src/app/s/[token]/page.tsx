@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -72,7 +73,7 @@ export default async function SharedLinkPage({
     <main className="mx-auto max-w-xl space-y-5 px-4 py-6" lang={lang}>
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <img src={clinicProfile.logo.src} alt="" className="h-10 w-10" referrerPolicy="no-referrer" />
+          <Image src={clinicProfile.logo.src} alt="" width={40} height={40} className="h-10 w-10 object-contain" referrerPolicy="no-referrer" />
           <span className="text-sm font-semibold">{CLINIC.name}</span>
         </div>
         <nav className="flex rounded-full border text-xs" aria-label="Language">

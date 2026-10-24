@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
@@ -206,9 +207,12 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                         </div>
                         {pe.imagePath && (
                           <div className="shrink-0 w-24 h-24 border border-gray-200 rounded p-1 bg-gray-50 flex items-center justify-center overflow-hidden">
-                            <img
+                            <Image
                               src={pe.imagePath}
                               alt={locale === 'mr' ? pe.nameMr : pe.name}
+                              width={88}
+                              height={88}
+                              loading="eager" // printed: a lazy image below the fold can be missing from the page
                               className="max-w-full max-h-full object-contain"
                             />
                           </div>

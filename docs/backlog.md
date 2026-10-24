@@ -65,7 +65,7 @@ nose deviation (cosmetic; breathing obstruction isn't visible externally).
 ## Quality / ops
 | ID | Item |
 |---|---|
-| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); H7 restore drill done 2026-10-22 (R2 token + orphan cleanup wait on Deepak); next H8. |
+| H1–H8 | Hardening phase: plan `docs/superpowers/plans/2026-10-07-hardening.md`. H1–H5 done (H5 e2e smoke 2026-10-21); H7 restore drill done 2026-10-22 (R2 token + orphan cleanup wait on Deepak); H8 done 2026-10-24 (no red Lighthouse; report gold darkened; prod check after deploy). |
 
 Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-posture-followups.md`.
 

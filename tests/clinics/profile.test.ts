@@ -5,6 +5,24 @@ import { pawar } from '@/clinics/pawar';
 import { CLINIC } from '@/lib/clinic';
 import { BRANCHES } from '@/lib/presets';
 
+/** WCAG contrast ratio of a #rrggbb colour against white. */
+function contrastOnWhite(hex: string) {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05);
+}
+
+describe('printed brand colours are readable on white', () => {
+  it('accent text (small print) meets 4.5:1', () => {
+    expect(contrastOnWhite(pawar.brand.accentText ?? pawar.brand.accent)).toBeGreaterThanOrEqual(4.5);
+  });
+  it('accent behind large bold text (report initials) meets 3:1', () => {
+    expect(contrastOnWhite(pawar.brand.accent)).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe('clinicProfileSchema', () => {
   it("Pawar's profile passes the schema", () => {
     expect(() => clinicProfileSchema.parse(pawar)).not.toThrow();

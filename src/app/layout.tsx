@@ -7,7 +7,12 @@ import { clinicName, clinicProfile } from '@/clinics';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const notoSansDevanagari = Noto_Sans_Devanagari({ subsets: ['devanagari'], variable: '--font-devanagari' });
 
-export const metadata: Metadata = { title: clinicName('en', true) };
+export const metadata: Metadata = {
+  title: clinicName('en', true),
+  description: `Patient management for ${clinicProfile.appName ?? clinicName('en')}`,
+  // Without an icon link browsers ask for /favicon.ico, which doesn't exist (a 404 on every first visit).
+  icons: { icon: clinicProfile.icons.icon192, apple: clinicProfile.icons.icon192 },
+};
 
 export const viewport: Viewport = { themeColor: clinicProfile.brand.themeColor };
 

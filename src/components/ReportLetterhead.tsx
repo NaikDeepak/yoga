@@ -1,9 +1,11 @@
+import Image from 'next/image';
 import { BRANCHES } from '@/lib/presets';
 import { CLINIC } from '@/lib/clinic';
 import { clinicProfile } from '@/clinics';
 
 const GREEN = clinicProfile.brand.primary;
 const SAFFRON = clinicProfile.brand.accent;
+const SAFFRON_TEXT = clinicProfile.brand.accentText ?? SAFFRON;
 
 interface ReportLetterheadProps {
   badgeLabel: string;
@@ -21,14 +23,13 @@ export function ReportLetterhead({ badgeLabel, patientCode, branch, today }: Rep
       <div className="flex items-start justify-between p-5">
         {/* Left: logo + clinic info */}
         <div className="flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={clinicProfile.logo.src} alt={clinicProfile.logo.alt} className="h-16 w-auto object-contain" />
+          <Image src={clinicProfile.logo.src} alt={clinicProfile.logo.alt} width={146} height={128} priority className="h-16 w-auto object-contain" />
           <div>
             <h1 className="text-2xl font-bold" style={{ color: GREEN }}>
               {CLINIC.name}
             </h1>
             {clinicProfile.tagline && (
-              <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON }}>
+              <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON_TEXT }}>
                 {clinicProfile.tagline}
               </p>
             )}

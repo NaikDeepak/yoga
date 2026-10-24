@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { SharedExerciseProgramme } from '@/data/exercises';
 import type { Translations } from '@/lib/i18n/en';
 import { CheckinForm } from './CheckinForm';
@@ -32,7 +33,11 @@ export function ExercisesBody({ token, lang, programme, editing, error, t }: {
           {programme.exercises.map((ex, i) => (
             <li key={`${ex.name}-${i}`} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
               {ex.imagePath && (
-                <img src={ex.imagePath} alt={ex.name} className="w-full bg-muted object-contain" loading="lazy" referrerPolicy="no-referrer" />
+                <Image
+                  src={ex.imagePath} alt={ex.name} width={1024} height={1024} priority={i === 0}
+                  sizes="(max-width: 576px) calc(100vw - 2rem), 544px"
+                  className="h-auto w-full bg-muted object-contain" referrerPolicy="no-referrer"
+                />
               )}
               <div className="space-y-3 p-4">
                 <h2 className="text-lg font-semibold">{i + 1}. {ex.name}</h2>

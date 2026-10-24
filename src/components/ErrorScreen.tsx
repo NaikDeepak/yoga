@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { en } from '@/lib/i18n/en';
 import { mr } from '@/lib/i18n/mr';
 import { clinicProfile } from '@/clinics';
@@ -11,7 +12,7 @@ type Kind = 'error' | 'notFound';
 export function ErrorScreen({ kind, digest, onRetry }: { kind: Kind; digest?: string; onRetry?: () => void }) {
   return (
     <main className="mx-auto max-w-xl space-y-6 px-4 py-16 text-center">
-      <img src={clinicProfile.logo.src} alt="" className="mx-auto h-14 w-14" referrerPolicy="no-referrer" />
+      <Image src={clinicProfile.logo.src} alt="" width={56} height={56} className="mx-auto h-14 w-14 object-contain" referrerPolicy="no-referrer" />
       {[en, mr].map(({ errors: t }) => (
         <div key={t.retry} className="space-y-1">
           <h1 className="text-xl font-bold">{kind === 'error' ? t.errorTitle : t.notFoundTitle}</h1>

@@ -22,7 +22,9 @@ export const pawar: ClinicProfile = {
   },
   brand: {
     primary: '#1B3A2E',
-    accent: '#C8962E',
+    // Darkened from #C8962E (2026-10-24, Deepak): white initials on it and gold print were too faint (2.7:1).
+    accent: '#AA8027',
+    accentText: '#8C6920',
     cream: '#FDF8F0',
     themeColor: '#3B6954',
     background: '#F9F6F0',

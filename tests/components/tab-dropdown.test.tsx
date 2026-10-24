@@ -21,13 +21,18 @@ beforeEach(() => {
 
 describe('TabDropdown', () => {
   it('shows the active tab label in the trigger', () => {
-    render(<TabDropdown patientId="p1" activeTab="fees" tabs={TABS} />);
+    render(<TabDropdown patientId="p1" activeTab="fees" tabs={TABS} label="Section" />);
     expect(screen.getByRole('combobox')).toHaveTextContent('Fees / शुल्क');
+  });
+
+  it('names the dropdown for screen readers (a combobox gets no name from its text)', () => {
+    render(<TabDropdown patientId="p1" activeTab="fees" tabs={TABS} label="Section" />);
+    expect(screen.getByRole('combobox', { name: 'Section' })).toBeInTheDocument();
   });
 
   it('navigates to the selected tab URL', async () => {
     const user = userEvent.setup();
-    render(<TabDropdown patientId="p1" activeTab="overview" tabs={TABS} />);
+    render(<TabDropdown patientId="p1" activeTab="overview" tabs={TABS} label="Section" />);
 
     await user.click(screen.getByRole('combobox'));
     await user.click(screen.getByRole('option', { name: 'Fees / शुल्क' }));

@@ -127,6 +127,7 @@ export const en = {
     edit: 'Edit',
     report: 'Report',
     receipt: 'Receipt',
+    section: 'Section',
     tabs: {
       overview: 'Overview',
       problems: 'Problems',
@@ -426,6 +427,7 @@ export const en = {
   },
   branchFilter: {
     allBranches: 'All branches',
+    label: 'Branch',
   },
   globalSearch: {
     placeholder: 'Search for a client…',

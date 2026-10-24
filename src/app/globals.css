@@ -20,6 +20,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-brand-accent: var(--brand-accent);
+  --color-brand-accent-text: var(--brand-accent-text);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -66,6 +67,8 @@
 
   /* Custom brand amber — decorative only, never standalone text on cream */
   --brand-accent: oklch(0.632 0.130 52);
+  /* Same amber, dark enough for text (≥ 4.5:1 on white and cream) */
+  --brand-accent-text: oklch(0.52 0.13 52);
 }
 
 body {

@@ -129,6 +129,7 @@ export const mr: Translations = {
     edit: 'बदला',
     report: 'अहवाल',
     receipt: 'पावती',
+    section: 'विभाग',
     tabs: {
       overview: 'माहिती',
       problems: 'आजार',
@@ -428,6 +429,7 @@ export const mr: Translations = {
   },
   branchFilter: {
     allBranches: 'सर्व शाखा',
+    label: 'शाखा',
   },
   globalSearch: {
     placeholder: 'साधकाचा शोध घ्या…',

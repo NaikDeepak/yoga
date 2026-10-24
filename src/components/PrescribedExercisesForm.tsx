@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { useTranslations } from '@/lib/i18n/context';
 import { savePrescribedExercisesAction } from '@/actions/exercises';
@@ -134,9 +135,9 @@ export function PrescribedExercisesForm({
 
               return (
                 <div key={cat} className="p-4 space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-2 py-1 rounded-md inline-block">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-2 py-1 rounded-md inline-block">
                     {locale === 'mr' ? categoryLabels[cat].mr : `${categoryLabels[cat].en} / ${categoryLabels[cat].mr}`}
-                  </h3>
+                  </h2>
 
                   <div className="space-y-3">
                     {catExercises.map((ex) => {
@@ -184,6 +185,8 @@ export function PrescribedExercisesForm({
                               variant="ghost"
                               size="icon"
                               onClick={() => toggleExpanded(ex.id)}
+                              aria-expanded={isExpanded}
+                              aria-label={locale === 'mr' ? 'तपशील' : 'Details / तपशील'}
                               className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full shrink-0"
                             >
                               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -269,9 +272,11 @@ export function PrescribedExercisesForm({
 
                               {ex.imagePath && (
                                 <div className="mt-2.5 flex justify-center bg-muted/10 border border-border/30 rounded-xl overflow-hidden p-2">
-                                  <img 
-                                    src={ex.imagePath} 
-                                    alt={locale === 'mr' ? ex.nameMr : ex.name} 
+                                  <Image
+                                    src={ex.imagePath}
+                                    alt={locale === 'mr' ? ex.nameMr : ex.name}
+                                    width={160}
+                                    height={160}
                                     className="max-h-40 w-auto object-contain rounded-lg bg-white shadow-sm border border-border/20"
                                   />
                                 </div>

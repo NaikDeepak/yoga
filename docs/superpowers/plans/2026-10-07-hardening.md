@@ -19,6 +19,7 @@ H1–H4 merged (#57–#61) and deployed (812189a). Branch protection (H2) waits 
 withdrawal needs camera capture (E5 covers capture). Next: H7, H8.
 2026-10-22: branch protection on `main` set (H2 complete). H7: Neon access via CLI org key; restore drill passed (6 h window,
 free plan); 9 R2 orphans from clients deleted before 2026-10-06 await Deepak's OK to delete; R2 token tightening waits on Deepak.
+2026-10-24: H8 measured and fixed (findings below). No red Lighthouse score on any page. Production check after deploy waits on Deepak.
 
 ## Phases (in order; each is one PR)
 | ID | Work | Who | Done when |
@@ -49,3 +50,30 @@ New features, the parked C9, posture accuracy items B3–B7 (they wait on real c
 | 9 | Search query unbounded | Fixed: over 100 characters → no results, no query. |
 | 10 | Check-in token / day loosely checked | Fixed: over-long token refused before lookup; day must be a real date. |
 | 11 | Ping logged raw errors | Fixed: `safeErrorMessage`. |
+
+## H8 findings (Lighthouse 12.6.1, mobile, 2026-10-24)
+Measured on a local production build (`next build` + `next start`, local docker Postgres, real Supabase login) with a
+seeded test client: fee, payments, a visit, a shared exercise. Medians of 3 runs. Mock mode can't be used for speed
+because it only runs under `next dev`. Reports stay out of the repo: their screenshots show client data.
+
+| Page | Before (perf / a11y / best / SEO) | After |
+|---|---|---|
+| Login | 92 / 100 / 96 / 83 | 89 / 100 / 100 / 100 |
+| Client list | 87 / 96 / 100 / 91 | 88 / 100 / 100 / 100 |
+| Client page | 81 / 91 / 100 / 91 | 82 / 100 / 100 / 100 |
+| Client page, treatment tab | 82 / 89 / 100 / 91 | 84 / 100 / 100 / 100 |
+| Dashboard | 80 / 95 / 100 / 91 | 82 / 100 / 100 / 100 |
+| Report (print) | 78 / 96 / 100 / 91 | 79 / 96 / 100 / 100 |
+| Client share page | 84 / 100 / 96 / 54 | 92 / 100 / 100 / 66 |
+
+| # | Finding | Outcome |
+|---|---|---|
+| 1 | Exercise photos (1024 px PNG, ~130 KB each) and the logo (533 px) were sent full size to phones; share page shifted as photos loaded (CLS 0.155) | Fixed: `next/image` everywhere they show. Plank photo on the share page 120 KB → 10 KB (WebP, phone size), CLS 0. Report images load eagerly so printing never misses one. |
+| 2 | Amber badges (client code, dashboard) used the decorative amber as text: contrast 3.3–3.6 | Fixed: `--brand-accent-text` (same hue, 5.3:1 on cream). |
+| 3 | Client-section and branch dropdowns, and the exercise expand button, had no name for screen readers | Fixed: bilingual `aria-label`s. Exercise category headings h3 → h2 (no skipped level). |
+| 4 | No description, no icon link (every first visit asked for a missing `/favicon.ico`), `/robots.txt` redirected to login | Fixed: description + clinic icon in root metadata; `robots.txt` is public and allows everything. Not `Disallow: /`: crawlers would then never see the share page's `noindex` header, and a leaked link could be listed from the link alone. |
+| 5 | Share page SEO: "page is blocked from indexing" | Accepted: the `noindex` header on share links is intentional. |
+| 6 | Signed-in pages show LCP 4–5.5 s and perf ~80 | Accepted: an artefact of Lighthouse's simulated throttling (it charges the JS download to the streamed page content). With real throttling (`--throttling-method=devtools`), client page, report, dashboard and login score 94–98 with LCP 1.6–2.4 s. |
+| 7 | Report: gold name line and initials circle (clinic accent `#C8962E`) contrast 2.7 | Fixed (Deepak: "darken a bit"): accent `#AA8027` (3.6:1, enough for the large bold initials), small gold print uses new profile field `brand.accentText` `#8C6920` (5:1). Test in `tests/clinics/profile.test.ts`. |
+| 8 | Phone width | No page scrolls sideways at 360 px or 390 px (15 pages, including all client tabs, report, receipt, share page). `e2e/phone-width.spec.ts` keeps it that way in CI. |
+

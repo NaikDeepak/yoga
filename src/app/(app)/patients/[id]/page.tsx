@@ -102,7 +102,7 @@ export default async function PatientPage({
     <div className="space-y-6 pb-24">
       <PatientHeader patient={patient} photoUrl={photoUrl} hasCourseFee={patientFees.courseFee !== null} />
 
-      <TabDropdown patientId={id} activeTab={tab} tabs={TABS} />
+      <TabDropdown patientId={id} activeTab={tab} tabs={TABS} label={t.patientDetail.section} />
 
       {/* Tab navigation — URL-based for server rendering, styled like shadcn Tabs. Hidden on mobile in favor of TabDropdown. */}
       <div className="hidden h-9 w-full items-center justify-start overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground sm:inline-flex">

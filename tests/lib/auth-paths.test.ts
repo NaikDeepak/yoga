@@ -11,6 +11,9 @@ describe('isPublicPath', () => {
   it('the app manifest is public (phones fetch it without the login cookie to install the app)', () => {
     expect(isPublicPath('/manifest.webmanifest')).toBe(true);
   });
+  it('robots.txt is public (crawlers have no login cookie; it tells them to stay out)', () => {
+    expect(isPublicPath('/robots.txt')).toBe(true);
+  });
   it('app pages are protected', () => {
     expect(isPublicPath('/')).toBe(false);
     expect(isPublicPath('/patients')).toBe(false);

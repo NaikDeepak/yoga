@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { signUpAction } from '@/actions/auth';
 import Link from 'next/link';
 import { SubmitButton } from '@/components/SubmitButton';
@@ -18,8 +19,7 @@ export default async function RegisterPage({
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="mx-auto mb-2 flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={clinicProfile.logo.src} alt={`${clinicProfile.logo.alt} Logo`} width={48} height={48} className="object-contain" />
+            <Image src={clinicProfile.logo.src} alt={`${clinicProfile.logo.alt} Logo`} width={48} height={48} priority className="object-contain" />
           </div>
           <CardTitle>{t.auth.registerTitle}</CardTitle>
           <CardDescription>{t.auth.registerSubtitle}</CardDescription>
