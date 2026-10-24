@@ -23,7 +23,6 @@ export function ReportLetterhead({ badgeLabel, patientCode, branch, today }: Rep
       <div className="flex items-start justify-between p-5">
         {/* Left: logo + clinic info */}
         <div className="flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <Image src={clinicProfile.logo.src} alt={clinicProfile.logo.alt} width={146} height={128} priority className="h-16 w-auto object-contain" />
           <div>
             <h1 className="text-2xl font-bold" style={{ color: GREEN }}>
