@@ -115,7 +115,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/app/error.tsx`, `global-error.tsx`, `not-found.tsx` | app-wide bilingual error / not-found pages via `ErrorScreen` (no locale context needed; never shows the raw error text, shows the digest as a reference that matches the server log; global-error renders its own `<html>`) | — |
 | `src/app/s/[token]/*` | **public** client page for a share link (no login; `isPublicPath`): resolves the token (any kind) and renders `ExercisesBody` (+ `CheckinForm`), `PostureReportBody` or `ProgressReportBody` (progress links stay live with posture off; only the posture part hides); unknown/expired/revoked → one bilingual `not-found`; counts views (preview bots and reloads within 30 min skipped) | — |
 | `src/middleware.ts` | session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
-| `src/app/robots.ts` | `robots.txt`: disallow everything (health records); public in `auth-paths` | `robots` (default) |
+| `src/app/robots.ts` | `robots.txt`: allows everything on purpose — a disallowed share link could still be listed from a link alone; `/s/*` relies on its `noindex` header. Public in `auth-paths` | `robots` (default) |
 | `src/app/manifest.ts` | PWA web-app manifest (installable on Android: standalone display, icons in `public/icons/`) | `manifest` (default) |
 
 ## Invariants (do not break)

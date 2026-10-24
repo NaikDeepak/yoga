@@ -58,12 +58,12 @@ because it only runs under `next dev`. Reports stay out of the repo: their scree
 
 | Page | Before (perf / a11y / best / SEO) | After |
 |---|---|---|
-| Login | 92 / 100 / 96 / 83 | 91 / 100 / 100 / 66 |
-| Client list | 87 / 96 / 100 / 91 | 86 / 100 / 100 / 66 |
-| Client page | 81 / 91 / 100 / 91 | 81 / 100 / 100 / 66 |
-| Client page, treatment tab | 82 / 89 / 100 / 91 | 81 / 100 / 100 / 66 |
-| Dashboard | 80 / 95 / 100 / 91 | 82 / 100 / 100 / 66 |
-| Report (print) | 78 / 96 / 100 / 91 | 79 / 96 / 100 / 66 |
+| Login | 92 / 100 / 96 / 83 | 89 / 100 / 100 / 100 |
+| Client list | 87 / 96 / 100 / 91 | 88 / 100 / 100 / 100 |
+| Client page | 81 / 91 / 100 / 91 | 82 / 100 / 100 / 100 |
+| Client page, treatment tab | 82 / 89 / 100 / 91 | 84 / 100 / 100 / 100 |
+| Dashboard | 80 / 95 / 100 / 91 | 82 / 100 / 100 / 100 |
+| Report (print) | 78 / 96 / 100 / 91 | 79 / 96 / 100 / 100 |
 | Client share page | 84 / 100 / 96 / 54 | 92 / 100 / 100 / 66 |
 
 | # | Finding | Outcome |
@@ -71,8 +71,8 @@ because it only runs under `next dev`. Reports stay out of the repo: their scree
 | 1 | Exercise photos (1024 px PNG, ~130 KB each) and the logo (533 px) were sent full size to phones; share page shifted as photos loaded (CLS 0.155) | Fixed: `next/image` everywhere they show. Plank photo on the share page 120 KB → 10 KB (WebP, phone size), CLS 0. Report images load eagerly so printing never misses one. |
 | 2 | Amber badges (client code, dashboard) used the decorative amber as text: contrast 3.3–3.6 | Fixed: `--brand-accent-text` (same hue, 5.3:1 on cream). |
 | 3 | Client-section and branch dropdowns, and the exercise expand button, had no name for screen readers | Fixed: bilingual `aria-label`s. Exercise category headings h3 → h2 (no skipped level). |
-| 4 | No description, no icon link (every first visit asked for a missing `/favicon.ico`), `/robots.txt` redirected to login | Fixed: description + clinic icon in root metadata; `robots.txt` is public and disallows everything. |
-| 5 | SEO 66 on every page: "page is blocked from indexing" | Accepted: the app holds health records; nothing should be indexed. |
+| 4 | No description, no icon link (every first visit asked for a missing `/favicon.ico`), `/robots.txt` redirected to login | Fixed: description + clinic icon in root metadata; `robots.txt` is public and allows everything. Not `Disallow: /`: crawlers would then never see the share page's `noindex` header, and a leaked link could be listed from the link alone. |
+| 5 | Share page SEO: "page is blocked from indexing" | Accepted: the `noindex` header on share links is intentional. |
 | 6 | Signed-in pages show LCP 4–5.5 s and perf ~80 | Accepted: an artefact of Lighthouse's simulated throttling (it charges the JS download to the streamed page content). With real throttling (`--throttling-method=devtools`), client page, report, dashboard and login score 94–98 with LCP 1.6–2.4 s. |
 | 7 | Report: gold name line and initials circle (clinic accent `#C8962E`) contrast 2.7 | Open: it's the clinic's brand colour on a printed page. Deepak to decide whether to darken it. |
 | 8 | Phone width | No page scrolls sideways at 360 px or 390 px (15 pages, including all client tabs, report, receipt, share page). `e2e/phone-width.spec.ts` keeps it that way in CI. |
