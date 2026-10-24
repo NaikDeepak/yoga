@@ -31,6 +31,9 @@ test('client lifecycle: add → visit → fee + receipt → exercises → share 
     await visit.getByRole('button', { name: 'Add visit' }).click();
     await expect(page.getByText('No visits yet')).toHaveCount(0);
     await expect(page.getByRole('listitem').getByText('E2E visit')).toBeVisible();
+    // The form is ready for the next visit: a second tap must not save the same note and pain again.
+    await expect(visit.getByLabel('Progress note')).toHaveValue('');
+    await expect(visit.getByRole('radio', { name: '5', exact: true })).not.toBeChecked();
   });
 
   await test.step('set a course fee, record a payment, open the receipt', async () => {

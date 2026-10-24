@@ -72,7 +72,7 @@ Source of the posture/flexibility items: `docs/superpowers/plans/2026-10-04-post
 ## Bugs (found in real use)
 | Date | What you did | What you saw | Phone / browser | Status |
 |---|---|---|---|---|
-| 2026-10-21 | Treatment tab → Add visit with a progress note → Add visit (found by the H5 e2e test) | Visit saved, but the note stays in the textarea, so a second tap could save a duplicate visit | Pixel 7 Chromium (Playwright), mock mode | Open — fix in H6 |
+| 2026-10-21 | Treatment tab → Add visit with a progress note → Add visit (found by the H5 e2e test) | Visit saved, but the note stays in the textarea, so a second tap could save a duplicate visit | Pixel 7 Chromium (Playwright), mock mode | Fixed 2026-10-24: note and pain now clear after a saved visit (both kept React state that `form.reset()` never touched); e2e smoke checks it |
 
 ## Low priority / parked
 | ID | Item | Size | Notes |

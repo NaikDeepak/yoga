@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 
 
@@ -22,6 +22,15 @@ export function VisitNoteInput({
   chips?: string[];
 }) {
   const [val, setVal] = useState('');
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  // Controlled, so form.reset() (InlineForm after a save) can't clear it on its own.
+  useEffect(() => {
+    const form = ref.current?.form;
+    const clear = () => setVal('');
+    form?.addEventListener('reset', clear);
+    return () => form?.removeEventListener('reset', clear);
+  }, []);
 
   return (
     <div className="space-y-2">
@@ -40,6 +49,7 @@ export function VisitNoteInput({
         ))}
       </div>
       <Textarea 
+        ref={ref}
         id={id} 
         name={name} 
         rows={rows} 

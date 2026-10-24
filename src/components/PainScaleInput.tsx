@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 function selectedColor(n: number): string {
@@ -23,10 +23,19 @@ export function PainScaleInput({
   ariaLabel: string;
 }) {
   const [value, setValue] = useState<number | null>(defaultValue ?? null);
+  const ref = useRef<HTMLInputElement>(null);
+
+  // State, not a form field, so form.reset() (InlineForm after a save) needs telling: back to the starting value.
+  useEffect(() => {
+    const form = ref.current?.form;
+    const restore = () => setValue(defaultValue ?? null);
+    form?.addEventListener('reset', restore);
+    return () => form?.removeEventListener('reset', restore);
+  }, [defaultValue]);
 
   return (
     <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={ariaLabel}>
-      <input type="hidden" name={name} value={value ?? ''} />
+      <input ref={ref} type="hidden" name={name} value={value ?? ''} />
       {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
         <button
           key={n}
