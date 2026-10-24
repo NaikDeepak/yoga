@@ -5,6 +5,7 @@ import { clinicProfile } from '@/clinics';
 
 const GREEN = clinicProfile.brand.primary;
 const SAFFRON = clinicProfile.brand.accent;
+const SAFFRON_TEXT = clinicProfile.brand.accentText ?? SAFFRON;
 
 interface ReportLetterheadProps {
   badgeLabel: string;
@@ -29,7 +30,7 @@ export function ReportLetterhead({ badgeLabel, patientCode, branch, today }: Rep
               {CLINIC.name}
             </h1>
             {clinicProfile.tagline && (
-              <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON }}>
+              <p className="text-xs font-semibold tracking-widest" style={{ color: SAFFRON_TEXT }}>
                 {clinicProfile.tagline}
               </p>
             )}

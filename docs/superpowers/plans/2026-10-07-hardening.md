@@ -74,6 +74,6 @@ because it only runs under `next dev`. Reports stay out of the repo: their scree
 | 4 | No description, no icon link (every first visit asked for a missing `/favicon.ico`), `/robots.txt` redirected to login | Fixed: description + clinic icon in root metadata; `robots.txt` is public and allows everything. Not `Disallow: /`: crawlers would then never see the share page's `noindex` header, and a leaked link could be listed from the link alone. |
 | 5 | Share page SEO: "page is blocked from indexing" | Accepted: the `noindex` header on share links is intentional. |
 | 6 | Signed-in pages show LCP 4–5.5 s and perf ~80 | Accepted: an artefact of Lighthouse's simulated throttling (it charges the JS download to the streamed page content). With real throttling (`--throttling-method=devtools`), client page, report, dashboard and login score 94–98 with LCP 1.6–2.4 s. |
-| 7 | Report: gold name line and initials circle (clinic accent `#C8962E`) contrast 2.7 | Open: it's the clinic's brand colour on a printed page. Deepak to decide whether to darken it. |
+| 7 | Report: gold name line and initials circle (clinic accent `#C8962E`) contrast 2.7 | Fixed (Deepak: "darken a bit"): accent `#AA8027` (3.6:1, enough for the large bold initials), small gold print uses new profile field `brand.accentText` `#8C6920` (5:1). Test in `tests/clinics/profile.test.ts`. |
 | 8 | Phone width | No page scrolls sideways at 360 px or 390 px (15 pages, including all client tabs, report, receipt, share page). `e2e/phone-width.spec.ts` keeps it that way in CI. |
 

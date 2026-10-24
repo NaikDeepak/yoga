@@ -36,6 +36,8 @@ export const clinicProfileSchema = z.object({
   brand: z.object({
     primary: hex,
     accent: hex,
+    // Small accent-coloured text on printouts (needs 4.5:1 on white); falls back to `accent`.
+    accentText: hex.optional(),
     cream: hex,
     themeColor: hex,
     background: hex,
