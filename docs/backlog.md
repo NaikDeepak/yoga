@@ -5,7 +5,7 @@
 **Feature freeze from 2026-10-07 (Deepak):** no new features; test and harden the current product. The Features table below is on hold.
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
-to their spec) when done. Last updated 2026-10-22.
+to their spec) when done. Last updated 2026-10-25.
 
 ## Waiting on people (not code)
 | Item | Who | Notes |
@@ -15,9 +15,9 @@ to their spec) when done. Last updated 2026-10-22.
 | Shoulder-extension reference photo | Clinic | The AI model never reached 60°, so that card shows no reference. A clinic photo (consent for use with all clients) → `public/ideal/` + `src/lib/ideal-photos.ts`. See `scripts/ideal-photos/README.md`. |
 | Facial palsy clients? | Dr Pawar | Decides whether F4 (facial palsy tracking) is worth building. |
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). **Deepak:** Cloudflare → R2 Object Storage → Manage API tokens → Create Account API token, named `yoga-patient-files-rw`, permission **Object Read & Write**, buckets: specific → `patient-files`, TTL Forever. Put the two values in `~/.config/yoga-r2-token` (`chmod 600`, lines `R2_ACCESS_KEY_ID=…` / `R2_SECRET_ACCESS_KEY=…`), never in chat. **Claude:** tests the token (patient-files only), updates `.env` + Vercel Production, `deploy:prod`, checks upload/delete live, deletes the file. **Then Deepak** deletes the old Admin token. Do this before adding more clinics. |
-| Restore window: 6 h only | Deepak | Neon free plan can rewind the database only 6 hours (see `docs/environments.md` → Restore). Choose: **A** paid Neon plan (several days of history; check neon.com/pricing) or **B** free nightly `pg_dump` into private R2 (daily restore points for weeks; Claude builds it, counts as hardening). Claude recommends B. |
 
 ## Done recently
+- **Restore window decided**, 2026-10-25 (Deepak): keep the 6-hour Neon window for now; no paid plan, no nightly dump. Revisit before adding clinics or if a mistake older than 6 h ever needs undoing. Options were A (paid Neon plan) or B (nightly `pg_dump` into private R2).
 - **R2 orphans deleted**, 2026-10-24 (Deepak's OK): re-checked against production first (9 files, 4 deleted clients, none referenced), deleted; bucket now holds only the 3 files the database points to.
 - **Branch protection on `main`**, 2026-10-22: PR required (0 approvals), checks **Typecheck, Test & Build** + **End-to-end smoke (mock mode)**; admins can still bypass in an emergency.
 - **H7 restore drill**, 2026-10-22: Neon point-in-time branch matched production; steps in `docs/environments.md`. Window is 6 h (free plan).
