@@ -1,6 +1,6 @@
 # Second clinic test + admin site — design
 
-Date: 2026-10-25 · Status: **draft, waiting on Deepak** · Builds on `plans/2026-10-07-multi-clinic-direction.md`.
+Date: 2026-10-25 · Status: **draft; Deepak answered the open questions 2026-10-25, waiting on approval** · Builds on `plans/2026-10-07-multi-clinic-direction.md`.
 
 ## Why
 Deepak wants to market the app to other clinics. Before that he needs proof that the same code can run a
@@ -67,9 +67,17 @@ This work **ends the feature freeze** of 2026-10-07. F1 (pain map + questionnair
    Tests run each module on and off. One function decides a switch:
    **env kill switch (`FEATURE_X=false`) → admin override (Project 3) → profile default.** Posture keeps its
    current production behaviour for Pawar (on via env) until Project 3 replaces it.
-4. **Clinic-type wording** (needs Deepak's answer, see Questions): treatment-plan sections and fee types
-   become profile-driven, so a physio clinic doesn't see "Panchkarma". Stored data keeps its columns;
-   only labels and which sections show change.
+4. **Clinic type: yoga and physiotherapy** (Deepak, 2026-10-25). The profile gets a clinic type and lists
+   which treatment-plan sections and fee types it uses, so a physio clinic doesn't see "Panchkarma" or
+   "monthly yoga". The AI treatment-draft prompt and the printout follow the same list. Stored data keeps its
+   columns; only labels and which sections show change. *My call:* a physio set starts with exercise
+   therapy, manual therapy, electrotherapy / modalities, home programme and advice; Dr Pawar or a physio
+   friend should sanity-check the list before Sunrise goes live.
+4a. **All wording in locale files** (Deepak, 2026-10-25). Languages stay English + Marathi for now. Every
+   user-facing string still written in code moves into `src/lib/i18n/en.ts` / `mr.ts` (about 170 lines in
+   27 files today, mostly "English / मराठी" error messages in actions and validation, plus any
+   English-only text). Then a new language is a new locale file. A test fails if a Devanagari string appears
+   outside `src/lib/i18n/` or `src/clinics/`.
 5. **Sunrise profile** `src/clinics/sunrise.ts`: name, a generated logo and icons, blue/teal colours,
    two made-up branches, prefix `SRP`, made-up contact, posture + AI **off**, fees + share links **on**.
 6. **Guard test extended:** with `CLINIC_PROFILE=sunrise`, rendered pages, printouts, receipts, the share
@@ -98,9 +106,11 @@ This work **ends the feature freeze** of 2026-10-07. F1 (pain map + questionnair
    change. A no-op release goes out to both, Pawar first.
 
 ### Project 3 — Admin site
-**Shape (my call):** a separate small Next.js app in the same repo (`admin/`), with its own Vercel project,
-its own small Neon database and its own Supabase Auth project (or one login method that works only for
-Deepak). It's kept apart so a compromised clinic site can't reach the controls for all clinics.
+**Shape (my call):** a separate small Next.js app in the same repo (`admin/`), with its own Vercel project
+and its own small Neon database (free plan allows 100 projects). It's kept apart so a compromised clinic
+site can't reach the controls for all clinics. **Login: GitHub sign-in limited to Deepak's GitHub account**,
+not Supabase. Supabase's free plan allows only 2 active projects, and Pawar + Sunrise use both
+(Deepak: "we host only 2 now").
 
 - **Clinics list:** name, URL, app version, last check-in time, open problems (e.g. no check-in for 2 days).
 - **Switches:** per clinic, per module: on / off / "use profile default". The clinic reads its switches
@@ -130,23 +140,46 @@ Deepak). It's kept apart so a compromised clinic site can't reach the controls f
 5. Usage visible for both clinics in the admin site.
 6. Setting up a third clinic, timed from the script and written down: the onboarding cost.
 
-## Costs and limits (verify at setup; numbers change)
-- Each copy is designed to fit free tiers for a test. Supabase's free plan limits active projects and pauses
-  idle ones. Pawar + Sunrise + admin is three Auth projects, so a paid plan or another login approach may be
-  needed. Neon's free plan limits projects too.
-- Vercel's free (Hobby) plan isn't for commercial use. Paying clinics will need Vercel Pro. The test can
-  stay on Hobby.
-- Hobby crons run daily, which is why switches are pulled on request (cached) rather than pushed.
+## Costs (prices checked 2026-10-25 on the providers' pricing pages; they change)
+| Service | Free plan | Paid when needed |
+|---|---|---|
+| **Vercel** (hosting) | Hobby: **personal, non-commercial use only** | Pro **$20/month per developer seat**; one team can hold many projects |
+| **Supabase** (login) | **2 active projects** per account; pauses after a week without activity; 50,000 monthly users | Pro **$25/month**, then about **$10/month per extra project** |
+| **Neon** (database) | 100 projects, 1 GB each, 6 h restore | Launch: pay per use ($0.106 per compute-hour), 7-day restore |
+| **Cloudflare R2** (files) | 10 GB + 1 M writes + 10 M reads a month, per account | $0.015 per GB-month beyond that; downloads free |
+| **Gemini** (AI drafts) | small free quota | per use; a few rupees per clinic per month at today's volumes (my estimate) |
+
+**Now (Pawar + Sunrise):** fits free plans, with one caveat. Pawar is a business, so strictly it already
+belongs on Vercel Pro, and Hobby's terms don't cover it. Sunrise (a test) is fine on Hobby.
+Supabase is then full (2 of 2), which is why the admin site uses GitHub login.
+
+**Per new paying clinic: two ways.**
+- **A. We host it in our accounts.** All clinics share one Vercel Pro team ($20/month in total, for one
+  developer seat) and one Supabase Pro account ($25/month, plus about $10/month per clinic beyond the first).
+  Neon is about $0–10/month per clinic on Launch, depending on use and whether a 7-day restore is wanted.
+  R2 is shared and free until the account passes 10 GB. **Roughly: $45/month to start, plus about
+  $10–20/month per extra clinic.** Simplest to run; you resell the hosting.
+- **B. The clinic owns its accounts.** The clinic signs up to Vercel, Supabase, Neon and Cloudflare itself
+  and invites you as admin. Each clinic gets its own free sets, and the data legally sits with the clinic,
+  which helps with health-data trust. The clinic still needs Vercel Pro ($20/month) because it's a
+  business. **Roughly $20/month per clinic,** paid by the clinic, plus your fee. More setup per clinic.
+- **Not this:** you opening several free accounts under your own name to dodge limits. That breaks the
+  providers' terms and risks every clinic's account being closed at once.
+
+*My recommendation:* B for the first few clinics, because the cost is predictable, it's the clinic's data,
+and it's the clinic's bill. Revisit A once there are enough clinics that one shared bill is cheaper. The
+setup script (Project 2) works the same either way: it only needs the account details.
+
+**What to charge** is Deepak's call. The table gives the floor: about $20/month per clinic for hosting,
+plus Gemini usage, plus the time to set up (timed in checklist point 6).
 
 ## Left to the builder
 File layout inside `admin/`, chart library (follow the dataviz skill), exact count queries, logo artwork,
 Sunrise's made-up details, cache mechanics.
 
-## Questions for Deepak (answers change what gets built)
-1. **Clinic type wording.** Is the product for **yoga/Ayurveda clinics only**, or for **physio clinics in
-   general**? If physio, treatment-plan sections (Panchkarma, Pranayam…), fee types and the AI prompt
-   become per-profile (adds about a third to Project 1).
-2. **Languages.** Does every clinic get English + Marathi, or do languages become per-clinic (e.g. English +
-   Hindi)? Per-clinic languages are a big job, and could wait until a real clinic asks.
-3. **Ready-to-market checklist** above: right, or what's missing?
-4. **Paying for services** if free tiers run out (a third Supabase project, Vercel Pro later): OK?
+## Decisions (Deepak, 2026-10-25)
+1. Product is for **yoga and physiotherapy clinics**: plan sections, fee types and AI prompt per profile.
+2. Languages stay **English + Marathi**; hard-coded strings move to locale files so a language is one file later.
+3. The **ready-to-market checklist** above is agreed.
+4. **Host only 2 clinics now** (Pawar + Sunrise). Costs for a new paying clinic are in *Costs*; each new
+   clinic is either charged for hosting or gets its own accounts.
