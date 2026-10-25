@@ -124,3 +124,17 @@ describe('pinned clinic values', () => {
     expect(clinicProfile.patientCodePrefix).toBe('PYT');
   });
 });
+
+describe('resolveClinicProfile in production', () => {
+  it('refuses to guess the clinic in production', () => {
+    expect(() => resolveClinicProfile(undefined, { NODE_ENV: 'production' })).toThrow(/CLINIC_PROFILE/);
+    expect(() => resolveClinicProfile(undefined, { NODE_ENV: 'production', CLINIC_PROFILE: '' })).toThrow(/CLINIC_PROFILE/);
+  });
+  it('still defaults to pawar outside production', () => {
+    expect(resolveClinicProfile(undefined, { NODE_ENV: 'development' }).slug).toBe('pawar');
+    expect(resolveClinicProfile(undefined, { NODE_ENV: 'test' }).slug).toBe('pawar');
+  });
+  it('uses CLINIC_PROFILE from env when set', () => {
+    expect(resolveClinicProfile(undefined, { NODE_ENV: 'production', CLINIC_PROFILE: 'pawar' }).slug).toBe('pawar');
+  });
+});

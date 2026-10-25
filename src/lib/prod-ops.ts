@@ -20,6 +20,11 @@ export function releaseProblems(git: GitState): string[] {
   return problems;
 }
 
+/** Whether `vercel env ls` output lists a variable (matched on the name column; values are never shown). */
+export function hasEnvVar(vercelEnvLs: string, name: string): boolean {
+  return vercelEnvLs.split('\n').some((line) => line.trim().split(/\s+/)[0] === name);
+}
+
 /** Smoke-test paths whose HTTP status didn't match (a path may allow several statuses). */
 export function smokeFailures(
   actual: Record<string, number | undefined>,
