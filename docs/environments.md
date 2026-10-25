@@ -41,13 +41,15 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-side Supabase admin key (keepalive ping) | only for `dev:prod-db` | required · sensitive |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Cloudflare R2 files. All four or the app refuses to start; the token needs **Object Read & Write** (listing is used to delete a client's folder) | not needed in mock mode | required · sensitive |
 | `GEMINI_API_KEY` | Google Gemini for AI treatment drafts and posture analysis | optional (canned without) | needed for AI features |
-| `FEATURE_POSTURE` | `true` shows posture analysis + flexibility tests (and lets posture share links work) | on by default in `dev` | `true` to enable · off when unset |
+| `FEATURE_POSTURE` | `true` shows posture analysis + flexibility tests (and lets posture share links work) | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
 | `APP_URL` | Public site address used in client share links | optional | `https://yoga-ten-tau.vercel.app` |
+| `CLINIC_PROFILE` | Which clinic profile (`src/clinics/`) this deploy shows. Unset or empty in production = build/start throws (fails closed); `deploy:prod` refuses only when the name is not listed in Vercel Production (an empty value then fails the build). Local `next build` / `next start` need it too (in `.env`) | — | required · set for build + runtime (`pawar`) |
 | `CRON_SECRET` | The daily `/api/ping` keepalive must send it; without it the route refuses every call (fails closed). Same value as the `CRON_SECRET` GitHub repo secret | — | required · sensitive (set 2026-10-08) |
 | `PROD_DATABASE_URL`, `PROD_SITE_URL` | Used **only** by the `npm run *:prod` scripts on your Mac | Neon pooled URL / live URL | not used |
 
 As of 2026-10-06: `GEMINI_API_KEY` **and** `FEATURE_POSTURE=true` are set in Production (both added
 that day), so AI features, posture analysis, flexibility tests and the ideal reference photos are live.
+Since then posture follows the clinic profile (Pawar: on); `FEATURE_POSTURE=false` turns it off.
 Check with `vercel env ls production`. Remember: a local demo (`LOCAL_MOCK=true`) without a key returns a
 fixed dummy AI plan, so "it works locally" doesn't prove production has the key.
 

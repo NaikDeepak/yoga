@@ -43,6 +43,7 @@ jobs:
         # Fake values only: the build must never need real secrets. Tests run with no env at all.
         env:
           LOCAL_MOCK: "false"
+          CLINIC_PROFILE: "pawar"
           DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
           NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
           NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-placeholder"

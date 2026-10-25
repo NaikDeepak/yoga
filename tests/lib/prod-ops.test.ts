@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { alreadyLive, deploymentUrlFromCli, maskDbUrl, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
+import { alreadyLive, deploymentUrlFromCli, hasEnvVar, maskDbUrl, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
 
 const journal = [{ tag: '0000_a', when: 100 }, { tag: '0001_b', when: 200 }, { tag: '0002_c', when: 300 }];
 
@@ -76,5 +76,25 @@ describe('alreadyLive', () => {
   it('treats other promote errors as real failures', () => {
     expect(alreadyLive('Error: Deployment not found (404)')).toBe(false);
     expect(alreadyLive('')).toBe(false);
+  });
+});
+
+describe('hasEnvVar', () => {
+  const ls = [
+    ' name                     value               environments        created',
+    ' CLINIC_PROFILE           Encrypted           Production          3d ago',
+    ' DATABASE_URL             Encrypted           Production          9d ago',
+  ].join('\n');
+  it('finds a variable by its name column', () => {
+    expect(hasEnvVar(ls, 'CLINIC_PROFILE')).toBe(true);
+  });
+  it('does not match the header row or a table with only other variables', () => {
+    const header = ' name                     value               environments        created';
+    expect(hasEnvVar(header, 'CLINIC_PROFILE')).toBe(false);
+    expect(hasEnvVar(`${header}\n DATABASE_URL  Encrypted  Production  9d ago`, 'CLINIC_PROFILE')).toBe(false);
+  });
+  it('does not match a longer name or a value mention', () => {
+    expect(hasEnvVar(' NEXT_CLINIC_PROFILE  Encrypted  Production', 'CLINIC_PROFILE')).toBe(false);
+    expect(hasEnvVar('No Environment Variables found for yoga', 'CLINIC_PROFILE')).toBe(false);
   });
 });

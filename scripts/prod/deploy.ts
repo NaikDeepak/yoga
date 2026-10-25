@@ -1,6 +1,7 @@
 // npm run deploy:prod — deploys main to production and rolls back if the live site fails its smoke test.
 // Vercel isn't connected to git, so this is the only way main reaches production.
-//  1. Only from a clean, pushed, up-to-date main; refuses while production has pending migrations.
+//  1. Only from a clean, pushed, up-to-date main; refuses while production has pending migrations
+//     or while CLINIC_PROFILE is missing from Vercel Production.
 //  2. Builds from a temporary worktree of HEAD — no .env, so local values can't leak into the build.
 //  3. Promotes the new deployment (needed after any earlier rollback), smoke-tests the live domain,
 //     and rolls back to the previous deployment on any failure.
@@ -8,7 +9,7 @@ import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
-import { alreadyLive, deploymentUrlFromCli, releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
+import { alreadyLive, deploymentUrlFromCli, hasEnvVar, releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
 import { envValue, fail, gitState, printStatus, prodSiteUrl, prodStatus, sh } from './common';
 
 const DEPLOY_TIMEOUT_MS = 15 * 60_000;
@@ -63,6 +64,11 @@ async function smoke(site: string): Promise<string[]> {
 async function main() {
   const problems = releaseProblems(gitState());
   if (problems.length) fail(`Refusing to deploy:\n  - ${problems.join('\n  - ')}`);
+
+  // Without it the build fails closed (see src/clinics); catch it here, before a 15-minute Vercel build.
+  if (!hasEnvVar(vercel('env ls production'), 'CLINIC_PROFILE')) {
+    fail('Refusing to deploy: CLINIC_PROFILE is not set in Vercel Production (`vercel env add CLINIC_PROFILE production`).');
+  }
 
   const db = await prodStatus();
   printStatus(db);

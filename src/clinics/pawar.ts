@@ -29,6 +29,16 @@ export const pawar: ClinicProfile = {
     themeColor: '#3B6954',
     background: '#F9F6F0',
   },
+  // Converted from the former globals.css oklch values (kept there as fallbacks).
+  theme: {
+    primary: '#376B39', // oklch(0.478 0.096 145)
+    primaryForeground: '#FFFFFF', // oklch(1 0 0)
+    ring: '#376B39', // oklch(0.478 0.096 145)
+    background: '#FAF7F2', // oklch(0.977 0.007 75)
+    foreground: '#241809', // oklch(0.220 0.032 68)
+    accent: '#C67036', // oklch(0.632 0.130 52)
+    accentText: '#A14F09', // oklch(0.52 0.13 52)
+  },
   contact: {
     phone: '+91 85509 21037',
     whatsappDigits: '918550921037',
@@ -73,5 +83,6 @@ export const pawar: ClinicProfile = {
     ai: true,
     shareLinks: true,
     checkins: true,
+    fees: true,
   },
 };
