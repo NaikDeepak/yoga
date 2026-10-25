@@ -1,12 +1,26 @@
 import type { Translations } from '@/lib/i18n/en';
 import { TOTAL_MAX, type TotalParts } from '@/lib/total-score';
 import { FLEX_TESTS } from '@/lib/flexibility';
+import { isFeatureEnabled } from '@/lib/features';
 import { BRAND } from './ReportParts';
 
 /** "288/400 · Posture 82 · Shoulder extension 78 · …" (spec 2026-10-07-total-score). Only rendered when complete. */
-export function TotalScore({ total, parts, t }: { total: number; parts: TotalParts; t: Translations }) {
+export function TotalScore({
+  total,
+  parts,
+  t,
+  showFlexibility = isFeatureEnabled('flexibility'),
+}: {
+  total: number;
+  parts: TotalParts;
+  t: Translations;
+  showFlexibility?: boolean;
+}) {
   const tt = t.posture.total;
-  const items: [string, number][] = [[tt.posture, parts.posture], ...FLEX_TESTS.map((k) => [t.posture.flex.tests[k], parts[k]] as [string, number])];
+  const items: [string, number][] = [
+    [tt.posture, parts.posture],
+    ...(showFlexibility ? FLEX_TESTS.map((k) => [t.posture.flex.tests[k], parts[k]] as [string, number]) : []),
+  ];
   return (
     <section className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border p-4 print:break-inside-avoid" style={{ borderColor: BRAND.sand }}>
       <div>

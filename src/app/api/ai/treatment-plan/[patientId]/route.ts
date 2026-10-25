@@ -8,11 +8,16 @@ import { getLifestyleAssessment } from '@/data/lifestyle';
 import { listVisits } from '@/data/visits';
 import { computeBmi } from '@/lib/bmi';
 import { generateTreatmentDraft, type TreatmentContext } from '@/lib/gemini';
+import { isFeatureEnabled } from '@/lib/features';
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ patientId: string }> },
 ) {
+  if (!isFeatureEnabled('ai')) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     const user = await getSessionUser();
     if (!user) {

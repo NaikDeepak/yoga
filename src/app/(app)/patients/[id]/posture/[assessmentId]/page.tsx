@@ -12,7 +12,7 @@ import { bmiBand, genderLabel, painBand, stressBand } from '@/lib/wellbeing';
 import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
 import { SharePanel } from '@/components/SharePanel';
 import { activeShareLink } from '@/data/share-links';
-import { isPostureEnabled } from '@/lib/features';
+import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
 import { getFlexibility } from '@/data/flexibility';
 import { FlexibilitySection } from '@/components/posture/FlexibilitySection';
 import { TotalScore } from '@/components/posture/TotalScore';
@@ -208,16 +208,18 @@ export default async function PostureReportPage({
       )}
 
       {/* ── AI ANALYSIS ── (hidden in print until one exists) */}
-      <div className={assessment.aiReport ? '' : 'print:hidden'}>
-        <SectionHeader>{p.ai.title}</SectionHeader>
-        <PostureAiPanel
-          patientId={id}
-          assessmentId={assessmentId}
-          report={assessment.aiReport ?? null}
-          approvedAt={assessment.aiApprovedAt ? assessment.aiApprovedAt.toISOString().slice(0, 10) : null}
-          recommendedExerciseIds={aiExerciseIds}
-        />
-      </div>
+      {isFeatureEnabled('ai') && (
+        <div className={assessment.aiReport ? '' : 'print:hidden'}>
+          <SectionHeader>{p.ai.title}</SectionHeader>
+          <PostureAiPanel
+            patientId={id}
+            assessmentId={assessmentId}
+            report={assessment.aiReport ?? null}
+            approvedAt={assessment.aiApprovedAt ? assessment.aiApprovedAt.toISOString().slice(0, 10) : null}
+            recommendedExerciseIds={aiExerciseIds}
+          />
+        </div>
+      )}
 
       {/* ── PATTERN ── */}
       <SectionHeader>{ins.overallPattern}</SectionHeader>
@@ -358,7 +360,7 @@ export default async function PostureReportPage({
       <FlexibilitySection
         flexibility={flexibility}
         photoUrls={flexPhotoUrls}
-        captureHref={isPostureEnabled() ? `/patients/${id}/posture/${assessmentId}/flexibility` : null}
+        captureHref={isPostureEnabled() && isFeatureEnabled('flexibility') ? `/patients/${id}/posture/${assessmentId}/flexibility` : null}
         t={t}
       />
 

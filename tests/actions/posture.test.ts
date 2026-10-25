@@ -4,8 +4,9 @@ import { freshTestDb, storage } from '../helpers/action-mocks';
 import { alignedLandmarks, jpeg } from '../helpers/posture';
 import {
   savePostureAssessmentAction, deletePostureAssessmentAction, replacePostureViewsAction,
-  generatePostureAiAction, savePostureAiAction,
+  generatePostureAiAction, savePostureAiAction, saveFlexibilityTestsAction,
 } from '@/actions/posture';
+import { featureOffError } from '@/lib/feature-off';
 import { generatePostureAnalysis } from '@/lib/gemini';
 import { MOCK_POSTURE_AI_REPORT } from '@/lib/posture-ai';
 import { createPatient } from '@/data/patients';
@@ -315,4 +316,36 @@ describe('posture AI analysis actions', () => {
       ok: false, error: 'Summary, at least one finding and follow-up are required / सारांश, किमान एक निष्कर्ष आणि पुढील तपासणी आवश्यक',
     });
   });
+
+  it('refuses with featureOffError when AI is switched off', async () => {
+    vi.stubEnv('FEATURE_AI', 'false');
+    try {
+      const { id } = await addOne();
+      const r = await generatePostureAiAction(patientId, id);
+      expect(r).toEqual(featureOffError('ai'));
+      expect(generatePostureAnalysis).not.toHaveBeenCalled();
+
+      const f = new FormData();
+      f.set('summary', 'Mild forward head.');
+      f.set('keyFindings', 'Forward head: about 12° ahead');
+      f.set('followUp', 'Reassess in 6 weeks.');
+      const s = await savePostureAiAction(patientId, id, { ok: false, error: '' }, f);
+      expect(s).toEqual(featureOffError('ai'));
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
+
+describe('saveFlexibilityTestsAction feature flag', () => {
+  it('refuses with featureOffError when flexibility is switched off', async () => {
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'false');
+    try {
+      const r = await saveFlexibilityTestsAction(patientId, 'some-assessment-id', new FormData());
+      expect(r).toEqual(featureOffError('flexibility'));
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
+

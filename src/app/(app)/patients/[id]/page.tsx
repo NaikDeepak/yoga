@@ -31,7 +31,7 @@ import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/l
 import { listPostureAssessments, latestPostureScores } from '@/data/posture';
 import { PostureScoreCard } from '@/components/posture/PostureScoreCard';
 import { stressBand } from '@/lib/wellbeing';
-import { isPostureEnabled } from '@/lib/features';
+import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
 import { scoreColor } from '@/components/posture/ReportParts';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -503,7 +503,7 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-6">
-        <TreatmentPlanForm patientId={patientId} initialPlan={plan} />
+        <TreatmentPlanForm patientId={patientId} initialPlan={plan} aiEnabled={isFeatureEnabled('ai')} />
         <PrescribedExercisesForm
           patientId={patientId}
           allExercises={allExercises}
