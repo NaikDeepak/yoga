@@ -43,12 +43,13 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `GEMINI_API_KEY` | Google Gemini for AI treatment drafts and posture analysis | optional (canned without) | needed for AI features |
 | `FEATURE_POSTURE` | `true` shows posture analysis + flexibility tests (and lets posture share links work) | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
 | `APP_URL` | Public site address used in client share links | optional | `https://yoga-ten-tau.vercel.app` |
-| `CLINIC_PROFILE` | Which clinic profile (`src/clinics/`) this deploy shows. Unset in production = build/start throws (fails closed); `deploy:prod` also refuses. Local `next build` / `next start` need it too (in `.env`) | — | required · set for build + runtime (`pawar`) |
+| `CLINIC_PROFILE` | Which clinic profile (`src/clinics/`) this deploy shows. Unset or empty in production = build/start throws (fails closed); `deploy:prod` refuses only when the name is not listed in Vercel Production (an empty value then fails the build). Local `next build` / `next start` need it too (in `.env`) | — | required · set for build + runtime (`pawar`) |
 | `CRON_SECRET` | The daily `/api/ping` keepalive must send it; without it the route refuses every call (fails closed). Same value as the `CRON_SECRET` GitHub repo secret | — | required · sensitive (set 2026-10-08) |
 | `PROD_DATABASE_URL`, `PROD_SITE_URL` | Used **only** by the `npm run *:prod` scripts on your Mac | Neon pooled URL / live URL | not used |
 
 As of 2026-10-06: `GEMINI_API_KEY` **and** `FEATURE_POSTURE=true` are set in Production (both added
 that day), so AI features, posture analysis, flexibility tests and the ideal reference photos are live.
+Since then posture follows the clinic profile (Pawar: on); `FEATURE_POSTURE=false` turns it off.
 Check with `vercel env ls production`. Remember: a local demo (`LOCAL_MOCK=true`) without a key returns a
 fixed dummy AI plan, so "it works locally" doesn't prove production has the key.
 

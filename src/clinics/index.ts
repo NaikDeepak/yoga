@@ -1,5 +1,6 @@
 import { clinicProfileSchema, type ClinicProfile } from './types';
 import { pawar } from './pawar';
+import { CLINIC_PROFILE_MISSING } from './build-env';
 
 export const CLINIC_REGISTRY: Record<string, ClinicProfile> = {
   pawar,
@@ -9,11 +10,15 @@ export const CLINIC_REGISTRY: Record<string, ClinicProfile> = {
  *  deploy can never silently show one clinic's name and branding to another. */
 export function resolveClinicProfile(
   slug?: string,
-  env: Record<string, string | undefined> = process.env,
+  // Literal `process.env.X` reads (not `process.env` as a whole) so Next inlines them into client chunks.
+  env: Record<string, string | undefined> = {
+    CLINIC_PROFILE: process.env.CLINIC_PROFILE,
+    NODE_ENV: process.env.NODE_ENV,
+  },
 ): ClinicProfile {
   const requested = slug || env.CLINIC_PROFILE;
   if (!requested && env.NODE_ENV === 'production') {
-    throw new Error('CLINIC_PROFILE is not set. Set it in Vercel (Production, build and runtime).');
+    throw new Error(CLINIC_PROFILE_MISSING);
   }
   const targetSlug = requested || 'pawar';
   const profile = CLINIC_REGISTRY[targetSlug];
