@@ -191,7 +191,9 @@ export default async function PostureReportPage({
       </section>
 
       {/* ── TOTAL ── posture + 3 flexibility tests (/400), only when all four exist */}
-      {total && <TotalScore total={total.total} parts={total.parts} t={t} />}
+      {isFeatureEnabled('flexibility') && total && (
+        <TotalScore total={total.total} parts={total.parts} t={t} showFlexibility={true} />
+      )}
 
       {/* ── WELLBEING ── (hidden when neither BMI nor stress is known) */}
       {(bmiKey || stress) && (
@@ -357,12 +359,14 @@ export default async function PostureReportPage({
       </div>
 
       {/* ── FLEXIBILITY ── */}
-      <FlexibilitySection
-        flexibility={flexibility}
-        photoUrls={flexPhotoUrls}
-        captureHref={isPostureEnabled() && isFeatureEnabled('flexibility') ? `/patients/${id}/posture/${assessmentId}/flexibility` : null}
-        t={t}
-      />
+      {isFeatureEnabled('flexibility') && (
+        <FlexibilitySection
+          flexibility={flexibility}
+          photoUrls={flexPhotoUrls}
+          captureHref={isPostureEnabled() ? `/patients/${id}/posture/${assessmentId}/flexibility` : null}
+          t={t}
+        />
+      )}
 
       {/* ── DETAIL ── */}
       <details className="mt-8 rounded-lg border p-4 print:hidden" style={{ borderColor: BRAND.sand }}>

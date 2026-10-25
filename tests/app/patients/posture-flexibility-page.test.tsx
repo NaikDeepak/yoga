@@ -5,8 +5,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import FlexibilityCapturePage from '@/app/(app)/patients/[id]/posture/[assessmentId]/flexibility/page';
 import PostureReportPage from '@/app/(app)/patients/[id]/posture/[assessmentId]/page';
+import PostureComparePage from '@/app/(app)/patients/[id]/posture/compare/page';
 import { createPatient } from '@/data/patients';
 import { addAssessment } from '../../helpers/posture-assessment';
+import { saveFlexibilityShots } from '@/data/flexibility';
+import { flexShot } from '../../helpers/flexibility';
+import { jpeg } from '../../helpers/posture';
 import { en } from '@/lib/i18n/en';
 import type { Db } from '@/db/types';
 
@@ -40,21 +44,76 @@ describe('FlexibilityCapturePage', () => {
 });
 
 describe('PostureReportPage feature flags', () => {
-  it('hides the flexibility capture link when flexibility is switched off', async () => {
-    vi.stubEnv('FEATURE_FLEXIBILITY', 'false');
-    const element = await PostureReportPage({
+  it('shows flexibility section and capture link when on, and hides whole section when off', async () => {
+    // Present when on
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'true');
+    const onElement = await PostureReportPage({
       params: Promise.resolve({ id: patientId, assessmentId }),
     });
-    render(element);
+    const { unmount } = render(onElement);
+    expect(screen.getByText(en.posture.flex.title)).toBeTruthy();
+    expect(screen.getByRole('link', { name: new RegExp(en.posture.flex.add) })).toBeTruthy();
+    unmount();
+
+    // Absent when off
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'false');
+    const offElement = await PostureReportPage({
+      params: Promise.resolve({ id: patientId, assessmentId }),
+    });
+    render(offElement);
+    expect(screen.queryByText(en.posture.flex.title)).toBeNull();
     expect(screen.queryByRole('link', { name: new RegExp(en.posture.flex.add) })).toBeNull();
+    expect(screen.queryByText(en.posture.total.title)).toBeNull();
   });
 
-  it('hides the AI card when AI is switched off', async () => {
-    vi.stubEnv('FEATURE_AI', 'false');
-    const element = await PostureReportPage({
+  it('shows AI card when on, and hides it when off', async () => {
+    // Present when on
+    vi.stubEnv('FEATURE_AI', 'true');
+    const onElement = await PostureReportPage({
       params: Promise.resolve({ id: patientId, assessmentId }),
     });
-    render(element);
+    const { unmount } = render(onElement);
+    expect(screen.getByText(en.posture.ai.title)).toBeTruthy();
+    unmount();
+
+    // Absent when off
+    vi.stubEnv('FEATURE_AI', 'false');
+    const offElement = await PostureReportPage({
+      params: Promise.resolve({ id: patientId, assessmentId }),
+    });
+    render(offElement);
     expect(screen.queryByText(en.posture.ai.title)).toBeNull();
   });
 });
+
+describe('PostureComparePage feature flags', () => {
+  it('shows flexibility block and totals when on, hides them when off', async () => {
+    const a2 = await addAssessment(db, patientId, '2026-10-10', {}, storage);
+    const s = flexShot('butterfly');
+    await saveFlexibilityShots(db, storage, patientId, assessmentId, [{
+      shot: 'butterfly', photo: jpeg(), imageWidth: s.imageWidth, imageHeight: s.imageHeight,
+      landmarks: s.landmarks, landmarksEdited: false, cameraCheck: s.cameraCheck,
+    }]);
+
+    // Present when on
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'true');
+    const onElement = await PostureComparePage({
+      params: Promise.resolve({ id: patientId }),
+      searchParams: Promise.resolve({ a: assessmentId, b: a2.id }),
+    });
+    const { unmount } = render(onElement);
+    expect(screen.getByText(en.posture.flex.title)).toBeTruthy();
+    unmount();
+
+    // Absent when off
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'false');
+    const offElement = await PostureComparePage({
+      params: Promise.resolve({ id: patientId }),
+      searchParams: Promise.resolve({ a: assessmentId, b: a2.id }),
+    });
+    render(offElement);
+    expect(screen.queryByText(en.posture.flex.title)).toBeNull();
+    expect(screen.queryByText(new RegExp(en.posture.total.title))).toBeNull();
+  });
+});
+

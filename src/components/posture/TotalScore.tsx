@@ -1,7 +1,6 @@
 import type { Translations } from '@/lib/i18n/en';
 import { TOTAL_MAX, type TotalParts } from '@/lib/total-score';
 import { FLEX_TESTS } from '@/lib/flexibility';
-import { isFeatureEnabled } from '@/lib/features';
 import { BRAND } from './ReportParts';
 
 /** "288/400 · Posture 82 · Shoulder extension 78 · …" (spec 2026-10-07-total-score). Only rendered when complete. */
@@ -9,7 +8,7 @@ export function TotalScore({
   total,
   parts,
   t,
-  showFlexibility = isFeatureEnabled('flexibility'),
+  showFlexibility = true,
 }: {
   total: number;
   parts: TotalParts;

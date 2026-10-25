@@ -7,6 +7,7 @@ import { getPostureAssessment, type PostureAssessment } from '@/data/posture';
 import { getFlexibility } from '@/data/flexibility';
 import { FLEX_TESTS, flexBand } from '@/lib/flexibility';
 import { TOTAL_MAX, totalScore, totalTrend } from '@/lib/total-score';
+import { isFeatureEnabled } from '@/lib/features';
 import { getStorage } from '@/lib/storage';
 import { BRANCHES } from '@/lib/presets';
 import { buildOverlay } from '@/lib/posture-overlay';
@@ -193,8 +194,8 @@ export default async function PostureComparePage({
         </table>
       </div>
 
-      {/* ── FLEXIBILITY ── (only when either assessment has flexibility tests) */}
-      {(flexBefore.shots.length > 0 || flexAfter.shots.length > 0) && (
+      {/* ── FLEXIBILITY ── (only when either assessment has flexibility tests and flexibility is enabled) */}
+      {isFeatureEnabled('flexibility') && (flexBefore.shots.length > 0 || flexAfter.shots.length > 0) && (
         <>
           <SectionHeader>{t.posture.flex.title}</SectionHeader>
           <table className="w-full max-w-xl border-collapse text-sm">

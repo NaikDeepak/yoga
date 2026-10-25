@@ -14,16 +14,11 @@ describe('TotalScore', () => {
     }
   });
 
-  it('hides flexibility parts when flexibility is switched off', () => {
-    vi.stubEnv('FEATURE_FLEXIBILITY', 'false');
-    try {
-      render(<TotalScore total={288} parts={{ posture: 82, shoulderExtension: 78, forwardFold: 48, butterfly: 80 }} t={en} />);
-      expect(screen.getByText('Posture').nextSibling?.textContent).toBe('82');
-      expect(screen.queryByText(en.posture.flex.tests.shoulderExtension)).toBeNull();
-      expect(screen.queryByText(en.posture.flex.tests.forwardFold)).toBeNull();
-      expect(screen.queryByText(en.posture.flex.tests.butterfly)).toBeNull();
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it('hides flexibility parts when showFlexibility is false', () => {
+    render(<TotalScore total={288} parts={{ posture: 82, shoulderExtension: 78, forwardFold: 48, butterfly: 80 }} t={en} showFlexibility={false} />);
+    expect(screen.getByText('Posture').nextSibling?.textContent).toBe('82');
+    expect(screen.queryByText(en.posture.flex.tests.shoulderExtension)).toBeNull();
+    expect(screen.queryByText(en.posture.flex.tests.forwardFold)).toBeNull();
+    expect(screen.queryByText(en.posture.flex.tests.butterfly)).toBeNull();
   });
 });

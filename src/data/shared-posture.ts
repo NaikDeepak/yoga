@@ -10,6 +10,7 @@ import { buildOverlay, type Overlay } from '@/lib/posture-overlay';
 import { combineViews, detectPatterns, scorePosture, type PatternKey, type PostureScore } from '@/lib/posture-insights';
 import type { Metric, PostureView } from '@/lib/posture';
 import type { PostureAiReport } from '@/lib/posture-ai';
+import { isFeatureEnabled } from '@/lib/features';
 import { getPostureAssessment } from './posture';
 import { visitVitalsOn } from './visits';
 import { getLifestyleAssessmentSnapshot } from './lifestyle';
@@ -88,7 +89,7 @@ export async function getSharedPostureReport(
     score: scorePosture(combined),
     patterns: detectPatterns(combined.filter((m) => !m.lowConfidence)).map((p) => ({ key: p.key, severity: p.severity })),
     views: clientViews,
-    ai: assessment.aiReport && assessment.aiApprovedAt
+    ai: isFeatureEnabled('ai') && assessment.aiReport && assessment.aiApprovedAt
       ? { summary: assessment.aiReport.summary, recommendations: assessment.aiReport.recommendations }
       : null,
     wellbeing: {

@@ -11,6 +11,7 @@ import { generatePostureAnalysis } from '@/lib/gemini';
 import { MOCK_POSTURE_AI_REPORT } from '@/lib/posture-ai';
 import { createPatient } from '@/data/patients';
 import { addPostureAssessment, deletePosturePhotos, listPostureAssessments, getPostureAssessment } from '@/data/posture';
+import { getFlexibility } from '@/data/flexibility';
 import { requireUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { POSTURE_VIEWS, type PostureView } from '@/lib/posture';
@@ -338,11 +339,16 @@ describe('posture AI analysis actions', () => {
 });
 
 describe('saveFlexibilityTestsAction feature flag', () => {
-  it('refuses with featureOffError when flexibility is switched off', async () => {
+  it('refuses with featureOffError when flexibility is switched off and writes nothing', async () => {
+    const { id } = await addPostureAssessment(db, storage, {
+      patientId, assessedOn: '2026-10-04', heightCm: 160, note: null, consentAt: new Date(),
+      views: POSTURE_VIEWS.map((v) => ({ ...viewPayload(v), photo: jpeg() })),
+    });
     vi.stubEnv('FEATURE_FLEXIBILITY', 'false');
     try {
-      const r = await saveFlexibilityTestsAction(patientId, 'some-assessment-id', new FormData());
+      const r = await saveFlexibilityTestsAction(patientId, id, form());
       expect(r).toEqual(featureOffError('flexibility'));
+      expect((await getFlexibility(db, id)).shots).toHaveLength(0);
     } finally {
       vi.unstubAllEnvs();
     }

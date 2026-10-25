@@ -174,10 +174,11 @@ async function Overview({
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const db = getDb();
   const showPosture = isPostureEnabled();
+  const showFlexibility = isFeatureEnabled('flexibility');
   const [assessment, visits, postureScores] = await Promise.all([
     getLifestyleAssessmentSnapshot(db, patient.id),
     listVisits(db, patient.id),
-    showPosture ? latestPostureScores(db, [patient.id], { totals: true }) : null,
+    showPosture ? latestPostureScores(db, [patient.id], { totals: showFlexibility }) : null,
   ]);
   const today = getISTDateString(0);
   const lastVisit = visits[0]?.visitDate ?? null; // listVisits is ordered newest-first
@@ -263,7 +264,7 @@ async function Overview({
         </CardContent>
       </Card>
 
-      {postureScores && <PostureScoreCard patientId={patient.id} latest={postureScores.get(patient.id)} t={t} />}
+      {postureScores && <PostureScoreCard patientId={patient.id} latest={postureScores.get(patient.id)} t={t} flexibilityEnabled={showFlexibility} />}
 
       <Card className="rounded-2xl sm:col-span-2">
         <CardHeader className="pb-2">
@@ -732,7 +733,8 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
 async function Assessment({ patientId, t }: { patientId: string; t: Translations }) {
   const existing = await getLifestyleAssessment(getDb(), patientId);
   const showPosture = isPostureEnabled();
-  const postures = showPosture ? await listPostureAssessments(getDb(), patientId, { totals: true }) : []; // newest first
+  const showFlexibility = isFeatureEnabled('flexibility');
+  const postures = showPosture ? await listPostureAssessments(getDb(), patientId, { totals: showFlexibility }) : []; // newest first
   const photoCount = postures.reduce((n, a) => n + a.photoCount, 0);
   // Earliest withdrawal (IST day), for the note under the history.
   const withdrawnAt = postures.flatMap((a) => (a.photosDeletedAt ? [a.photosDeletedAt.getTime()] : []));
@@ -771,7 +773,7 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
                       <p className="text-sm font-medium">{formatFullDate(a.assessedOn)}</p>
                       <p className="text-xs text-muted-foreground">
                         {t.posture.history.counts.replace('{marked}', String(a.markedCount)).replace('{mild}', String(a.mildCount))}
-                        {a.total !== null && <> · <span className="font-medium text-foreground">{t.posture.total.short.replace('{total}', String(a.total)).replace('{max}', String(TOTAL_MAX))}</span></>}
+                        {showFlexibility && a.total !== null && <> · <span className="font-medium text-foreground">{t.posture.total.short.replace('{total}', String(a.total)).replace('{max}', String(TOTAL_MAX))}</span></>}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">
