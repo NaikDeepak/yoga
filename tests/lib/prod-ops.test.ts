@@ -88,6 +88,11 @@ describe('hasEnvVar', () => {
   it('finds a variable by its name column', () => {
     expect(hasEnvVar(ls, 'CLINIC_PROFILE')).toBe(true);
   });
+  it('does not match the header row or a table with only other variables', () => {
+    const header = ' name                     value               environments        created';
+    expect(hasEnvVar(header, 'CLINIC_PROFILE')).toBe(false);
+    expect(hasEnvVar(`${header}\n DATABASE_URL  Encrypted  Production  9d ago`, 'CLINIC_PROFILE')).toBe(false);
+  });
   it('does not match a longer name or a value mention', () => {
     expect(hasEnvVar(' NEXT_CLINIC_PROFILE  Encrypted  Production', 'CLINIC_PROFILE')).toBe(false);
     expect(hasEnvVar('No Environment Variables found for yoga', 'CLINIC_PROFILE')).toBe(false);
