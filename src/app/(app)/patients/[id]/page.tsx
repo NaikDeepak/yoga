@@ -511,15 +511,17 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
           initialPrescribed={prescribedExercises}
           locale={locale}
         />
-        <SharePanel
-          target={{ kind: 'exercises', patientId, canShare: prescribedExercises.length > 0 }}
-          active={share && {
-            createdAt: share.createdAt.toISOString(),
-            expiresAt: share.expiresAt.toISOString(),
-            viewCount: share.viewCount,
-            lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
-          }}
-        />
+        {isFeatureEnabled('shareLinks') && (
+          <SharePanel
+            target={{ kind: 'exercises', patientId, canShare: prescribedExercises.length > 0 }}
+            active={share && {
+              createdAt: share.createdAt.toISOString(),
+              expiresAt: share.expiresAt.toISOString(),
+              viewCount: share.viewCount,
+              lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
+            }}
+          />
+        )}
         <HomeExerciseCard
           checkins={checkins} lastCheckin={lastCheckin} today={today} since={since}
           liveLinkSince={share ? getISTDateString(0, share.createdAt) : null} t={t}
@@ -608,7 +610,7 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
     listVisitsWithData(db, patientId),
     activeShareLink(db, patientId, 'progress', new Date()),
   ]);
-  const sharePanel = (
+  const sharePanel = isFeatureEnabled('shareLinks') ? (
     <SharePanel
       target={{ kind: 'progress', patientId, canShare: rows.length > 0 }}
       active={share && {
@@ -619,7 +621,7 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
         hideWeight: share.hideWeight,
       }}
     />
-  );
+  ) : null;
 
   const weightData = rows
     .filter((r): r is typeof r & { weightKg: number } => r.weightKg !== null)

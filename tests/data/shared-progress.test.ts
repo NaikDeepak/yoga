@@ -100,6 +100,13 @@ describe('getSharedProgressReport', () => {
     ]);
   });
 
+  it('home practice is null when checkins feature is switched off', async () => {
+    const ex = await createShareLink(db, patientId, 'exercises', new Date('2026-09-26T04:30:00Z'));
+    await saveCheckin(db, { id: ex.link.id, patientId }, { done: 'all', pain: 4 }, '2026-10-01');
+    const r = (await getSharedProgressReport(db, await link(), now, { ...env, FEATURE_CHECKINS: 'false' }))!;
+    expect(r.home).toBeNull();
+  });
+
   it('home practice is null when the client never had an exercise link', async () => {
     expect((await getSharedProgressReport(db, await link(), now, env))!.home).toBeNull();
   });
@@ -150,5 +157,32 @@ describe('getSharedProgressReport — posture before vs now', () => {
     await addAssessment(db, patientId, '2026-09-30', {}, storage);
     const p = (await getSharedProgressReport(db, await link(), now, env))!.posture!;
     expect(p.changes.map((c) => c.key)).not.toContain('shoulderLevel');
+  });
+
+  it('review focus 1: link created while modules were on shows only parts still on when opened later, never crashes', async () => {
+    await visit('2026-08-01', 7, 80);
+    const progressLink = await link();
+    await addAssessment(db, patientId, '2026-08-01', lowShoulder, storage);
+    await addAssessment(db, patientId, '2026-09-30', {}, storage);
+    const ex = await createShareLink(db, patientId, 'exercises', new Date('2026-09-26T04:30:00Z'));
+    await saveCheckin(db, { id: ex.link.id, patientId }, { done: 'all', pain: 4 }, '2026-10-01');
+
+    const reportWithoutPosture = await getSharedProgressReport(db, progressLink, now, { FEATURE_POSTURE: 'false', FEATURE_CHECKINS: 'true' });
+    expect(reportWithoutPosture).not.toBeNull();
+    expect(reportWithoutPosture!.posture).toBeNull();
+    expect(reportWithoutPosture!.home).not.toBeNull();
+    expect(reportWithoutPosture!.pain).not.toBeNull();
+
+    const reportWithoutCheckins = await getSharedProgressReport(db, progressLink, now, { FEATURE_POSTURE: 'true', FEATURE_CHECKINS: 'false' });
+    expect(reportWithoutCheckins).not.toBeNull();
+    expect(reportWithoutCheckins!.posture).not.toBeNull();
+    expect(reportWithoutCheckins!.home).toBeNull();
+
+    const reportMinimal = await getSharedProgressReport(db, progressLink, now, { FEATURE_POSTURE: 'false', FEATURE_CHECKINS: 'false' });
+    expect(reportMinimal).not.toBeNull();
+    expect(reportMinimal!.posture).toBeNull();
+    expect(reportMinimal!.home).toBeNull();
+    expect(reportMinimal!.firstName).toBe('Asha');
+    expect(reportMinimal!.sessions).toBe(1);
   });
 });

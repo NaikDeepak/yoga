@@ -1,8 +1,19 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '../helpers/action-mocks';
-import { freshTestDb } from '../helpers/action-mocks';
+import { freshTestDb, storage } from '../helpers/action-mocks';
 import { requireUser } from '@/lib/auth';
-import { createExerciseShareLinkAction, recordNudgeAction, revokeExerciseShareLinkAction } from '@/actions/share-links';
+import {
+  createExerciseShareLinkAction,
+  createPostureShareLinkAction,
+  createProgressShareLinkAction,
+  recordNudgeAction,
+  revokeExerciseShareLinkAction,
+  revokePostureShareLinkAction,
+  revokeProgressShareLinkAction,
+} from '@/actions/share-links';
+import { featureOffError } from '@/lib/feature-off';
+import { addAssessment } from '../helpers/posture-assessment';
+import { addVisit } from '@/data/visits';
 import { listAllExercises, savePrescribedExercises, getSharedExerciseProgramme } from '@/data/exercises';
 import { activeShareLink, resolveAnyShareLink } from '@/data/share-links';
 import { createPatient } from '@/data/patients';
@@ -20,6 +31,10 @@ beforeEach(async () => {
   patientId = (await createPatient(db, { fullName: 'Asha Kulkarni', mobile: '9876543210' })).id;
   const [ex] = await listAllExercises(db);
   await savePrescribedExercises(db, patientId, [{ exerciseId: ex.id, customNote: null }]);
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('createExerciseShareLinkAction', () => {
@@ -45,9 +60,51 @@ describe('createExerciseShareLinkAction', () => {
     expect(await createExerciseShareLinkAction('00000000-0000-4000-8000-000000000000')).toMatchObject({ ok: false });
   });
 
+  it('refuses when shareLinks is switched off', async () => {
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    expect(await createExerciseShareLinkAction(patientId)).toEqual(featureOffError('shareLinks'));
+  });
+
   it('requires a signed-in user', async () => {
     vi.mocked(requireUser).mockRejectedValueOnce(new Error('REDIRECT:/login'));
     await expect(createExerciseShareLinkAction(patientId)).rejects.toThrow('REDIRECT:/login');
+  });
+});
+
+describe('createPostureShareLinkAction feature switches', () => {
+  it('refuses when shareLinks is switched off', async () => {
+    const a = await addAssessment(db, patientId, '2026-10-04', {}, storage);
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    expect(await createPostureShareLinkAction(a.id, false)).toEqual(featureOffError('shareLinks'));
+  });
+
+  it('refuses with featureOffError("posture") when posture is switched off', async () => {
+    const a = await addAssessment(db, patientId, '2026-10-04', {}, storage);
+    vi.stubEnv('FEATURE_POSTURE', 'false');
+    expect(await createPostureShareLinkAction(a.id, false)).toEqual(featureOffError('posture'));
+  });
+});
+
+describe('createProgressShareLinkAction feature switches', () => {
+  it('refuses when shareLinks is switched off', async () => {
+    await addVisit(db, patientId, { visitDate: '2026-10-01', progressNote: 'Visit 1', painScale: 4 });
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    expect(await createProgressShareLinkAction(patientId, { hideWeight: false })).toEqual(featureOffError('shareLinks'));
+  });
+});
+
+describe('revoke actions when shareLinks is switched off', () => {
+  it('allows revoking exercise, posture and progress links', async () => {
+    await createExerciseShareLinkAction(patientId);
+    const a = await addAssessment(db, patientId, '2026-10-04', {}, storage);
+    await createPostureShareLinkAction(a.id, false);
+    await addVisit(db, patientId, { visitDate: '2026-10-01', progressNote: 'Visit 1', painScale: 4 });
+    await createProgressShareLinkAction(patientId, { hideWeight: false });
+
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    expect(await revokeExerciseShareLinkAction(patientId)).toEqual({ ok: true });
+    expect(await revokePostureShareLinkAction(patientId)).toEqual({ ok: true });
+    expect(await revokeProgressShareLinkAction(patientId)).toEqual({ ok: true });
   });
 });
 

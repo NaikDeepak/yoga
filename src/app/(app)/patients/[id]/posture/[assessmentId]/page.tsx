@@ -140,7 +140,7 @@ export default async function PostureReportPage({
         </div>
       </div>
 
-      {isPostureEnabled() && <div className="mb-4 print:hidden">
+      {isPostureEnabled() && isFeatureEnabled('shareLinks') && <div className="mb-4 print:hidden">
         <SharePanel
           target={{ kind: 'posture', patientId: id, assessmentId, otherReportOn: sharedOtherOn }}
           active={share && share.postureAssessmentId === assessmentId ? {

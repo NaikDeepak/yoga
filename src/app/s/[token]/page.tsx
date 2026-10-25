@@ -10,7 +10,7 @@ import { recordShareView, resolveAnyShareLink } from '@/data/share-links';
 import { CLINIC } from '@/lib/clinic';
 import { isLinkPreviewBot } from '@/lib/share-token';
 import { getStorage } from '@/lib/storage';
-import { isPostureEnabled } from '@/lib/features';
+import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
 import { getTranslations } from '@/lib/i18n/translations';
 import { clinicProfile, clinicName } from '@/clinics';
 import { ExercisesBody } from './ExercisesBody';
@@ -33,6 +33,8 @@ export default async function SharedLinkPage({
   params: Promise<{ token: string }>;
   searchParams: Promise<{ lang?: string; edit?: string; error?: string }>;
 }) {
+  if (!isFeatureEnabled('shareLinks')) notFound();
+
   const { token } = await params;
   const query = await searchParams;
   const lang = query.lang === 'mr' ? 'mr' : 'en';
@@ -59,7 +61,8 @@ export default async function SharedLinkPage({
     if (!programme) notFound();
     body = (
       <ExercisesBody token={token} lang={lang} programme={programme}
-        editing={query.edit === '1'} error={query.error === '1'} t={t} />
+        editing={query.edit === '1'} error={query.error === '1'} t={t}
+        checkinsEnabled={isFeatureEnabled('checkins')} />
     );
   }
 

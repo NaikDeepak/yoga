@@ -6,6 +6,7 @@ import { render, screen } from '@testing-library/react';
 import FlexibilityCapturePage from '@/app/(app)/patients/[id]/posture/[assessmentId]/flexibility/page';
 import PostureReportPage from '@/app/(app)/patients/[id]/posture/[assessmentId]/page';
 import PostureComparePage from '@/app/(app)/patients/[id]/posture/compare/page';
+import PatientPage from '@/app/(app)/patients/[id]/page';
 import { createPatient } from '@/data/patients';
 import { addAssessment } from '../../helpers/posture-assessment';
 import { saveFlexibilityShots } from '@/data/flexibility';
@@ -84,6 +85,15 @@ describe('PostureReportPage feature flags', () => {
     render(offElement);
     expect(screen.queryByText(en.posture.ai.title)).toBeNull();
   });
+
+  it('hides the share panel when shareLinks is switched off', async () => {
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    const element = await PostureReportPage({
+      params: Promise.resolve({ id: patientId, assessmentId }),
+    });
+    render(element);
+    expect(screen.queryAllByText(en.shareExercises.title)).toHaveLength(0);
+  });
 });
 
 describe('PostureComparePage feature flags', () => {
@@ -114,6 +124,19 @@ describe('PostureComparePage feature flags', () => {
     render(offElement);
     expect(screen.queryByText(en.posture.flex.title)).toBeNull();
     expect(screen.queryByText(new RegExp(en.posture.total.title))).toBeNull();
+  });
+});
+
+describe('PatientPage feature flags', () => {
+  it('hides the share panel on treatment tab when shareLinks is switched off', async () => {
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    const element = await PatientPage({
+      params: Promise.resolve({ id: patientId }),
+      searchParams: Promise.resolve({ tab: 'treatment' }),
+    });
+    render(element);
+    expect(screen.queryAllByText(en.shareExercises.title)).toHaveLength(0);
+    expect(screen.queryAllByText(en.shareProgress.title)).toHaveLength(0);
   });
 });
 
