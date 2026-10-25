@@ -11,7 +11,7 @@ This work **ends the feature freeze** of 2026-10-07. F1 (pain map + questionnair
 
 ## Goals
 1. One codebase runs two clinics: Pawar (real) and **Sunrise Physio** (made up; name is a placeholder).
-2. Each clinic has its own copy: Vercel project + URL, Neon database, R2 bucket, Supabase Auth project.
+2. Each clinic has its own copy: Vercel project + URL, Neon database (which also holds its logins, see Project 2), R2 bucket.
 3. A clinic's name, logo, colours (on screen too, not just print), branches, contact, client-code prefix and
    wording come from its profile. **Nothing of Pawar's ever shows on Sunrise.**
 4. Modules turn on or off per clinic, and the switch really hides them: pages, actions, share links, data.
@@ -87,20 +87,43 @@ This work **ends the feature freeze** of 2026-10-07. F1 (pain map + questionnair
    the same after deploy.
 
 ### Project 2 — Sunrise's own copy + release for every clinic
+0. **Move login off Supabase (Deepak, 2026-10-25).** Supabase is used only for login, yet it is the biggest
+   fixed bill once there are paying clinics ($25/month + about $10 per clinic) and its free plan allows only
+   2 projects. Logins move into each clinic's own Neon database, so a clinic needs no login service at all.
+   - **First choice: Neon's managed login** (Managed Better Auth). Users and sessions live in the clinic's
+     own database (`neon_auth` schema); included on Neon's free plan up to 60,000 monthly users.
+   - **Fallback: Better Auth as a library** inside the app, tables in the same database. Used if a short
+     spike shows the managed one can't do what we need.
+   - **Spike first (half a day), it decides between them:** email + password sign-in; public sign-up fully
+     off (only Deepak creates logins); "forgot password" by email, or Deepak resets it; sessions work with
+     the Next.js middleware and server actions; works in local mock mode and tests (PGlite).
+   - **Same rules as today:** no public sign-up, Deepak creates logins, every page and action still checks
+     the login (`src/lib/auth.ts` stays the one place that asks), share links stay login-free.
+   - **Pawar moves first, carefully:** the few existing staff logins are recreated by Deepak (new
+     passwords), checked on the live site, and only then is the Supabase project paused and later deleted.
+     The `/api/ping` Supabase keep-alive goes. A security review (`phi-security-reviewer` +
+     `security-review`) runs before the switch.
+   - **Gate:** Pawar's staff log in on the new login; old Supabase sessions are refused; logging out, a
+     wrong password and an expired session all behave; e2e smoke passes; Sunrise is set up on the new login
+     from day one.
 1. **Prerequisite (Deepak):** the scoped R2 token task in the backlog. Each clinic gets its **own bucket
    and its own token** limited to that bucket. Pawar moves to a scoped token first.
 2. **Setup script** (`scripts/clinic/setup.ts`, guided, run with Deepak). It creates or links the Neon
    project, migrates and seeds the exercise library, creates the R2 bucket, and creates the Vercel project
-   with env vars (`CLINIC_PROFILE`, DB, R2, Supabase, `APP_URL`, `CRON_SECRET`). It prints only names,
-   never values. Steps a script can't do (Supabase project, R2 token) are printed as a checklist.
-3. **Supabase Auth:** a new project per clinic, with public sign-up off and Deepak creating logins. Never
-   shared with Pawar.
+   with env vars (`CLINIC_PROFILE`, DB, R2, login secret, `APP_URL`, `CRON_SECRET`). It prints only names,
+   never values. Steps a script can't do (R2 token, Deepak's first login) are printed as a checklist.
+3. **Logins:** created by Deepak in the clinic's own database (step 0). A Pawar login can't work on Sunrise
+   because the user tables are in different databases.
 4. **Per-clinic config on the Mac:** one file per clinic outside the repo (e.g.
    `~/.config/clinics/<slug>.env`, `chmod 600`) holding that clinic's DB URL, site URL and Vercel project.
    The `*:prod` scripts take `--clinic <slug>`, default `pawar`, so today's commands keep working.
 5. **Release to all:** `npm run release:all` runs the same migration and deploy for each clinic, **Pawar first**.
    It stops at the first clinic whose smoke test fails. The smoke test now also checks that `/login` shows
    that clinic's name.
+5a. **Nightly backup per clinic.** A scheduled GitHub Action dumps each clinic's database (`pg_dump`) into a
+   private, clinic-only R2 folder, keeps 30 days, and never prints a connection string. A monthly restore
+   drill into a throwaway Neon branch proves a dump comes back. This is what makes the free Neon plan
+   (6 h point-in-time) acceptable for paying clinics.
 6. **Gate:** Sunrise is live at its own URL. Deepak can log in there and his Pawar login is refused. He
    adds a client, a visit, a document upload and a share link. Pawar's database and bucket counts don't
    change. A no-op release goes out to both, Pawar first.
@@ -109,8 +132,7 @@ This work **ends the feature freeze** of 2026-10-07. F1 (pain map + questionnair
 **Shape (my call):** a separate small Next.js app in the same repo (`admin/`), with its own Vercel project
 and its own small Neon database (free plan allows 100 projects). It's kept apart so a compromised clinic
 site can't reach the controls for all clinics. **Login: GitHub sign-in limited to Deepak's GitHub account**,
-not Supabase. Supabase's free plan allows only 2 active projects, and Pawar + Sunrise use both
-(Deepak: "we host only 2 now").
+not Supabase, which is being removed (Project 2, step 0).
 
 - **Clinics list:** name, URL, app version, last check-in time, open problems (e.g. no check-in for 2 days).
 - **Switches:** per clinic, per module: on / off / "use profile default". The clinic reads its switches
@@ -144,7 +166,7 @@ not Supabase. Supabase's free plan allows only 2 active projects, and Pawar + Su
 | Service | Free plan | Paid when needed |
 |---|---|---|
 | **Vercel** (hosting) | Hobby: **personal, non-commercial use only** | Pro **$20/month per developer seat**; one team can hold many projects |
-| **Supabase** (login) | **2 active projects** per account; pauses after a week without activity; 50,000 monthly users | Pro **$25/month**, then about **$10/month per extra project** |
+| **Supabase** (login, **being removed**) | **2 active projects** per account; pauses after a week without activity; 50,000 monthly users | Pro **$25/month**, then about **$10/month per extra project** |
 | **Neon** (database) | 100 projects, 1 GB each, 6 h restore | Launch: pay per use ($0.106 per compute-hour), 7-day restore |
 | **Cloudflare R2** (files) | 10 GB + 1 M writes + 10 M reads a month, per account | $0.015 per GB-month beyond that; downloads free |
 | **Gemini** (AI drafts) | small free quota | per use; a few rupees per clinic per month at today's volumes (my estimate) |
@@ -170,6 +192,13 @@ Supabase is then full (2 of 2), which is why the admin site uses GitHub login.
 and it's the clinic's bill. Revisit A once there are enough clinics that one shared bill is cheaper. The
 setup script (Project 2) works the same either way: it only needs the account details.
 
+**Lean scenario (Deepak, 2026-10-25: ₹7,000+/month is too expensive).** Market check: Physitrack lists
+₹899/month (solo), ₹1,999 (2–5 physios), ₹3,599 (6–10), vendor-reported. With login moved to Neon, Neon on
+the free plan plus a nightly backup to R2, one shared Vercel Pro team and 0.5 h support per clinic a month:
+about **₹1,100 per clinic at 5 clinics, ₹850 at 10** (your time counted). **₹1,999/month** then gives about
+43–56% margin and is profitable from about 3 clinics. Details and every input: Deepak's cost sheet (kept
+out of this public repo). The nightly `pg_dump` to R2 joins Project 2 so the free Neon plan is safe enough.
+
 **What to charge** is Deepak's call. The table gives the floor: about $20/month per clinic for hosting,
 plus Gemini usage, plus the time to set up (timed in checklist point 6).
 
@@ -183,3 +212,5 @@ Sunrise's made-up details, cache mechanics.
 3. The **ready-to-market checklist** above is agreed.
 4. **Host only 2 clinics now** (Pawar + Sunrise). Costs for a new paying clinic are in *Costs*; each new
    clinic is either charged for hosting or gets its own accounts.
+5. **Price target near ₹1,999/month**; ₹7,000+ is too expensive. So costs follow the lean scenario.
+6. **Login moves off Supabase** into each clinic's Neon database (Project 2, step 0), plus a nightly backup to R2.
