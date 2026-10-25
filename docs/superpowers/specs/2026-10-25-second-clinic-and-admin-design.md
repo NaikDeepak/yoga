@@ -192,8 +192,11 @@ Supabase is then full (2 of 2), which is why the admin site uses GitHub login.
 and it's the clinic's bill. Revisit A once there are enough clinics that one shared bill is cheaper. The
 setup script (Project 2) works the same either way: it only needs the account details.
 
-**Lean scenario (Deepak, 2026-10-25: ₹7,000+/month is too expensive).** Market check: Physitrack lists
-₹899/month (solo), ₹1,999 (2–5 physios), ₹3,599 (6–10), vendor-reported. With login moved to Neon, Neon on
+**Lean scenario (Deepak, 2026-10-25: ₹7,000+/month is too expensive).** Market check (physitrack.com/physitrack-pricing,
+2026-10-25): **$18.99 per practitioner per month** (about ₹1,850) for exercise prescription only (exercise
+library, client app, progress tracking). Their clinic-management product is a waitlist with no price. Our
+app covers records, visits, fees and receipts, treatment plans, reports and posture, so ₹1,999 per *clinic*
+is below their per-*physio* price. With login moved to Neon, Neon on
 the free plan plus a nightly backup to R2, one shared Vercel Pro team and 0.5 h support per clinic a month:
 about **₹1,100 per clinic at 5 clinics, ₹850 at 10** (your time counted). **₹1,999/month** then gives about
 43–56% margin and is profitable from about 3 clinics. Details and every input: Deepak's cost sheet (kept
