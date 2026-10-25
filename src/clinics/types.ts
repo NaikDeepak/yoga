@@ -32,7 +32,7 @@ export const clinicProfileSchema = z.object({
     icon512: z.string().min(1),
     maskable512: z.string().min(1),
   }),
-  // Printed reports/receipts and the installed app's chrome. The in-app theme stays in globals.css.
+  // Printed reports/receipts and the installed app's chrome. On-screen colours are `theme` below.
   brand: z.object({
     primary: hex,
     accent: hex,
@@ -41,6 +41,17 @@ export const clinicProfileSchema = z.object({
     cream: hex,
     themeColor: hex,
     background: hex,
+  }),
+  // On-screen colours; themeCss() turns these into the CSS variables the Tailwind classes read.
+  theme: z.object({
+    primary: hex,
+    primaryForeground: hex,
+    ring: hex,
+    background: hex,
+    foreground: hex,
+    // Decorative amber (needs no contrast); accentText is the same hue dark enough for text (4.5:1 on white).
+    accent: hex,
+    accentText: hex,
   }),
   contact: z.object({
     phone: z.string().min(1),

@@ -1,18 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { clinicProfile, clinicName, resolveClinicProfile } from '@/clinics';
+import { clinicProfile, clinicName, resolveClinicProfile, CLINIC_REGISTRY } from '@/clinics';
 import { clinicProfileSchema } from '@/clinics/types';
 import { pawar } from '@/clinics/pawar';
 import { CLINIC } from '@/lib/clinic';
 import { BRANCHES } from '@/lib/presets';
-
-/** WCAG contrast ratio of a #rrggbb colour against white. */
-function contrastOnWhite(hex: string) {
-  const [r, g, b] = [1, 3, 5].map((i) => {
-    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
-    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 1.05 / (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05);
-}
+import { contrast, contrastOnWhite } from '../helpers/contrast';
 
 describe('printed brand colours are readable on white', () => {
   it('accent text (small print) meets 4.5:1', () => {
@@ -136,5 +128,19 @@ describe('resolveClinicProfile in production', () => {
   });
   it('uses CLINIC_PROFILE from env when set', () => {
     expect(resolveClinicProfile(undefined, { NODE_ENV: 'production', CLINIC_PROFILE: 'pawar' }).slug).toBe('pawar');
+  });
+});
+
+describe.each(Object.entries(CLINIC_REGISTRY))('on-screen theme of %s is readable', (_slug, profile) => {
+  const t = profile.theme;
+  it('button text on primary meets 4.5:1', () => {
+    expect(contrast(t.primary, t.primaryForeground)).toBeGreaterThanOrEqual(4.5);
+  });
+  it('accent text on white meets 4.5:1', () => {
+    expect(contrastOnWhite(t.accentText)).toBeGreaterThanOrEqual(4.5);
+  });
+  it('body text meets 4.5:1 on the page background and on white', () => {
+    expect(contrast(t.foreground, t.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastOnWhite(t.foreground)).toBeGreaterThanOrEqual(4.5);
   });
 });

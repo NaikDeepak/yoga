@@ -31,6 +31,8 @@
 }
 
 :root {
+  /* --primary, --primary-foreground, --ring, --background, --foreground, --brand-accent and
+     --brand-accent-text below are fallbacks: the clinic profile theme (src/clinics) wins. */
   --radius: 0.5rem;
 
   /* Warm cream background */
