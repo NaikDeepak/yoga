@@ -83,5 +83,6 @@ export const pawar: ClinicProfile = {
     ai: true,
     shareLinks: true,
     checkins: true,
+    fees: true,
   },
 };

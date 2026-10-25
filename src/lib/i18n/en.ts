@@ -975,6 +975,9 @@ export const en = {
     visits: 'Visits',
     fees: 'Fees & payments',
   },
+  features: {
+    off: 'This feature is switched off',
+  },
   errors: {
     errorTitle: 'Something went wrong',
     errorBody: 'Your work up to the last save is safe. Try again; if it keeps happening, tell us the reference below.',

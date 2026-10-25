@@ -86,6 +86,7 @@ export const clinicProfileSchema = z.object({
     ai: z.boolean(),
     shareLinks: z.boolean(),
     checkins: z.boolean(),
+    fees: z.boolean(),
   }),
 });
 
