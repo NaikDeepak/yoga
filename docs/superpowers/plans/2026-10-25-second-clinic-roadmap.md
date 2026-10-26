@@ -39,7 +39,7 @@ Owners: **C** = Claude, **D** = Deepak.
 
 Four PRs, each deployed to Pawar before the next starts. Task numbers refer to `plans/2026-10-25-clinic-ready-product.md`.
 
-- [ ] **1.1 (C) PR-A "foundation"** — Tasks 1–3: profile fails closed, on-screen colours from the profile,
+- [x] **1.1 (C) PR-A "foundation"** — Tasks 1–3: profile fails closed, on-screen colours from the profile,
   one switch rule + fees switch.
   **Verify:**
   - `CLINIC_PROFILE= LOCAL_MOCK=false npm run build` fails with "CLINIC_PROFILE is not set"; with
@@ -48,7 +48,7 @@ Four PRs, each deployed to Pawar before the next starts. Task numbers refer to `
   - Side-by-side screenshots of login, client list and client page (`main` vs branch, mock data only):
     no visible difference.
   - After deploy: Pawar unchanged on the phone; posture still shows.
-- [ ] **1.2 (C) PR-B "switches"** — Tasks 4–7: flexibility, AI, share links, check-ins and fees switches; the
+- [x] **1.2 (C) PR-B "switches"** — Tasks 4–7: flexibility, AI, share links, check-ins and fees switches; the
   modules-off end-to-end test.
   **Verify:**
   - Each module's tests show "off" hides the button and the action refuses with "switched off".
