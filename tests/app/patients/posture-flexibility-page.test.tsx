@@ -145,6 +145,16 @@ describe('PatientPage feature flags', () => {
     expect(screen.queryAllByText(en.shareProgress.title)).toHaveLength(0);
   });
 
+  it('shows the progress share panel on treatment tab when shareLinks is on', async () => {
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'true');
+    const element = await PatientPage({
+      params: Promise.resolve({ id: patientId }),
+      searchParams: Promise.resolve({ tab: 'treatment' }),
+    });
+    render(await resolveServerTree(element));
+    expect(screen.getAllByText(en.shareProgress.title).length).toBeGreaterThan(0);
+  });
+
   it('hides the home-exercise check-in card on treatment tab when checkins is switched off', async () => {
     vi.stubEnv('FEATURE_CHECKINS', 'false');
     const element = await PatientPage({
