@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { clinicProfile } from '@/clinics';
+import { CLINIC_REGISTRY } from '@/clinics';
 import { FORBIDDEN } from '../helpers/pawar-identity';
 
 
@@ -61,9 +61,9 @@ describe('no-hardcoded-clinic guard', () => {
   });
 });
 
-describe('clinic assets', () => {
+describe.each(Object.entries(CLINIC_REGISTRY))('clinic assets of %s', (_slug, profile) => {
   it('every file the profile points at exists in public/', () => {
-    const paths = [clinicProfile.logo.src, ...Object.values(clinicProfile.icons)];
+    const paths = [profile.logo.src, ...Object.values(profile.icons)];
     for (const p of paths) expect(fs.existsSync(path.join(process.cwd(), 'public', p)), p).toBe(true);
   });
 });

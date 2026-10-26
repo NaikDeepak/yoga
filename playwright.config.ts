@@ -62,6 +62,8 @@ export default defineConfig({
       url: `http://localhost:${OFF_PORT}/login`,
       env: {
         LOCAL_MOCK: 'true',
+        // Pinned: one build folder serves every run, so a sunrise run must not leave a sunrise build behind.
+        CLINIC_PROFILE: 'pawar',
         LOCAL_DB_DIR: '.local-db-modules-off',
         NEXT_DIST_DIR: '.next-modules-off',
         FEATURE_POSTURE: 'false',

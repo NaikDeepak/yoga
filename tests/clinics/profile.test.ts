@@ -130,6 +130,11 @@ describe('pinned clinic values', () => {
   it('preserves patientCodePrefix', () => {
     expect(clinicProfile.patientCodePrefix).toBe('PYT');
   });
+
+  // e2e skips steps for modules a profile has off, so this is what keeps Pawar's run covering every module.
+  it('keeps every Pawar module on', () => {
+    expect(Object.values(pawar.features).every(Boolean)).toBe(true);
+  });
 });
 
 describe('resolveClinicProfile in production', () => {
