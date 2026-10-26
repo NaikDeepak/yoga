@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { getDb } from '@/db/client';
 import { searchPatients } from '@/data/patients';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 const MAX_QUERY = 100;
 
 export async function GET(req: Request) {
   const user = await getSessionUser();
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized / अनधिकृत' }, { status: 401 });
+    return NextResponse.json({ error: bilingual('errors.unauthorized') }, { status: 401 });
   }
 
   const q = new URL(req.url).searchParams.get('q')?.trim();

@@ -7,11 +7,12 @@ import { getDb } from '@/db/client';
 import { setUserLanguage, setWhatsappNumber } from '@/data/preferences';
 import { LOCALES, type Locale } from '@/lib/i18n/translations';
 import { whatsappNumberSchema, firstError } from '@/lib/validation';
+import { bilingual } from '@/lib/i18n/bilingual';
 import type { ActionResult } from '@/actions/patients';
 
 export async function saveLanguageAction(locale: Locale): Promise<ActionResult> {
   if (!(LOCALES as readonly string[]).includes(locale)) {
-    return { ok: false, error: 'Invalid language / अमान्य भाषा' };
+    return { ok: false, error: bilingual('validation.invalidLanguage') };
   }
   const user = await requireUser();
   await setUserLanguage(getDb(), user.id, locale);

@@ -174,7 +174,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── PRESCRIBED EXERCISES ── */}
       {prescribedExercises.length > 0 && (
         <>
-          <SectionHeader>{locale === 'mr' ? 'निर्धारित व्यायाम मार्गदर्शिका (Prescribed Exercises)' : 'Prescribed Exercises / निर्धारित व्यायाम मार्गदर्शिका'}</SectionHeader>
+          <SectionHeader>{t.print.prescribedExercisesTitle}</SectionHeader>
           <div className="mb-6">
             <table className="w-full text-sm border-collapse">
               <tbody>
@@ -183,9 +183,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                     <td className="w-40 py-3 pr-4 font-semibold text-gray-800">
                       {locale === 'mr' ? pe.nameMr : pe.name}
                       <div className="text-[10px] text-gray-500 font-medium mt-1">
-                        {locale === 'mr'
-                          ? `वेळा: ${pe.repetitionsOverride ?? pe.repetitionsMr} | वारंवारता: ${pe.daysPerWeekOverride ?? pe.daysPerWeekMr}`
-                          : `Reps: ${pe.repetitionsOverride ?? pe.repetitions} | Freq: ${pe.daysPerWeekOverride ?? pe.daysPerWeek}`}
+                        {`${t.print.reps}: ${pe.repetitionsOverride ?? (locale === 'mr' ? pe.repetitionsMr : pe.repetitions)} | ${t.print.freq}: ${pe.daysPerWeekOverride ?? (locale === 'mr' ? pe.daysPerWeekMr : pe.daysPerWeek)}`}
                       </div>
                     </td>
                     <td className="py-3">
@@ -213,7 +211,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
 
                       {pe.customNote && (
                         <div className="mt-2.5 text-xs border border-dashed border-amber-200 bg-amber-50/50 p-2 rounded-lg text-amber-900 font-medium leading-relaxed">
-                          <strong>{locale === 'mr' ? 'सानुकूल सूचना:' : 'Custom Instruction:'}</strong> {pe.customNote}
+                          <strong>{t.print.customInstruction}</strong> {pe.customNote}
                         </div>
                       )}
                     </td>

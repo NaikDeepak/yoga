@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { useState } from 'react';
 import { useTranslations } from '@/lib/i18n/context';
+import { en } from '@/lib/i18n/en';
+import { mr } from '@/lib/i18n/mr';
 import { savePrescribedExercisesAction } from '@/actions/exercises';
 import { InlineForm } from '@/components/InlineForm';
 import { SubmitButton } from '@/components/SubmitButton';
@@ -82,13 +84,6 @@ export function PrescribedExercisesForm({
 
   // Group exercises by category
   const categories = ['neck', 'back', 'core', 'lower_body', 'shoulder'] as const;
-  const categoryLabels = {
-    neck: { en: 'Neck Exercises', mr: 'मानेचे व्यायाम' },
-    back: { en: 'Back Exercises', mr: 'पाठीचे व्यायाम' },
-    core: { en: 'Core Exercises', mr: 'पोटाचे/गाभ्याचे व्यायाम' },
-    lower_body: { en: 'Lower Body Exercises', mr: 'शरीराच्या खालच्या भागाचे व्यायाम' },
-    shoulder: { en: 'Shoulder Exercises', mr: 'खांद्याचे व्यायाम' },
-  };
 
   // Convert selected map to JSON for hidden form field
   const serializedSelection = JSON.stringify(
@@ -111,10 +106,10 @@ export function PrescribedExercisesForm({
           </div>
           <div>
             <CardTitle className="text-base font-bold">
-              {locale === 'mr' ? 'व्यायाम मार्गदर्शिका (Exercise Library)' : 'Exercise Library / व्यायाम मार्गदर्शिका'}
+              {t.exerciseLibrary.title}
             </CardTitle>
             <CardDescription className="text-xs">
-              {locale === 'mr' ? 'साधकासाठी योग्य असणारे व्यायाम निवडा आणि सानुकूल सूचना जोडा.' : 'Select exercises and add custom instructions for the client.'}
+              {t.exerciseLibrary.description}
             </CardDescription>
           </div>
         </div>
@@ -136,7 +131,7 @@ export function PrescribedExercisesForm({
               return (
                 <div key={cat} className="p-4 space-y-3">
                   <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground bg-muted/30 px-2 py-1 rounded-md inline-block">
-                    {locale === 'mr' ? categoryLabels[cat].mr : `${categoryLabels[cat].en} / ${categoryLabels[cat].mr}`}
+                    {locale === 'mr' ? mr.exerciseLibrary.categories[cat] : `${en.exerciseLibrary.categories[cat]} / ${mr.exerciseLibrary.categories[cat]}`}
                   </h2>
 
                   <div className="space-y-3">
@@ -173,9 +168,9 @@ export function PrescribedExercisesForm({
                                   {locale === 'mr' ? ex.nameMr : ex.name}
                                 </label>
                                 <span className="text-[10px] text-muted-foreground font-medium mt-0.5">
-                                  {locale === 'mr' 
-                                    ? `वेळा: ${ex.repetitionsMr} | वारंवारता: ${ex.daysPerWeekMr}`
-                                    : `Reps: ${ex.repetitions} | Freq: ${ex.daysPerWeek}`}
+                                  {t.exerciseLibrary.repsFreq
+                                    .replace('{reps}', locale === 'mr' ? ex.repetitionsMr : ex.repetitions)
+                                    .replace('{freq}', locale === 'mr' ? ex.daysPerWeekMr : ex.daysPerWeek)}
                                 </span>
                               </div>
                             </div>
@@ -186,7 +181,7 @@ export function PrescribedExercisesForm({
                               size="icon"
                               onClick={() => toggleExpanded(ex.id)}
                               aria-expanded={isExpanded}
-                              aria-label={locale === 'mr' ? 'तपशील' : 'Details / तपशील'}
+                              aria-label={t.exerciseLibrary.detailsAria}
                               className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-full shrink-0"
                             >
                               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -202,7 +197,7 @@ export function PrescribedExercisesForm({
                                     htmlFor={`reps-${ex.id}`}
                                     className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5"
                                   >
-                                    {locale === 'mr' ? 'वेळा (साधकासाठी):' : 'Reps (for this client):'}
+                                    {t.exerciseLibrary.repsLabel}
                                   </Label>
                                   <Input
                                     id={`reps-${ex.id}`}
@@ -217,7 +212,7 @@ export function PrescribedExercisesForm({
                                     htmlFor={`days-${ex.id}`}
                                     className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5"
                                   >
-                                    {locale === 'mr' ? 'वारंवारता (साधकासाठी):' : 'Freq (for this client):'}
+                                    {t.exerciseLibrary.freqLabel}
                                   </Label>
                                   <Input
                                     id={`days-${ex.id}`}
@@ -233,13 +228,13 @@ export function PrescribedExercisesForm({
                                   htmlFor={`note-${ex.id}`}
                                   className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1.5"
                                 >
-                                  {locale === 'mr' ? 'सानुकूल सूचना (उदा. ताण धरण्याची वेळ):' : 'Custom Note (e.g. holds, changes):'}
+                                  {t.exerciseLibrary.customNoteLabel}
                                 </Label>
                                 <Input
                                   id={`note-${ex.id}`}
                                   value={customNote}
                                   onChange={(e) => handleFieldChange(ex.id, 'customNote', e.target.value)}
-                                  placeholder={locale === 'mr' ? 'उदा. ५ सेकंद ऐवजी १० सेकंद ताण धरा' : 'e.g. Hold for 10s instead of 5s'}
+                                  placeholder={t.exerciseLibrary.customNotePlaceholder}
                                   className="h-9 text-xs rounded-lg border-border focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary bg-background"
                                 />
                               </div>
@@ -252,7 +247,7 @@ export function PrescribedExercisesForm({
                               <div>
                                 <p className="font-semibold text-foreground/80 mb-1 flex items-center gap-1.5">
                                   <BookOpen className="h-3 w-3 text-primary" />
-                                  {locale === 'mr' ? 'कृती पायऱ्या:' : 'Step-by-step Directions:'}
+                                  {t.exerciseLibrary.stepsLabel}
                                 </p>
                                 <ol className="list-decimal list-inside space-y-1 pl-1 text-[11px] leading-relaxed">
                                   {(locale === 'mr' ? ex.stepsMr : ex.steps).map((step, idx) => (
@@ -264,7 +259,7 @@ export function PrescribedExercisesForm({
                               {(ex.tip || ex.tipMr) && (
                                 <div className="mt-2.5 p-2 bg-muted/40 rounded-lg border border-border/30 text-[11px]">
                                   <span className="font-semibold text-foreground/80 block mb-0.5">
-                                    {locale === 'mr' ? 'टीप / चेतावणी:' : 'Tip / Safety Warning:'}
+                                    {t.exerciseLibrary.tipLabel}
                                   </span>
                                   <p className="italic text-foreground/60">{locale === 'mr' ? ex.tipMr : ex.tip}</p>
                                 </div>
@@ -295,10 +290,10 @@ export function PrescribedExercisesForm({
           <div className="p-4 bg-muted/10 border-t border-border/50 flex justify-end">
             <SubmitButton 
               size="sm" 
-              pendingLabel={locale === 'mr' ? 'जतन करत आहे...' : 'Saving...'}
+              pendingLabel={t.exerciseLibrary.saving}
               className="rounded-full px-6 shadow-sm"
             >
-              {locale === 'mr' ? 'व्यायाम जतन करा' : 'Save Exercises'}
+              {t.exerciseLibrary.saveExercises}
             </SubmitButton>
           </div>
         </InlineForm>

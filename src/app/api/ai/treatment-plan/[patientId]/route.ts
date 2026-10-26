@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
 import { safeErrorMessage } from '@/lib/log';
+import { bilingual } from '@/lib/i18n/bilingual';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
@@ -22,7 +23,7 @@ export async function GET(
   try {
     const user = await getSessionUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized / अनधिकृत' }, { status: 401 });
+      return NextResponse.json({ error: bilingual('errors.unauthorized') }, { status: 401 });
     }
 
     const { patientId } = await params;
@@ -30,7 +31,7 @@ export async function GET(
 
     const patient = await getPatient(db, patientId);
     if (!patient) {
-      return NextResponse.json({ error: 'Client not found / साधक सापडला नाही' }, { status: 404 });
+      return NextResponse.json({ error: bilingual('patients.clientNotFound') }, { status: 404 });
     }
 
     const [problems, lifestyle, allVisits] = await Promise.all([
@@ -91,7 +92,7 @@ export async function GET(
     return NextResponse.json(draft);
   } catch (err) {
     console.error('AI treatment plan generation failed:', safeErrorMessage(err));
-    return NextResponse.json({ error: 'AI generation failed. Please try again. / AI योजना तयार करण्यात त्रुटी आली. कृपया पुन्हा प्रयत्न करा.' }, { status: 500 });
+    return NextResponse.json({ error: bilingual('treatmentPlan.aiFailed') }, { status: 500 });
   }
 }
 

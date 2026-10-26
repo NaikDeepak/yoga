@@ -5,11 +5,12 @@ import { FEE_TYPE_KEYS } from './feeTypes';
 import { POSE_LANDMARK_COUNT, POSTURE_VIEWS } from './posture';
 import { isLevel } from './posture-capture';
 import { FLEX_SHOTS } from './flexibility';
+import { bilingual } from './i18n/bilingual';
 
 /** True for a record id (UUID). Checked before any id from the browser reaches the database. */
 export const isId = (v: unknown): v is string => z.string().uuid().safeParse(v).success;
 
-export const INVALID_PARAMS = 'Invalid parameters / अवैध पॅरामीटर्स';
+export const INVALID_PARAMS = bilingual('validation.invalidParams');
 
 const blankToUndef = (v: unknown) =>
   typeof v === 'string' && v.trim() === '' ? undefined : v;
@@ -23,28 +24,28 @@ function isCalendarValid(val: string): boolean {
 }
 
 export const patientSchema = z.object({
-  fullName: z.string().trim().min(1, 'Name required / नाव आवश्यक').max(120, 'Name too long / नाव खूप मोठे'),
-  mobile: z.string().trim().regex(/^\d{10}$/, '10-digit mobile required / १० अंकी मोबाईल आवश्यक'),
+  fullName: z.string().trim().min(1, bilingual('validation.nameRequired')).max(120, bilingual('validation.nameTooLong')),
+  mobile: z.string().trim().regex(/^\d{10}$/, bilingual('validation.mobileRequired')),
   age: opt(z.coerce.number().int().min(1).max(120)),
   gender: opt(z.enum(['male', 'female', 'other'])),
   weightKg: opt(z.coerce.number().positive().max(300)),
   heightCm: opt(z.coerce.number().positive().max(250)),
-  email: opt(z.string().trim().email('Invalid email / चुकीचा ईमेल')),
+  email: opt(z.string().trim().email(bilingual('validation.invalidEmail'))),
   address: opt(z.string().trim().max(500)),
   occupation: opt(z.string().trim().max(100)),
   emergencyContact: opt(z.string().trim().max(100)),
-  branch: opt(z.enum(BRANCHES.map(b => b.key) as [string, ...string[]], { message: 'Invalid branch / चुकीची शाखा' })),
+  branch: opt(z.enum(BRANCHES.map(b => b.key) as [string, ...string[]], { message: bilingual('validation.invalidBranch') })),
   birthDate: opt(
     z.string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')
-      .refine(isCalendarValid, 'Invalid date / चुकीची तारीख')
-      .refine((val) => val <= getISTDateString(0), 'Birth date cannot be in the future / जन्मतारीख भविष्यातील असू शकत नाही')
+      .regex(/^\d{4}-\d{2}-\d{2}$/, bilingual('validation.invalidDate'))
+      .refine(isCalendarValid, bilingual('validation.invalidDate'))
+      .refine((val) => val <= getISTDateString(0), bilingual('validation.birthDateFuture'))
   ),
 });
 export type PatientInput = z.infer<typeof patientSchema>;
 
 export const problemSchema = z.object({
-  problem: z.string().trim().min(1, 'Problem required / आजार आवश्यक').max(200),
+  problem: z.string().trim().min(1, bilingual('validation.problemRequired')).max(200),
   isCustom: z.preprocess((v) => v === 'true' || v === true, z.boolean()).default(false),
   note: opt(z.string().trim().max(500)),
 });
@@ -68,21 +69,21 @@ export type TreatmentInput = z.infer<typeof treatmentSchema>;
 
 export const visitSchema = z.object({
   visitDate: z.string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date required / तारीख आवश्यक')
-    .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
-  progressNote: z.string().trim().min(1, 'Note required / नोंद आवश्यक').max(5000),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, bilingual('validation.dateRequired'))
+    .refine(isCalendarValid, bilingual('validation.invalidDate')),
+  progressNote: z.string().trim().min(1, bilingual('validation.noteRequired')).max(5000),
   weightKg: opt(z.coerce.number().positive().max(300)),
   painScale: opt(z.coerce.number().int().min(1).max(10)),
   nextVisitDate: opt(
     z.string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')
-      .refine(isCalendarValid, 'Invalid date / चुकीची तारीख')
+      .regex(/^\d{4}-\d{2}-\d{2}$/, bilingual('validation.invalidDate'))
+      .refine(isCalendarValid, bilingual('validation.invalidDate'))
       .refine((val) => {
         const d = new Date(Date.now() + 330 * 60_000);
         const todayIST = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
         return val >= todayIST;
       }, {
-        message: 'Must be today or later / आज किंवा नंतरची तारीख असावी',
+        message: bilingual('validation.mustBeTodayOrLater'),
       })
   ),
 });
@@ -92,13 +93,13 @@ export const docTypeSchema = z.enum(DOC_TYPES);
 
 export const whatsappNumberSchema = z.object({
   whatsappNumber: opt(
-    z.string().trim().regex(/^\d{10}$/, '10-digit mobile required / १० अंकी मोबाईल आवश्यक')
+    z.string().trim().regex(/^\d{10}$/, bilingual('validation.mobileRequired'))
   ),
 });
 export type WhatsappNumberInput = z.infer<typeof whatsappNumberSchema>;
 
 export function firstError(error: z.ZodError): string {
-  return error.issues[0]?.message ?? 'Invalid input / चुकीची माहिती';
+  return error.issues[0]?.message ?? bilingual('validation.invalidInput');
 }
 
 export const lifestyleSchema = z.object({
@@ -134,52 +135,52 @@ export type LifestyleInput = z.infer<typeof lifestyleSchema>;
 
 /** Upper limit for any one fee, payment or charge (₹10 lakh): catches a slipped finger, and stays well inside numeric(12,2). */
 export const MAX_AMOUNT = 1_000_000;
-const TOO_LARGE = 'Amount too large / रक्कम खूप मोठी आहे';
+const TOO_LARGE = bilingual('validation.amountTooLarge');
 
 export const courseFeeSchema = z.object({
-  courseFee: z.coerce.number().positive('Fee must be positive / शुल्क सकारात्मक असणे आवश्यक आहे').max(MAX_AMOUNT, TOO_LARGE),
+  courseFee: z.coerce.number().positive(bilingual('validation.feeMustBePositive')).max(MAX_AMOUNT, TOO_LARGE),
 });
 export type CourseFeeInput = z.infer<typeof courseFeeSchema>;
 
 export const paymentSchema = z.object({
-  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे').max(MAX_AMOUNT, TOO_LARGE),
+  amount: z.coerce.number().positive(bilingual('validation.amountMustBePositive')).max(MAX_AMOUNT, TOO_LARGE),
   paymentDate: z.string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / अवैध तारीख')
-    .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
-  description: opt(z.string().trim().max(200, 'Description too long / तपशील खूप मोठा आहे')),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, bilingual('validation.invalidDateAlt'))
+    .refine(isCalendarValid, bilingual('validation.invalidDate')),
+  description: opt(z.string().trim().max(200, bilingual('validation.descriptionTooLong'))),
 });
 export type PaymentInput = z.infer<typeof paymentSchema>;
 
 export const chargeSchema = z.object({
-  feeType: z.enum(FEE_TYPE_KEYS, { message: 'Invalid fee type / अवैध शुल्क प्रकार' }),
-  customLabel: opt(z.string().trim().max(100, 'Label too long / लेबल खूप मोठे')),
-  amount: z.coerce.number().positive('Amount must be positive / रक्कम सकारात्मक असणे आवश्यक आहे').max(MAX_AMOUNT, TOO_LARGE),
+  feeType: z.enum(FEE_TYPE_KEYS, { message: bilingual('validation.invalidFeeType') }),
+  customLabel: opt(z.string().trim().max(100, bilingual('validation.labelTooLong'))),
+  amount: z.coerce.number().positive(bilingual('validation.amountMustBePositive')).max(MAX_AMOUNT, TOO_LARGE),
   chargeDate: z.string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / अवैध तारीख')
-    .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
-  note: opt(z.string().trim().max(200, 'Note too long / टीप खूप मोठी आहे')),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, bilingual('validation.invalidDateAlt'))
+    .refine(isCalendarValid, bilingual('validation.invalidDate')),
+  note: opt(z.string().trim().max(200, bilingual('validation.noteTooLong'))),
 }).refine((data) => data.feeType !== 'other' || !!data.customLabel, {
-  message: 'Label required / लेबल आवश्यक आहे',
+  message: bilingual('validation.labelRequired'),
   path: ['customLabel'],
 });
 export type ChargeInput = z.infer<typeof chargeSchema>;
 
 export const prescribedExerciseSchema = z.object({
-  exerciseId: z.string().uuid('Invalid exercise / अमान्य व्यायाम'),
-  customNote: opt(z.string().trim().max(500, 'Note too long / टीप खूप मोठी आहे')).nullable(),
-  repetitions: opt(z.string().trim().max(100, 'Too long / खूप मोठे')).nullable(),
-  daysPerWeek: opt(z.string().trim().max(100, 'Too long / खूप मोठे')).nullable(),
+  exerciseId: z.string().uuid(bilingual('validation.invalidExercise')),
+  customNote: opt(z.string().trim().max(500, bilingual('validation.noteTooLong'))).nullable(),
+  repetitions: opt(z.string().trim().max(100, bilingual('validation.tooLong'))).nullable(),
+  daysPerWeek: opt(z.string().trim().max(100, bilingual('validation.tooLong'))).nullable(),
 });
 
 export const prescribedExercisesListSchema = z.array(prescribedExerciseSchema).refine(
   (list) => new Set(list.map((item) => item.exerciseId)).size === list.length,
-  'Duplicate exercise in selection / निवडीत व्यायामाची पुनरावृत्ती',
+  bilingual('validation.duplicateExercise'),
 );
 export type PrescribedExerciseInput = z.infer<typeof prescribedExerciseSchema>;
 
 
 // Posture assessment payload (JSON part of the capture form; photos are sent as separate files).
-const POSTURE_DATA_ERR = { error: 'Invalid posture data / चुकीची पोश्चर माहिती' };
+const POSTURE_DATA_ERR = { error: bilingual('validation.invalidPostureData') };
 // MediaPipe reports out-of-frame points outside 0–1 (with low visibility); the capture screen clamps
 // them to this range when cropping (remapToCrop), so anything beyond it is malformed.
 const landmarkCoord = z.number(POSTURE_DATA_ERR).min(-0.5, POSTURE_DATA_ERR).max(1.5, POSTURE_DATA_ERR);
@@ -199,24 +200,24 @@ const capturedPhotoFields = {
     pitchDeg: z.number(POSTURE_DATA_ERR).min(-90, POSTURE_DATA_ERR).max(90, POSTURE_DATA_ERR).nullable(),
   }, POSTURE_DATA_ERR).refine(
     (c) => isLevel(c),
-    'Camera was not level — retake the photo / कॅमेरा सरळ नव्हता — फोटो पुन्हा घ्या',
+    bilingual('validation.cameraNotLevel'),
   ),
 };
 
 const postureViewSchema = z.object({ view: z.enum(POSTURE_VIEWS, POSTURE_DATA_ERR), ...capturedPhotoFields }, POSTURE_DATA_ERR);
 
 export const postureAssessmentSchema = z.object({
-  consent: z.literal(true, { error: 'Photo consent required / फोटोसाठी संमती आवश्यक' }),
+  consent: z.literal(true, { error: bilingual('validation.photoConsentRequired') }),
   assessedOn: z.preprocess(
     (v) => blankToUndef(v) ?? getISTDateString(),
     z.string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date / चुकीची तारीख')
-      .refine(isCalendarValid, 'Invalid date / चुकीची तारीख'),
+      .regex(/^\d{4}-\d{2}-\d{2}$/, bilingual('validation.invalidDate'))
+      .refine(isCalendarValid, bilingual('validation.invalidDate')),
   ),
-  note: opt(z.string().trim().max(1000, 'Note too long / टीप खूप मोठी आहे')),
+  note: opt(z.string().trim().max(1000, bilingual('validation.noteTooLong'))),
   views: z.array(postureViewSchema, POSTURE_DATA_ERR).refine(
     (views) => views.length === POSTURE_VIEWS.length && new Set(views.map((v) => v.view)).size === POSTURE_VIEWS.length,
-    'All four views required (front, back, left, right) / चारही बाजूंचे फोटो आवश्यक (समोर, मागे, डावी, उजवी)',
+    bilingual('validation.allFourViewsRequired'),
   ),
 });
 

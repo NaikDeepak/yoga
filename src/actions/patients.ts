@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { sameName } from '@/lib/names';
 import { createPatient, deletePatientAndFiles, getPatient, replacePatientPhoto, updatePatient } from '@/data/patients';
 import { safeErrorMessage } from '@/lib/log';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -55,7 +56,7 @@ export async function updatePatientAction(id: string, formData: FormData): Promi
 
   const db = getDb();
   if (!(await updatePatient(db, id, parsed.data))) {
-    return { ok: false, error: 'This client no longer exists / हा साधक आता अस्तित्वात नाही' };
+    return { ok: false, error: bilingual('patients.clientNoLongerExists') };
   }
   if (photo) {
     await replacePatientPhoto(db, getStorage(), id, photo);
@@ -73,19 +74,19 @@ export async function updatePatientAction(id: string, formData: FormData): Promi
  */
 export async function deletePatientAction(id: string, confirmName: string): Promise<ActionResult> {
   const user = await requireUser();
-  if (!z.string().uuid().safeParse(id).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!z.string().uuid().safeParse(id).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   const db = getDb();
   const patient = await getPatient(db, id);
-  if (!patient) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patient) return { ok: false, error: bilingual('patients.clientNotFound') };
   if (typeof confirmName !== 'string' || !sameName(confirmName, patient.fullName)) {
-    return { ok: false, error: "Type the client's full name to confirm / खात्री करण्यासाठी साधकाचे पूर्ण नाव लिहा" };
+    return { ok: false, error: bilingual('patients.confirmNameRequired') };
   }
   try {
     await deletePatientAndFiles(db, getStorage(), id);
   } catch (error) {
     // Files first: on a storage failure the client is kept, so trying again finishes the job.
     console.error('Failed to delete client:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not delete the client. Nothing is lost; please try again / साधक हटवता आला नाही. कृपया पुन्हा प्रयत्न करा' };
+    return { ok: false, error: bilingual('patients.deleteFailed') };
   }
   await recordAudit(db, { actor: user, action: 'client.delete', clientCode: patient.patientCode });
   revalidatePath('/patients');

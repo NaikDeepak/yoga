@@ -8,6 +8,7 @@ import { exportClients, exportVisits, exportFees, type ExportResult } from '@/da
 import { toCsv, csvFilename } from '@/lib/csv';
 import { getISTDateString } from '@/lib/dates';
 import { BRANCHES } from '@/lib/presets';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 export async function GET(
   req: Request,
@@ -16,18 +17,18 @@ export async function GET(
   try {
     const user = await getSessionUser();
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized / अनधिकृत' }, { status: 401 });
+      return NextResponse.json({ error: bilingual('errors.unauthorized') }, { status: 401 });
     }
 
     const { kind } = await params;
     if ((kind !== 'clients' && kind !== 'visits' && kind !== 'fees') || (kind === 'fees' && !isFeatureEnabled('fees'))) {
-      return NextResponse.json({ error: 'Not found / सापडले नाही' }, { status: 404 });
+      return NextResponse.json({ error: bilingual('errors.notFound') }, { status: 404 });
     }
 
     const url = new URL(req.url);
     const branchParam = url.searchParams.get('branch')?.trim() || undefined;
     if (branchParam && !BRANCHES.some((b) => b.key === branchParam)) {
-      return NextResponse.json({ error: 'Invalid branch / चुकीची शाखा' }, { status: 400 });
+      return NextResponse.json({ error: bilingual('validation.invalidBranch') }, { status: 400 });
     }
 
     const db = getDb();
@@ -56,6 +57,6 @@ export async function GET(
     });
   } catch (err) {
     console.error('CSV export failed:', safeErrorMessage(err));
-    return NextResponse.json({ error: 'Export failed / निर्यात अयशस्वी झाली' }, { status: 500 });
+    return NextResponse.json({ error: bilingual('export.failed') }, { status: 500 });
   }
 }

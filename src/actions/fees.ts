@@ -8,6 +8,7 @@ import { isFeatureEnabled } from '@/lib/features';
 import { featureOffError } from '@/lib/feature-off';
 import { courseFeeSchema, paymentSchema, firstError, isId, INVALID_PARAMS } from '@/lib/validation';
 import { setCourseFee, addPayment, deletePayment } from '@/data/fees';
+import { bilingual } from '@/lib/i18n/bilingual';
 import type { ActionResult } from '@/actions/patients';
 
 export async function setCourseFeeAction(
@@ -23,7 +24,7 @@ export async function setCourseFeeAction(
   try {
     await setCourseFee(db, patientId, result.data.courseFee);
   } catch {
-    return { ok: false, error: 'Could not save fee / शुल्क जतन झाले नाही' };
+    return { ok: false, error: bilingual('fees.saveFailed') };
   }
   await recordAudit(getDb(), { actor: user, action: 'fee.set', patientId, summary: `₹${result.data.courseFee}` });
   revalidatePath(`/patients/${patientId}`);
@@ -44,7 +45,7 @@ export async function addPaymentAction(
   try {
     await addPayment(db, patientId, amount, paymentDate, description ?? null);
   } catch {
-    return { ok: false, error: 'Could not record payment / पेमेंट नोंदवता आले नाही' };
+    return { ok: false, error: bilingual('fees.recordPaymentFailed') };
   }
   await recordAudit(getDb(), { actor: user, action: 'payment.add', patientId, summary: `₹${amount} on ${paymentDate}` });
   revalidatePath(`/patients/${patientId}`);
@@ -60,7 +61,7 @@ export async function deletePaymentAction(patientId: string, paymentId: string):
   try {
     deleted = await deletePayment(db, patientId, paymentId);
   } catch {
-    return { ok: false, error: 'Could not delete payment / पेमेंट हटवता आले नाही' };
+    return { ok: false, error: bilingual('fees.deletePaymentFailed') };
   }
   // Already gone (e.g. a double tap) is still ok, but there is nothing to record.
   if (deleted) await recordAudit(getDb(), { actor: user, action: 'payment.delete', patientId, summary: null });

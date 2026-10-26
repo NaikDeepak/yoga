@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react';
+import { mr } from '@/lib/i18n/mr';
 
 export default function AppLoading() {
   return (
@@ -12,7 +13,7 @@ export default function AppLoading() {
             Loading...
           </p>
           <p className="text-xs text-muted-foreground font-medium">
-            लोड होत आहे...
+            {mr.common.loading}
           </p>
         </div>
       </div>
