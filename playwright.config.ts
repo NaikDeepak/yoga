@@ -10,6 +10,12 @@ const PORT = 3100;
 // because two `next dev` in one folder clash on `.next/` and two PGlite processes corrupt one `.local-db/`.
 const OFF_PORT = 3101;
 
+// Which clinic profile the main server (3100) runs; unset means pawar. Anything else gets its own build and
+// database folders (a `.next/` built for pawar has pawar inlined in its client chunks) and never reuses a server
+// that is already running, which could be a pawar one.
+const PROFILE = process.env.CLINIC_PROFILE || 'pawar';
+const OTHER_CLINIC = PROFILE !== 'pawar';
+
 export default defineConfig({
   testDir: 'e2e',
   // Outside the repo: `next dev` watches the project folder, and traces written into it during a run
@@ -42,8 +48,13 @@ export default defineConfig({
     {
       command: `npx next dev -p ${PORT}`,
       url: `http://localhost:${PORT}/login`,
-      env: { LOCAL_MOCK: 'true' },
-      reuseExistingServer: !process.env.CI,
+      env: {
+        LOCAL_MOCK: 'true',
+        ...(OTHER_CLINIC
+          ? { CLINIC_PROFILE: PROFILE, NEXT_DIST_DIR: `.next-${PROFILE}`, LOCAL_DB_DIR: `.local-db-${PROFILE}` }
+          : {}),
+      },
+      reuseExistingServer: !process.env.CI && !OTHER_CLINIC,
       timeout: 240_000,
     },
     {
@@ -51,6 +62,8 @@ export default defineConfig({
       url: `http://localhost:${OFF_PORT}/login`,
       env: {
         LOCAL_MOCK: 'true',
+        // Pinned: one build folder serves every run, so a sunrise run must not leave a sunrise build behind.
+        CLINIC_PROFILE: 'pawar',
         LOCAL_DB_DIR: '.local-db-modules-off',
         NEXT_DIST_DIR: '.next-modules-off',
         FEATURE_POSTURE: 'false',

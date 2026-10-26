@@ -2,7 +2,7 @@
 
 > Tag new items `[core]` / `[switch]` / `[profile]` / `[extension]` (see `plans/2026-10-07-multi-clinic-direction.md`).
 
-**Feature freeze from 2026-10-07 (Deepak):** no new features; test and harden the current product. The Features table below is on hold.
+**The feature freeze (2026-10-07) ended 2026-10-25 for the second-clinic work** — roadmap `docs/superpowers/plans/2026-10-25-second-clinic-roadmap.md`. Phase 1 (product ready for any clinic) is done; next: Project 2 = Phase 2 "Sunrise's own copy, login off Supabase, backups, release to all", then Project 3 = Phase 3 "Admin site". Other new features stay on hold; F1 (pain body map + questionnaires) is parked. The Features table below is on hold.
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
 to their spec) when done. Last updated 2026-10-25.

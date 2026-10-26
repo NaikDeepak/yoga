@@ -6,12 +6,27 @@ import { CLINIC } from '@/lib/clinic';
 import { BRANCHES } from '@/lib/presets';
 import { contrast, contrastOnWhite } from '../helpers/contrast';
 
-describe('printed brand colours are readable on white', () => {
+describe.each(Object.entries(CLINIC_REGISTRY))('printed brand colours of %s are readable on white', (_slug, profile) => {
   it('accent text (small print) meets 4.5:1', () => {
-    expect(contrastOnWhite(pawar.brand.accentText ?? pawar.brand.accent)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastOnWhite(profile.brand.accentText ?? profile.brand.accent)).toBeGreaterThanOrEqual(4.5);
   });
   it('accent behind large bold text (report initials) meets 3:1', () => {
-    expect(contrastOnWhite(pawar.brand.accent)).toBeGreaterThanOrEqual(3);
+    expect(contrastOnWhite(profile.brand.accent)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('CLINIC_REGISTRY profiles', () => {
+  it('includes sunrise in CLINIC_REGISTRY', () => {
+    expect(CLINIC_REGISTRY).toHaveProperty('sunrise');
+  });
+
+  it('every entry in CLINIC_REGISTRY parses with clinicProfileSchema and passes contrast checks', () => {
+    expect(Object.keys(CLINIC_REGISTRY)).toContain('sunrise');
+    for (const [_slug, profile] of Object.entries(CLINIC_REGISTRY)) {
+      expect(() => clinicProfileSchema.parse(profile)).not.toThrow();
+      expect(contrastOnWhite(profile.brand.accentText ?? profile.brand.accent)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastOnWhite(profile.brand.accent)).toBeGreaterThanOrEqual(3);
+    }
   });
 });
 
@@ -114,6 +129,11 @@ describe('pinned clinic values', () => {
 
   it('preserves patientCodePrefix', () => {
     expect(clinicProfile.patientCodePrefix).toBe('PYT');
+  });
+
+  // e2e skips steps for modules a profile has off, so this is what keeps Pawar's run covering every module.
+  it('keeps every Pawar module on', () => {
+    expect(Object.values(pawar.features).every(Boolean)).toBe(true);
   });
 });
 

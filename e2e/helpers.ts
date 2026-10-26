@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { CLINIC_REGISTRY } from '../src/clinics';
 import { MOCK_PASSWORD, MOCK_USER } from '../src/lib/local-mock';
 
 export async function login(page: Page) {
@@ -18,3 +19,10 @@ export async function waitLoaded(page: Page) {
 export function uniqueName() {
   return `E2E Client ${Date.now()}`;
 }
+
+/** The clinic profile the main e2e server runs (`CLINIC_PROFILE`, unset = pawar; see playwright.config.ts). */
+export const PROFILE_SLUG = process.env.CLINIC_PROFILE || 'pawar';
+export const activeProfile = CLINIC_REGISTRY[PROFILE_SLUG];
+if (!activeProfile) throw new Error(`e2e: unknown CLINIC_PROFILE "${PROFILE_SLUG}"`);
+/** Module switches the active profile has on; steps for a module that is off are skipped. */
+export const activeFeatures = activeProfile.features;
