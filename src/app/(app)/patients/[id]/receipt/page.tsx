@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import { getDb } from '@/db/client';
+import { isFeatureEnabled } from '@/lib/features';
 import { getPatient } from '@/data/patients';
 import { getPatientFees } from '@/data/fees';
 import { BRANCHES } from '@/lib/presets';
@@ -22,6 +23,7 @@ function formatCurrency(n: number): string {
 
 export default async function ReceiptPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isFeatureEnabled('fees')) notFound();
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();

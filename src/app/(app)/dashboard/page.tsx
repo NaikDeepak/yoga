@@ -75,6 +75,7 @@ export default async function DashboardPage({
   const t = getTranslations(locale);
 
   const today = getISTDateString(0);
+  const showFees = isFeatureEnabled('fees');
   const showQuiet = isFeatureEnabled('shareLinks') && isFeatureEnabled('checkins');
   const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, birthdaysToday, savedWhatsappNumber, outstandingBalances, quiet] = await Promise.all([
     getDashboardStats(db, branch),
@@ -84,7 +85,7 @@ export default async function DashboardPage({
     getPendingAssessments(db, 5, branch),
     getBirthdaysToday(db, branch),
     getWhatsappNumber(db, user.id),
-    getOutstandingBalances(db, 5),
+    showFees ? getOutstandingBalances(db, 5) : Promise.resolve([]),
     listQuietClients(db, today, new Date(), { branch }),
   ]);
   const digestTarget = savedWhatsappNumber ?? CLINIC.whatsappDigits;
@@ -205,7 +206,7 @@ export default async function DashboardPage({
         {/* Regular Stat Cards */}
         <StatCard title={t.dashboard.visitsThisMonth} value={String(stats.visitsThisMonth)} />
 
-        <RevenueStatCard value={stats.revenueThisMonth} />
+        {showFees && <RevenueStatCard value={stats.revenueThisMonth} />}
 
         <StatCard title={t.dashboard.mostCommonAilment} value={stats.mostCommonProblem ?? '—'} />
       </div>
@@ -357,38 +358,40 @@ export default async function DashboardPage({
         </Card>
 
         {/* Outstanding Balances */}
-        <Card className="rounded-2xl shadow-sm border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">{t.dashboard.outstandingBalances}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {outstandingBalances.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noOutstanding}</p>
-            ) : (
-              <ul className="space-y-4 mt-2">
-                {outstandingBalances.map((b) => (
-                  <li key={b.patientId} className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                      {initials(b.fullName)}
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <Link href={`/patients/${b.patientId}?tab=fees`} className="text-sm font-medium truncate hover:text-primary transition-colors">
-                        {b.fullName}
-                      </Link>
-                      <span className="text-xs text-muted-foreground truncate">{b.patientCode}</span>
-                    </div>
-                    <div className="ml-auto text-right shrink-0">
-                      <p className="text-sm font-semibold text-destructive">₹{b.balance.toLocaleString('en-IN')}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {t.dashboard.ofCourseFee.replace('{fee}', b.courseFee.toLocaleString('en-IN'))}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        {showFees && (
+          <Card className="rounded-2xl shadow-sm border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold">{t.dashboard.outstandingBalances}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {outstandingBalances.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">{t.dashboard.noOutstanding}</p>
+              ) : (
+                <ul className="space-y-4 mt-2">
+                  {outstandingBalances.map((b) => (
+                    <li key={b.patientId} className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                        {initials(b.fullName)}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <Link href={`/patients/${b.patientId}?tab=fees`} className="text-sm font-medium truncate hover:text-primary transition-colors">
+                          {b.fullName}
+                        </Link>
+                        <span className="text-xs text-muted-foreground truncate">{b.patientCode}</span>
+                      </div>
+                      <div className="ml-auto text-right shrink-0">
+                        <p className="text-sm font-semibold text-destructive">₹{b.balance.toLocaleString('en-IN')}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {t.dashboard.ofCourseFee.replace('{fee}', b.courseFee.toLocaleString('en-IN'))}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Recent Activity Full Width */}

@@ -53,22 +53,15 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+import { patientTabKeys, resolvePatientTab, type PatientTab } from '@/lib/patient-tabs';
 import type { Translations } from '@/lib/i18n/en';
 
-const VALID_TABS = ['overview', 'treatment', 'documents', 'fees', 'assessment'] as const;
-type Tab = typeof VALID_TABS[number];
-
-// Old bookmarked/dashboard links may still use the pre-merge tab names.
-const LEGACY_TAB_MAP: Record<string, Tab> = { problems: 'overview', progress: 'treatment' };
+type Tab = PatientTab;
 
 function painColor(scale: number) {
   if (scale <= 3) return 'bg-primary';
   if (scale <= 6) return 'bg-yellow-500';
   return 'bg-destructive';
-}
-
-function isValidTab(value: unknown): value is Tab {
-  return typeof value === 'string' && VALID_TABS.includes(value as Tab);
 }
 
 export default async function PatientPage({
@@ -81,26 +74,29 @@ export default async function PatientPage({
   const t = getTranslations(await getLocale());
   const { id } = await params;
   const rawTab = (await searchParams).tab;
-  const tab: Tab = isValidTab(rawTab) ? rawTab : LEGACY_TAB_MAP[rawTab ?? ''] ?? 'overview';
+  const feesEnabled = isFeatureEnabled('fees');
+  const tab: Tab = resolvePatientTab(rawTab, feesEnabled);
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();
 
   const photoUrl = patient.photoPath ? await getStorage().createSignedUrl(patient.photoPath) : null;
-  const patientFees = await getPatientFees(db, id);
-  const charges = await listCharges(db, id);
+  const [patientFees, charges] = feesEnabled
+    ? await Promise.all([getPatientFees(db, id), listCharges(db, id)])
+    : [null, []];
 
-  const TABS: [Tab, string][] = [
-    ['overview', t.patientDetail.tabs.overview],
-    ['treatment', t.patientDetail.tabs.treatment],
-    ['documents', t.patientDetail.tabs.documents],
-    ['fees', t.patientDetail.tabs.fees],
-    ['assessment', t.patientDetail.tabs.assessment],
-  ];
+  const tabTitles: Record<Tab, string> = {
+    overview: t.patientDetail.tabs.overview,
+    treatment: t.patientDetail.tabs.treatment,
+    documents: t.patientDetail.tabs.documents,
+    fees: t.patientDetail.tabs.fees,
+    assessment: t.patientDetail.tabs.assessment,
+  };
+  const TABS: [Tab, string][] = patientTabKeys(feesEnabled).map((key) => [key, tabTitles[key]]);
 
   return (
     <div className="space-y-6 pb-24">
-      <PatientHeader patient={patient} photoUrl={photoUrl} hasCourseFee={patientFees.courseFee !== null} />
+      <PatientHeader patient={patient} photoUrl={photoUrl} hasCourseFee={patientFees !== null && patientFees.courseFee !== null} />
 
       <TabDropdown patientId={id} activeTab={tab} tabs={TABS} label={t.patientDetail.section} />
 
@@ -134,7 +130,7 @@ export default async function PatientPage({
             </div>
           </div>
         )}
-        {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} charges={charges} today={getISTDateString()} t={t} />}
+        {tab === 'fees' && patientFees && <Fees patientId={id} patientFees={patientFees} charges={charges} today={getISTDateString()} t={t} />}
         {tab === 'assessment' && <Assessment patientId={id} t={t} />}
       </div>
 
@@ -146,12 +142,14 @@ export default async function PatientPage({
           >
             + {t.treatment.addVisitBtn}
           </Link>
-          <Link 
-            href={`/patients/${id}?tab=fees`} 
-            className="hidden sm:inline-flex rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"
-          >
-            + {t.fees.recordPayment}
-          </Link>
+          {feesEnabled && (
+            <Link 
+              href={`/patients/${id}?tab=fees`} 
+              className="hidden sm:inline-flex rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"
+            >
+              + {t.fees.recordPayment}
+            </Link>
+          )}
           <Link 
             href={`/patients/${id}/print`} 
             className="rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"

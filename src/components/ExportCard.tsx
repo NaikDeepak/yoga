@@ -9,7 +9,7 @@ import { useTranslations } from '@/lib/i18n/context';
 import { Download } from 'lucide-react';
 
 /** Settings: download clients / visits / fees as CSV, for all branches or one (spec 2026-10-07-csv-export). */
-export function ExportCard() {
+export function ExportCard({ feesEnabled }: { feesEnabled: boolean }) {
   const t = useTranslations();
   const [branch, setBranch] = useState<string>('');
 
@@ -58,14 +58,16 @@ export function ExportCard() {
             <Download className="size-4" />
             <span>{t.export.visits}</span>
           </a>
-          <a
-            href={buildUrl('fees')}
-            download
-            className={buttonVariants({ variant: 'outline', size: 'sm' }) + ' flex-1 justify-center gap-1.5'}
-          >
-            <Download className="size-4" />
-            <span>{t.export.fees}</span>
-          </a>
+          {feesEnabled && (
+            <a
+              href={buildUrl('fees')}
+              download
+              className={buttonVariants({ variant: 'outline', size: 'sm' }) + ' flex-1 justify-center gap-1.5'}
+            >
+              <Download className="size-4" />
+              <span>{t.export.fees}</span>
+            </a>
+          )}
         </div>
       </CardContent>
     </Card>

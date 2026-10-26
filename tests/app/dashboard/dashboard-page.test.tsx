@@ -58,3 +58,19 @@ describe('DashboardPage quiet clients card feature switches', () => {
     expect(screen.queryByText(en.dashboard.quiet.title)).toBeNull();
   });
 });
+
+describe('DashboardPage fees switch', () => {
+  it('shows revenue and outstanding balances when fees is on', async () => {
+    vi.stubEnv('FEATURE_FEES', 'true');
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByText(en.dashboard.revenueThisMonth)).toBeTruthy();
+    expect(screen.getByText(en.dashboard.outstandingBalances)).toBeTruthy();
+  });
+
+  it('hides revenue and outstanding balances when fees is off', async () => {
+    vi.stubEnv('FEATURE_FEES', 'false');
+    render(await DashboardPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.queryByText(en.dashboard.revenueThisMonth)).toBeNull();
+    expect(screen.queryByText(en.dashboard.outstandingBalances)).toBeNull();
+  });
+});

@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
+import { isFeatureEnabled } from '@/lib/features';
+import { featureOffError } from '@/lib/feature-off';
 import { chargeSchema, firstError, isId, INVALID_PARAMS } from '@/lib/validation';
 import { addCharge, deleteCharge } from '@/data/charges';
 import { feeTypeLabel } from '@/lib/feeTypes';
@@ -14,6 +16,7 @@ export async function addChargeAction(
   _prevState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!isFeatureEnabled('fees')) return featureOffError('fees');
   const user = await requireUser();
   if (typeof patientId !== 'string' || !patientId) {
     return { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
@@ -34,6 +37,7 @@ export async function addChargeAction(
 }
 
 export async function deleteChargeAction(patientId: string, chargeId: string): Promise<ActionResult> {
+  if (!isFeatureEnabled('fees')) return featureOffError('fees');
   const user = await requireUser();
   if (!isId(patientId) || !isId(chargeId)) return { ok: false, error: INVALID_PARAMS };
   const db = getDb();

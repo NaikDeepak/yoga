@@ -8,7 +8,7 @@ vi.mock('@/lib/i18n/context', () => ({ useTranslations: () => en }));
 
 describe('ExportCard', () => {
   it('renders download links pointing to base export URLs by default', () => {
-    render(<ExportCard />);
+    render(<ExportCard feesEnabled />);
 
     expect(screen.getByText(en.export.title)).toBeTruthy();
     expect(screen.getByText(en.export.description)).toBeTruthy();
@@ -27,7 +27,7 @@ describe('ExportCard', () => {
   });
 
   it('updates all download links when branch is selected', () => {
-    render(<ExportCard />);
+    render(<ExportCard feesEnabled />);
 
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'Kharadi' } });
@@ -45,5 +45,12 @@ describe('ExportCard', () => {
     expect(clientsLink.getAttribute('href')).toBe('/api/export/clients');
     expect(visitsLink.getAttribute('href')).toBe('/api/export/visits');
     expect(feesLink.getAttribute('href')).toBe('/api/export/fees');
+  });
+
+  it('hides the fees download when fees is switched off, keeps the others', () => {
+    render(<ExportCard feesEnabled={false} />);
+    expect(screen.queryByRole('link', { name: new RegExp(en.export.fees, 'i') })).toBeNull();
+    expect(screen.getByRole('link', { name: new RegExp(en.export.clients, 'i') })).toBeTruthy();
+    expect(screen.getByRole('link', { name: new RegExp(en.export.visits, 'i') })).toBeTruthy();
   });
 });

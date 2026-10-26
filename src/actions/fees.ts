@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { recordAudit } from '@/data/audit';
 import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
+import { isFeatureEnabled } from '@/lib/features';
+import { featureOffError } from '@/lib/feature-off';
 import { courseFeeSchema, paymentSchema, firstError, isId, INVALID_PARAMS } from '@/lib/validation';
 import { setCourseFee, addPayment, deletePayment } from '@/data/fees';
 import type { ActionResult } from '@/actions/patients';
@@ -13,6 +15,7 @@ export async function setCourseFeeAction(
   _prevState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!isFeatureEnabled('fees')) return featureOffError('fees');
   const user = await requireUser();
   const result = courseFeeSchema.safeParse(Object.fromEntries(formData));
   if (!result.success) return { ok: false, error: firstError(result.error) };
@@ -32,6 +35,7 @@ export async function addPaymentAction(
   _prevState: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!isFeatureEnabled('fees')) return featureOffError('fees');
   const user = await requireUser();
   const result = paymentSchema.safeParse(Object.fromEntries(formData));
   if (!result.success) return { ok: false, error: firstError(result.error) };
@@ -48,6 +52,7 @@ export async function addPaymentAction(
 }
 
 export async function deletePaymentAction(patientId: string, paymentId: string): Promise<ActionResult> {
+  if (!isFeatureEnabled('fees')) return featureOffError('fees');
   const user = await requireUser();
   if (!isId(patientId) || !isId(paymentId)) return { ok: false, error: INVALID_PARAMS };
   const db = getDb();

@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb } from '../helpers/action-mocks';
 import { setCourseFeeAction, addPaymentAction, deletePaymentAction } from '@/actions/fees';
 import { createPatient } from '@/data/patients';
 import { getPatientFees } from '@/data/fees';
+import { featureOffError } from '@/lib/feature-off';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -83,5 +84,28 @@ describe('deletePaymentAction', () => {
     const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
     const r = await deletePaymentAction(p.id, '00000000-0000-0000-0000-000000000000');
     expect(r.ok).toBe(true);
+  });
+});
+
+describe('fees switch off', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('refuses every fee action and writes nothing', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    await addPaymentAction(p.id, prev, fd({ amount: '100', paymentDate: '2026-08-10' }));
+    const [pay] = (await getPatientFees(db, p.id)).payments;
+    vi.stubEnv('FEATURE_FEES', 'false');
+    expect(await setCourseFeeAction(p.id, prev, fd({ courseFee: '2000' }))).toEqual(featureOffError('fees'));
+    expect(await addPaymentAction(p.id, prev, fd({ amount: '50', paymentDate: '2026-08-11' }))).toEqual(featureOffError('fees'));
+    expect(await deletePaymentAction(p.id, pay.id)).toEqual(featureOffError('fees'));
+    const fees = await getPatientFees(db, p.id);
+    expect(fees.courseFee).toBeNull();
+    expect(fees.payments).toHaveLength(1);
+  });
+
+  it('still works when fees is on', async () => {
+    vi.stubEnv('FEATURE_FEES', 'true');
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    expect(await setCourseFeeAction(p.id, prev, fd({ courseFee: '2000' }))).toEqual({ ok: true });
   });
 });

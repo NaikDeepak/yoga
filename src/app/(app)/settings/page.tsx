@@ -13,6 +13,7 @@ import { getDb } from '@/db/client';
 import { getWhatsappNumber } from '@/data/preferences';
 import { CLINIC } from '@/lib/clinic';
 import { ExportCard } from '@/components/ExportCard';
+import { isFeatureEnabled } from '@/lib/features';
 import { isPostureEnabled } from '@/lib/features';
 
 export default async function SettingsPage() {
@@ -90,7 +91,7 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <ExportCard />
+      <ExportCard feesEnabled={isFeatureEnabled('fees')} />
 
       <Card className="rounded-2xl shadow-sm border-border max-w-lg">
         <CardHeader>
