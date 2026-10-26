@@ -95,6 +95,13 @@ describe('saveCheckinAction', () => {
     expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
   });
 
+  it('refuses check-ins when share links are switched off', async () => {
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    await expect(saveCheckinAction(token, 'mr', form({ done: 'all' })))
+      .rejects.toThrow(`REDIRECT:/s/${token}?lang=mr`);
+    expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
+  });
+
   it('keeps the day the form showed when saved just after midnight, but not a made-up day', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-05T18:31:00Z')); // 00:01 IST on 6 Oct

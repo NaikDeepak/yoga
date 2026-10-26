@@ -21,7 +21,7 @@ import { safeErrorMessage } from '@/lib/log';
 export async function saveCheckinAction(token: string, lang: string, formData: FormData): Promise<never> {
   const page = `/s/${encodeURIComponent(token)}`;
   const query = `?lang=${lang === 'mr' ? 'mr' : 'en'}`;
-  if (!isFeatureEnabled('checkins')) redirect(`${page}${query}`);
+  if (!isFeatureEnabled('shareLinks') || !isFeatureEnabled('checkins')) redirect(`${page}${query}`);
   if (token.length > 100) redirect(`/s/x${query}`); // real tokens are 43 characters
   const db = getDb();
   const link = await resolveShareLink(db, token, 'exercises', new Date());

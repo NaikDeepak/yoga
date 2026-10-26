@@ -13,8 +13,7 @@ import { getDb } from '@/db/client';
 import { getWhatsappNumber } from '@/data/preferences';
 import { CLINIC } from '@/lib/clinic';
 import { ExportCard } from '@/components/ExportCard';
-import { isFeatureEnabled } from '@/lib/features';
-import { isPostureEnabled } from '@/lib/features';
+import { isFeatureEnabled, isPostureEnabled } from '@/lib/features';
 
 export default async function SettingsPage() {
   const locale = await getLocale();

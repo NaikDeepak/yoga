@@ -86,7 +86,7 @@ export default async function DashboardPage({
     getBirthdaysToday(db, branch),
     getWhatsappNumber(db, user.id),
     showFees ? getOutstandingBalances(db, 5) : Promise.resolve([]),
-    listQuietClients(db, today, new Date(), { branch }),
+    showQuiet ? listQuietClients(db, today, new Date(), { branch }) : Promise.resolve({ clients: [], total: 0 }),
   ]);
   const digestTarget = savedWhatsappNumber ?? CLINIC.whatsappDigits;
 

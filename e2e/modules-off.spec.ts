@@ -40,6 +40,8 @@ test('every page works with every module switched off', async ({ page }) => {
       await waitLoaded(page);
       await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
       if (tab === 'treatment') await expect(page.getByRole('button', { name: 'Add visit' })).toBeVisible();
+      if (tab === 'documents') await expect(page.getByRole('button', { name: 'Upload' })).toBeVisible();
+      if (tab === 'assessment') await expect(page.getByText('Primary Concern').first()).toBeVisible();
       await noModuleUi(page);
     }
   });
@@ -61,17 +63,27 @@ test('every page works with every module switched off', async ({ page }) => {
     await noErrorScreen(page);
   });
 
+  await test.step('posture pages are 404', async () => {
+    await page.goto(`${clientUrl}/posture/new`);
+    await expect(page.getByRole('heading', { name: 'Page not found' }).first()).toBeVisible();
+    await noErrorScreen(page);
+  });
+
   await test.step('calendar, settings, dashboard, client list', async () => {
     await page.goto('/calendar');
+    await waitLoaded(page);
     await expect(page.getByRole('heading', { name: 'Calendar' }).first()).toBeVisible();
     await noModuleUi(page);
 
     await page.goto('/settings');
+    await waitLoaded(page);
     await expect(page.getByRole('heading', { name: 'Settings' }).first()).toBeVisible();
     await noModuleUi(page);
 
     await page.goto('/dashboard');
-    await expect(page.getByRole('main')).toBeVisible();
+    await waitLoaded(page);
+    await expect(page.getByRole('heading', { name: 'Dashboard' }).first()).toBeVisible();
+    await expect(page.getByText('Visits This Month').first()).toBeVisible();
     await expect(page.getByText('Quiet clients')).toHaveCount(0);
     await noModuleUi(page);
 

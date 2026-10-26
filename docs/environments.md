@@ -41,7 +41,12 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `SUPABASE_SERVICE_ROLE_KEY` | Server-side Supabase admin key (keepalive ping) | only for `dev:prod-db` | required · sensitive |
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Cloudflare R2 files. All four or the app refuses to start; the token needs **Object Read & Write** (listing is used to delete a client's folder) | not needed in mock mode | required · sensitive |
 | `GEMINI_API_KEY` | Google Gemini for AI treatment drafts and posture analysis | optional (canned without) | needed for AI features |
-| `FEATURE_POSTURE` | `true` shows posture analysis + flexibility tests (and lets posture share links work) | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
+| `FEATURE_POSTURE` | `true` shows posture analysis; `false` turns the whole posture module off (all posture pages 404, save/retake refuse, posture share links 404, Settings capture health hidden). Flexibility needs it too. `true`/`false` overrides the clinic profile | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
+| `FEATURE_FLEXIBILITY` | Flexibility tests on posture reports (page, report section, totals, save action). Needs `FEATURE_POSTURE`. `true`/`false` overrides the clinic profile | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
+| `FEATURE_AI` | AI treatment drafts and AI posture analysis (buttons hidden, actions refuse). `true`/`false` overrides the clinic profile | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
+| `FEATURE_SHARE_LINKS` | Client share links (exercises, posture, progress) and their panels; also stops check-ins and the dashboard nudge card. `true`/`false` overrides the clinic profile | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
+| `FEATURE_CHECKINS` | Daily home-exercise check-ins (public form, adherence card, dashboard quiet-clients card). `true`/`false` overrides the clinic profile | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
+| `FEATURE_FEES` | Fees tab, payments, charges, receipts, print fee summary, dashboard revenue/outstanding, fees CSV export. `true`/`false` overrides the clinic profile | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
 | `LOCAL_DB_DIR` | Folder of the local PGlite database | `.local-db` | never |
 | `NEXT_DIST_DIR` | Next.js build folder (`distDir`) | `.next` | never |
 | `APP_URL` | Public site address used in client share links | optional | `https://yoga-ten-tau.vercel.app` |
