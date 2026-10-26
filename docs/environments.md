@@ -62,6 +62,21 @@ Since then posture follows the clinic profile (Pawar: on); `FEATURE_POSTURE=fals
 Check with `vercel env ls production`. Remember: a local demo (`LOCAL_MOCK=true`) without a key returns a
 fixed dummy AI plan, so "it works locally" doesn't prove production has the key.
 
+## Sunrise preview (made-up second clinic, for checking only)
+
+`vercel deploy --yes` (no `--prod`) from any branch builds a **Preview** that runs as Sunrise:
+
+| | Preview |
+|---|---|
+| Database | Neon branch `sunrise-preview` → its own database `sunrise`, own user `sunrise_app` (no Pawar data) |
+| Login | Same Supabase Auth as production (same accounts) |
+| Files | Own R2 bucket `sunrise-preview-files`, token scoped to that bucket only |
+| Settings | Vercel env, scope **Preview**: `CLINIC_PROFILE=sunrise`, `DATABASE_URL`, 3 × `NEXT_PUBLIC_SUPABASE_*`, 4 × `R2_*`, `FEATURE_POSTURE=true`, `FEATURE_FLEXIBILITY=true` |
+
+Previews sit behind Vercel login. The project has no Git integration, so Preview env applies to every
+preview and branch-scoped values are refused; with CLI 54 add a Preview value with an empty branch:
+`vercel env add NAME preview "" --value V --yes`. Replaced by Sunrise's real setup in roadmap step 2.7.
+
 ## Add, change or remove a Vercel environment variable
 
 Env changes **only take effect after a new deploy** (`npm run deploy:prod`, from a clean `main`).

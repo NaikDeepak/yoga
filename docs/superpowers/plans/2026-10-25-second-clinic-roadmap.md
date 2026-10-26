@@ -64,17 +64,19 @@ Four PRs, each deployed to Pawar before the next starts. Task numbers refer to `
   - `no-inline-marathi` guard test green; existing message tests unchanged.
   - Release: `npm run db:status:prod` → `db:migrate:prod` (D types "migrate prod") → `deploy:prod`.
     Pawar's treatment tab, printout and charge form show the same sections and fee types as before.
-- [ ] **1.4 (C) PR-D "Sunrise + both clinics in CI"** — Tasks 10–11: Sunrise profile and icons, identity e2e,
+- [x] **1.4 (C) PR-D "Sunrise + both clinics in CI"** — Tasks 10–11: Sunrise profile and icons, identity e2e,
   CI runs both profiles; docs (`architecture.md`, `environments.md`, `backlog.md`: freeze ended, F1 parked).
   **Verify:**
   - `CLINIC_PROFILE=sunrise npm run dev`: blue/teal, Sunrise name and logo, physio sections, no posture or AI.
   - `CLINIC_PROFILE=sunrise npm run e2e` green, including `clinic-identity.spec.ts` (no Pawar text, image
     or colour on any page, printout, receipt, share page or manifest).
   - CI shows e2e for `pawar` and `sunrise`; D updates the required check names in branch protection.
-- [ ] **1.5 (D)** Click through Sunrise locally on the Mac for 15 minutes (C starts it, D drives).
+- [x] **1.5 (D)** Click through Sunrise locally on the Mac for 15 minutes (C starts it, D drives).
+  Done 2026-10-27 on the Vercel preview instead of the Mac (see `docs/environments.md` "Sunrise preview"): D added a client, visit and receipt; nothing odd reported.
   **Verify:** D's list of anything odd is empty or each item is fixed in a follow-up PR.
 
 **Gate 1:** Pawar production unchanged after all four deploys; Sunrise works locally; D says "Phase 1 done".
+✅ Passed 2026-10-27 (D: "Phase 1 done"). PR-A..D = #74–#77, all deployed; production on b9ba1bf.
 
 ---
 
