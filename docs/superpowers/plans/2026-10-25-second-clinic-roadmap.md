@@ -76,7 +76,7 @@ Four PRs, each deployed to Pawar before the next starts. Task numbers refer to `
   **Verify:** D's list of anything odd is empty or each item is fixed in a follow-up PR.
 
 **Gate 1:** Pawar production unchanged after all four deploys; Sunrise works locally; D says "Phase 1 done".
-✅ Passed 2026-10-27 (D: "Phase 1 done"). PR-A..D = #73–#77, all deployed; production on b9ba1bf.
+✅ Passed 2026-10-27 (D: "Phase 1 done"). PR-A..D = #74–#77, all deployed; production on b9ba1bf.
 
 ---
 
