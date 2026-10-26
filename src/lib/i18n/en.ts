@@ -1,5 +1,7 @@
 export const en = {
   common: {
+    // Route-level loading screen (shows both languages; e2e waits for the English text)
+    loadingScreen: 'Loading...',
     save: 'Save',
     saving: 'Saving…',
     cancel: 'Cancel',

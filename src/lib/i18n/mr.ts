@@ -2,6 +2,8 @@ import { en, type Translations } from './en';
 
 export const mr: Translations = {
   common: {
+    // Route-level loading screen (shows both languages; e2e waits for the English text)
+    loadingScreen: 'लोड होत आहे...',
     save: 'जतन करा',
     saving: 'जतन होत आहे…',
     cancel: 'रद्द करा',
