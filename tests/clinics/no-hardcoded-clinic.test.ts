@@ -2,30 +2,8 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { clinicProfile } from '@/clinics';
+import { FORBIDDEN } from '../helpers/pawar-identity';
 
-const FORBIDDEN = [
-  'Pawar',
-  'पवार',
-  'PYTC',
-  'pytc-logo',
-  '8550921037',
-  '85509 21037',
-  'pawarsyog',
-  'Dodamarg',
-  'Yog Therapy',
-  'LIVE PAIN-FREE',
-  'Narayan',
-  'नारायण',
-  'पावर',
-  'Manjari',
-  'Kharadi',
-  'Morgaon',
-  'PYT-',
-  '#1B3A2E',
-  '#C8962E',
-  '#3B6954',
-  '/icons/',
-];
 
 function getAllSourceFiles(dir: string): string[] {
   const results: string[] = [];

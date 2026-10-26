@@ -48,10 +48,25 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
           NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-placeholder"
 
+      - name: Build (sunrise profile)
+        run: npm run build
+        env:
+          LOCAL_MOCK: "false"
+          CLINIC_PROFILE: "sunrise"
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "ci-placeholder"
+
   e2e:
-    name: End-to-end smoke (mock mode)
+    name: End-to-end smoke (mock mode) (${{ matrix.clinic }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        clinic: [pawar, sunrise]
+    env:
+      CLINIC_PROFILE: ${{ matrix.clinic }}
 
     steps:
       - name: Checkout code
@@ -77,7 +92,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.clinic }}
           path: |
             playwright-report/
             /tmp/yoga-e2e-results/

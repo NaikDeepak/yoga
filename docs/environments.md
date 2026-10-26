@@ -113,7 +113,11 @@ npm run db:status:prod   # read-only: applied / pending migrations, row counts
 GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every pull request to `main` and push to `main`:
 1. `npm run typecheck` (`tsc --noEmit`).
 2. `npm run coverage` (full vitest test suite; 80% coverage gate on `src/lib`, `src/data`, `src/actions`).
-3. `npm run build` (production build with `LOCAL_MOCK=false`).
+3. `npm run build` (production build with `LOCAL_MOCK=false`), run twice: once with `CLINIC_PROFILE=pawar`, once with `CLINIC_PROFILE=sunrise`.
+
+The `e2e` job is a matrix over clinic profiles, so its check names are **`End-to-end smoke (mock mode) (pawar)`** and **`End-to-end smoke (mock mode) (sunrise)`** (the old unsuffixed name no longer exists). The `ci` job keeps its name `Typecheck, Test & Build`. **Deepak updates the required checks in GitHub branch protection** to the new names; until then the old `End-to-end smoke (mock mode)` requirement can never be satisfied.
+
+Run e2e for the second clinic locally: `CLINIC_PROFILE=sunrise npm run e2e`. The main server then uses its own `.next-sunrise/` and `.local-db-sunrise/` folders (gitignored) and never reuses a server already on port 3100. That run also executes `e2e/clinic-identity.spec.ts` (skipped for pawar), which fails if anything of Pawar's shows.
 
 Older runs on the same branch or PR ref are cancelled automatically (`concurrency`).
 

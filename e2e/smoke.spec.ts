@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { login, uniqueName, waitLoaded } from './helpers';
+import { activeFeatures, login, uniqueName, waitLoaded } from './helpers';
 
 // One happy path through the main areas, in the order the clinic uses them. Steps share one client,
 // so this is a single test with steps rather than independent tests.
@@ -36,7 +36,8 @@ test('client lifecycle: add → visit → fee + receipt → exercises → share 
     await expect(visit.getByRole('radio', { name: '5', exact: true })).not.toBeChecked();
   });
 
-  await test.step('set a course fee, record a payment, open the receipt', async () => {
+  // Steps for a module the active clinic profile has switched off are skipped (the modules-off spec covers the absence).
+  if (activeFeatures.fees) await test.step('set a course fee, record a payment, open the receipt', async () => {
     await page.goto(`${clientUrl}?tab=fees`);
     await waitLoaded(page);
     await page.getByLabel('Total Course Fee (₹)').fill('3000');
@@ -60,10 +61,10 @@ test('client lifecycle: add → visit → fee + receipt → exercises → share 
     await waitLoaded(page);
     await page.getByRole('checkbox', { name: 'Plank', exact: true }).check();
     await page.getByRole('button', { name: 'Save Exercises' }).click();
-    await expect(page.getByRole('button', { name: 'Share with client' })).toBeVisible();
+    if (activeFeatures.shareLinks) await expect(page.getByRole('button', { name: 'Share with client' })).toBeVisible();
   });
 
-  await test.step('share the exercises; the link opens without a login', async () => {
+  if (activeFeatures.shareLinks) await test.step('share the exercises; the link opens without a login', async () => {
     await page.getByRole('button', { name: 'Share with client' }).click();
     const link = page.locator('input[readonly][value*="/s/"]');
     await expect(link).toBeVisible();
@@ -76,7 +77,7 @@ test('client lifecycle: add → visit → fee + receipt → exercises → share 
     await client.close();
   });
 
-  await test.step('stop sharing; the link stops working', async () => {
+  if (activeFeatures.shareLinks) await test.step('stop sharing; the link stops working', async () => {
     await page.getByRole('button', { name: 'Stop sharing' }).click();
     await expect(page.getByRole('button', { name: 'Stop sharing' })).toHaveCount(0);
 

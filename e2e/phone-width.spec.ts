@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { login, uniqueName, waitLoaded } from './helpers';
+import { activeFeatures, login, uniqueName, waitLoaded } from './helpers';
 
 // H8: no page may scroll sideways on a narrow phone. Pixel 7 (412px) hides problems that a 360px phone shows,
 // so each page is checked at the two most common narrow widths. Long "English / मराठी" labels are the usual cause.
@@ -45,20 +45,24 @@ test('every main page fits a narrow phone without sideways scrolling', async ({ 
     await page.waitForURL(/\/patients\/[0-9a-f-]{36}$/);
     clientUrl = new URL(page.url()).pathname;
 
-    await page.goto(`${clientUrl}?tab=fees`);
-    await waitLoaded(page);
-    await page.getByLabel('Total Course Fee (₹)').fill('3000');
-    await page.getByRole('button', { name: 'Set', exact: true }).click();
-    await expect(page.getByText('₹3,000').first()).toBeVisible();
+    if (activeFeatures.fees) {
+      await page.goto(`${clientUrl}?tab=fees`);
+      await waitLoaded(page);
+      await page.getByLabel('Total Course Fee (₹)').fill('3000');
+      await page.getByRole('button', { name: 'Set', exact: true }).click();
+      await expect(page.getByText('₹3,000').first()).toBeVisible();
+    }
 
     await page.goto(`${clientUrl}?tab=treatment`);
     await waitLoaded(page);
     await page.getByRole('checkbox', { name: 'Plank', exact: true }).check();
     await page.getByRole('button', { name: 'Save Exercises' }).click();
-    await page.getByRole('button', { name: 'Share with client' }).click();
-    const link = page.locator('input[readonly][value*="/s/"]');
-    await expect(link).toBeVisible();
-    shareUrl = new URL(await link.inputValue()).pathname;
+    if (activeFeatures.shareLinks) {
+      await page.getByRole('button', { name: 'Share with client' }).click();
+      const link = page.locator('input[readonly][value*="/s/"]');
+      await expect(link).toBeVisible();
+      shareUrl = new URL(await link.inputValue()).pathname;
+    }
   });
 
   const pages = () => [
@@ -68,11 +72,11 @@ test('every main page fits a narrow phone without sideways scrolling', async ({ 
     `${clientUrl}?tab=overview`,
     `${clientUrl}?tab=treatment`,
     `${clientUrl}?tab=documents`,
-    `${clientUrl}?tab=fees`,
+    ...(activeFeatures.fees ? [`${clientUrl}?tab=fees`] : []),
     `${clientUrl}?tab=assessment`,
     `${clientUrl}/edit`,
     `${clientUrl}/print`,
-    `${clientUrl}/receipt`,
+    ...(activeFeatures.fees ? [`${clientUrl}/receipt`] : []),
     '/calendar',
     '/settings',
   ];
@@ -90,7 +94,7 @@ test('every main page fits a narrow phone without sideways scrolling', async ({ 
     await test.step(`${width}px: login and the client's share page`, async () => {
       const client = await browser.newContext({ viewport: { width, height: 800 }, isMobile: true, hasTouch: true });
       const anon = await client.newPage();
-      for (const url of ['/login', shareUrl]) {
+      for (const url of ['/login', ...(shareUrl ? [shareUrl] : [])]) {
         await anon.goto(url);
         await expectFits(anon, `${url.startsWith('/s/') ? 'share page' : url} at ${width}px`);
       }
