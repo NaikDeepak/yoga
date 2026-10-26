@@ -55,7 +55,7 @@ Four PRs, each deployed to Pawar before the next starts. Task numbers refer to `
   - `npx playwright test --project=phone-modules-off` green (every page opens with every module off).
   - `npm run e2e` (all on) green.
   - After deploy: Pawar unchanged (all modules on).
-- [ ] **1.3 (C) PR-C "clinic type + wording"** — Tasks 8–9: treatment sections and fee types per clinic type
+- [x] **1.3 (C) PR-C "clinic type + wording"** — Tasks 8–9: treatment sections and fee types per clinic type
   (one additive migration), all wording in locale files.
   **Verify:**
   - `npm run db:generate` produced one migration that only adds 5 nullable columns; `migration-reviewer`
