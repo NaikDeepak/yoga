@@ -6,6 +6,9 @@ import { render, screen } from '@testing-library/react';
 import FlexibilityCapturePage from '@/app/(app)/patients/[id]/posture/[assessmentId]/flexibility/page';
 import PostureReportPage from '@/app/(app)/patients/[id]/posture/[assessmentId]/page';
 import PostureComparePage from '@/app/(app)/patients/[id]/posture/compare/page';
+import NewPosturePage from '@/app/(app)/patients/[id]/posture/new/page';
+import RetakePage from '@/app/(app)/patients/[id]/posture/[assessmentId]/retake/page';
+import CaptureStatsPage from '@/app/(app)/settings/capture/page';
 import PatientPage from '@/app/(app)/patients/[id]/page';
 import { createPatient } from '@/data/patients';
 import { addAssessment } from '../../helpers/posture-assessment';
@@ -42,6 +45,35 @@ describe('FlexibilityCapturePage', () => {
         searchParams: Promise.resolve({}),
       }),
     ).rejects.toThrow('NOT_FOUND');
+  });
+});
+
+describe('posture switch off: every posture page is NOT_FOUND', () => {
+  beforeEach(() => vi.stubEnv('FEATURE_POSTURE', 'false'));
+  const params = () => Promise.resolve({ id: patientId, assessmentId });
+
+  it('new, retake, report, compare, flexibility and capture health', async () => {
+    const a2 = await addAssessment(db, patientId, '2026-10-10', {}, storage);
+    await expect(NewPosturePage({ params: Promise.resolve({ id: patientId }) })).rejects.toThrow('NOT_FOUND');
+    await expect(RetakePage({ params: params(), searchParams: Promise.resolve({ views: 'front' }) })).rejects.toThrow('NOT_FOUND');
+    await expect(PostureReportPage({ params: params() })).rejects.toThrow('NOT_FOUND');
+    await expect(PostureComparePage({
+      params: Promise.resolve({ id: patientId }), searchParams: Promise.resolve({ a: assessmentId, b: a2.id }),
+    })).rejects.toThrow('NOT_FOUND');
+    await expect(FlexibilityCapturePage({ params: params(), searchParams: Promise.resolve({}) })).rejects.toThrow('NOT_FOUND');
+    await expect(CaptureStatsPage()).rejects.toThrow('NOT_FOUND');
+  });
+
+  it('flexibility page stays NOT_FOUND when only posture is off', async () => {
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'true');
+    await expect(FlexibilityCapturePage({ params: params(), searchParams: Promise.resolve({}) })).rejects.toThrow('NOT_FOUND');
+  });
+
+  it('pages render when posture is on', async () => {
+    vi.stubEnv('FEATURE_POSTURE', 'true');
+    await expect(NewPosturePage({ params: Promise.resolve({ id: patientId }) })).resolves.toBeTruthy();
+    await expect(PostureReportPage({ params: params() })).resolves.toBeTruthy();
+    await expect(CaptureStatsPage()).resolves.toBeTruthy();
   });
 });
 
@@ -87,12 +119,16 @@ describe('PostureReportPage feature flags', () => {
     expect(screen.queryByText(en.posture.ai.title)).toBeNull();
   });
 
-  it('hides the share panel when shareLinks is switched off', async () => {
+  it('shows the share panel when shareLinks is on, and hides it when off', async () => {
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'true');
+    const onElement = await PostureReportPage({ params: Promise.resolve({ id: patientId, assessmentId }) });
+    const { unmount } = render(await resolveServerTree(onElement));
+    expect(screen.getAllByText(en.shareExercises.title).length).toBeGreaterThan(0);
+    unmount();
+
     vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
-    const element = await PostureReportPage({
-      params: Promise.resolve({ id: patientId, assessmentId }),
-    });
-    render(element);
+    const offElement = await PostureReportPage({ params: Promise.resolve({ id: patientId, assessmentId }) });
+    render(await resolveServerTree(offElement));
     expect(screen.queryAllByText(en.shareExercises.title)).toHaveLength(0);
   });
 });

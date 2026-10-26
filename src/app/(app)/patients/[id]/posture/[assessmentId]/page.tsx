@@ -12,7 +12,7 @@ import { bmiBand, genderLabel, painBand, stressBand } from '@/lib/wellbeing';
 import { BmiGauge, StressGauge } from '@/components/posture/WellbeingGauges';
 import { SharePanel } from '@/components/SharePanel';
 import { activeShareLink } from '@/data/share-links';
-import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
+import { isFeatureEnabled } from '@/lib/features';
 import { getFlexibility } from '@/data/flexibility';
 import { FlexibilitySection } from '@/components/posture/FlexibilitySection';
 import { TotalScore } from '@/components/posture/TotalScore';
@@ -52,6 +52,7 @@ export default async function PostureReportPage({
 }: {
   params: Promise<{ id: string; assessmentId: string }>;
 }) {
+  if (!isFeatureEnabled('posture')) notFound();
   const { id, assessmentId } = await params;
   const db = getDb();
   const patient = await getPatient(db, id);
@@ -140,7 +141,7 @@ export default async function PostureReportPage({
         </div>
       </div>
 
-      {isPostureEnabled() && isFeatureEnabled('shareLinks') && <div className="mb-4 print:hidden">
+      {isFeatureEnabled('shareLinks') && <div className="mb-4 print:hidden">
         <SharePanel
           target={{ kind: 'posture', patientId: id, assessmentId, otherReportOn: sharedOtherOn }}
           active={share && share.postureAssessmentId === assessmentId ? {
@@ -363,7 +364,7 @@ export default async function PostureReportPage({
         <FlexibilitySection
           flexibility={flexibility}
           photoUrls={flexPhotoUrls}
-          captureHref={isPostureEnabled() ? `/patients/${id}/posture/${assessmentId}/flexibility` : null}
+          captureHref={`/patients/${id}/posture/${assessmentId}/flexibility`}
           t={t}
         />
       )}

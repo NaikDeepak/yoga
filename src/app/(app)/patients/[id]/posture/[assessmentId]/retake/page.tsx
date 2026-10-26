@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { isFeatureEnabled } from '@/lib/features';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { consentWithdrawn, getPostureAssessment } from '@/data/posture';
@@ -13,6 +14,7 @@ export default async function RetakePostureViewsPage({
   params: Promise<{ id: string; assessmentId: string }>;
   searchParams: Promise<{ views?: string }>;
 }) {
+  if (!isFeatureEnabled('posture')) notFound();
   const { id, assessmentId } = await params;
   const requested = ((await searchParams).views ?? '').split(',');
   const views = POSTURE_VIEWS.filter((v): v is PostureView => requested.includes(v));

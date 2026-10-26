@@ -40,6 +40,7 @@ export default async function PostureComparePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ a?: string; b?: string }>;
 }) {
+  if (!isFeatureEnabled('posture')) notFound();
   const { id } = await params;
   const { a: aId, b: bId } = await searchParams;
   if (!aId || !bId || aId === bId) notFound();

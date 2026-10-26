@@ -69,6 +69,7 @@ function collectPhotos<K extends PostureView | FlexShot>(formData: FormData, vie
  * On success redirects to the new assessment's report.
  */
 export async function savePostureAssessmentAction(patientId: string, formData: FormData): Promise<ActionResult> {
+  if (!isFeatureEnabled('posture')) return featureOffError('posture');
   const user = await requireUser();
   if (typeof patientId !== 'string' || !patientId) return INVALID_PARAMS;
 
@@ -121,6 +122,7 @@ export async function replacePostureViewsAction(
   assessmentId: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!isFeatureEnabled('posture')) return featureOffError('posture');
   const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
@@ -165,6 +167,8 @@ export async function saveFlexibilityTestsAction(
   assessmentId: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  // Flexibility lives on a posture assessment: posture off turns it off too.
+  if (!isFeatureEnabled('posture')) return featureOffError('posture');
   if (!isFeatureEnabled('flexibility')) return featureOffError('flexibility');
   const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {

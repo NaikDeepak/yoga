@@ -14,7 +14,7 @@ export default async function FlexibilityCapturePage({
   params: Promise<{ id: string; assessmentId: string }>;
   searchParams: Promise<{ shots?: string }>;
 }) {
-  if (!isFeatureEnabled('flexibility')) notFound();
+  if (!isFeatureEnabled('posture') || !isFeatureEnabled('flexibility')) notFound();
 
   const { id, assessmentId } = await params;
   const requested = (await searchParams).shots?.split(',');

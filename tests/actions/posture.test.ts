@@ -4,7 +4,7 @@ import { freshTestDb, storage } from '../helpers/action-mocks';
 import { alignedLandmarks, jpeg } from '../helpers/posture';
 import {
   savePostureAssessmentAction, deletePostureAssessmentAction, replacePostureViewsAction,
-  generatePostureAiAction, savePostureAiAction, saveFlexibilityTestsAction,
+  generatePostureAiAction, savePostureAiAction, saveFlexibilityTestsAction, withdrawPhotoConsentAction,
 } from '@/actions/posture';
 import { featureOffError } from '@/lib/feature-off';
 import { generatePostureAnalysis } from '@/lib/gemini';
@@ -355,3 +355,60 @@ describe('saveFlexibilityTestsAction feature flag', () => {
   });
 });
 
+
+describe('posture switch off', () => {
+  const addOne = () => addPostureAssessment(db, storage, {
+    patientId, assessedOn: '2026-10-04', heightCm: 160, note: null, consentAt: new Date(),
+    views: POSTURE_VIEWS.map((v) => ({ ...viewPayload(v), photo: jpeg() })),
+  });
+
+  it('refuses to save an assessment and writes nothing', async () => {
+    vi.stubEnv('FEATURE_POSTURE', 'false');
+    try {
+      expect(await savePostureAssessmentAction(patientId, form())).toEqual(featureOffError('posture'));
+      expect(await listPostureAssessments(db, patientId)).toEqual([]);
+      expect(storage.files.size).toBe(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('refuses a retake and keeps the stored photos', async () => {
+    const { id } = await addOne();
+    const before = storage.files.size;
+    vi.stubEnv('FEATURE_POSTURE', 'false');
+    try {
+      const f = new FormData();
+      f.set('payload', JSON.stringify({ views: [viewPayload('front')] }));
+      f.set('photo_front', jpeg('front.jpg'));
+      expect(await replacePostureViewsAction(patientId, id, f)).toEqual(featureOffError('posture'));
+      expect(storage.files.size).toBe(before);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('refuses flexibility tests too (they live on a posture assessment) even when flexibility is on', async () => {
+    const { id } = await addOne();
+    vi.stubEnv('FEATURE_POSTURE', 'false');
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'true');
+    try {
+      expect(await saveFlexibilityTestsAction(patientId, id, form())).toEqual(featureOffError('posture'));
+      expect((await getFlexibility(db, id)).shots).toHaveLength(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('still lets the physio delete an assessment and withdraw photo consent', async () => {
+    const { id } = await addOne();
+    vi.stubEnv('FEATURE_POSTURE', 'false');
+    try {
+      expect(await withdrawPhotoConsentAction(patientId)).toMatchObject({ ok: true });
+      await expect(deletePostureAssessmentAction(patientId, id)).rejects.toThrow(/REDIRECT/);
+      expect(await listPostureAssessments(db, patientId)).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+});
