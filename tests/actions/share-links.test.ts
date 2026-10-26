@@ -124,6 +124,13 @@ describe('recordNudgeAction', () => {
     expect((await activeShareLink(db, patientId, 'exercises', new Date()))?.nudgedAt).toBeInstanceOf(Date);
   });
 
+  it('refuses and writes nothing when shareLinks is switched off', async () => {
+    await createExerciseShareLinkAction(patientId);
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    expect(await recordNudgeAction(patientId)).toEqual(featureOffError('shareLinks'));
+    expect((await activeShareLink(db, patientId, 'exercises', new Date()))?.nudgedAt).toBeNull();
+  });
+
   it('fails without a live link, or for an invalid id', async () => {
     expect(await recordNudgeAction(patientId)).toMatchObject({ ok: false });
     expect(await recordNudgeAction('nope')).toMatchObject({ ok: false });

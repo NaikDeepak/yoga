@@ -5,6 +5,7 @@ import { getFollowUpsThisWeek, getISTDateString, type FollowUp } from '@/data/vi
 import { getOutstandingBalances } from '@/data/fees';
 import { listQuietClients } from '@/data/quiet-clients';
 import { QuietClientsCard } from '@/components/QuietClientsCard';
+import { isFeatureEnabled } from '@/lib/features';
 import { AilmentBarChart } from '@/components/AilmentBarChart';
 import { WeeklyVisitsChart } from '@/components/WeeklyVisitsChart';
 import { BranchFilter } from '@/components/BranchFilter';
@@ -74,6 +75,7 @@ export default async function DashboardPage({
   const t = getTranslations(locale);
 
   const today = getISTDateString(0);
+  const showQuiet = isFeatureEnabled('shareLinks') && isFeatureEnabled('checkins');
   const [stats, ailments, recentVisits, rawFollowUps, pendingAssessments, birthdaysToday, savedWhatsappNumber, outstandingBalances, quiet] = await Promise.all([
     getDashboardStats(db, branch),
     getAilmentBreakdown(db, branch),
@@ -277,8 +279,8 @@ export default async function DashboardPage({
 
       {/* Bottom Row */}
       <div className="grid gap-6 sm:grid-cols-2">
-        {/* Quiet clients: home check-ins stopped, one-tap WhatsApp nudge */}
-        <QuietClientsCard clients={quiet.clients} today={today} t={t} className="sm:col-span-2" />
+        {/* Quiet clients: home check-ins stopped, one-tap WhatsApp nudge (needs both check-ins and links) */}
+        {showQuiet && <QuietClientsCard clients={quiet.clients} today={today} t={t} className="sm:col-span-2" />}
 
         {/* Pending Assessments */}
         <Card className="rounded-2xl shadow-sm border-border">

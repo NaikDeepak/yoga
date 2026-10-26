@@ -13,6 +13,7 @@ import { saveFlexibilityShots } from '@/data/flexibility';
 import { flexShot } from '../../helpers/flexibility';
 import { jpeg } from '../../helpers/posture';
 import { en } from '@/lib/i18n/en';
+import { resolveServerTree } from '../../helpers/server-render';
 import type { Db } from '@/db/types';
 
 vi.mock('@/lib/i18n/server', () => ({ getLocale: async () => 'en' }));
@@ -128,15 +129,40 @@ describe('PostureComparePage feature flags', () => {
 });
 
 describe('PatientPage feature flags', () => {
+  beforeEach(() => {
+    vi.stubGlobal('IntersectionObserver', class { observe() {} unobserve() {} disconnect() {} });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
   it('hides the share panel on treatment tab when shareLinks is switched off', async () => {
     vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
     const element = await PatientPage({
       params: Promise.resolve({ id: patientId }),
       searchParams: Promise.resolve({ tab: 'treatment' }),
     });
-    render(element);
+    render(await resolveServerTree(element));
     expect(screen.queryAllByText(en.shareExercises.title)).toHaveLength(0);
     expect(screen.queryAllByText(en.shareProgress.title)).toHaveLength(0);
+  });
+
+  it('hides the home-exercise check-in card on treatment tab when checkins is switched off', async () => {
+    vi.stubEnv('FEATURE_CHECKINS', 'false');
+    const element = await PatientPage({
+      params: Promise.resolve({ id: patientId }),
+      searchParams: Promise.resolve({ tab: 'treatment' }),
+    });
+    render(await resolveServerTree(element));
+    expect(screen.queryAllByText(en.homeExercise.title)).toHaveLength(0);
+  });
+
+  it('shows the home-exercise check-in card when checkins is on', async () => {
+    vi.stubEnv('FEATURE_CHECKINS', 'true');
+    const element = await PatientPage({
+      params: Promise.resolve({ id: patientId }),
+      searchParams: Promise.resolve({ tab: 'treatment' }),
+    });
+    render(await resolveServerTree(element));
+    expect(screen.getAllByText(en.homeExercise.title).length).toBeGreaterThan(0);
   });
 });
 

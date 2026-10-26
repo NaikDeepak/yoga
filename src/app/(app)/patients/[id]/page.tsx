@@ -522,10 +522,12 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
             }}
           />
         )}
-        <HomeExerciseCard
-          checkins={checkins} lastCheckin={lastCheckin} today={today} since={since}
-          liveLinkSince={share ? getISTDateString(0, share.createdAt) : null} t={t}
-        />
+        {isFeatureEnabled('checkins') && (
+          <HomeExerciseCard
+            checkins={checkins} lastCheckin={lastCheckin} today={today} since={since}
+            liveLinkSince={share ? getISTDateString(0, share.createdAt) : null} t={t}
+          />
+        )}
       </div>
 
       <div className="space-y-4">
