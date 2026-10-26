@@ -58,6 +58,11 @@ export const treatmentSchema = z.object({
   dietPlan: opt(z.string().trim().max(2000)),
   medicines: opt(z.string().trim().max(2000)),
   panchkarma: opt(z.string().trim().max(2000)),
+  exerciseTherapy: opt(z.string().trim().max(2000)),
+  manualTherapy: opt(z.string().trim().max(2000)),
+  electrotherapy: opt(z.string().trim().max(2000)),
+  homeProgramme: opt(z.string().trim().max(2000)),
+  advice: opt(z.string().trim().max(2000)),
 });
 export type TreatmentInput = z.infer<typeof treatmentSchema>;
 

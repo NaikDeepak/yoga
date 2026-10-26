@@ -9,6 +9,7 @@ import { listVisits } from '@/data/visits';
 import { computeBmi } from '@/lib/bmi';
 import { generateTreatmentDraft, type TreatmentContext } from '@/lib/gemini';
 import { isFeatureEnabled } from '@/lib/features';
+import { clinicProfile } from '@/clinics';
 
 export async function GET(
   _req: Request,
@@ -86,7 +87,7 @@ export async function GET(
       },
     };
 
-    const draft = await generateTreatmentDraft(context);
+    const draft = await generateTreatmentDraft(context, clinicProfile.practice.treatmentSections);
     return NextResponse.json(draft);
   } catch (err) {
     console.error('AI treatment plan generation failed:', safeErrorMessage(err));

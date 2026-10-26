@@ -58,6 +58,11 @@ export const treatmentPlans = pgTable('treatment_plans', {
   dietPlan: text('diet_plan'),
   medicines: text('medicines'),
   panchkarma: text('panchkarma'),
+  exerciseTherapy: text('exercise_therapy'),
+  manualTherapy: text('manual_therapy'),
+  electrotherapy: text('electrotherapy'),
+  homeProgramme: text('home_programme'),
+  advice: text('advice'),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }).enableRLS();

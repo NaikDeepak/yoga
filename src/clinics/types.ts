@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { FEE_TYPE_KEYS } from '@/lib/feeTypes';
+import { TREATMENT_SECTION_KEYS } from '@/lib/treatment-sections';
 
 const hex = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Expected a #RRGGBB colour');
 
@@ -80,6 +82,14 @@ export const clinicProfileSchema = z.object({
     .min(1)
     .regex(/^[A-Za-z]+$/, 'patientCodePrefix must contain letters only'),
   appName: z.string().optional(),
+  // What the clinic practises: which treatment-plan sections (in order) and which fee types (with default amounts) it uses.
+  practice: z.object({
+    type: z.enum(['yoga', 'physio', 'both']),
+    treatmentSections: z.array(z.enum(TREATMENT_SECTION_KEYS)).min(1),
+    feeTypes: z
+      .array(z.object({ key: z.enum(FEE_TYPE_KEYS), defaultAmount: z.number().positive().nullable() }))
+      .min(1),
+  }),
   features: z.object({
     posture: z.boolean(),
     flexibility: z.boolean(),

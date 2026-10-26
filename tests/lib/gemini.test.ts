@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { pawar } from '@/clinics/pawar';
 import { generateTreatmentDraft, generatePostureAnalysis, type TreatmentContext } from '@/lib/gemini';
 import { MOCK_POSTURE_AI_REPORT, POSTURE_AI_SYSTEM_PROMPT, type PostureAiContext } from '@/lib/posture-ai';
+
+const PAWAR_SECTIONS = pawar.practice.treatmentSections;
 
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
@@ -43,27 +46,27 @@ describe('generateTreatmentDraft', () => {
 
   it('returns all 7 fields from a valid Gemini response', async () => {
     mockGeminiOk(MOCK_DRAFT);
-    const result = await generateTreatmentDraft(MOCK_CONTEXT);
+    const result = await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS);
     expect(result).toEqual(MOCK_DRAFT);
   });
 
   it('includes patient name in the request body sent to Gemini', async () => {
     mockGeminiOk(MOCK_DRAFT);
-    await generateTreatmentDraft(MOCK_CONTEXT);
+    await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(JSON.stringify(body)).toContain('Asha Pawar');
   });
 
   it('throws if GEMINI_API_KEY is missing', async () => {
     delete process.env.GEMINI_API_KEY;
-    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('GEMINI_API_KEY is not set');
+    await expect(generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS)).rejects.toThrow('GEMINI_API_KEY is not set');
   });
 
   it('returns a canned draft in local mock mode without an API key', async () => {
     delete process.env.GEMINI_API_KEY;
     vi.stubEnv('LOCAL_MOCK', 'true');
     try {
-      const result = await generateTreatmentDraft(MOCK_CONTEXT);
+      const result = await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS);
       for (const key of Object.keys(MOCK_DRAFT)) {
         expect(typeof result[key as keyof typeof result]).toBe('string');
       }
@@ -78,7 +81,7 @@ describe('generateTreatmentDraft', () => {
     vi.stubEnv('LOCAL_MOCK', 'true');
     try {
       mockGeminiOk(MOCK_DRAFT);
-      expect(await generateTreatmentDraft(MOCK_CONTEXT)).toEqual(MOCK_DRAFT);
+      expect(await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS)).toEqual(MOCK_DRAFT);
       expect(fetchMock).toHaveBeenCalled();
     } finally {
       vi.unstubAllEnvs();
@@ -87,12 +90,12 @@ describe('generateTreatmentDraft', () => {
 
   it('throws on HTTP error from Gemini', async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 429, text: async () => 'Rate limited' });
-    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('Gemini API error 429');
+    await expect(generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS)).rejects.toThrow('Gemini API error 429');
   });
 
   it('throws if Gemini returns no candidates', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ candidates: [] }) });
-    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('Gemini returned empty response');
+    await expect(generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS)).rejects.toThrow('Gemini returned empty response');
   });
 
   it('includes lifestyle details in prompt when provided', async () => {
@@ -124,7 +127,7 @@ describe('generateTreatmentDraft', () => {
         contraindicationDetails: 'Spinal fusion',
       },
     };
-    await generateTreatmentDraft(ctx);
+    await generateTreatmentDraft(ctx, PAWAR_SECTIONS);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     const prompt = body.contents[0].parts[0].text;
     expect(prompt).toContain('Lower back pain');
@@ -139,7 +142,7 @@ describe('generateTreatmentDraft', () => {
       ...MOCK_CONTEXT,
       visits: { count: 3, latestPainScale: 4, firstWeightKg: 70, latestWeightKg: 65 },
     };
-    await generateTreatmentDraft(ctx);
+    await generateTreatmentDraft(ctx, PAWAR_SECTIONS);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     const prompt = body.contents[0].parts[0].text;
     expect(prompt).toContain('3 visits');
@@ -149,7 +152,7 @@ describe('generateTreatmentDraft', () => {
 
   it('uses system_instruction in request', async () => {
     mockGeminiOk(MOCK_DRAFT);
-    await generateTreatmentDraft(MOCK_CONTEXT);
+    await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body.system_instruction).toBeDefined();
     expect(body.system_instruction.parts[0].text).toContain('yoga therapy clinical assistant');
@@ -157,7 +160,7 @@ describe('generateTreatmentDraft', () => {
 
   it('sets generationConfig with JSON response schema', async () => {
     mockGeminiOk(MOCK_DRAFT);
-    await generateTreatmentDraft(MOCK_CONTEXT);
+    await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body.generationConfig.responseMimeType).toBe('application/json');
     expect(body.generationConfig.responseSchema).toBeDefined();
@@ -166,7 +169,7 @@ describe('generateTreatmentDraft', () => {
 
   it('throws if response has no content', async () => {
     fetchMock.mockResolvedValue({ ok: true, json: async () => ({ candidates: [{ content: undefined }] }) });
-    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('Gemini returned empty response');
+    await expect(generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS)).rejects.toThrow('Gemini returned empty response');
   });
 
   it('handles null values in patient context gracefully', async () => {
@@ -178,7 +181,7 @@ describe('generateTreatmentDraft', () => {
       lifestyle: null,
       visits: { count: 0, latestPainScale: null, firstWeightKg: null, latestWeightKg: null },
     };
-    await generateTreatmentDraft(ctx);
+    await generateTreatmentDraft(ctx, PAWAR_SECTIONS);
     const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     const prompt = body.contents[0].parts[0].text;
     expect(prompt).toContain('Test Patient');
@@ -194,7 +197,7 @@ describe('generateTreatmentDraft', () => {
         candidates: [{ content: { parts: [{ text: 'not valid json' }] } }],
       }),
     });
-    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow(SyntaxError);
+    await expect(generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS)).rejects.toThrow(SyntaxError);
   });
 
   it('throws if Gemini returns structurally invalid JSON (missing fields)', async () => {
@@ -204,17 +207,53 @@ describe('generateTreatmentDraft', () => {
         candidates: [{ content: { parts: [{ text: '{}' }] } }],
       }),
     });
-    await expect(generateTreatmentDraft(MOCK_CONTEXT)).rejects.toThrow('Gemini response missing required field: yogaProgram');
+    await expect(generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS)).rejects.toThrow('Gemini response missing required field: yogaProgram');
   });
 
   it('uses POST method and correct URL with API key', async () => {
     mockGeminiOk(MOCK_DRAFT);
-    await generateTreatmentDraft(MOCK_CONTEXT);
+    await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS);
     const [url, options] = fetchMock.mock.calls[0];
     expect(url).toContain('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent');
     expect(url).toContain('key=test-key');
     expect(options?.method).toBe('POST');
     expect((options as RequestInit).headers).toEqual({ 'Content-Type': 'application/json' });
+  });
+});
+
+describe('generateTreatmentDraft for other sections', () => {
+  const PHYSIO = ['exerciseTherapy', 'manualTherapy', 'advice'] as const;
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    process.env.GEMINI_API_KEY = 'test-key';
+  });
+  afterEach(() => {
+    delete process.env.GEMINI_API_KEY;
+  });
+
+  it('asks Gemini for exactly the given sections', async () => {
+    mockGeminiOk({ exerciseTherapy: 'a', manualTherapy: 'b', advice: 'c' });
+    const result = await generateTreatmentDraft(MOCK_CONTEXT, PHYSIO);
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const schema = body.generationConfig.responseSchema;
+    expect(schema.required).toEqual([...PHYSIO]);
+    expect(Object.keys(schema.properties)).toEqual([...PHYSIO]);
+    expect(result).toEqual({ exerciseTherapy: 'a', manualTherapy: 'b', advice: 'c' });
+  });
+
+  it('requires only the asked-for sections in the reply', async () => {
+    mockGeminiOk({ exerciseTherapy: 'a', manualTherapy: 'b' });
+    await expect(generateTreatmentDraft(MOCK_CONTEXT, PHYSIO)).rejects.toThrow('missing required field: advice');
+  });
+
+  it('Pawar sections give the same 7 required keys as before', async () => {
+    mockGeminiOk(MOCK_DRAFT);
+    await generateTreatmentDraft(MOCK_CONTEXT, PAWAR_SECTIONS);
+    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.generationConfig.responseSchema.required).toEqual(
+      ['yogaProgram', 'pranayam', 'massage', 'yogaTherapy', 'dietPlan', 'medicines', 'panchkarma'],
+    );
   });
 });
 

@@ -77,6 +77,16 @@ export const pawar: ClinicProfile = {
   ],
   patientCodePrefix: 'PYT',
   appName: 'Pawar Yoga Therapy',
+  practice: {
+    type: 'yoga',
+    treatmentSections: ['yogaProgram', 'pranayam', 'massage', 'yogaTherapy', 'dietPlan', 'medicines', 'panchkarma'],
+    feeTypes: [
+      { key: 'consultation', defaultAmount: 500 },
+      { key: 'monthly_yoga', defaultAmount: 3000 },
+      { key: 'package', defaultAmount: null },
+      { key: 'other', defaultAmount: null },
+    ],
+  },
   features: {
     posture: true,
     flexibility: true,
