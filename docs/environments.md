@@ -42,10 +42,14 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | Cloudflare R2 files. All four or the app refuses to start; the token needs **Object Read & Write** (listing is used to delete a client's folder) | not needed in mock mode | required · sensitive |
 | `GEMINI_API_KEY` | Google Gemini for AI treatment drafts and posture analysis | optional (canned without) | needed for AI features |
 | `FEATURE_POSTURE` | `true` shows posture analysis + flexibility tests (and lets posture share links work) | follows the clinic profile (Pawar: on) | `true`/`false` overrides the profile |
+| `LOCAL_DB_DIR` | Folder of the local PGlite database | `.local-db` | never |
+| `NEXT_DIST_DIR` | Next.js build folder (`distDir`) | `.next` | never |
 | `APP_URL` | Public site address used in client share links | optional | `https://yoga-ten-tau.vercel.app` |
 | `CLINIC_PROFILE` | Which clinic profile (`src/clinics/`) this deploy shows. Unset or empty in production = build/start throws (fails closed); `deploy:prod` refuses only when the name is not listed in Vercel Production (an empty value then fails the build). Local `next build` / `next start` need it too (in `.env`) | — | required · set for build + runtime (`pawar`) |
 | `CRON_SECRET` | The daily `/api/ping` keepalive must send it; without it the route refuses every call (fails closed). Same value as the `CRON_SECRET` GitHub repo secret | — | required · sensitive (set 2026-10-08) |
 | `PROD_DATABASE_URL`, `PROD_SITE_URL` | Used **only** by the `npm run *:prod` scripts on your Mac | Neon pooled URL / live URL | not used |
+
+The e2e `phone-modules-off` project starts a second `next dev` on port 3101 with `LOCAL_DB_DIR=.local-db-modules-off`, `NEXT_DIST_DIR=.next-modules-off` and every `FEATURE_*=false` (both folders are gitignored); a shared folder would clash on `.next/` and corrupt PGlite.
 
 As of 2026-10-06: `GEMINI_API_KEY` **and** `FEATURE_POSTURE=true` are set in Production (both added
 that day), so AI features, posture analysis, flexibility tests and the ideal reference photos are live.

@@ -2,6 +2,8 @@ import type { NextConfig } from 'next';
 import { clinicProfileForBuild } from './src/clinics/build-env';
 
 const nextConfig: NextConfig = {
+  // Overridable so a second dev server (e2e modules-off project) does not clash on .next/.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   // Which clinic this deployment is (src/clinics/). Inlined at build time so client components agree with the server;
   // a production build without CLINIC_PROFILE fails here (fail closed).
   env: { CLINIC_PROFILE: clinicProfileForBuild(process.env) },
