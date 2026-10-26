@@ -9,6 +9,8 @@ import { getPatientFees, type PatientFees } from '@/data/fees';
 import { setCourseFeeAction, addPaymentAction, deletePaymentAction } from '@/actions/fees';
 import { listCharges, type ChargeRecord } from '@/data/charges';
 import { addChargeAction, deleteChargeAction } from '@/actions/charges';
+import { clinicProfile } from '@/clinics';
+import { sectionsToShow } from '@/lib/treatment-sections';
 import { AddChargeForm } from '@/components/AddChargeForm';
 import { listVisits, listVisitsWithData } from '@/data/visits';
 import { VisitLineChart } from '@/components/VisitLineChart';
@@ -502,7 +504,11 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-6">
-        <TreatmentPlanForm patientId={patientId} initialPlan={plan} aiEnabled={isFeatureEnabled('ai')} />
+        <TreatmentPlanForm
+          patientId={patientId}
+          initialPlan={plan}
+          sections={sectionsToShow(clinicProfile.practice.treatmentSections, plan)}
+          aiEnabled={isFeatureEnabled('ai')} />
         <PrescribedExercisesForm
           patientId={patientId}
           allExercises={allExercises}
@@ -1224,7 +1230,7 @@ function Fees({
           <CardTitle className="text-base">{t.charges.addCharge}</CardTitle>
         </CardHeader>
         <CardContent>
-          <AddChargeForm action={boundAddCharge} today={today} />
+          <AddChargeForm action={boundAddCharge} today={today} feeTypes={clinicProfile.practice.feeTypes} />
         </CardContent>
       </Card>
 

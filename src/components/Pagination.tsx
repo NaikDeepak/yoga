@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 interface PaginationProps {
   page: number;
@@ -19,13 +20,13 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
-    <nav aria-label="Page navigation / पान नेव्हिगेशन" className="flex items-center justify-center gap-1">
+    <nav aria-label={bilingual('pagination.pageNav')} className="flex items-center justify-center gap-1">
       {page === 1 ? (
-        <Button variant="outline" size="sm" className="rounded-full" disabled aria-label="Previous page / मागील पान">
+        <Button variant="outline" size="sm" className="rounded-full" disabled aria-label={bilingual('pagination.prevPage')}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
       ) : (
-        <Button variant="outline" size="sm" className="rounded-full" asChild aria-label="Previous page / मागील पान">
+        <Button variant="outline" size="sm" className="rounded-full" asChild aria-label={bilingual('pagination.prevPage')}>
           <Link href={buildHref(page - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Link>
@@ -49,11 +50,11 @@ export function Pagination({ page, totalPages, buildHref }: PaginationProps) {
       )}
 
       {page === totalPages ? (
-        <Button variant="outline" size="sm" className="rounded-full" disabled aria-label="Next page / पुढील पान">
+        <Button variant="outline" size="sm" className="rounded-full" disabled aria-label={bilingual('pagination.nextPage')}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       ) : (
-        <Button variant="outline" size="sm" className="rounded-full" asChild aria-label="Next page / पुढील पान">
+        <Button variant="outline" size="sm" className="rounded-full" asChild aria-label={bilingual('pagination.nextPage')}>
           <Link href={buildHref(page + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Link>

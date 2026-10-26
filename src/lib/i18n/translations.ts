@@ -6,6 +6,11 @@ export { type Translations };
 export const LOCALES = ['en', 'mr'] as const;
 export type Locale = typeof LOCALES[number];
 
+export const LANGUAGE_LABELS: Record<Locale, string> = {
+  en: 'EN',
+  mr: 'मराठी',
+};
+
 const localeMap: Record<Locale, Translations> = { en, mr };
 
 export function getTranslations(locale: Locale): Translations {

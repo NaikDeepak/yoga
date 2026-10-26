@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { saveLanguageAction } from '@/actions/preferences';
-import type { Locale } from '@/lib/i18n/translations';
+import { LANGUAGE_LABELS, type Locale } from '@/lib/i18n/translations';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 interface TopNavProps {
   userEmail: string | null;
@@ -68,13 +69,13 @@ export function TopNav({ userEmail, locale, onMenuClick }: TopNavProps) {
         {/* Segmented language switch: current locale highlighted, tap the other to switch */}
         <div
           role="group"
-          aria-label="Language / भाषा"
+          aria-label={bilingual('nav.language')}
           className={cn(
             'flex items-center rounded-full border border-border/60 bg-background p-0.5 shadow-sm',
             isPending && 'opacity-75',
           )}
         >
-          {([['en', 'EN'], ['mr', 'मराठी']] as const).map(([code, label]) => (
+          {([['en', LANGUAGE_LABELS.en], ['mr', LANGUAGE_LABELS.mr]] as const).map(([code, label]) => (
             <button
               key={code}
               type="button"

@@ -16,6 +16,7 @@ import { listVisitsWithData } from '@/data/visits';
 import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
 import { featureOffError } from '@/lib/feature-off';
 import { safeErrorMessage } from '@/lib/log';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 const patientIdSchema = z.string().uuid();
 
@@ -38,13 +39,13 @@ export async function createExerciseShareLinkAction(
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
   if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
   const user = await requireUser();
-  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   try {
     const db = getDb();
     const patient = await getPatient(db, patientId);
-    if (!patient) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+    if (!patient) return { ok: false, error: bilingual('patients.clientNotFound') };
     if (!(await getPrescribedExercises(db, patientId)).length) {
-      return { ok: false, error: 'Add exercises before sharing / शेअर करण्यापूर्वी व्यायाम जोडा' };
+      return { ok: false, error: bilingual('shareLinks.addExercisesFirst') };
     }
     const { token, link } = await createShareLink(db, patientId, 'exercises', new Date());
     const url = await publicUrl(token);
@@ -53,13 +54,13 @@ export async function createExerciseShareLinkAction(
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, exerciseShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
     console.error('Failed to create share link:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not create the link / लिंक तयार करता आली नाही' };
+    return { ok: false, error: bilingual('shareLinks.createFailed') };
   }
 }
 
 export async function revokeExerciseShareLinkAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await requireUser();
-  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   try {
     await revokeShareLinks(getDb(), patientId, 'exercises', new Date());
     await recordAudit(getDb(), { actor: user, action: 'share.revoke', patientId, summary: 'exercises link' });
@@ -67,7 +68,7 @@ export async function revokeExerciseShareLinkAction(patientId: string): Promise<
     return { ok: true };
   } catch (error) {
     console.error('Failed to revoke share link:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
+    return { ok: false, error: bilingual('shareLinks.stopFailed') };
   }
 }
 
@@ -82,12 +83,12 @@ export async function createPostureShareLinkAction(
   if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
   if (!isPostureEnabled()) return featureOffError('posture');
   const user = await requireUser();
-  if (!patientIdSchema.safeParse(assessmentId).success) return { ok: false, error: 'Report not found / अहवाल सापडला नाही' };
+  if (!patientIdSchema.safeParse(assessmentId).success) return { ok: false, error: bilingual('shareLinks.reportNotFound') };
   try {
     const db = getDb();
     const assessment = await getPostureAssessment(db, assessmentId);
     const patient = assessment && await getPatient(db, assessment.patientId);
-    if (!assessment || !patient) return { ok: false, error: 'Report not found / अहवाल सापडला नाही' };
+    if (!assessment || !patient) return { ok: false, error: bilingual('shareLinks.reportNotFound') };
     const { token, link } = await createShareLink(db, patient.id, 'posture', new Date(), {
       postureAssessmentId: assessment.id, includePhotos: includePhotos === true,
     });
@@ -97,13 +98,13 @@ export async function createPostureShareLinkAction(
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, postureShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
     console.error('Failed to create posture share link:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not create the link / लिंक तयार करता आली नाही' };
+    return { ok: false, error: bilingual('shareLinks.createFailed') };
   }
 }
 
 export async function revokePostureShareLinkAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await requireUser();
-  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   try {
     await revokeShareLinks(getDb(), patientId, 'posture', new Date());
     await recordAudit(getDb(), { actor: user, action: 'share.revoke', patientId, summary: 'posture link' });
@@ -111,7 +112,7 @@ export async function revokePostureShareLinkAction(patientId: string): Promise<{
     return { ok: true };
   } catch (error) {
     console.error('Failed to revoke posture share link:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
+    return { ok: false, error: bilingual('shareLinks.stopFailed') };
   }
 }
 
@@ -125,13 +126,13 @@ export async function createProgressShareLinkAction(
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
   if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
   const user = await requireUser();
-  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   try {
     const db = getDb();
     const patient = await getPatient(db, patientId);
-    if (!patient) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+    if (!patient) return { ok: false, error: bilingual('patients.clientNotFound') };
     if (!(await listVisitsWithData(db, patientId)).length) {
-      return { ok: false, error: 'Record pain or weight at a visit first / आधी भेटीत वेदना किंवा वजन नोंदवा' };
+      return { ok: false, error: bilingual('shareLinks.recordVisitFirst') };
     }
     const { token, link } = await createShareLink(db, patientId, 'progress', new Date(), { hideWeight: opts?.hideWeight === true });
     const url = await publicUrl(token);
@@ -140,13 +141,13 @@ export async function createProgressShareLinkAction(
     return { ok: true, url, whatsappUrl: waMeUrl(patient.mobile, progressShareMessage(url)), expiresAt: link.expiresAt.toISOString() };
   } catch (error) {
     console.error('Failed to create progress share link:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not create the link / लिंक तयार करता आली नाही' };
+    return { ok: false, error: bilingual('shareLinks.createFailed') };
   }
 }
 
 export async function revokeProgressShareLinkAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const user = await requireUser();
-  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   try {
     await revokeShareLinks(getDb(), patientId, 'progress', new Date());
     await recordAudit(getDb(), { actor: user, action: 'share.revoke', patientId, summary: 'progress link' });
@@ -154,7 +155,7 @@ export async function revokeProgressShareLinkAction(patientId: string): Promise<
     return { ok: true };
   } catch (error) {
     console.error('Failed to revoke progress share link:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not stop sharing / शेअरिंग थांबवता आले नाही' };
+    return { ok: false, error: bilingual('shareLinks.stopFailed') };
   }
 }
 
@@ -162,15 +163,15 @@ export async function revokeProgressShareLinkAction(patientId: string): Promise<
 export async function recordNudgeAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
   await requireUser();
-  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   try {
     if (!(await recordNudge(getDb(), patientId, new Date()))) {
-      return { ok: false, error: 'No live exercise link / सक्रिय व्यायाम लिंक नाही' };
+      return { ok: false, error: bilingual('shareLinks.noLiveLink') };
     }
     revalidatePath('/dashboard');
     return { ok: true };
   } catch (error) {
     console.error('Failed to record nudge:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not save / जतन करता आले नाही' };
+    return { ok: false, error: bilingual('shareLinks.saveFailed') };
   }
 }

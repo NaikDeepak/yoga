@@ -28,12 +28,13 @@ import { combineViews, detectPatterns, scorePosture } from '@/lib/posture-insigh
 import { isFeatureEnabled } from '@/lib/features';
 import { featureOffError } from '@/lib/feature-off';
 import type { ActionResult } from '@/actions/patients';
+import { bilingual } from '@/lib/i18n/bilingual';
 
-const INVALID_PARAMS: ActionResult = { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
-const INVALID_DATA: ActionResult = { ok: false, error: 'Invalid posture data / चुकीची पोश्चर माहिती' };
+const INVALID_PARAMS: ActionResult = { ok: false, error: bilingual('validation.invalidParams') };
+const INVALID_DATA: ActionResult = { ok: false, error: bilingual('validation.invalidPostureData') };
 // Photos of this assessment were deleted (consent withdrawn); new ones need the consent tick again.
-const CONSENT_REQUIRED: ActionResult = { ok: false, error: 'Photo consent required / फोटोसाठी संमती आवश्यक' };
-const SAVE_FAILED: ActionResult = { ok: false, error: 'Could not save posture assessment / पोश्चर मूल्यांकन जतन करता आले नाही' };
+const CONSENT_REQUIRED: ActionResult = { ok: false, error: bilingual('validation.photoConsentRequired') };
+const SAVE_FAILED: ActionResult = { ok: false, error: bilingual('posture.saveFailed') };
 
 function parsePayload(formData: FormData): unknown {
   try {
@@ -49,7 +50,7 @@ function collectPhotos<K extends PostureView | FlexShot>(formData: FormData, vie
   for (const view of views) {
     const photo = formData.get(`photo_${view}`);
     if (!(photo instanceof File) || photo.size === 0) {
-      return { ok: false, error: 'Photo for each view required / प्रत्येक बाजूचा फोटो आवश्यक' };
+      return { ok: false, error: bilingual('posture.photoEachViewRequired') };
     }
     const err = validatePhoto(photo);
     if (err) return { ok: false, error: err };
@@ -57,7 +58,7 @@ function collectPhotos<K extends PostureView | FlexShot>(formData: FormData, vie
   }
   const total = [...photos.values()].reduce((sum, p) => sum + p.size, 0);
   if (total > MAX_FILE_BYTES) {
-    return { ok: false, error: 'Photos too large, max 4 MB total / फोटो खूप मोठे, एकूण 4 MB पर्यंत' };
+    return { ok: false, error: bilingual('posture.photosTooLarge') };
   }
   return photos;
 }
@@ -82,7 +83,7 @@ export async function savePostureAssessmentAction(patientId: string, formData: F
 
   const db = getDb();
   const patient = await getPatient(db, patientId);
-  if (!patient) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!patient) return { ok: false, error: bilingual('patients.clientNotFound') };
 
   const { assessedOn, note, views } = parsed.data;
   let assessmentId: string;
@@ -188,7 +189,7 @@ export async function saveFlexibilityTestsAction(
     })), { freshConsent: parsed.data.consent === true });
   } catch (error) {
     console.error('Failed to save flexibility tests:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not save flexibility tests / लवचिकता चाचण्या जतन करता आल्या नाहीत' };
+    return { ok: false, error: bilingual('posture.flexibilitySaveFailed') };
   }
   if (saved === 'consentRequired') return CONSENT_REQUIRED;
   if (saved === 'notFound') return NOT_FOUND;
@@ -206,7 +207,7 @@ export async function deletePostureAssessmentAction(patientId: string, assessmen
   try {
     await deletePostureAssessment(getDb(), getStorage(), patientId, assessmentId);
   } catch {
-    return { ok: false, error: 'Could not delete posture assessment / पोश्चर मूल्यांकन हटवता आले नाही' };
+    return { ok: false, error: bilingual('posture.deleteAssessmentFailed') };
   }
   await recordAudit(getDb(), { actor: user, action: 'posture.delete', patientId, summary: null });
   revalidatePath(`/patients/${patientId}`);
@@ -222,7 +223,7 @@ export async function withdrawPhotoConsentAction(
   patientId: string,
 ): Promise<{ ok: true; deleted: number } | { ok: false; error: string }> {
   const user = await requireUser();
-  if (!z.string().uuid().safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
+  if (!z.string().uuid().safeParse(patientId).success) return { ok: false, error: bilingual('patients.clientNotFound') };
   try {
     const { deleted, failed } = await deletePosturePhotos(getDb(), getStorage(), patientId, new Date());
     // Recorded only if something was actually deleted (a partial run says how many failed).
@@ -231,16 +232,16 @@ export async function withdrawPhotoConsentAction(
     }
     revalidatePath(`/patients/${patientId}`, 'layout');
     if (failed) {
-      return { ok: false, error: `${failed} photo(s) could not be deleted; please try again / ${failed} फोटो हटवता आले नाहीत; कृपया पुन्हा प्रयत्न करा` };
+      return { ok: false, error: bilingual('posture.photosDeleteFailed', { count: failed }) };
     }
     return { ok: true, deleted };
   } catch (error) {
     console.error('Failed to withdraw photo consent:', safeErrorMessage(error));
-    return { ok: false, error: 'Could not delete the photos / फोटो हटवता आले नाहीत' };
+    return { ok: false, error: bilingual('posture.deletePhotosFailed') };
   }
 }
 
-const NOT_FOUND: ActionResult = { ok: false, error: 'Assessment not found / मूल्यांकन सापडले नाही' };
+const NOT_FOUND: ActionResult = { ok: false, error: bilingual('posture.assessmentNotFound') };
 
 /**
  * Generates the AI analysis for an assessment and saves it as a draft. Sends measurements and a
@@ -297,7 +298,7 @@ export async function generatePostureAiAction(patientId: string, assessmentId: s
   } catch (err) {
     // Message only (HTTP status / validation issue) — never the context, which holds health data.
     console.error('[posture-ai] generation failed:', safeErrorMessage(err));
-    return { ok: false, error: 'AI analysis failed. Please try again. / AI विश्लेषण अयशस्वी झाले. कृपया पुन्हा प्रयत्न करा.' };
+    return { ok: false, error: bilingual('posture.aiAnalysisFailed') };
   }
   await saveAiReport(db, patientId, assessmentId, report, { approved: false });
   revalidatePath(`/patients/${patientId}/posture/${assessmentId}`);
@@ -336,7 +337,7 @@ export async function savePostureAiAction(
     followUp: String(formData.get('followUp') ?? ''),
   });
   if (!parsed.success) {
-    return { ok: false, error: 'Summary, at least one finding and follow-up are required / सारांश, किमान एक निष्कर्ष आणि पुढील तपासणी आवश्यक' };
+    return { ok: false, error: bilingual('posture.aiFieldsRequired') };
   }
   const saved = await saveAiReport(getDb(), patientId, assessmentId, parsed.data, { approved: true });
   if (!saved) return NOT_FOUND;

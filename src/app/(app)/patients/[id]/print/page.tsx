@@ -17,6 +17,7 @@ import { getTranslations, type Translations } from '@/lib/i18n/translations';
 import { getPrescribedExercises } from '@/data/exercises';
 import { ClinicSignature } from '@/components/ClinicSignature';
 import { clinicName, clinicProfile } from '@/clinics';
+import { isModality, sectionsToShow, treatmentSection } from '@/lib/treatment-sections';
 
 const GREEN = clinicProfile.brand.primary;
 const SAFFRON = clinicProfile.brand.accent;
@@ -28,14 +29,6 @@ function translateGender(gender: string, t: Translations): string {
   if (gender === 'other') return t.form.genderOther;
   return gender;
 }
-
-const MODALITY_DB_KEYS = [
-  'yogaProgram',
-  'pranayam',
-  'massage',
-  'yogaTherapy',
-  'panchkarma',
-] as const;
 
 function nameInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -64,9 +57,11 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   const branch = BRANCHES.find((b) => b.key === patient.branch) ?? null;
   const today = getISTDateString();
   const latestNote = visits[0]?.progressNote ?? null;
-  const modalityDbKeys = plan
-    ? MODALITY_DB_KEYS.filter((key) => Boolean(plan[key as keyof typeof plan]))
+  // Only sections that hold text are printed, in the clinic's order (then any others that hold text).
+  const filledSections = plan
+    ? sectionsToShow(clinicProfile.practice.treatmentSections, plan).filter((key) => Boolean(plan[key]))
     : [];
+  const modalityDbKeys = filledSections.filter(isModality);
 
   return (
     <div className="mx-auto max-w-3xl bg-white p-8 print:max-w-none print:p-0">
@@ -160,20 +155,15 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                     <td className="py-2">
                       <div className="flex flex-wrap gap-1.5">
                         {modalityDbKeys.map((key) => {
-                          const label = t.print[key as keyof typeof t.print] as string;
-                          return <Chip key={key}>{label}</Chip>;
+                          return <Chip key={key}>{t.treatmentPlan[treatmentSection(key).labelKey]}</Chip>;
                         })}
                       </div>
                     </td>
                   </tr>
                 )}
-                {plan?.yogaProgram && <PlanRow label={t.print.yogaProgram} value={plan.yogaProgram} />}
-                {plan?.pranayam && <PlanRow label={t.print.pranayam} value={plan.pranayam} />}
-                {plan?.massage && <PlanRow label={t.print.massage} value={plan.massage} />}
-                {plan?.yogaTherapy && <PlanRow label={t.print.yogaTherapy} value={plan.yogaTherapy} />}
-                {plan?.dietPlan && <PlanRow label={t.print.dietPlan} value={plan.dietPlan} />}
-                {plan?.medicines && <PlanRow label={t.print.medicines} value={plan.medicines} />}
-                {plan?.panchkarma && <PlanRow label={t.print.panchkarma} value={plan.panchkarma} />}
+                {filledSections.map((key) => (
+                  <PlanRow key={key} label={t.treatmentPlan[treatmentSection(key).labelKey]} value={plan![key]!} />
+                ))}
                 {latestNote && <PlanRow label={t.print.progressNotes} value={latestNote} />}
               </tbody>
             </table>
@@ -184,7 +174,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       {/* ── PRESCRIBED EXERCISES ── */}
       {prescribedExercises.length > 0 && (
         <>
-          <SectionHeader>{locale === 'mr' ? 'निर्धारित व्यायाम मार्गदर्शिका (Prescribed Exercises)' : 'Prescribed Exercises / निर्धारित व्यायाम मार्गदर्शिका'}</SectionHeader>
+          <SectionHeader>{t.print.prescribedExercisesTitle}</SectionHeader>
           <div className="mb-6">
             <table className="w-full text-sm border-collapse">
               <tbody>
@@ -193,9 +183,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
                     <td className="w-40 py-3 pr-4 font-semibold text-gray-800">
                       {locale === 'mr' ? pe.nameMr : pe.name}
                       <div className="text-[10px] text-gray-500 font-medium mt-1">
-                        {locale === 'mr'
-                          ? `वेळा: ${pe.repetitionsOverride ?? pe.repetitionsMr} | वारंवारता: ${pe.daysPerWeekOverride ?? pe.daysPerWeekMr}`
-                          : `Reps: ${pe.repetitionsOverride ?? pe.repetitions} | Freq: ${pe.daysPerWeekOverride ?? pe.daysPerWeek}`}
+                        {`${t.print.reps}: ${pe.repetitionsOverride ?? (locale === 'mr' ? pe.repetitionsMr : pe.repetitions)} | ${t.print.freq}: ${pe.daysPerWeekOverride ?? (locale === 'mr' ? pe.daysPerWeekMr : pe.daysPerWeek)}`}
                       </div>
                     </td>
                     <td className="py-3">
@@ -223,7 +211,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
 
                       {pe.customNote && (
                         <div className="mt-2.5 text-xs border border-dashed border-amber-200 bg-amber-50/50 p-2 rounded-lg text-amber-900 font-medium leading-relaxed">
-                          <strong>{locale === 'mr' ? 'सानुकूल सूचना:' : 'Custom Instruction:'}</strong> {pe.customNote}
+                          <strong>{t.print.customInstruction}</strong> {pe.customNote}
                         </div>
                       )}
                     </td>

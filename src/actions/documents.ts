@@ -8,15 +8,16 @@ import { getStorage } from '@/lib/storage';
 import { validateUpload } from '@/lib/files';
 import { docTypeSchema, isId, INVALID_PARAMS } from '@/lib/validation';
 import { addDocument, deleteDocument } from '@/data/documents';
+import { bilingual } from '@/lib/i18n/bilingual';
 import type { ActionResult } from './patients';
 
 export async function uploadDocumentAction(patientId: string, formData: FormData): Promise<ActionResult> {
   const user = await requireUser();
   const docType = docTypeSchema.safeParse(formData.get('docType'));
-  if (!docType.success) return { ok: false, error: 'Choose a document type / प्रकार निवडा' };
+  if (!docType.success) return { ok: false, error: bilingual('documents.chooseType') };
   const file = formData.get('file');
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: 'Choose a file / फाईल निवडा' };
+    return { ok: false, error: bilingual('documents.chooseFile') };
   }
   const err = validateUpload(file);
   if (err) return { ok: false, error: err };

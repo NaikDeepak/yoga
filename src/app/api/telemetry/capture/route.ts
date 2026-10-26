@@ -5,6 +5,7 @@ import { recordCaptureCounts } from '@/data/capture-stats';
 import { captureBatchSchema } from '@/lib/capture-stats';
 import { getISTDateString } from '@/lib/dates';
 import { safeErrorMessage } from '@/lib/log';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 const MAX_BODY = 10_000; // a full batch is ~5 KB
 
@@ -15,7 +16,7 @@ const MAX_BODY = 10_000; // a full batch is ~5 KB
  */
 export async function POST(req: Request) {
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized / अनधिकृत' }, { status: 401 });
+  if (!user) return NextResponse.json({ error: bilingual('errors.unauthorized') }, { status: 401 });
 
   const body = await req.text();
   if (body.length > MAX_BODY) return NextResponse.json({ error: 'Too large' }, { status: 413 });

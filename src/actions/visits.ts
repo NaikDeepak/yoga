@@ -6,6 +6,7 @@ import { getDb } from '@/db/client';
 import { requireUser } from '@/lib/auth';
 import { visitSchema, firstError } from '@/lib/validation';
 import { addVisit } from '@/data/visits';
+import { bilingual } from '@/lib/i18n/bilingual';
 import type { ActionResult } from './patients';
 
 export async function addVisitAction(patientId: string, formData: FormData): Promise<ActionResult> {
@@ -15,7 +16,7 @@ export async function addVisitAction(patientId: string, formData: FormData): Pro
   try {
     await addVisit(getDb(), patientId, parsed.data);
   } catch {
-    return { ok: false, error: 'Could not save visit / भेट जतन झाली नाही' };
+    return { ok: false, error: bilingual('visits.saveFailed') };
   }
   await recordAudit(getDb(), { actor: user, action: 'visit.add', patientId, summary: parsed.data.visitDate });
   revalidatePath(`/patients/${patientId}`);

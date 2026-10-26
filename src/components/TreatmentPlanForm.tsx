@@ -22,42 +22,32 @@ import {
 import type { TreatmentPlan } from '@/db/schema';
 import type { TreatmentDraftFields } from '@/lib/gemini';
 import { useTranslations } from '@/lib/i18n/context';
+import { TREATMENT_SECTION_KEYS, treatmentSection, type TreatmentSectionKey } from '@/lib/treatment-sections';
 
 export function TreatmentPlanForm({
   patientId,
   initialPlan,
+  sections,
   aiEnabled = true,
 }: {
   patientId: string;
   initialPlan: TreatmentPlan | undefined;
+  /** What to show, in order: the clinic's sections, then any other section that already holds text. */
+  sections: readonly TreatmentSectionKey[];
   aiEnabled?: boolean;
 }) {
   const t = useTranslations();
 
-  const PLAN_FIELDS: [keyof TreatmentDraftFields, string][] = [
-    ['yogaProgram', t.treatmentPlan.yoga],
-    ['pranayam', t.treatmentPlan.pranayam],
-    ['massage', t.treatmentPlan.massage],
-    ['yogaTherapy', t.treatmentPlan.yogaTherapy],
-    ['dietPlan', t.treatmentPlan.diet],
-    ['medicines', t.treatmentPlan.medicines],
-    ['panchkarma', t.treatmentPlan.panchkarma],
-  ];
-
-  const [fields, setFields] = useState<TreatmentDraftFields>({
-    yogaProgram: initialPlan?.yogaProgram ?? '',
-    pranayam: initialPlan?.pranayam ?? '',
-    massage: initialPlan?.massage ?? '',
-    yogaTherapy: initialPlan?.yogaTherapy ?? '',
-    dietPlan: initialPlan?.dietPlan ?? '',
-    medicines: initialPlan?.medicines ?? '',
-    panchkarma: initialPlan?.panchkarma ?? '',
-  });
+  const [fields, setFields] = useState<TreatmentDraftFields>(
+    () => Object.fromEntries(
+      TREATMENT_SECTION_KEYS.map((key) => [key, initialPlan?.[key] ?? '']),
+    ) as TreatmentDraftFields,
+  );
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
+  const hasContent = sections.some((key) => fields[key].trim().length > 0);
 
   async function doGenerate() {
     setGenerating(true);
@@ -68,8 +58,8 @@ export function TreatmentPlanForm({
         const body = await res.json().catch(() => ({})) as { error?: string };
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
-      const draft = await res.json() as TreatmentDraftFields;
-      setFields(draft);
+      const draft = await res.json() as Partial<TreatmentDraftFields>;
+      setFields((prev) => ({ ...prev, ...draft }));
     } catch (err) {
       console.error('AI generation failed:', err);
       const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -146,9 +136,9 @@ export function TreatmentPlanForm({
             action={saveTreatmentPlanAction.bind(null, patientId)}
             className="space-y-3"
           >
-            {PLAN_FIELDS.map(([name, title]) => (
+            {sections.map((name) => (
               <div key={name} className="space-y-1.5">
-                <Label htmlFor={`plan-${name}`}>{title}</Label>
+                <Label htmlFor={`plan-${name}`}>{t.treatmentPlan[treatmentSection(name).labelKey]}</Label>
                 <Textarea
                   id={`plan-${name}`}
                   name={name}

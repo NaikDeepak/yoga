@@ -11,7 +11,7 @@ import { CLINIC } from '@/lib/clinic';
 import { isLinkPreviewBot } from '@/lib/share-token';
 import { getStorage } from '@/lib/storage';
 import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
-import { getTranslations } from '@/lib/i18n/translations';
+import { getTranslations, LANGUAGE_LABELS } from '@/lib/i18n/translations';
 import { clinicProfile, clinicName } from '@/clinics';
 import { ExercisesBody } from './ExercisesBody';
 import { PostureReportBody } from './PostureReportBody';
@@ -81,7 +81,7 @@ export default async function SharedLinkPage({
         </div>
         <nav className="flex rounded-full border text-xs" aria-label="Language">
           <a href="?lang=en" className={`rounded-full px-3 py-1 ${lang === 'en' ? 'bg-primary text-primary-foreground' : ''}`}>EN</a>
-          <a href="?lang=mr" className={`rounded-full px-3 py-1 ${lang === 'mr' ? 'bg-primary text-primary-foreground' : ''}`}>मराठी</a>
+          <a href="?lang=mr" className={`rounded-full px-3 py-1 ${lang === 'mr' ? 'bg-primary text-primary-foreground' : ''}`}>{LANGUAGE_LABELS.mr}</a>
         </nav>
       </header>
 

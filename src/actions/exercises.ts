@@ -9,6 +9,7 @@ import { addPrescribedExercises, savePrescribedExercises } from '@/data/exercise
 import { z } from 'zod';
 import type { ActionResult } from './patients';
 import { safeErrorMessage } from '@/lib/log';
+import { bilingual } from '@/lib/i18n/bilingual';
 
 export async function savePrescribedExercisesAction(
   patientId: string,
@@ -30,7 +31,7 @@ export async function savePrescribedExercisesAction(
     const parsed = prescribedExercisesListSchema.safeParse(rawList);
     
     if (!parsed.success) {
-      return { ok: false, error: 'Invalid exercise selection / अमान्य व्यायाम निवड' };
+      return { ok: false, error: bilingual('exercises.invalidSelection') };
     }
 
     await savePrescribedExercises(getDb(), patientId, parsed.data);
@@ -39,7 +40,7 @@ export async function savePrescribedExercisesAction(
     return { ok: true };
   } catch (error) {
     console.error('Failed to save prescribed exercises:', safeErrorMessage(error));
-    return { ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी' };
+    return { ok: false, error: bilingual('common.failedToSave') };
   }
 }
 
@@ -59,7 +60,7 @@ export async function addPrescribedExercisesAction(
 ): Promise<{ ok: true; added: number; alreadyPrescribed: number } | { ok: false; error: string }> {
   const user = await requireUser();
   const parsed = exerciseIdsSchema.safeParse({ patientId, exerciseIds });
-  if (!parsed.success) return { ok: false, error: 'Invalid exercise selection / अमान्य व्यायाम निवड' };
+  if (!parsed.success) return { ok: false, error: bilingual('exercises.invalidSelection') };
   try {
     const result = await addPrescribedExercises(getDb(), patientId, parsed.data.exerciseIds);
     await recordAudit(getDb(), { actor: user, action: 'exercises.save', patientId, summary: null });
@@ -67,6 +68,6 @@ export async function addPrescribedExercisesAction(
     return { ok: true, ...result };
   } catch (error) {
     console.error('Failed to add prescribed exercises:', safeErrorMessage(error));
-    return { ok: false, error: 'Failed to save / जतन करण्यात अयशस्वी' };
+    return { ok: false, error: bilingual('common.failedToSave') };
   }
 }
