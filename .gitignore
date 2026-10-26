@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.next-modules-off/
 .env
 .env*.local
 coverage/
@@ -17,6 +18,7 @@ skills-lock.json
 
 # local mock mode artifacts (PHI-like demo data + uploaded files)
 .local-db/
+.local-db-modules-off/
 public/uploads/
 *.dump
 

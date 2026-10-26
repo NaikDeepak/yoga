@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '../helpers/action-mocks';
 import { freshTestDb } from '../helpers/action-mocks';
 import { addChargeAction, deleteChargeAction } from '@/actions/charges';
 import { createPatient } from '@/data/patients';
 import { listCharges } from '@/data/charges';
+import { featureOffError } from '@/lib/feature-off';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -81,5 +82,25 @@ describe('deleteChargeAction', () => {
     const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
     const r = await deleteChargeAction(p.id, '00000000-0000-0000-0000-000000000000');
     expect(r.ok).toBe(true);
+  });
+});
+
+describe('fees switch off', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('refuses add and delete charge and writes nothing', async () => {
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    await addChargeAction(p.id, prev, fd({ feeType: 'consultation', amount: '500', chargeDate: '2026-08-10' }));
+    const [c] = await listCharges(db, p.id);
+    vi.stubEnv('FEATURE_FEES', 'false');
+    expect(await addChargeAction(p.id, prev, fd({ feeType: 'consultation', amount: '700', chargeDate: '2026-08-11' }))).toEqual(featureOffError('fees'));
+    expect(await deleteChargeAction(p.id, c.id)).toEqual(featureOffError('fees'));
+    expect(await listCharges(db, p.id)).toHaveLength(1);
+  });
+
+  it('still works when fees is on', async () => {
+    vi.stubEnv('FEATURE_FEES', 'true');
+    const p = await createPatient(db, { fullName: 'Asha', mobile: '9876543210' });
+    expect(await addChargeAction(p.id, prev, fd({ feeType: 'consultation', amount: '500', chargeDate: '2026-08-10' }))).toEqual({ ok: true });
   });
 });

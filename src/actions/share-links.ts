@@ -13,7 +13,8 @@ import { getPrescribedExercises } from '@/data/exercises';
 import { createShareLink, recordNudge, revokeShareLinks } from '@/data/share-links';
 import { getPostureAssessment } from '@/data/posture';
 import { listVisitsWithData } from '@/data/visits';
-import { isPostureEnabled } from '@/lib/features';
+import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
+import { featureOffError } from '@/lib/feature-off';
 import { safeErrorMessage } from '@/lib/log';
 
 const patientIdSchema = z.string().uuid();
@@ -35,6 +36,7 @@ async function publicUrl(token: string): Promise<string> {
 export async function createExerciseShareLinkAction(
   patientId: string,
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
+  if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
   const user = await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
@@ -77,8 +79,9 @@ export async function createPostureShareLinkAction(
   assessmentId: string,
   includePhotos: boolean,
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
+  if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
+  if (!isPostureEnabled()) return featureOffError('posture');
   const user = await requireUser();
-  if (!isPostureEnabled()) return { ok: false, error: 'Posture analysis is switched off / पोश्चर विश्लेषण बंद आहे' };
   if (!patientIdSchema.safeParse(assessmentId).success) return { ok: false, error: 'Report not found / अहवाल सापडला नाही' };
   try {
     const db = getDb();
@@ -120,6 +123,7 @@ export async function createProgressShareLinkAction(
   patientId: string,
   opts: { hideWeight: boolean },
 ): Promise<{ ok: true; url: string; whatsappUrl: string; expiresAt: string } | { ok: false; error: string }> {
+  if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
   const user = await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {
@@ -156,6 +160,7 @@ export async function revokeProgressShareLinkAction(patientId: string): Promise<
 
 /** "WhatsApp nudge" tapped on the dashboard: remember when, so the card shows it (the message opens client-side). */
 export async function recordNudgeAction(patientId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!isFeatureEnabled('shareLinks')) return featureOffError('shareLinks');
   await requireUser();
   if (!patientIdSchema.safeParse(patientId).success) return { ok: false, error: 'Client not found / साधक सापडला नाही' };
   try {

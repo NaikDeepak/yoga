@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
+import { isFeatureEnabled } from '@/lib/features';
 import { getPatient } from '@/data/patients';
 import { getCharge } from '@/data/charges';
 import { BRANCHES } from '@/lib/presets';
@@ -24,6 +25,7 @@ export default async function ChargeReceiptPage({
   params: Promise<{ id: string; chargeId: string }>;
 }) {
   const { id, chargeId } = await params;
+  if (!isFeatureEnabled('fees')) notFound();
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();

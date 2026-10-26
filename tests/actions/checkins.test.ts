@@ -30,7 +30,10 @@ beforeEach(async () => {
   await savePrescribedExercises(db, patientId, [{ exerciseId: ex.id, customNote: null }]);
   token = (await createShareLink(db, patientId, 'exercises', new Date())).token;
 });
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.useRealTimers();
+});
 
 describe('saveCheckinAction', () => {
   it("saves today's entry for the link's client and redirects back to the page", async () => {
@@ -82,6 +85,20 @@ describe('saveCheckinAction', () => {
   it('refuses check-ins when the prescription is empty', async () => {
     await savePrescribedExercises(db, patientId, []);
     await expect(saveCheckinAction(token, 'en', form({ done: 'all' }))).rejects.toThrow(`REDIRECT:/s/${token}?lang=en`);
+    expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
+  });
+
+  it('refuses check-ins when checkins feature is switched off', async () => {
+    vi.stubEnv('FEATURE_CHECKINS', 'false');
+    await expect(saveCheckinAction(token, 'mr', form({ done: 'all' })))
+      .rejects.toThrow(`REDIRECT:/s/${token}?lang=mr`);
+    expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
+  });
+
+  it('refuses check-ins when share links are switched off', async () => {
+    vi.stubEnv('FEATURE_SHARE_LINKS', 'false');
+    await expect(saveCheckinAction(token, 'mr', form({ done: 'all' })))
+      .rejects.toThrow(`REDIRECT:/s/${token}?lang=mr`);
     expect(await db.select().from(exerciseCheckins)).toHaveLength(0);
   });
 

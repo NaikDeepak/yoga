@@ -26,9 +26,11 @@ import { useTranslations } from '@/lib/i18n/context';
 export function TreatmentPlanForm({
   patientId,
   initialPlan,
+  aiEnabled = true,
 }: {
   patientId: string;
   initialPlan: TreatmentPlan | undefined;
+  aiEnabled?: boolean;
 }) {
   const t = useTranslations();
 
@@ -112,25 +114,27 @@ export function TreatmentPlanForm({
       <Card className="rounded-2xl">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-base">{t.treatmentPlan.title}</CardTitle>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleGenerate}
-            disabled={generating}
-          >
-            {generating ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                {t.treatmentPlan.generatingBtn}
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-                {t.treatmentPlan.generateBtn}
-              </>
-            )}
-          </Button>
+          {aiEnabled && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleGenerate}
+              disabled={generating}
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  {t.treatmentPlan.generatingBtn}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                  {t.treatmentPlan.generateBtn}
+                </>
+              )}
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {genError && (

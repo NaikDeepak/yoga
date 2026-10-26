@@ -6,6 +6,9 @@ import { defineConfig, devices } from '@playwright/test';
 // local files in `public/uploads/`, canned AI. Mock mode refuses NODE_ENV=production, so this runs `next dev`.
 // Own port so it never collides with a dev server you already have open on 3000.
 const PORT = 3100;
+// Second server for e2e/modules-off.spec.ts: every module switched off. Own database folder and build folder,
+// because two `next dev` in one folder clash on `.next/` and two PGlite processes corrupt one `.local-db/`.
+const OFF_PORT = 3101;
 
 export default defineConfig({
   testDir: 'e2e',
@@ -26,12 +29,39 @@ export default defineConfig({
     navigationTimeout: 120_000,
   },
   // The clinic uses the app on phones, so test at phone size.
-  projects: [{ name: 'phone', use: { ...devices['Pixel 7'] } }],
-  webServer: {
-    command: `npx next dev -p ${PORT}`,
-    url: `http://localhost:${PORT}/login`,
-    env: { LOCAL_MOCK: 'true' },
-    reuseExistingServer: !process.env.CI,
-    timeout: 240_000,
-  },
+  projects: [
+    { name: 'phone', testIgnore: /modules-off\.spec\.ts/, use: { ...devices['Pixel 7'] } },
+    {
+      name: 'phone-modules-off',
+      testMatch: /modules-off\.spec\.ts/,
+      use: { ...devices['Pixel 7'], baseURL: `http://localhost:${OFF_PORT}` },
+    },
+  ],
+  // Playwright starts every entry whatever --project is passed, so both servers run together.
+  webServer: [
+    {
+      command: `npx next dev -p ${PORT}`,
+      url: `http://localhost:${PORT}/login`,
+      env: { LOCAL_MOCK: 'true' },
+      reuseExistingServer: !process.env.CI,
+      timeout: 240_000,
+    },
+    {
+      command: `npx next dev -p ${OFF_PORT}`,
+      url: `http://localhost:${OFF_PORT}/login`,
+      env: {
+        LOCAL_MOCK: 'true',
+        LOCAL_DB_DIR: '.local-db-modules-off',
+        NEXT_DIST_DIR: '.next-modules-off',
+        FEATURE_POSTURE: 'false',
+        FEATURE_FLEXIBILITY: 'false',
+        FEATURE_AI: 'false',
+        FEATURE_SHARE_LINKS: 'false',
+        FEATURE_CHECKINS: 'false',
+        FEATURE_FEES: 'false',
+      },
+      reuseExistingServer: !process.env.CI,
+      timeout: 240_000,
+    },
+  ],
 });

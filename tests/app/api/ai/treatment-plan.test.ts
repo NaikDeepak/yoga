@@ -94,4 +94,14 @@ describe('GET /api/ai/treatment-plan/[patientId]', () => {
     expect(res.status).toBe(500);
     expect(await res.json()).toMatchObject({ error: 'AI generation failed. Please try again. / AI योजना तयार करण्यात त्रुटी आली. कृपया पुन्हा प्रयत्न करा.' });
   });
+
+  it('returns 404 when AI is switched off', async () => {
+    vi.stubEnv('FEATURE_AI', 'false');
+    try {
+      const res = await GET(makeRequest(), makeParams());
+      expect(res.status).toBe(404);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });

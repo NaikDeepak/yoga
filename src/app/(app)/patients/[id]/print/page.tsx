@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getDb } from '@/db/client';
+import { isFeatureEnabled } from '@/lib/features';
 import { getPatient } from '@/data/patients';
 import { listProblems } from '@/data/problems';
 import { getTreatmentPlan } from '@/data/treatment';
@@ -48,11 +49,12 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   const patient = await getPatient(db, id);
   if (!patient) notFound();
 
+  const feesEnabled = isFeatureEnabled('fees');
   const [problems, plan, visits, patientFees, prescribedExercises] = await Promise.all([
     listProblems(db, id),
     getTreatmentPlan(db, id),
     listVisits(db, id),
-    getPatientFees(db, id),
+    feesEnabled ? getPatientFees(db, id) : Promise.resolve(null),
     getPrescribedExercises(db, id),
   ]);
 
@@ -234,7 +236,7 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* ── FEE SUMMARY ── */}
-      {patientFees.courseFee !== null && (
+      {patientFees && patientFees.courseFee !== null && (
         <>
           <SectionHeader>{t.print.feeSummary}</SectionHeader>
           <div className="mb-6 grid grid-cols-3 gap-4">

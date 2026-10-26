@@ -6,7 +6,7 @@ import { patients, type ShareLinkRow } from '@/db/schema';
 import type { Db } from '@/db/types';
 import { firstName } from '@/lib/names';
 import { getISTDateString } from '@/lib/dates';
-import { isPostureEnabled } from '@/lib/features';
+import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
 import { adherence, painSeries, shiftDate } from '@/lib/adherence';
 import { firstLatest, type DatedValue, type Recorded } from '@/lib/progress';
 import { combineViews, scorePosture, type Region } from '@/lib/posture-insights';
@@ -83,12 +83,14 @@ export async function getSharedProgressReport(
   if (!patient) return null;
 
   const today = getISTDateString(0, now);
+  const showPosture = isPostureEnabled(env);
+  const showCheckins = isFeatureEnabled('checkins', env);
   const [visits, lifestyle, since, checkins, posture] = await Promise.all([
     listVisits(db, link.patientId), // newest first
     getLifestyleAssessmentSnapshot(db, link.patientId),
-    firstShareDate(db, link.patientId, 'exercises'),
-    listCheckins(db, link.patientId, shiftDate(today, -(HOME_WINDOW_DAYS - 1)), today),
-    isPostureEnabled(env) ? postureProgress(db, link.patientId) : null,
+    showCheckins ? firstShareDate(db, link.patientId, 'exercises') : null,
+    showCheckins ? listCheckins(db, link.patientId, shiftDate(today, -(HOME_WINDOW_DAYS - 1)), today) : [],
+    showPosture ? postureProgress(db, link.patientId) : null,
   ]);
   const oldestFirst = visits.filter((v) => v.visitDate <= today).reverse(); // live, but only up to today
 
@@ -99,7 +101,7 @@ export async function getSharedProgressReport(
     sessions: oldestFirst.length,
     pain: progressSeries(oldestFirst.map((v) => ({ date: v.visitDate, value: v.painScale }))),
     weight: link.hideWeight ? null : progressSeries(oldestFirst.map((v) => ({ date: v.visitDate, value: v.weightKg === null ? null : Number(v.weightKg) }))),
-    home: since ? {
+    home: (showCheckins && since) ? {
       adherence: adherence(checkins, today, HOME_WINDOW_DAYS, since),
       painSeries: painSeries(checkins, today, HOME_WINDOW_DAYS).map((p) => ({ date: p.date, value: p.pain })),
     } : null,

@@ -31,7 +31,7 @@ import { getLifestyleAssessment, getLifestyleAssessmentSnapshot } from '@/data/l
 import { listPostureAssessments, latestPostureScores } from '@/data/posture';
 import { PostureScoreCard } from '@/components/posture/PostureScoreCard';
 import { stressBand } from '@/lib/wellbeing';
-import { isPostureEnabled } from '@/lib/features';
+import { isPostureEnabled, isFeatureEnabled } from '@/lib/features';
 import { scoreColor } from '@/components/posture/ReportParts';
 import { saveLifestyleAssessmentAction } from '@/actions/lifestyle';
 import { DeleteButton } from '@/components/DeleteButton';
@@ -53,22 +53,15 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { getLocale } from '@/lib/i18n/server';
 import { getTranslations } from '@/lib/i18n/translations';
+import { patientTabKeys, resolvePatientTab, type PatientTab } from '@/lib/patient-tabs';
 import type { Translations } from '@/lib/i18n/en';
 
-const VALID_TABS = ['overview', 'treatment', 'documents', 'fees', 'assessment'] as const;
-type Tab = typeof VALID_TABS[number];
-
-// Old bookmarked/dashboard links may still use the pre-merge tab names.
-const LEGACY_TAB_MAP: Record<string, Tab> = { problems: 'overview', progress: 'treatment' };
+type Tab = PatientTab;
 
 function painColor(scale: number) {
   if (scale <= 3) return 'bg-primary';
   if (scale <= 6) return 'bg-yellow-500';
   return 'bg-destructive';
-}
-
-function isValidTab(value: unknown): value is Tab {
-  return typeof value === 'string' && VALID_TABS.includes(value as Tab);
 }
 
 export default async function PatientPage({
@@ -81,26 +74,29 @@ export default async function PatientPage({
   const t = getTranslations(await getLocale());
   const { id } = await params;
   const rawTab = (await searchParams).tab;
-  const tab: Tab = isValidTab(rawTab) ? rawTab : LEGACY_TAB_MAP[rawTab ?? ''] ?? 'overview';
+  const feesEnabled = isFeatureEnabled('fees');
+  const tab: Tab = resolvePatientTab(rawTab, feesEnabled);
   const db = getDb();
   const patient = await getPatient(db, id);
   if (!patient) notFound();
 
   const photoUrl = patient.photoPath ? await getStorage().createSignedUrl(patient.photoPath) : null;
-  const patientFees = await getPatientFees(db, id);
-  const charges = await listCharges(db, id);
+  const [patientFees, charges] = feesEnabled
+    ? await Promise.all([getPatientFees(db, id), listCharges(db, id)])
+    : [null, []];
 
-  const TABS: [Tab, string][] = [
-    ['overview', t.patientDetail.tabs.overview],
-    ['treatment', t.patientDetail.tabs.treatment],
-    ['documents', t.patientDetail.tabs.documents],
-    ['fees', t.patientDetail.tabs.fees],
-    ['assessment', t.patientDetail.tabs.assessment],
-  ];
+  const tabTitles: Record<Tab, string> = {
+    overview: t.patientDetail.tabs.overview,
+    treatment: t.patientDetail.tabs.treatment,
+    documents: t.patientDetail.tabs.documents,
+    fees: t.patientDetail.tabs.fees,
+    assessment: t.patientDetail.tabs.assessment,
+  };
+  const TABS: [Tab, string][] = patientTabKeys(feesEnabled).map((key) => [key, tabTitles[key]]);
 
   return (
     <div className="space-y-6 pb-24">
-      <PatientHeader patient={patient} photoUrl={photoUrl} hasCourseFee={patientFees.courseFee !== null} />
+      <PatientHeader patient={patient} photoUrl={photoUrl} hasCourseFee={patientFees !== null && patientFees.courseFee !== null} />
 
       <TabDropdown patientId={id} activeTab={tab} tabs={TABS} label={t.patientDetail.section} />
 
@@ -134,7 +130,7 @@ export default async function PatientPage({
             </div>
           </div>
         )}
-        {tab === 'fees' && <Fees patientId={id} patientFees={patientFees} charges={charges} today={getISTDateString()} t={t} />}
+        {tab === 'fees' && patientFees && <Fees patientId={id} patientFees={patientFees} charges={charges} today={getISTDateString()} t={t} />}
         {tab === 'assessment' && <Assessment patientId={id} t={t} />}
       </div>
 
@@ -146,12 +142,14 @@ export default async function PatientPage({
           >
             + {t.treatment.addVisitBtn}
           </Link>
-          <Link 
-            href={`/patients/${id}?tab=fees`} 
-            className="hidden sm:inline-flex rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"
-          >
-            + {t.fees.recordPayment}
-          </Link>
+          {feesEnabled && (
+            <Link 
+              href={`/patients/${id}?tab=fees`} 
+              className="hidden sm:inline-flex rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"
+            >
+              + {t.fees.recordPayment}
+            </Link>
+          )}
           <Link 
             href={`/patients/${id}/print`} 
             className="rounded-full bg-secondary text-secondary-foreground px-4 py-2 text-sm font-medium shadow-sm hover:bg-secondary/80 transition-all active:scale-95 whitespace-nowrap"
@@ -174,10 +172,11 @@ async function Overview({
   const bmi = computeBmi(patient.weightKg, patient.heightCm);
   const db = getDb();
   const showPosture = isPostureEnabled();
+  const showFlexibility = isFeatureEnabled('flexibility');
   const [assessment, visits, postureScores] = await Promise.all([
     getLifestyleAssessmentSnapshot(db, patient.id),
     listVisits(db, patient.id),
-    showPosture ? latestPostureScores(db, [patient.id], { totals: true }) : null,
+    showPosture ? latestPostureScores(db, [patient.id], { totals: showFlexibility }) : null,
   ]);
   const today = getISTDateString(0);
   const lastVisit = visits[0]?.visitDate ?? null; // listVisits is ordered newest-first
@@ -263,7 +262,7 @@ async function Overview({
         </CardContent>
       </Card>
 
-      {postureScores && <PostureScoreCard patientId={patient.id} latest={postureScores.get(patient.id)} t={t} />}
+      {postureScores && <PostureScoreCard patientId={patient.id} latest={postureScores.get(patient.id)} t={t} flexibilityEnabled={showFlexibility} />}
 
       <Card className="rounded-2xl sm:col-span-2">
         <CardHeader className="pb-2">
@@ -503,26 +502,30 @@ async function Treatment({ patientId, t }: { patientId: string; t: Translations 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-6">
-        <TreatmentPlanForm patientId={patientId} initialPlan={plan} />
+        <TreatmentPlanForm patientId={patientId} initialPlan={plan} aiEnabled={isFeatureEnabled('ai')} />
         <PrescribedExercisesForm
           patientId={patientId}
           allExercises={allExercises}
           initialPrescribed={prescribedExercises}
           locale={locale}
         />
-        <SharePanel
-          target={{ kind: 'exercises', patientId, canShare: prescribedExercises.length > 0 }}
-          active={share && {
-            createdAt: share.createdAt.toISOString(),
-            expiresAt: share.expiresAt.toISOString(),
-            viewCount: share.viewCount,
-            lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
-          }}
-        />
-        <HomeExerciseCard
-          checkins={checkins} lastCheckin={lastCheckin} today={today} since={since}
-          liveLinkSince={share ? getISTDateString(0, share.createdAt) : null} t={t}
-        />
+        {isFeatureEnabled('shareLinks') && (
+          <SharePanel
+            target={{ kind: 'exercises', patientId, canShare: prescribedExercises.length > 0 }}
+            active={share && {
+              createdAt: share.createdAt.toISOString(),
+              expiresAt: share.expiresAt.toISOString(),
+              viewCount: share.viewCount,
+              lastViewedAt: share.lastViewedAt?.toISOString() ?? null,
+            }}
+          />
+        )}
+        {isFeatureEnabled('checkins') && (
+          <HomeExerciseCard
+            checkins={checkins} lastCheckin={lastCheckin} today={today} since={since}
+            liveLinkSince={share ? getISTDateString(0, share.createdAt) : null} t={t}
+          />
+        )}
       </div>
 
       <div className="space-y-4">
@@ -607,7 +610,7 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
     listVisitsWithData(db, patientId),
     activeShareLink(db, patientId, 'progress', new Date()),
   ]);
-  const sharePanel = (
+  const sharePanel = isFeatureEnabled('shareLinks') ? (
     <SharePanel
       target={{ kind: 'progress', patientId, canShare: rows.length > 0 }}
       active={share && {
@@ -618,7 +621,7 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
         hideWeight: share.hideWeight,
       }}
     />
-  );
+  ) : null;
 
   const weightData = rows
     .filter((r): r is typeof r & { weightKg: number } => r.weightKg !== null)
@@ -732,7 +735,8 @@ async function Progress({ patientId, t }: { patientId: string; t: Translations }
 async function Assessment({ patientId, t }: { patientId: string; t: Translations }) {
   const existing = await getLifestyleAssessment(getDb(), patientId);
   const showPosture = isPostureEnabled();
-  const postures = showPosture ? await listPostureAssessments(getDb(), patientId, { totals: true }) : []; // newest first
+  const showFlexibility = isFeatureEnabled('flexibility');
+  const postures = showPosture ? await listPostureAssessments(getDb(), patientId, { totals: showFlexibility }) : []; // newest first
   const photoCount = postures.reduce((n, a) => n + a.photoCount, 0);
   // Earliest withdrawal (IST day), for the note under the history.
   const withdrawnAt = postures.flatMap((a) => (a.photosDeletedAt ? [a.photosDeletedAt.getTime()] : []));
@@ -771,7 +775,7 @@ async function Assessment({ patientId, t }: { patientId: string; t: Translations
                       <p className="text-sm font-medium">{formatFullDate(a.assessedOn)}</p>
                       <p className="text-xs text-muted-foreground">
                         {t.posture.history.counts.replace('{marked}', String(a.markedCount)).replace('{mild}', String(a.mildCount))}
-                        {a.total !== null && <> · <span className="font-medium text-foreground">{t.posture.total.short.replace('{total}', String(a.total)).replace('{max}', String(TOTAL_MAX))}</span></>}
+                        {showFlexibility && a.total !== null && <> · <span className="font-medium text-foreground">{t.posture.total.short.replace('{total}', String(a.total)).replace('{max}', String(TOTAL_MAX))}</span></>}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1">

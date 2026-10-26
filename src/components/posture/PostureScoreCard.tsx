@@ -9,10 +9,11 @@ import { scoreColor } from './ReportParts';
 import { ScoreTrend } from './ScoreTrend';
 
 /** Overview tab: latest posture score, grade and trend vs the previous assessment. */
-export function PostureScoreCard({ patientId, latest, t }: {
+export function PostureScoreCard({ patientId, latest, t, flexibilityEnabled = true }: {
   patientId: string;
   latest: LatestPostureScore | undefined;
   t: Translations;
+  flexibilityEnabled?: boolean;
 }) {
   const p = t.posture;
   const oc = p.overviewCard;
@@ -55,7 +56,7 @@ export function PostureScoreCard({ patientId, latest, t }: {
                 ) : null}
                 <span>· {p.history.counts.replace('{marked}', String(latest.markedCount)).replace('{mild}', String(latest.mildCount))}</span>
               </p>
-              {latest.total !== null && (
+              {flexibilityEnabled && latest.total !== null && (
                 <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs">
                   <span className="font-semibold tabular-nums">{p.total.short.replace('{total}', String(latest.total)).replace('{max}', String(TOTAL_MAX))}</span>
                   {total.trend && total.change !== null && (

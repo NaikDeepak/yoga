@@ -1,3 +1,5 @@
+import { notFound } from 'next/navigation';
+import { isFeatureEnabled } from '@/lib/features';
 import { getDb } from '@/db/client';
 import { listCaptureStats } from '@/data/capture-stats';
 import { summariseCaptureStats } from '@/lib/capture-stats';
@@ -12,6 +14,7 @@ const DAYS = 30;
 
 /** Settings → Posture capture health (backlog E4): last 30 days of capture counters. */
 export default async function CaptureStatsPage() {
+  if (!isFeatureEnabled('posture')) notFound();
   await requireUser();
   const t = getTranslations(await getLocale());
   const rows = await listCaptureStats(getDb(), getISTDateString(-(DAYS - 1)));

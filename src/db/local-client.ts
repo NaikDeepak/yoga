@@ -7,7 +7,8 @@ import { getLocalDbCache, setLocalDbCache, type LocalDbCache } from './local-cac
 import { seedMockData } from './seed-mock';
 import { seedExercises } from './seed-exercises';
 
-export const LOCAL_DB_DIR = '.local-db';
+// Overridable so a second dev server (e2e modules-off project) never shares a database folder with the first.
+export const LOCAL_DB_DIR = process.env.LOCAL_DB_DIR || '.local-db';
 
 // Only imported dynamically from src/instrumentation.ts when local mock mode
 // is on; the prod bundle never loads PGlite.

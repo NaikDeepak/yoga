@@ -25,6 +25,8 @@ import { computeBmi } from '@/lib/bmi';
 import { generatePostureAnalysis } from '@/lib/gemini';
 import { postureAiReportSchema, type PostureAiContext } from '@/lib/posture-ai';
 import { combineViews, detectPatterns, scorePosture } from '@/lib/posture-insights';
+import { isFeatureEnabled } from '@/lib/features';
+import { featureOffError } from '@/lib/feature-off';
 import type { ActionResult } from '@/actions/patients';
 
 const INVALID_PARAMS: ActionResult = { ok: false, error: 'Invalid parameters / अवैध पॅरामीटर्स' };
@@ -67,6 +69,7 @@ function collectPhotos<K extends PostureView | FlexShot>(formData: FormData, vie
  * On success redirects to the new assessment's report.
  */
 export async function savePostureAssessmentAction(patientId: string, formData: FormData): Promise<ActionResult> {
+  if (!isFeatureEnabled('posture')) return featureOffError('posture');
   const user = await requireUser();
   if (typeof patientId !== 'string' || !patientId) return INVALID_PARAMS;
 
@@ -119,6 +122,7 @@ export async function replacePostureViewsAction(
   assessmentId: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!isFeatureEnabled('posture')) return featureOffError('posture');
   const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
@@ -163,6 +167,9 @@ export async function saveFlexibilityTestsAction(
   assessmentId: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  // Flexibility lives on a posture assessment: posture off turns it off too.
+  if (!isFeatureEnabled('posture')) return featureOffError('posture');
+  if (!isFeatureEnabled('flexibility')) return featureOffError('flexibility');
   const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
@@ -241,6 +248,7 @@ const NOT_FOUND: ActionResult = { ok: false, error: 'Assessment not found / म�
  * name, contact details or photos.
  */
 export async function generatePostureAiAction(patientId: string, assessmentId: string): Promise<ActionResult> {
+  if (!isFeatureEnabled('ai')) return featureOffError('ai');
   await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;
@@ -306,6 +314,7 @@ export async function savePostureAiAction(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!isFeatureEnabled('ai')) return featureOffError('ai');
   const user = await requireUser();
   if (typeof patientId !== 'string' || typeof assessmentId !== 'string' || !patientId || !assessmentId) {
     return INVALID_PARAMS;

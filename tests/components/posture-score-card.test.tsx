@@ -43,4 +43,9 @@ describe('PostureScoreCard', () => {
     render(<PostureScoreCard patientId="p1" latest={latest({ total: null })} t={en} />);
     expect(screen.queryByText(/Total/)).toBeNull();
   });
+
+  it('hides the total /400 when flexibility is disabled', () => {
+    render(<PostureScoreCard patientId="p1" latest={latest({ total: 300, previousTotal: 280 })} t={en} flexibilityEnabled={false} />);
+    expect(screen.queryByText(/Total/)).toBeNull();
+  });
 });

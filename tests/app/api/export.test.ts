@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('@/lib/auth', () => ({ getSessionUser: vi.fn() }));
 vi.mock('@/db/client', () => ({ getDb: vi.fn(() => ({})) }));
@@ -107,5 +107,29 @@ describe('GET /api/export/[kind]', () => {
     vi.mocked(getSessionUser).mockResolvedValueOnce(null);
     await GET(makeRequest('clients'), makeParams('clients'));
     expect(recordAudit).not.toHaveBeenCalled();
+  });
+});
+
+describe('fees export when the fees switch is off', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('404s the fees export and does not query or audit', async () => {
+    vi.stubEnv('FEATURE_FEES', 'false');
+    vi.mocked(exportFees).mockClear();
+    vi.mocked(recordAudit).mockClear();
+    const res = await GET(makeRequest('fees'), makeParams('fees'));
+    expect(res.status).toBe(404);
+    expect(exportFees).not.toHaveBeenCalled();
+    expect(recordAudit).not.toHaveBeenCalled();
+  });
+
+  it('still serves clients when fees is off', async () => {
+    vi.stubEnv('FEATURE_FEES', 'false');
+    expect((await GET(makeRequest('clients'), makeParams('clients'))).status).toBe(200);
+  });
+
+  it('serves fees when on', async () => {
+    vi.stubEnv('FEATURE_FEES', 'true');
+    expect((await GET(makeRequest('fees'), makeParams('fees'))).status).toBe(200);
   });
 });

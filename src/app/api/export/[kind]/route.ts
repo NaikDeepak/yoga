@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSessionUser } from '@/lib/auth';
+import { isFeatureEnabled } from '@/lib/features';
 import { safeErrorMessage } from '@/lib/log';
 import { getDb } from '@/db/client';
 import { recordAudit } from '@/data/audit';
@@ -19,7 +20,7 @@ export async function GET(
     }
 
     const { kind } = await params;
-    if (kind !== 'clients' && kind !== 'visits' && kind !== 'fees') {
+    if ((kind !== 'clients' && kind !== 'visits' && kind !== 'fees') || (kind === 'fees' && !isFeatureEnabled('fees'))) {
       return NextResponse.json({ error: 'Not found / सापडले नाही' }, { status: 404 });
     }
 

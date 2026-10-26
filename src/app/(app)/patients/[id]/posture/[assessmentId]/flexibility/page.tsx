@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { isFeatureEnabled } from '@/lib/features';
 import { getDb } from '@/db/client';
 import { getPatient } from '@/data/patients';
 import { consentWithdrawn, getPostureAssessmentRow } from '@/data/posture';
@@ -13,6 +14,8 @@ export default async function FlexibilityCapturePage({
   params: Promise<{ id: string; assessmentId: string }>;
   searchParams: Promise<{ shots?: string }>;
 }) {
+  if (!isFeatureEnabled('posture') || !isFeatureEnabled('flexibility')) notFound();
+
   const { id, assessmentId } = await params;
   const requested = (await searchParams).shots?.split(',');
   const shots = requested ? FLEX_SHOTS.filter((s): s is FlexShot => requested.includes(s)) : [...FLEX_SHOTS];

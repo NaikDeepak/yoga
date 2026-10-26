@@ -68,6 +68,18 @@ describe('getSharedPostureReport', () => {
     expect(ai!.summary).toBe(MOCK_POSTURE_AI_REPORT.summary);
   });
 
+  it('omits AI analysis even when approved if AI feature is switched off', async () => {
+    vi.stubEnv('FEATURE_AI', 'false');
+    try {
+      const { a, link } = await share();
+      await saveAiReport(db, patientId, a.id, MOCK_POSTURE_AI_REPORT, { approved: true });
+      const { ai } = (await getSharedPostureReport(db, storage, link))!;
+      expect(ai).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('has no photo URLs unless the physio included photos; then short-lived signed ones', async () => {
     const without = (await getSharedPostureReport(db, storage, (await share(false)).link))!;
     expect(without.photosShared).toBe(false);

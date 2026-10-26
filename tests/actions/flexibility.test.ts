@@ -5,6 +5,7 @@ import { addAssessment } from '../helpers/posture-assessment';
 import { flexShot } from '../helpers/flexibility';
 import { jpeg } from '../helpers/posture';
 import { saveFlexibilityTestsAction } from '@/actions/posture';
+import { featureOffError } from '@/lib/feature-off';
 import { createPatient } from '@/data/patients';
 import { getFlexibility } from '@/data/flexibility';
 import { deletePosturePhotos } from '@/data/posture';
@@ -76,5 +77,16 @@ describe('saveFlexibilityTestsAction', () => {
     vi.mocked(requireUser).mockRejectedValueOnce(new Error('REDIRECT:/login'));
     await expect(saveFlexibilityTestsAction(patientId, assessmentId, form())).rejects.toThrow('REDIRECT:/login');
     expect((await getFlexibility(db, assessmentId)).shots).toHaveLength(0);
+  });
+
+  it('refuses with featureOffError when flexibility is switched off and writes nothing', async () => {
+    vi.stubEnv('FEATURE_FLEXIBILITY', 'false');
+    try {
+      const r = await saveFlexibilityTestsAction(patientId, assessmentId, form());
+      expect(r).toEqual(featureOffError('flexibility'));
+      expect((await getFlexibility(db, assessmentId)).shots).toHaveLength(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

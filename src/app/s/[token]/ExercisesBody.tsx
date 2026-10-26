@@ -4,13 +4,14 @@ import type { Translations } from '@/lib/i18n/en';
 import { CheckinForm } from './CheckinForm';
 
 /** Client's home-exercise programme with today's check-in (share link kind 'exercises'). */
-export function ExercisesBody({ token, lang, programme, editing, error, t }: {
+export function ExercisesBody({ token, lang, programme, editing, error, t, checkinsEnabled = true }: {
   token: string;
   lang: 'en' | 'mr';
   programme: SharedExerciseProgramme;
   editing: boolean;
   error: boolean;
   t: Translations['sharedPage'];
+  checkinsEnabled?: boolean;
 }) {
   return (
     <>
@@ -19,7 +20,7 @@ export function ExercisesBody({ token, lang, programme, editing, error, t }: {
         <p className="text-muted-foreground">{t.intro}</p>
       </section>
 
-      {programme.exercises.length > 0 && (
+      {checkinsEnabled && programme.exercises.length > 0 && (
         <CheckinForm
           token={token} lang={lang} checkins={programme.checkins}
           editing={editing} error={error} t={t.checkin}
