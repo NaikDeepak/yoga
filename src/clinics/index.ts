@@ -1,9 +1,11 @@
 import { clinicProfileSchema, type ClinicProfile } from './types';
 import { pawar } from './pawar';
+import { sunrise } from './sunrise';
 import { CLINIC_PROFILE_MISSING } from './build-env';
 
 export const CLINIC_REGISTRY: Record<string, ClinicProfile> = {
   pawar,
+  sunrise,
 };
 
 /** Outside production an unset CLINIC_PROFILE falls back to pawar; in production it throws, so a
