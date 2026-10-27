@@ -20,13 +20,14 @@ are never printed, saved, or sent anywhere except to Neon. Never paste a passwor
 ## One-time setup per clinic: the settings file
 
 Each clinic has one settings file on the Mac: `~/.config/clinics/<clinic>.env`. Only you can read it
-(`chmod 600`). Claude normally creates it. It holds no passwords:
+(`chmod 600`). Claude normally creates it. It holds no passwords. `CRON_SECRET` is the one secret in it:
 
 ```
 NEON_AUTH_BASE_URL=<the clinic's Neon login address>
 ADMIN_EMAIL=<the clinic admin's email (Deepak)>
 SITE_URL=<the clinic's web address>
 VERCEL_PROTECTION_BYPASS=<only for preview sites; used by the login check>
+CRON_SECRET=<production clinic only; deploy:prod's health check needs it. Same value as in Vercel Production>
 ```
 
 If a command says the file is missing or "too open", ask Claude, or run

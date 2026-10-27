@@ -18,12 +18,17 @@ export const CLINIC_CONFIG_DIR = join(homedir(), '.config', 'clinics');
 const REQUIRED = ['NEON_AUTH_BASE_URL', 'ADMIN_EMAIL', 'SITE_URL'] as const;
 const trimSlash = (url: string) => url.replace(/\/+$/, '');
 
-export function readClinicLoginConfig(slug: string, dir = CLINIC_CONFIG_DIR): ClinicLoginConfig {
+/** The clinic's settings file, parsed, after checking that only its owner can read it. */
+function readClinicFile(slug: string, dir: string, keys: readonly string[]): { file: string; values: Record<string, string> } {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) throw new Error('clinic slug must be lowercase letters, digits and dashes');
   const file = join(dir, `${slug}.env`);
-  if (!existsSync(file)) throw new Error(`${file} not found (keys: ${REQUIRED.join(', ')}; chmod 600)`);
+  if (!existsSync(file)) throw new Error(`${file} not found (keys: ${keys.join(', ')}; chmod 600)`);
   if ((statSync(file).mode & 0o077) !== 0) throw new Error(`${file} is readable by other users; run: chmod 600 ${file}`);
-  const values = parse(readFileSync(file));
+  return { file, values: parse(readFileSync(file)) };
+}
+
+export function readClinicLoginConfig(slug: string, dir = CLINIC_CONFIG_DIR): ClinicLoginConfig {
+  const { file, values } = readClinicFile(slug, dir, REQUIRED);
   for (const key of REQUIRED) {
     if (!values[key]?.trim()) throw new Error(`${file} is missing ${key}`);
   }
@@ -33,4 +38,9 @@ export function readClinicLoginConfig(slug: string, dir = CLINIC_CONFIG_DIR): Cl
     siteUrl: trimSlash(values.SITE_URL.trim()),
     vercelProtectionBypass: values.VERCEL_PROTECTION_BYPASS?.trim() || undefined,
   };
+}
+
+/** One optional secret from the clinic's settings file (e.g. CRON_SECRET for deploy:prod); undefined when unset. */
+export function readClinicSecret(slug: string, key: string, dir = CLINIC_CONFIG_DIR): string | undefined {
+  return readClinicFile(slug, dir, [key]).values[key]?.trim() || undefined;
 }

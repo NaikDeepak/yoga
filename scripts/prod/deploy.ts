@@ -1,7 +1,8 @@
 // npm run deploy:prod — deploys main to production and rolls back if the live site fails its smoke test.
 // Vercel isn't connected to git, so this is the only way main reaches production.
 //  1. Only from a clean, pushed, up-to-date main; refuses while production has pending migrations
-//     or while CLINIC_PROFILE / LOGIN_PROVIDER is missing from Vercel Production.
+//     or while CLINIC_PROFILE / LOGIN_PROVIDER is missing from Vercel Production, or without CRON_SECRET locally
+//     (the smoke test needs it: /api/ping with it answers 200 only when the database and the login both work).
 //  2. Builds from a temporary worktree of HEAD — no .env, so local values can't leak into the build.
 //     `--skip-domain`: the build never takes the live domain by itself.
 //  3. Promotes the new deployment (this is what makes it live), smoke-tests the live domain,
@@ -11,11 +12,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { alreadyLive, deploymentUrlFromCli, missingRequiredEnv, releaseProblems, smokeFailures } from '../../src/lib/prod-ops';
+import { readClinicSecret } from '../clinic/login-config';
 import { envValue, fail, gitState, printStatus, prodSiteUrl, prodStatus, sh } from './common';
 
 const DEPLOY_TIMEOUT_MS = 15 * 60_000;
 /** promote / rollback: give Vercel time on a bad day — that's exactly when a rollback matters. */
 const SWITCH_TIMEOUT_MS = 5 * 60_000;
+/** The clinic production serves; its ~/.config/clinics/<slug>.env may hold CRON_SECRET. */
+const PROD_CLINIC = 'pawar';
 
 /** What the CLI said: execSync's message is only "Command failed: …"; the cause is in stderr. */
 const cliError = (e: unknown) => {
@@ -43,15 +47,28 @@ async function status(url: string, headers?: Record<string, string>): Promise<nu
   }
 }
 
-async function smoke(site: string): Promise<string[]> {
-  // /api/ping answers 401 without the cron secret (still proves the build is up); with it, 200 = DB + login OK.
-  const cronSecret = envValue('CRON_SECRET');
+/** CRON_SECRET from the shell, .env, or the production clinic's settings file; refuses to deploy without it. */
+function cronSecret(): string {
+  let secret = envValue('CRON_SECRET');
+  if (!secret) {
+    try {
+      secret = readClinicSecret(PROD_CLINIC, 'CRON_SECRET');
+    } catch (e) {
+      fail(`Refusing to deploy: CRON_SECRET is not set (${(e as Error).message}).`);
+    }
+  }
+  if (!secret) fail(`Refusing to deploy: add CRON_SECRET to ~/.config/clinics/${PROD_CLINIC}.env (same value as in Vercel Production).`);
+  return secret;
+}
+
+async function smoke(site: string, secret: string): Promise<string[]> {
+  // /api/ping with the cron secret answers 200 only when the database and the active login both answer.
   const expected: Record<string, number | number[]> = {
     '/login': 200,
-    '/api/ping': cronSecret ? 200 : [200, 401],
+    '/api/ping': 200,
     [`/s/${randomBytes(8).toString('hex')}`]: 404,
   };
-  const auth = (p: string) => (p === '/api/ping' && cronSecret ? { authorization: `Bearer ${cronSecret}` } : undefined);
+  const auth = (p: string) => (p === '/api/ping' ? { authorization: `Bearer ${secret}` } : undefined);
   let failures: string[] = [];
   for (let attempt = 1; attempt <= 3; attempt++) {
     const actual = Object.fromEntries(await Promise.all(Object.keys(expected).map(async (p) => [p, await status(site + p, auth(p))])));
@@ -65,6 +82,7 @@ async function smoke(site: string): Promise<string[]> {
 async function main() {
   const problems = releaseProblems(gitState());
   if (problems.length) fail(`Refusing to deploy:\n  - ${problems.join('\n  - ')}`);
+  const secret = cronSecret();
 
   // Without them the build / the running site fails closed (see src/clinics, src/lib/login-provider);
   // catch it here, before a 15-minute Vercel build.
@@ -115,7 +133,7 @@ async function main() {
       if (!alreadyLive(cliError(e))) console.warn(`⚠ promote failed, checking the live site anyway:\n${cliError(e)}`);
     }
 
-    const failures = await smoke(site);
+    const failures = await smoke(site, secret);
     if (failures.length) {
       console.error(`\n✖ Smoke test failed:\n  - ${failures.join('\n  - ')}\nRolling back to ${previous}…`);
       vercel(`rollback ${previous} --yes`, undefined, SWITCH_TIMEOUT_MS);
