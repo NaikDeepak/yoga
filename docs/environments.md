@@ -83,6 +83,8 @@ Never paste the cookie secret or any token in chat; the base URL itself is not a
 - Pawar: production branch has Neon Auth enabled (sign-up off, no trusted domains, localhost off) but **unused** until the cut-over.
 - Sunrise preview: logins live in a separate throwaway Neon project `sunrise-preview-auth` (`still-haze-98788197`), trusted domain `https://yoga-sunrise-preview.vercel.app`. Delete it after Part 2.
 
+Step-by-step for Deepak (create a login, reset passwords, common messages): `docs/logins.md`.
+
 **Scripts** (`scripts/clinic/`, settings in `~/.config/clinics/<slug>.env`, `chmod 600`, keys `NEON_AUTH_BASE_URL`,
 `ADMIN_EMAIL`, `SITE_URL`, optional `VERCEL_PROTECTION_BYPASS`; passwords only via hidden prompt):
 | Command | Does |
