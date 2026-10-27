@@ -73,7 +73,7 @@ Vercel stops pointing the domain at new deployments until one is promoted; `depl
 2. **R2**: create bucket `patient-files` and an API token with read/write on it → the four `R2_*` vars.
 3. **Supabase (login)**: create a project; Project Settings → API → URL, anon/publishable key, service-role
    key → the auth vars; logins are created by Deepak (Supabase dashboard today; `npm run create-login`
-   once the Neon login is live). There is no self-registration page.
+   once the Neon login is live; see `docs/environments.md` → *Neon login*). There is no self-registration page.
 4. `npm run deploy:prod`.
 
 ## Client share links (`APP_URL`)

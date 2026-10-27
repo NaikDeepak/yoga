@@ -9,13 +9,13 @@ remove them in Vercel, and how to release. First-time setup: `docs/setup.md`.
 |---|---|---|---|
 | **Hosting** (app + API routes + daily cron) | **Vercel** (project `yoga`, team naikdeepaks-projects) | vercel.com → yoga | `vercel.json` (cron) |
 | **Database** (all app data) | **Neon** Postgres, pooled connection | console.neon.tech | `src/db/*`, migrations in `drizzle/` |
-| **Login only** | **Supabase Auth** (project `yabzxeetzihtnbumampg`) | supabase.com → project → Authentication | `src/lib/supabase/*`, `src/lib/auth.ts` |
+| **Login only** | **Supabase Auth** (project `yabzxeetzihtnbumampg`), or **Neon Auth** when `LOGIN_PROVIDER=neon` (see *Neon login* below) | supabase.com → project → Authentication · console.neon.tech → project → Auth | `src/lib/login-provider.ts`, `src/lib/supabase/*`, `src/lib/neon-auth.ts`, `src/lib/auth.ts` |
 | **Files** (documents, profile + posture + flexibility photos) | **Cloudflare R2**, private bucket `patient-files` | dash.cloudflare.com → R2 | `src/lib/r2-storage.ts`, `src/lib/storage.ts` |
 | **AI** (treatment drafts, posture analysis) | **Google Gemini** `gemini-2.5-flash` | aistudio.google.com → API keys | `src/lib/gemini.ts` |
 | **Code** | **GitHub** `NaikDeepak/yoga` (PRs reviewed by Kilo) | github.com/NaikDeepak/yoga | — |
 | WhatsApp messages | none: free `wa.me` links that open the physio's WhatsApp | — | `src/lib/whatsapp.ts` |
 
-**Supabase = login only.** Its old database is unused; never migrate it as "prod".
+**Supabase = login only** (until a clinic is switched to Neon login). Its old database is unused; never migrate it as "prod".
 **Vercel is not connected to GitHub**, so merging to `main` does **not** deploy (see *Release*).
 Every file of a client is stored under `patients/<client id>/` in R2.
 
@@ -25,7 +25,7 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 |---|---|---|
 | URL | https://localhost:3000 (`dev:phone`) or http://localhost:3000 (`dev`) | https://yoga-ten-tau.vercel.app |
 | Database | PGlite file DB in `.local-db/` (demo data) | **Neon** (`PROD_DATABASE_URL` locally, `DATABASE_URL` in Vercel) |
-| Login | Mock: `dr.demo@example.com` / `password` | **Supabase Auth** |
+| Login | Mock: `dr.demo@example.com` / `password` | **Supabase Auth** (default) or **Neon Auth** (`LOGIN_PROVIDER=neon`) |
 | Files | `public/uploads/` | **Cloudflare R2** |
 | AI | canned answers without a key | **Gemini** (needs `GEMINI_API_KEY`) |
 | Settings | `.env` (copy `.env.example`; `LOCAL_MOCK=true`) | **Vercel → Settings → Environment Variables** |
@@ -52,6 +52,8 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `APP_URL` | Public site address used in client share links | optional | `https://yoga-ten-tau.vercel.app` |
 | `CLINIC_PROFILE` | Which clinic profile (`src/clinics/`) this deploy shows. Unset or empty in production = build/start throws (fails closed); `deploy:prod` refuses only when the name is not listed in Vercel Production (an empty value then fails the build). Local `next build` / `next start` need it too (in `.env`) | — | required · set for build + runtime (`pawar`) |
 | `LOGIN_PROVIDER` | Which login the app uses: `supabase` or `neon` (mock mode ignores it). **Must be set in every Vercel environment (Production and Preview) before deploying a build from `feat/neon-login` on**: unset or unknown in production = every request 500s, share links included (fails closed, no silent default) | optional (defaults to `supabase` outside production) | required (`supabase` until a clinic is switched to `neon`) |
+| `NEON_AUTH_BASE_URL` | Neon Auth endpoint of this clinic's Neon branch (Neon → Auth). Not a secret, but never print it next to a secret. Only read when `LOGIN_PROVIDER=neon` | only to run with `LOGIN_PROVIDER=neon` | required when `LOGIN_PROVIDER=neon` |
+| `NEON_AUTH_COOKIE_SECRET` | Signs the session cookie, at least 32 chars (`openssl rand -base64 32`). Only read when `LOGIN_PROVIDER=neon` | same | required · sensitive when `LOGIN_PROVIDER=neon` |
 | `CRON_SECRET` | The daily `/api/ping` keepalive must send it; without it the route refuses every call (fails closed). Same value as the `CRON_SECRET` GitHub repo secret | — | required · sensitive (set 2026-10-08) |
 | `PROD_DATABASE_URL`, `PROD_SITE_URL` | Used **only** by the `npm run *:prod` scripts on your Mac | Neon pooled URL / live URL | not used |
 
@@ -63,6 +65,43 @@ Since then posture follows the clinic profile (Pawar: on); `FEATURE_POSTURE=fals
 Check with `vercel env ls production`. Remember: a local demo (`LOCAL_MOCK=true`) without a key returns a
 fixed dummy AI plan, so "it works locally" doesn't prove production has the key.
 
+## Neon login (`LOGIN_PROVIDER=neon`)
+
+Login for a clinic can run on **Neon Auth** (managed Better Auth) instead of Supabase. Code: `src/lib/login-provider.ts`
+(the switch), `src/lib/neon-auth.ts`, `src/lib/session-middleware.ts`, `src/app/api/auth/[...path]/route.ts`
+(allowlist: everything not listed is 404). Provider rules: `mock` wins under `LOCAL_MOCK`; in production an unset
+or unknown value throws; `/api/ping` pings Supabase only while it is `supabase`. Protected pages read the Neon
+session uncached on every navigation. `/register` no longer exists.
+
+**Neon Auth lives per Neon branch.** Manage it with the Neon API, **always by branch ID**:
+`https://console.neon.tech/api/v2/projects/{project}/branches/{branchId}/auth/...` with `domains`,
+`email_and_password` (`{"disable_sign_up":true}`), `allow_localhost`, `users`, `users/{id}/role`, `config` (`{"name":...}`).
+Do **not** use `neon neon-auth ...`: it mis-resolves branches (on 2026-10-27 a command meant for the preview branch hit production).
+Never paste the cookie secret or any token in chat; the base URL itself is not a secret.
+
+**State (2026-10-27):**
+- Pawar: production branch has Neon Auth enabled (sign-up off, no trusted domains, localhost off) but **unused** until the cut-over.
+- Sunrise preview: logins live in a separate throwaway Neon project `sunrise-preview-auth` (`still-haze-98788197`), trusted domain `https://yoga-sunrise-preview.vercel.app`. Delete it after Part 2.
+
+**Scripts** (`scripts/clinic/`, settings in `~/.config/clinics/<slug>.env`, `chmod 600`, keys `NEON_AUTH_BASE_URL`,
+`ADMIN_EMAIL`, `SITE_URL`, optional `VERCEL_PROTECTION_BYPASS`; passwords only via hidden prompt):
+| Command | Does |
+|---|---|
+| `npm run create-login -- --clinic <slug> --email <staff email>` | admin creates a staff login (`--reset` sets a new password) |
+| `npm run reset-password -- --clinic <slug> --email <email>` | first-admin bootstrap: Neon emails a reset link → paste it → new password. No admin session needed, sign-up stays off |
+| `npm run move-preferences -- --from <old user id> --to <new user id>` | moves the production `user_preferences` row to the new user id |
+| `npm run login-smoke -- --clinic <slug> --email <test login> [--site <url>]` | 7 checks against `SITE_URL` (sign-in, wrong password, `/s/` 404, API 401, sign-up 404, sign-out, replayed cookie) |
+
+**First admin:** create the user through the API (`users`), set role `admin` (`users/{id}/role`), then `npm run reset-password`
+(uses Neon's shared email). Sign-up is never opened.
+
+**Switch a clinic to Neon:** set `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` and `LOGIN_PROVIDER=neon` in Vercel Production,
+add the live domain as a trusted domain on that branch, create the logins, `move-preferences`, `npm run deploy:prod`
+(builds with `--skip-domain`, then promote, smoke, auto-rollback), then `npm run login-smoke` and log in by hand.
+
+**Roll back to Supabase** (about 5 minutes): set `LOGIN_PROVIDER=supabase` in Vercel Production, then `npm run deploy:prod`.
+The Supabase project and its logins stay untouched until PR-H, so this works at any time before then.
+
 ## Sunrise preview (made-up second clinic, for checking only)
 
 `vercel deploy --yes` (no `--prod`) from any branch builds a **Preview** that runs as Sunrise:
@@ -70,7 +109,7 @@ fixed dummy AI plan, so "it works locally" doesn't prove production has the key.
 | | Preview |
 |---|---|
 | Database | Neon branch `sunrise-preview` → its own database `sunrise`, own user `sunrise_app` (no Pawar data) |
-| Login | Same Supabase Auth as production (same accounts) |
+| Login | Supabase Auth as production (same accounts) until switched; Neon login test accounts: see *Neon login* |
 | Files | Own R2 bucket `sunrise-preview-files`, token scoped to that bucket only |
 | Settings | Vercel env, scope **Preview**: `CLINIC_PROFILE=sunrise`, `DATABASE_URL`, 3 × `NEXT_PUBLIC_SUPABASE_*`, 4 × `R2_*`, `FEATURE_POSTURE=true`, `FEATURE_FLEXIBILITY=true` |
 

@@ -5,7 +5,7 @@
 **The feature freeze (2026-10-07) ended 2026-10-25 for the second-clinic work** — roadmap `docs/superpowers/plans/2026-10-25-second-clinic-roadmap.md`. Phase 1 (product ready for any clinic) is done; next: Project 2 = Phase 2 "Sunrise's own copy, login off Supabase, backups, release to all", then Project 3 = Phase 3 "Admin site". Other new features stay on hold; F1 (pain body map + questionnaires) is parked. The Features table below is on hold.
 
 Open items, newest decisions first. Pick from here when starting new work; tick items off (or move them
-to their spec) when done. Last updated 2026-10-25.
+to their spec) when done. Last updated 2026-10-27.
 
 ## Waiting on people (not code)
 | Item | Who | Notes |
@@ -15,6 +15,15 @@ to their spec) when done. Last updated 2026-10-25.
 | Shoulder-extension reference photo | Clinic | The AI model never reached 60°, so that card shows no reference. A clinic photo (consent for use with all clients) → `public/ideal/` + `src/lib/ideal-photos.ts`. See `scripts/ideal-photos/README.md`. |
 | Facial palsy clients? | Dr Pawar | Decides whether F4 (facial palsy tracking) is worth building. |
 | Tighten the R2 API token | Deepak | Currently Admin-level ("Workers R2 Storage Write"). **Deepak:** Cloudflare → R2 Object Storage → Manage API tokens → Create Account API token, named `yoga-patient-files-rw`, permission **Object Read & Write**, buckets: specific → `patient-files`, TTL Forever. Put the two values in `~/.config/yoga-r2-token` (`chmod 600`, lines `R2_ACCESS_KEY_ID=…` / `R2_SECRET_ACCESS_KEY=…`), never in chat. **Claude:** tests the token (patient-files only), updates `.env` + Vercel Production, `deploy:prod`, checks upload/delete live, deletes the file. **Then Deepak** deletes the old Admin token. Do this before adding more clinics. |
+
+## In progress
+- **Phase 2 PR-G (Neon login behind a switch)**, branch `feat/neon-login`: `LOGIN_PROVIDER=mock|supabase|neon`, Neon login scripts, safer `deploy:prod`. Rollback: `docs/environments.md` → *Neon login*.
+
+## Follow-ups after PR-G
+- Email "forgot password" page + custom SMTP (later; today resets go through `npm run reset-password` with Neon's shared email).
+- sin1 region for Vercel: skipped for now (Deepak, 2026-10-27); reopen if per-page auth latency hurts.
+- **PR-H** retire Supabase (vars, `/api/ping` keep-alive, `src/lib/supabase/*`) at least 2 weeks after the cut-over.
+- Delete the Neon project `sunrise-preview-auth` after Part 2.
 
 ## Done recently
 - **Restore window decided**, 2026-10-25 (Deepak): keep the 6-hour Neon window for now; no paid plan, no nightly dump. Revisit before adding clinics or if a mistake older than 6 h ever needs undoing. Options were A (paid Neon plan) or B (nightly `pg_dump` into private R2).

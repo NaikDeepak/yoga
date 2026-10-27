@@ -3,7 +3,8 @@
 Read this before touching code — it replaces scanning `src/`.
 
 ## System shape
-Next.js 16 App Router monolith on Vercel. Production: **Neon** = Postgres, **Cloudflare R2** = files (private bucket `patient-files`), **Supabase = Auth only**. Local dev: mock mode (PGlite + mock login + local files). See `docs/environments.md`.
+Next.js 16 App Router monolith on Vercel. Production: **Neon** = Postgres, **Cloudflare R2** = files (private bucket `patient-files`), **login = Supabase Auth or Neon Auth, chosen per deploy by `LOGIN_PROVIDER`** (`src/lib/login-provider.ts`). Local dev: mock mode (PGlite + mock login + local files). See `docs/environments.md`.
+**Auth seam:** every login branch asks `loginProvider()` (`mock` | `supabase` | `neon`; mock wins under `LOCAL_MOCK`, unset in production throws). Neon code is loaded with `await import()` only when selected, so a Supabase deploy never needs the Neon vars. The Neon session is read uncached on every navigation (in the proxy), and `/api/auth/*` passes only an exact allowlist, everything else 404. Rows below. Switching and rollback: `docs/environments.md` (*Neon login*).
 Drizzle ORM everywhere; tests run the same migrations on in-memory PGlite.
 
 **Local mock mode** (`LOCAL_MOCK=true`, dev-only): file-backed PGlite at `.local-db/` (migrated +
