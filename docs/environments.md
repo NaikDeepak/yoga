@@ -70,7 +70,7 @@ fixed dummy AI plan, so "it works locally" doesn't prove production has the key.
 Login for a clinic can run on **Neon Auth** (managed Better Auth) instead of Supabase. Code: `src/lib/login-provider.ts`
 (the switch), `src/lib/neon-auth.ts`, `src/lib/session-middleware.ts`, `src/app/api/auth/[...path]/route.ts`
 (allowlist: everything not listed is 404). Provider rules: `mock` wins under `LOCAL_MOCK`; in production an unset
-or unknown value throws; `/api/ping` pings Supabase only while it is `supabase`. Protected pages read the Neon
+or unknown value throws; `/api/ping` pings Supabase whenever its URL is set and, under `neon`, checks `{NEON_AUTH_BASE_URL}/ok`. Protected pages read the Neon
 session uncached on every navigation. `/register` no longer exists.
 
 **Neon Auth lives per Neon branch.** Manage it with the Neon API, **always by branch ID**:

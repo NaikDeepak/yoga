@@ -5,10 +5,6 @@ describe('isAllowedAuthRoute', () => {
   it.each([
     ['POST', ['sign-in', 'email']],
     ['POST', ['sign-out']],
-    ['GET', ['get-session']],
-    ['POST', ['request-password-reset']],
-    ['POST', ['reset-password']],
-    ['GET', ['reset-password', 'AbC_123-xyz']],
   ])('allows %s %j', (method, segs) => {
     expect(isAllowedAuthRoute(method, segs)).toBe(true);
   });
@@ -31,8 +27,12 @@ describe('isAllowedAuthRoute', () => {
     ['GET', ['reset-password', 'a%2Fb']],
     ['GET', ['reset-password', 'a/b']],
     ['GET', ['reset-password', 'x'.repeat(257)]],
-    ['DELETE', ['get-session']],
-    ['get', ['get-session']],
+    ['DELETE', ['sign-out']],
+    ['get', ['sign-out']],
+    ['GET', ['get-session']],
+    ['POST', ['request-password-reset']],
+    ['POST', ['reset-password']],
+    ['GET', ['reset-password', 'AbC_123-xyz']],
   ])('refuses %s %j', (method, segs) => {
     expect(isAllowedAuthRoute(method, segs)).toBe(false);
   });

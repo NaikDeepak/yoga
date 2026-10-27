@@ -45,6 +45,8 @@ describe('/api/auth/[...path]', () => {
     ['POST', ['sign-up', 'email']],
     ['POST', ['admin', 'create-user']],
     ['GET', ['sign-in', 'email']],
+    ['GET', ['get-session']],
+    ['POST', ['reset-password']],
     ['POST', ['sign-up%2Femail']],
   ] as const)('answers 404 without calling Neon for %s %j', async (method, path) => {
     vi.stubEnv('LOGIN_PROVIDER', 'neon');
@@ -56,15 +58,15 @@ describe('/api/auth/[...path]', () => {
   it('answers 404 for PUT/PATCH/DELETE even on allowed paths', async () => {
     vi.stubEnv('LOGIN_PROVIDER', 'neon');
     for (const m of ['PUT', 'PATCH', 'DELETE'] as const) {
-      expect((await call(m, ['get-session'])).status).toBe(404);
+      expect((await call(m, ['sign-out'])).status).toBe(404);
     }
     expect(handlerFactory).not.toHaveBeenCalled();
   });
 
   it('answers 404 to HEAD sent to the GET export, without calling Neon', async () => {
     vi.stubEnv('LOGIN_PROVIDER', 'neon');
-    const res = await route.GET(new Request('http://localhost/api/auth/get-session', { method: 'HEAD' }), {
-      params: Promise.resolve({ path: ['get-session'] }),
+    const res = await route.GET(new Request('http://localhost/api/auth/sign-out', { method: 'HEAD' }), {
+      params: Promise.resolve({ path: ['sign-out'] }),
     });
     expect(res.status).toBe(404);
     expect(neonHandler).not.toHaveBeenCalled();
