@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { NextRequest } from 'next/server';
 
 // The real SDK is never loaded: both entry points and next/headers are mocked, so no network.
 const sdk = vi.hoisted(() => ({
@@ -7,11 +8,12 @@ const sdk = vi.hoisted(() => ({
   getSession: vi.fn(),
   cookieSet: vi.fn(),
   headerGet: vi.fn(),
+  extract: vi.fn(),
 }));
 vi.mock('@neondatabase/auth/next/server', () => ({ createNeonAuth: sdk.createNeonAuth }));
 vi.mock('@neondatabase/auth/server', () => ({
   createAuthServer: sdk.createAuthServer,
-  extractNeonAuthCookies: () => '__Secure-neon-auth.session_token=t',
+  extractNeonAuthCookies: sdk.extract,
 }));
 vi.mock('next/headers', () => ({
   cookies: async () => ({ set: sdk.cookieSet }),
@@ -31,6 +33,7 @@ beforeEach(() => {
   vi.stubEnv('NEON_AUTH_COOKIE_SECRET', SECRET);
   sdk.createNeonAuth.mockReturnValue({ signIn: {} });
   sdk.createAuthServer.mockReturnValue({ getSession: sdk.getSession });
+  sdk.extract.mockReturnValue('__Secure-neon-auth.session_token=t');
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -142,5 +145,74 @@ describe('the reader request context', () => {
     delete h.referer;
     expect(ctx.getOrigin()).toBe('');
     expect(ctx.getFramework()).toBe('nextjs');
+  });
+});
+
+describe('readNeonSessionFromRequest (proxy)', () => {
+  function request(headers: Record<string, string> = {}) {
+    return new NextRequest('https://clinic.example/login', {
+      headers: { cookie: '__Secure-neon-auth.session_token=t; sb-x-auth-token=old', ...headers },
+    });
+  }
+
+  it('reads uncached with a context built from the request, and maps the user', async () => {
+    sdk.getSession.mockResolvedValue({
+      data: { session: { id: 's' }, user: { id: 'u1', email: 'a@b.c', role: 'admin' } },
+      error: null,
+    });
+    const { readNeonSessionFromRequest } = await load();
+    const r = request({ origin: 'https://o.example' });
+    expect(await readNeonSessionFromRequest(r)).toStrictEqual({
+      user: { id: 'u1', email: 'a@b.c' },
+      cookies: [],
+    });
+    expect(sdk.getSession).toHaveBeenCalledWith({ query: { disableCookieCache: 'true' } });
+    const config = sdk.createAuthServer.mock.calls[0][0];
+    expect(config).toMatchObject({ baseUrl: 'https://auth.example.test', cookieSecret: SECRET });
+    const ctx = await config.context();
+    expect(ctx.getCookies()).toBe('__Secure-neon-auth.session_token=t');
+    expect(sdk.extract).toHaveBeenCalledWith(r.headers);
+    expect(ctx.getHeader('origin')).toBe('https://o.example');
+    expect(ctx.getHeader('x-missing')).toBeNull();
+    expect(ctx.getOrigin()).toBe('https://o.example');
+    expect(ctx.getFramework()).toBe('nextjs');
+  });
+  it('falls back to the request origin and never uses next/headers', async () => {
+    sdk.getSession.mockResolvedValue({ data: null, error: null });
+    const { readNeonSessionFromRequest } = await load();
+    expect(await readNeonSessionFromRequest(request())).toStrictEqual({ user: null, cookies: [] });
+    const ctx = await sdk.createAuthServer.mock.calls[0][0].context();
+    expect(ctx.getOrigin()).toBe('https://clinic.example');
+    ctx.setCookie('n', 'v', { path: '/' });
+    expect(sdk.cookieSet).not.toHaveBeenCalled();
+    expect(sdk.headerGet).not.toHaveBeenCalled();
+  });
+  it('collects the cookies the SDK writes, for the proxy to put on its response', async () => {
+    sdk.getSession.mockImplementation(async () => {
+      const ctx = await sdk.createAuthServer.mock.calls[0][0].context();
+      await ctx.setCookie('__Secure-neon-auth.session_token', '', { path: '/', maxAge: 0 });
+      return { data: { session: null, user: null }, error: null };
+    });
+    const { readNeonSessionFromRequest } = await load();
+    expect(await readNeonSessionFromRequest(request())).toStrictEqual({
+      user: null,
+      cookies: [{ name: '__Secure-neon-auth.session_token', value: '', options: { path: '/', maxAge: 0 } }],
+    });
+  });
+  it('throws on a service error using only status and code', async () => {
+    sdk.getSession.mockResolvedValue({
+      data: null,
+      error: { message: 'token=abc', status: 502, statusText: 'Bad Gateway', code: 'NETWORK_ERROR' },
+    });
+    const { readNeonSessionFromRequest } = await load();
+    await expect(readNeonSessionFromRequest(request())).rejects.toThrow(
+      'Neon session read failed (502 NETWORK_ERROR)',
+    );
+  });
+  it('throws the env error before building a reader', async () => {
+    vi.stubEnv('NEON_AUTH_COOKIE_SECRET', '');
+    const { readNeonSessionFromRequest } = await load();
+    await expect(readNeonSessionFromRequest(request())).rejects.toThrow('must be set');
+    expect(sdk.createAuthServer).not.toHaveBeenCalled();
   });
 });

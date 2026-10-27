@@ -5,10 +5,12 @@ import { createNeonAuth, type NeonAuth } from '@neondatabase/auth/next/server';
 import {
   createAuthServer,
   extractNeonAuthCookies,
+  type CookieOptions,
   type NeonAuthServer,
   type RequestContext,
 } from '@neondatabase/auth/server';
 import { cookies, headers } from 'next/headers';
+import type { NextRequest } from 'next/server';
 import type { SessionUser } from './auth';
 
 function neonEnv(): { baseUrl: string; secret: string } {
@@ -62,11 +64,45 @@ function getSessionReader(): NeonAuthServer {
   return sessionReader;
 }
 
-// Uncached: the SDK's 5-minute signed cookie copy would keep a signed-out or revoked session alive.
-export async function readNeonSession(): Promise<SessionUser | null> {
-  const { data, error } = await getSessionReader().getSession({ query: { disableCookieCache: 'true' } });
+const UNCACHED = { query: { disableCookieCache: 'true' } } as const;
+
+type SessionResult = Awaited<ReturnType<NeonAuthServer['getSession']>>;
+
+function toSessionUser({ data, error }: SessionResult): SessionUser | null {
   // Status and code only: the upstream message is not ours to log.
   if (error) throw new Error(`Neon session read failed (${error.status} ${error.code})`);
   const user = data?.user;
   return user ? { id: user.id, email: user.email ?? null } : null;
+}
+
+// Uncached: the SDK's 5-minute signed cookie copy would keep a signed-out or revoked session alive.
+export async function readNeonSession(): Promise<SessionUser | null> {
+  return toSessionUser(await getSessionReader().getSession(UNCACHED));
+}
+
+export type ProxyCookie = { name: string; value: string; options: CookieOptions };
+
+// The proxy's uncached read (src/lib/session-middleware.ts, for /login): next/headers is not the
+// request there, so the context reads the NextRequest and collects cookie writes for the proxy to
+// put on whichever response it returns. One reader per request: the collected cookies are per request.
+export async function readNeonSessionFromRequest(
+  request: NextRequest,
+): Promise<{ user: SessionUser | null; cookies: ProxyCookie[] }> {
+  const { baseUrl, secret } = neonEnv();
+  const written: ProxyCookie[] = [];
+  const reader = createAuthServer({
+    baseUrl,
+    cookieSecret: secret,
+    context: () => ({
+      getCookies: () => extractNeonAuthCookies(request.headers),
+      setCookie: (name, value, options) => {
+        written.push({ name, value, options });
+      },
+      getHeader: (name) => request.headers.get(name),
+      getOrigin: () => request.headers.get('origin') || request.nextUrl.origin,
+      getFramework: () => 'nextjs',
+    }),
+  });
+  const user = toSessionUser(await reader.getSession(UNCACHED));
+  return { user, cookies: written };
 }
