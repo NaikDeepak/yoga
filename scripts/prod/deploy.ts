@@ -3,7 +3,8 @@
 //  1. Only from a clean, pushed, up-to-date main; refuses while production has pending migrations
 //     or while CLINIC_PROFILE / LOGIN_PROVIDER is missing from Vercel Production.
 //  2. Builds from a temporary worktree of HEAD — no .env, so local values can't leak into the build.
-//  3. Promotes the new deployment (needed after any earlier rollback), smoke-tests the live domain,
+//     `--skip-domain`: the build never takes the live domain by itself.
+//  3. Promotes the new deployment (this is what makes it live), smoke-tests the live domain,
 //     and rolls back to the previous deployment on any failure.
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -65,7 +66,8 @@ async function main() {
   const problems = releaseProblems(gitState());
   if (problems.length) fail(`Refusing to deploy:\n  - ${problems.join('\n  - ')}`);
 
-  // Without it the build fails closed (see src/clinics); catch it here, before a 15-minute Vercel build.
+  // Without them the build / the running site fails closed (see src/clinics, src/lib/login-provider);
+  // catch it here, before a 15-minute Vercel build.
   const envLs = vercel('env ls production');
   for (const name of missingRequiredEnv(envLs, ['CLINIC_PROFILE', 'LOGIN_PROVIDER'])) {
     fail(`Refusing to deploy: ${name} is not set in Vercel Production (\`vercel env add ${name} production\`).`);
@@ -91,21 +93,21 @@ async function main() {
     // JSON on stdout (logs go to stderr), so the URL is read from a structure, not scraped from text.
     let stdout = '';
     try {
-      stdout = vercel('deploy --prod --yes --format=json', dir, DEPLOY_TIMEOUT_MS);
+      stdout = vercel('deploy --prod --skip-domain --yes --format=json', dir, DEPLOY_TIMEOUT_MS);
     } catch (e) {
-      // Failed builds never go live, but a timed-out one may still finish and take the domain.
+      // --skip-domain: a failed or timed-out build never goes live by itself; nothing to roll back yet.
       throw new Error(`vercel deploy failed or timed out:\n${cliError(e)}\n` +
-        `  If a new deployment still went live and misbehaves: vercel rollback ${previous} --yes`);
+        `  Production is unchanged (still ${previous}); a build that finishes later stays unpromoted.`);
     }
     const deployment = deploymentUrlFromCli(stdout);
     if (!deployment || deployment === site) {
-      // A --prod build may already be serving the domain, so put the previous one back.
+      // Nothing was promoted, but if the CLI output was unusable and the domain moved anyway, put the previous one back.
       console.error(`\n✖ Deploy did not report a deployment URL. Rolling back to ${previous}…`);
       vercel(`rollback ${previous} --yes`, undefined, SWITCH_TIMEOUT_MS);
       throw new Error('Rolled back. Check the Vercel dashboard for the deployment.');
     }
     console.log(`Built:    ${deployment}`);
-    // Needed after an earlier rollback; otherwise the --prod build is usually live already (Vercel answers 409).
+    // The build was held back with --skip-domain, so this is what makes it live (409 only if it somehow already is).
     try {
       vercel(`promote ${deployment} --yes`, undefined, SWITCH_TIMEOUT_MS);
     } catch (e) {

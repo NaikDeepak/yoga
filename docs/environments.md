@@ -155,7 +155,7 @@ npm run db:migrate:prod    # only if pending; asks you to type "migrate prod"
 npm run deploy:prod        # build → promote → smoke test → auto-rollback on failure
 ```
 Both `:prod` write scripts refuse unless you're on a clean, pushed, up-to-date `main`, and
-`deploy:prod` refuses while migrations are pending. Then log in on the live site and click through.
+`deploy:prod` refuses while migrations are pending or `CLINIC_PROFILE` / `LOGIN_PROVIDER` is missing from Vercel Production. It builds with `--skip-domain`, so a new build never goes live until `vercel promote` and the smoke test pass; if the CLI dies mid-build, production is still the previous deployment. Then log in on the live site and click through.
 
 ## Debug with real data (careful)
 ```bash
@@ -169,7 +169,7 @@ Every change made there changes real client records. Needs the real Supabase log
 | Live site 500 on every page, log says *"Your project's URL and Key are required"* | Supabase login vars missing in Vercel **Production** env; add them, redeploy |
 | New deploy not showing after a manual rollback | `vercel promote <deployment-url>` (`deploy:prod` does this) |
 | Need the previous version back | `vercel rollback <previous-deployment-url> --yes` |
-| `deploy:prod` stopped after "Built:" without a smoke-test result | The new build may be live untested: check `/login`, `/api/ping` and an unknown `/s/<token>` by hand, roll back if any fails |
+| `deploy:prod` stopped after "Built:" without a smoke-test result | The build is not live (`--skip-domain`); check the Vercel dashboard, then re-run `deploy:prod` (or `vercel promote <url>` and check `/login`, `/api/ping`, an unknown `/s/<token>` by hand) |
 | `db:migrate:prod` / `deploy:prod` refuse | Follow the listed reasons (switch to `main`, commit, `git pull`, push via PR) |
 | "Generate AI" fails with *GEMINI_API_KEY is not set* | Add `GEMINI_API_KEY` in Vercel Production, deploy |
 | Posture / flexibility buttons missing on the live site | `FEATURE_POSTURE=true` in Vercel Production, deploy |
