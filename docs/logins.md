@@ -3,11 +3,14 @@
 Each clinic's staff logins live in that clinic's own Neon database (Neon's managed login). Nobody can sign up
 on the site. Deepak creates every login and resets every password, from the terminal on his Mac.
 
-**Which clinics use this today**
-- **Sunrise preview** (`sunrise-preview`): yes.
-- **Pawar** (`pawar`): not yet. Pawar still logs in through Supabase until the switch-over. Until then, manage
-  Pawar logins in the Supabase dashboard (Authentication → Users). After the switch-over, use the commands below
-  with `--clinic pawar`.
+**Clinic names to use with `--clinic`**
+
+| `--clinic` | Clinic | Site | Uses these commands? |
+|---|---|---|---|
+| `pawar` | Pawar Yoga Therapy (real clinic) | https://yoga-ten-tau.vercel.app | After the switch-over. Until then, manage Pawar logins in the Supabase dashboard (Authentication → Users). |
+| `sunrise-preview` | Sunrise Physio, preview (made up, for testing) | https://yoga-sunrise-preview.vercel.app | Yes, now. |
+
+The real Sunrise clinic gets its own name (`sunrise`) when it's set up in Part 2.
 
 Run every command in the `yoga` folder. Passwords are asked on screen, and nothing shows while you type. They
 are never printed, saved, or sent anywhere except to Neon. Never paste a password or a key into a chat.
@@ -47,9 +50,13 @@ npm run reset-password -- --clinic <clinic> --email <your admin email>
 4. Type the new password twice, at least 8 characters.
 5. You should see: `password set for <your email>`.
 
-Example (Sunrise preview):
+Examples:
 
 ```
+# Pawar (after the switch-over)
+npm run reset-password -- --clinic pawar --email deep.naik@gmail.com
+
+# Sunrise preview
 npm run reset-password -- --clinic sunrise-preview --email deep.naik@gmail.com
 ```
 
@@ -70,9 +77,13 @@ npm run create-login -- --clinic <clinic> --email <staff email>
 4. Give the staff member their email and password in person or by phone. Don't send it by WhatsApp or email.
 5. Ask them to sign in once on their phone while you're there.
 
-Example:
+Examples:
 
 ```
+# Pawar (after the switch-over)
+npm run create-login -- --clinic pawar --email new.staff@example.com
+
+# Sunrise preview
 npm run create-login -- --clinic sunrise-preview --email new.staff@example.com
 ```
 
@@ -90,6 +101,16 @@ npm run create-login -- --clinic <clinic> --email <staff email> --reset
 2. Type the **new password** for the staff member, twice.
 3. You should see: `password reset for <staff email>`.
 
+Examples:
+
+```
+# Pawar (after the switch-over)
+npm run create-login -- --clinic pawar --email staff@example.com --reset
+
+# Sunrise preview
+npm run create-login -- --clinic sunrise-preview --email deep.naik+test@gmail.com --reset
+```
+
 The staff member can sign in with the new password straight away.
 
 ---
@@ -98,6 +119,16 @@ The staff member can sign in with the new password straight away.
 
 ```
 npm run login-smoke -- --clinic <clinic> --email <a test login>
+```
+
+Examples:
+
+```
+# Pawar (after the switch-over)
+npm run login-smoke -- --clinic pawar --email deep.naik@gmail.com
+
+# Sunrise preview
+npm run login-smoke -- --clinic sunrise-preview --email deep.naik+test@gmail.com
 ```
 
 It asks for the test login's password and prints 7 lines. All should say `PASS`. Any `FAIL` line names the check
