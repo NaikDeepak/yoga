@@ -25,6 +25,11 @@ export function hasEnvVar(vercelEnvLs: string, name: string): boolean {
   return vercelEnvLs.split('\n').some((line) => line.trim().split(/\s+/)[0] === name);
 }
 
+/** Which of the required variables `vercel env ls` does not list. */
+export function missingRequiredEnv(vercelEnvLs: string, names: string[]): string[] {
+  return names.filter((n) => !hasEnvVar(vercelEnvLs, n));
+}
+
 /** Smoke-test paths whose HTTP status didn't match (a path may allow several statuses). */
 export function smokeFailures(
   actual: Record<string, number | undefined>,
@@ -59,7 +64,7 @@ export function deploymentUrlFromCli(stdout: string): string | null {
   }
 }
 
-/** `vercel promote` fails with 409 when the deployment is already live (a --prod build usually is). */
+/** `vercel promote` fails with 409 when the deployment is already live (e.g. a re-run on the current build). */
 export function alreadyLive(promoteError: string): boolean {
   return /already the current production deployment/i.test(promoteError);
 }

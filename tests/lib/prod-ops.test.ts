@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { alreadyLive, deploymentUrlFromCli, hasEnvVar, maskDbUrl, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
+import { alreadyLive, deploymentUrlFromCli, hasEnvVar, maskDbUrl, missingRequiredEnv, pendingMigrations, releaseProblems, smokeFailures } from '@/lib/prod-ops';
 
 const journal = [{ tag: '0000_a', when: 100 }, { tag: '0001_b', when: 200 }, { tag: '0002_c', when: 300 }];
 
@@ -96,5 +96,15 @@ describe('hasEnvVar', () => {
   it('does not match a longer name or a value mention', () => {
     expect(hasEnvVar(' NEXT_CLINIC_PROFILE  Encrypted  Production', 'CLINIC_PROFILE')).toBe(false);
     expect(hasEnvVar('No Environment Variables found for yoga', 'CLINIC_PROFILE')).toBe(false);
+  });
+});
+
+describe('missingRequiredEnv', () => {
+  const ls = ' CLINIC_PROFILE  Encrypted  Production  1d ago\n DATABASE_URL  Encrypted  Production  9d ago';
+  it('names the required variables absent from Vercel Production', () => {
+    expect(missingRequiredEnv(ls, ['CLINIC_PROFILE', 'LOGIN_PROVIDER'])).toEqual(['LOGIN_PROVIDER']);
+  });
+  it('is empty when all are present', () => {
+    expect(missingRequiredEnv(`${ls}\n LOGIN_PROVIDER  Encrypted  Production  1d ago`, ['CLINIC_PROFILE', 'LOGIN_PROVIDER'])).toEqual([]);
   });
 });

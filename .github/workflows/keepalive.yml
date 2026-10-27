@@ -3,7 +3,8 @@ name: Keepalive Cron
 # Backup keepalive, independent of Vercel's own cron (see vercel.json, daily 03:00 UTC).
 # Vercel's free-tier cron has been known to silently skip runs; this GH Actions schedule
 # is a second, differently-timed trigger against the same /api/ping endpoint so a single
-# missed Vercel run doesn't let the Supabase project auto-pause.
+# missed Vercel run doesn't let the Supabase project auto-pause. The Supabase part of the ping runs
+# only while LOGIN_PROVIDER=supabase; on neon it just keeps the Neon database warm.
 on:
   schedule:
     # Runs every 2 days at 04:00 UTC
