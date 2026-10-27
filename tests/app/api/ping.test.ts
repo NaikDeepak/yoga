@@ -57,16 +57,33 @@ describe('GET /api/ping', () => {
     }
   });
 
-  it('with LOGIN_PROVIDER=neon makes no Supabase call and reports auth ok', async () => {
+  it('with LOGIN_PROVIDER=neon and Supabase env still set keeps Supabase alive (rollback stays real)', async () => {
     vi.stubEnv('CRON_SECRET', 's3cret');
     vi.stubEnv('LOGIN_PROVIDER', 'neon');
-    const fetchMock = vi.fn();
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://x.supabase.co');
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon');
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service');
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
     try {
-      const res = await GET(req('Bearer s3cret'));
-      expect(fetchMock).not.toHaveBeenCalled();
-      expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ ok: true, db: true, auth: true });
+      await GET(req('Bearer s3cret'));
+      const urls = fetchMock.mock.calls.map((c) => c[0]);
+      expect(urls).toContain('https://x.supabase.co/auth/v1/settings');
+      expect(urls).toContain('https://x.supabase.co/rest/v1/');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('with LOGIN_PROVIDER=neon and no Supabase env makes no Supabase call', async () => {
+    vi.stubEnv('CRON_SECRET', 's3cret');
+    vi.stubEnv('LOGIN_PROVIDER', 'neon');
+    vi.stubEnv('NEON_AUTH_BASE_URL', 'https://ep-x.neonauth.example/neondb/auth');
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      await GET(req('Bearer s3cret'));
+      expect(fetchMock.mock.calls.map((c) => String(c[0])).filter((u) => u.includes('supabase'))).toEqual([]);
     } finally {
       vi.unstubAllGlobals();
     }

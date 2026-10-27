@@ -103,6 +103,10 @@ add the live domain as a trusted domain on that branch, create the logins, `move
 
 **Roll back to Supabase** (about 5 minutes): set `LOGIN_PROVIDER=supabase` in Vercel Production, then `npm run deploy:prod`.
 The Supabase project and its logins stay untouched until PR-H, so this works at any time before then.
+`/api/ping` keeps pinging Supabase whenever `NEXT_PUBLIC_SUPABASE_URL` is set (even under `LOGIN_PROVIDER=neon`), so it should not pause. Before the rollback deploy:
+(a) if Supabase has been paused anyway, unpause it in the Supabase dashboard first;
+(b) for staff whose language/WhatsApp settings should carry back, run `move-preferences` in reverse
+(`npm run move-preferences -- --from <neon user id> --to <supabase user id>`).
 
 ## Sunrise preview (made-up second clinic, for checking only)
 

@@ -3,10 +3,10 @@ import { sql } from 'drizzle-orm';
 import { safeErrorMessage } from '@/lib/log';
 import { loginProvider } from '@/lib/login-provider';
 
-// Daily cron target. Keeps the production database (Neon) warm and, only while Supabase is the login
-// (LOGIN_PROVIDER=supabase), keeps that project from auto-pausing (free tier pauses after 7 days without
-// database activity, which would take sign-in down). With LOGIN_PROVIDER=neon login lives in the Neon
-// database, so there is no Supabase to ping. Data is on Neon, files on R2 either way.
+// Daily cron target. Keeps the production database (Neon) warm and keeps the Supabase project from
+// auto-pausing (free tier pauses after 7 days without database activity) whenever NEXT_PUBLIC_SUPABASE_URL
+// is set, whichever login provider is active: "roll back to Supabase" must keep working until PR-H retires
+// Supabase. With LOGIN_PROVIDER=neon and no Supabase env, there is nothing to ping. Data is on Neon, files on R2.
 // Vercel cron calls this once a day (see vercel.json) and automatically sends
 // Authorization: Bearer <CRON_SECRET>; the GitHub keepalive workflow sends the same secret.
 // Fails closed: without CRON_SECRET set, every call is refused.
@@ -28,9 +28,7 @@ export async function GET(req: Request) {
 
   // 2. Keep the Supabase login project active — prevent its 7-day auto-pause. Only while it is the login.
   let authOk = true;
-  if (loginProvider() !== 'supabase') {
-    return Response.json({ ok: dbOk, db: dbOk, auth: true }, dbOk ? undefined : { status: 500 });
-  }
+  const supabaseLogin = loginProvider() === 'supabase';
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -78,7 +76,7 @@ export async function GET(req: Request) {
       authOk = false;
       console.error('Supabase PostgREST keepalive skipped: missing SUPABASE_SERVICE_ROLE_KEY env var');
     }
-  } else {
+  } else if (supabaseLogin) {
     authOk = false;
     console.error('Supabase keepalive skipped: missing NEXT_PUBLIC_SUPABASE_URL env var');
   }
