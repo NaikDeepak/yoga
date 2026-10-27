@@ -17,8 +17,9 @@ vi.mock('@/lib/supabase/server', () => ({
 
 const cookieSet = vi.fn();
 const cookieDelete = vi.fn();
+const cookieGetAll = vi.fn(() => [] as { name: string }[]);
 vi.mock('next/headers', () => ({
-  cookies: async () => ({ set: cookieSet, delete: cookieDelete }),
+  cookies: async () => ({ set: cookieSet, delete: cookieDelete, getAll: cookieGetAll }),
 }));
 
 const fd = (entries: Record<string, string>) => {
@@ -90,10 +91,34 @@ describe('neon provider', () => {
     await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
     expect(neonSignOut).toHaveBeenCalled();
   });
-  it('sign-out redirects to /login even when signOut throws', async () => {
+  const jar = [
+    { name: '__Secure-neon-auth.session_token' },
+    { name: '__Secure-neon-auth.local.session_data' },
+    { name: 'NEXT_LOCALE' },
+  ];
+  const expectNeonCookiesCleared = () => {
+    expect(cookieDelete).toHaveBeenCalledTimes(2);
+    expect(cookieDelete).toHaveBeenCalledWith({ name: '__Secure-neon-auth.session_token', path: '/' });
+    expect(cookieDelete).toHaveBeenCalledWith({ name: '__Secure-neon-auth.local.session_data', path: '/' });
+  };
+  it('sign-out failure (throws) clears every neon-auth cookie, not others, then redirects', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
+    cookieGetAll.mockReturnValue(jar);
     neonSignOut.mockRejectedValue(new Error('boom'));
     await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
+    expectNeonCookiesCleared();
+  });
+  it('sign-out failure (error result) clears neon-auth cookies too', async () => {
+    cookieGetAll.mockReturnValue(jar);
+    neonSignOut.mockResolvedValue({ data: null, error: { message: 'down' } });
+    await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
+    expectNeonCookiesCleared();
+  });
+  it('successful sign-out deletes nothing by hand', async () => {
+    cookieGetAll.mockReturnValue(jar);
+    neonSignOut.mockResolvedValue({ data: {}, error: null });
+    await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
+    expect(cookieDelete).not.toHaveBeenCalled();
   });
 });
 

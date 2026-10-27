@@ -61,12 +61,22 @@ export async function signOutAction() {
       break;
     }
     case 'neon': {
-      // Signing out must always land on /login, even if the login service is down.
+      // Signing out must always land on /login. If the login service fails, the browser would keep
+      // its session cookies (a shared phone stays signed in), so drop them ourselves.
+      let ok = false;
       try {
         const { getNeonAuth } = await import('@/lib/neon-auth');
-        await getNeonAuth().signOut();
+        const { error } = await getNeonAuth().signOut();
+        ok = !error;
       } catch (err) {
         console.error('Neon sign-out failed:', safeErrorMessage(err));
+      }
+      if (!ok) {
+        const cookieStore = await cookies();
+        // The SDK names them __Secure-neon-auth.* (it exports no constant for the prefix).
+        for (const { name } of cookieStore.getAll()) {
+          if (name.includes('neon-auth')) cookieStore.delete({ name, path: '/' });
+        }
       }
       break;
     }
