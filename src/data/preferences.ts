@@ -41,3 +41,24 @@ export async function setWhatsappNumber(db: Db, userId: string, mobile: string |
       set: { whatsappNumber: mobile, updatedAt: new Date(getISTDateString()) },
     });
 }
+
+/**
+ * Moves one login's preference row (language, WhatsApp number) to another user id, e.g. when a
+ * clinic's staff get new login ids on a new login provider. One transaction; refuses rather than
+ * merging or overwriting. Returns the number of rows moved (always 1).
+ */
+export async function moveUserPreferences(db: Db, fromUserId: string, toUserId: string): Promise<number> {
+  if (fromUserId === toUserId) throw new Error('--from and --to must differ');
+  return db.transaction(async (tx) => {
+    const hasRow = async (userId: string) =>
+      (await tx.select({ userId: userPreferences.userId }).from(userPreferences).where(eq(userPreferences.userId, userId))).length > 0;
+    if (!(await hasRow(fromUserId))) throw new Error('--from has no preferences row');
+    if (await hasRow(toUserId)) throw new Error('--to already has a preferences row; not overwriting it');
+    const moved = await tx
+      .update(userPreferences)
+      .set({ userId: toUserId, updatedAt: new Date() })
+      .where(eq(userPreferences.userId, fromUserId))
+      .returning({ userId: userPreferences.userId });
+    return moved.length;
+  });
+}

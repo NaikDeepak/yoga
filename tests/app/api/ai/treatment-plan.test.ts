@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Patient } from '@/db/schema';
 
+vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => undefined }) }));
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }));
 vi.mock('@/db/client', () => ({ getDb: vi.fn(() => ({})) }));
 vi.mock('@/data/patients', () => ({ getPatient: vi.fn() }));

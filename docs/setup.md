@@ -72,7 +72,8 @@ Vercel stops pointing the domain at new deployments until one is promoted; `depl
    `DATABASE_URL=<neon url> npx tsx scripts/seed-db.ts` (idempotent upsert).
 2. **R2**: create bucket `patient-files` and an API token with read/write on it → the four `R2_*` vars.
 3. **Supabase (login)**: create a project; Project Settings → API → URL, anon/publishable key, service-role
-   key → the auth vars; create the admin account at `/register`; then disable signups.
+   key → the auth vars; logins are created by Deepak (Supabase dashboard today; `npm run create-login`
+   once the Neon login is live; see `docs/environments.md` → *Neon login*). There is no self-registration page.
 4. `npm run deploy:prod`.
 
 ## Client share links (`APP_URL`)
@@ -133,7 +134,7 @@ WASM runtime is served from our own origin (`public/mediapipe/`, copied from nod
 - [ ] On a phone logged into the clinic's WhatsApp number, the digest opens the "Message yourself" chat
 - [ ] Print view → Save as PDF produces clean A4
 - [ ] Logged-out user hitting /patients is redirected to /login
-- [ ] With signups disabled, /register shows an error instead of creating a user
+- [ ] /register does not exist (404); no one can create their own login
 - [ ] PWA: on Android Chrome, the deployed site offers "Add to Home Screen" / install prompt
 - [ ] PWA: installed icon renders the logo correctly (including the maskable circle/squircle shape)
 - [ ] PWA: launching from the home-screen icon opens standalone (no browser chrome) and the status bar matches the app background
