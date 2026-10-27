@@ -96,11 +96,21 @@ describe('neon provider', () => {
     { name: '__Secure-neon-auth.local.session_data' },
     { name: 'NEXT_LOCALE' },
   ];
+  const expired = { path: '/', expires: new Date(0), secure: true, httpOnly: true, sameSite: 'lax' };
   const expectNeonCookiesCleared = () => {
-    expect(cookieDelete).toHaveBeenCalledTimes(2);
-    expect(cookieDelete).toHaveBeenCalledWith({ name: '__Secure-neon-auth.session_token', path: '/' });
-    expect(cookieDelete).toHaveBeenCalledWith({ name: '__Secure-neon-auth.local.session_data', path: '/' });
+    expect(cookieSet).toHaveBeenCalledTimes(2);
+    expect(cookieSet).toHaveBeenCalledWith('__Secure-neon-auth.session_token', '', expired);
+    expect(cookieSet).toHaveBeenCalledWith('__Secure-neon-auth.local.session_data', '', expired);
+    expect(cookieDelete).not.toHaveBeenCalled();
   };
+  it('the expiring header browsers see carries Secure and a 1970 Expires', async () => {
+    const { ResponseCookies } = await import('next/dist/compiled/@edge-runtime/cookies');
+    const headers = new Headers();
+    new ResponseCookies(headers).set('__Secure-neon-auth.session_token', '', expired as never);
+    const header = headers.get('set-cookie') ?? '';
+    expect(header).toContain('Secure');
+    expect(header).toContain('Expires=Thu, 01 Jan 1970');
+  });
   it('sign-out failure (throws) clears every neon-auth cookie, not others, then redirects', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     cookieGetAll.mockReturnValue(jar);
@@ -119,6 +129,7 @@ describe('neon provider', () => {
     neonSignOut.mockResolvedValue({ data: {}, error: null });
     await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
     expect(cookieDelete).not.toHaveBeenCalled();
+    expect(cookieSet).not.toHaveBeenCalled();
   });
 });
 

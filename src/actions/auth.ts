@@ -73,9 +73,14 @@ export async function signOutAction() {
       }
       if (!ok) {
         const cookieStore = await cookies();
-        // The SDK names them __Secure-neon-auth.* (it exports no constant for the prefix).
+        // Expire with Secure: browsers ignore a Set-Cookie for a __Secure- name without it, and
+        // Next's delete() omits it. SDK cookie prefixes (it exports no constant for them).
         for (const { name } of cookieStore.getAll()) {
-          if (name.includes('neon-auth')) cookieStore.delete({ name, path: '/' });
+          if (name.startsWith('__Secure-neon-auth.') || name.startsWith('neon-auth.')) {
+            cookieStore.set(name, '', {
+              path: '/', expires: new Date(0), secure: true, httpOnly: true, sameSite: 'lax',
+            });
+          }
         }
       }
       break;
