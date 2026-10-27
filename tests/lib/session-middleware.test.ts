@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 // No real auth service: the Neon module and the Supabase client are both mocked.
 const neon = vi.hoisted(() => ({
   middleware: vi.fn(),
-  sdkMiddleware: vi.fn(),
   readNeonSessionFromRequest: vi.fn(),
 }));
 vi.mock('@/lib/neon-auth', () => ({
@@ -39,7 +38,6 @@ describe('updateSession (neon)', () => {
   beforeEach(() => {
     vi.stubEnv('LOCAL_MOCK', 'false');
     vi.stubEnv('LOGIN_PROVIDER', 'neon');
-    neon.middleware.mockReturnValue(neon.sdkMiddleware);
   });
 
   it('matches the SDK session cookie name', async () => {
@@ -91,23 +89,41 @@ describe('updateSession (neon)', () => {
     expect(neon.middleware).not.toHaveBeenCalled();
   });
 
-  it('hands a protected page with a session cookie to the SDK middleware (redirect to /login)', async () => {
-    const sdkResponse = NextResponse.redirect(new URL('http://localhost/login'));
-    neon.sdkMiddleware.mockResolvedValue(sdkResponse);
-    const request = req('/dashboard', NEON_COOKIE);
+  it('reads a protected page uncached and lets a valid user through with refreshed cookies', async () => {
+    neon.readNeonSessionFromRequest.mockResolvedValue({
+      user: { id: 'u1', email: 'a@b.c' },
+      cookies: [{ name: NEON_SESSION_COOKIE, value: 'new', options: { path: '/', secure: true } }],
+    });
+    const request = req('/patients/abc', NEON_COOKIE);
     const res = await updateSession(request);
-    expect(neon.middleware).toHaveBeenCalledWith({ loginUrl: '/login' });
-    expect(neon.sdkMiddleware).toHaveBeenCalledWith(request);
-    expect(res).toBe(sdkResponse);
+    expect(neon.readNeonSessionFromRequest).toHaveBeenCalledWith(request);
+    expect(neon.middleware).not.toHaveBeenCalled();
+    expect(res.status).toBe(200);
+    expect(res.headers.get('location')).toBeNull();
+    expect(res.headers.get('x-middleware-next')).toBe('1');
+    expect(res.cookies.get(NEON_SESSION_COOKIE)?.value).toBe('new');
   });
 
-  it('returns the SDK response for a valid session, refreshed cookies included', async () => {
-    const sdkResponse = NextResponse.next();
-    sdkResponse.headers.append('Set-Cookie', `${NEON_SESSION_COOKIE}=new; Path=/; Secure`);
-    neon.sdkMiddleware.mockResolvedValue(sdkResponse);
-    const res = await updateSession(req('/clients/1', NEON_COOKIE));
-    expect(res).toBe(sdkResponse);
-    expect(res.headers.get('location')).toBeNull();
+  it('sends a revoked session to /login even with a session_data cache cookie, clearing the neon cookies', async () => {
+    neon.readNeonSessionFromRequest.mockResolvedValue({ user: null, cookies: [] });
+    const res = await updateSession(
+      req(
+        '/dashboard',
+        `${NEON_COOKIE}; __Secure-neon-auth.local.session_data=signed-copy; sb-x-auth-token=old`,
+      ),
+    );
+    expect(res.status).toBe(307);
+    expect(location(res)).toBe('/login');
+    expect(neon.middleware).not.toHaveBeenCalled();
+    const setCookie = res.headers.getSetCookie();
+    for (const name of [NEON_SESSION_COOKIE, '__Secure-neon-auth.local.session_data']) {
+      const c = setCookie.find((h) => h.startsWith(`${name}=;`));
+      expect(c).toBeDefined();
+      expect(c).toMatch(/Secure/);
+      expect(c).toMatch(/Expires=Thu, 01 Jan 1970/);
+      expect(c).toMatch(/Path=\//);
+    }
+    expect(setCookie.some((h) => h.startsWith('sb-x-auth-token'))).toBe(false);
   });
 
   it('sends /login with a live session to /dashboard, carrying refreshed cookies', async () => {
@@ -136,7 +152,7 @@ describe('updateSession (neon)', () => {
   });
 
   it('sends a page to /login when the session check throws, logging no token', async () => {
-    neon.sdkMiddleware.mockRejectedValue(new Error('fetch failed'));
+    neon.readNeonSessionFromRequest.mockRejectedValue(new Error('fetch failed'));
     const res = await updateSession(req('/dashboard', NEON_COOKIE));
     expect(res.status).toBe(307);
     expect(location(res)).toBe('/login');
@@ -145,9 +161,9 @@ describe('updateSession (neon)', () => {
   });
 
   it('sends a page to /login when the Neon module cannot be built', async () => {
-    neon.middleware.mockImplementation(() => {
-      throw new Error('NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET must be set');
-    });
+    neon.readNeonSessionFromRequest.mockRejectedValue(
+      new Error('NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET must be set'),
+    );
     const res = await updateSession(req('/dashboard', NEON_COOKIE));
     expect(res.status).toBe(307);
     expect(location(res)).toBe('/login');

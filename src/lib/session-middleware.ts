@@ -78,15 +78,14 @@ export async function updateSession(request: NextRequest) {
   return response;
 }
 
-// The SDK's own middleware is not handed the whole app: it would also guard /s/…, /api/* and the
-// manifest, and it waves its login page through without looking at the session. So:
+// Neon. The SDK's middleware() is not used: it would also guard /s/…, /api/* and the manifest,
+// it waves its login page through without looking, and it answers from a 5-minute signed cookie
+// copy. Layouts don't re-render on client navigation, so this proxy is the only gate for most pages
+// and a revoked or stolen cookie must stop at once.
 // - /api/* and public paths: never checked here (API routes answer their own 401).
-// - protected pages: the SDK middleware. It may answer from its 5-minute signed cookie copy, which
-//   is fine because requireUser re-reads uncached on the page; it refreshes cookies on the response.
-// - /login: an uncached read. A cached "yes" for a revoked session would bounce /login → /dashboard
-//   → requireUser → /login for up to 5 minutes.
-// No session cookie (including requests that carry only old Supabase sb-* cookies) never reaches
-// the auth service.
+// - no session cookie (including requests that carry only old Supabase sb-* cookies): decided
+//   without calling the auth service.
+// - protected pages and /login: an uncached read (one auth round trip per navigation, accepted).
 async function neonSession(request: NextRequest, isApiPath: boolean): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const isLogin = pathname === '/login';
@@ -97,17 +96,31 @@ async function neonSession(request: NextRequest, isApiPath: boolean): Promise<Ne
   }
 
   try {
-    const neon = await import('@/lib/neon-auth');
-    if (!isLogin) return await neon.getNeonAuth().middleware({ loginUrl: '/login' })(request);
-
-    const { user, cookies } = await neon.readNeonSessionFromRequest(request);
-    const response = user ? redirectTo(request, '/dashboard') : NextResponse.next({ request });
+    const { readNeonSessionFromRequest } = await import('@/lib/neon-auth');
+    const { user, cookies } = await readNeonSessionFromRequest(request);
+    let response: NextResponse;
+    if (user) response = isLogin ? redirectTo(request, '/dashboard') : NextResponse.next({ request });
+    else response = isLogin ? NextResponse.next({ request }) : redirectTo(request, '/login');
     for (const { name, value, options } of cookies) response.cookies.set(name, value, options);
+    if (!user) clearNeonCookies(request, response);
     return response;
   } catch (err) {
     // The message only: never the request or its cookies.
     console.error('[proxy] Neon session check failed:', safeErrorMessage(err));
     // Fail closed for pages; /login stays put (a redirect to itself would loop).
     return isLogin ? NextResponse.next({ request }) : redirectTo(request, '/login');
+  }
+}
+
+// A dead session's cookies (token and the 5-minute session_data copy) are dropped so the next
+// request short-circuits. Secure is required: browsers ignore a Set-Cookie for a __Secure- name
+// without it (same as signOutAction in src/actions/auth.ts).
+function clearNeonCookies(request: NextRequest, response: NextResponse): void {
+  for (const { name } of request.cookies.getAll()) {
+    if (name.startsWith('__Secure-neon-auth.') || name.startsWith('neon-auth.')) {
+      response.cookies.set(name, '', {
+        path: '/', expires: new Date(0), secure: true, httpOnly: true, sameSite: 'lax',
+      });
+    }
   }
 }

@@ -51,6 +51,7 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `NEXT_DIST_DIR` | Next.js build folder (`distDir`) | `.next` | never |
 | `APP_URL` | Public site address used in client share links | optional | `https://yoga-ten-tau.vercel.app` |
 | `CLINIC_PROFILE` | Which clinic profile (`src/clinics/`) this deploy shows. Unset or empty in production = build/start throws (fails closed); `deploy:prod` refuses only when the name is not listed in Vercel Production (an empty value then fails the build). Local `next build` / `next start` need it too (in `.env`) | — | required · set for build + runtime (`pawar`) |
+| `LOGIN_PROVIDER` | Which login the app uses: `supabase` or `neon` (mock mode ignores it). **Must be set in every Vercel environment (Production and Preview) before deploying a build from `feat/neon-login` on**: unset or unknown in production = every request 500s, share links included (fails closed, no silent default) | optional (defaults to `supabase` outside production) | required (`supabase` until a clinic is switched to `neon`) |
 | `CRON_SECRET` | The daily `/api/ping` keepalive must send it; without it the route refuses every call (fails closed). Same value as the `CRON_SECRET` GitHub repo secret | — | required · sensitive (set 2026-10-08) |
 | `PROD_DATABASE_URL`, `PROD_SITE_URL` | Used **only** by the `npm run *:prod` scripts on your Mac | Neon pooled URL / live URL | not used |
 
