@@ -2,6 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { requireUser, getSessionUser } from '@/lib/auth';
 import { MOCK_USER, MOCK_SESSION_COOKIE } from '@/lib/local-mock';
 
+// Never import '@/lib/neon-auth' statically here: the factory records whether auth.ts loaded it.
+const neon = vi.hoisted(() => ({ loaded: false, readNeonSession: vi.fn() }));
+vi.mock('@/lib/neon-auth', () => {
+  neon.loaded = true;
+  return { readNeonSession: neon.readNeonSession };
+});
+
 vi.mock('next/navigation', () => ({
   redirect: vi.fn((url: string) => { throw new Error(`REDIRECT:${url}`); }),
 }));
@@ -56,11 +63,6 @@ describe('getSessionUser', () => {
     cookiesSpy.mockRestore();
     vi.unstubAllEnvs();
   });
-  it('throws for the neon provider until it is wired', async () => {
-    vi.stubEnv('LOGIN_PROVIDER', 'neon');
-    await expect(getSessionUser()).rejects.toThrow('Neon login is not wired yet');
-    vi.unstubAllEnvs();
-  });
 
   describe('local mock mode', () => {
     beforeEach(() => vi.stubEnv('LOCAL_MOCK', 'true'));
@@ -92,5 +94,40 @@ describe('requireUser (local mock mode)', () => {
     cookieGet.mockReturnValue(undefined);
     await expect(requireUser()).rejects.toThrow('REDIRECT:/login');
     expect(getUser).not.toHaveBeenCalled();
+  });
+});
+
+// Runs last: once a neon case loads the module it stays cached, so the
+// "not loaded" checks above (mock + supabase) are only meaningful before this.
+describe('neon provider', () => {
+  it('did not load the neon module for the mock or supabase providers', () => {
+    expect(neon.loaded).toBe(false);
+  });
+
+  describe('with LOGIN_PROVIDER=neon', () => {
+    beforeEach(() => vi.stubEnv('LOGIN_PROVIDER', 'neon'));
+    afterEach(() => vi.unstubAllEnvs());
+
+    it('returns what readNeonSession resolves, loading the module lazily', async () => {
+      neon.readNeonSession.mockResolvedValue({ id: 'n1', email: 'staff@example.com' });
+      expect(await getSessionUser()).toStrictEqual({ id: 'n1', email: 'staff@example.com' });
+      expect(neon.loaded).toBe(true);
+      expect(getUser).not.toHaveBeenCalled();
+    });
+    it('requireUser redirects to /login when there is no neon session', async () => {
+      neon.readNeonSession.mockResolvedValue(null);
+      await expect(requireUser()).rejects.toThrow('REDIRECT:/login');
+    });
+    it('returns null and logs a safe message when the read throws (outage → /login, not 500)', async () => {
+      const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+      neon.readNeonSession.mockRejectedValue(new Error('fetch failed'));
+      expect(await getSessionUser()).toBeNull();
+      expect(err).toHaveBeenCalledWith('Neon session read failed:', 'fetch failed');
+      // Proves the message goes through safeErrorMessage, not err.message.
+      neon.readNeonSession.mockRejectedValue(new Error('Failed query: select … params: patient-123'));
+      expect(await getSessionUser()).toBeNull();
+      expect(err).toHaveBeenLastCalledWith('Neon session read failed:', 'Database error');
+      err.mockRestore();
+    });
   });
 });

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createSupabaseServerClient } from './supabase/server';
 import { MOCK_SESSION_COOKIE, MOCK_USER } from './local-mock';
 import { loginProvider } from './login-provider';
+import { safeErrorMessage } from './log';
 
 export type SessionUser = { id: string; email: string | null };
 
@@ -20,8 +21,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
       const { data: { user } } = await supabase.auth.getUser();
       return user ? { id: user.id, email: user.email ?? null } : null;
     }
-    case 'neon':
-      throw new Error('Neon login is not wired yet');
+    case 'neon': {
+      // Lazy: the SDK must not load under the mock or supabase providers (or in vitest).
+      // A login-service outage sends people to /login instead of a 500.
+      try {
+        const { readNeonSession } = await import('@/lib/neon-auth');
+        return await readNeonSession();
+      } catch (err) {
+        console.error('Neon session read failed:', safeErrorMessage(err));
+        return null;
+      }
+    }
   }
 }
 

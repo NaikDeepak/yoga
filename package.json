@@ -31,6 +31,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1068.0",
     "@electric-sql/pglite": "^0.5.2",
     "@mediapipe/tasks-vision": "^1.0.1",
+    "@neondatabase/auth": "0.7.0-beta",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.1",
     "class-variance-authority": "^0.7.1",
