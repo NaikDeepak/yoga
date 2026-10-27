@@ -54,7 +54,7 @@ Every file of a client is stored under `patients/<client id>/` in R2.
 | `LOGIN_PROVIDER` | Which login the app uses: `supabase` or `neon` (mock mode ignores it). **Must be set in every Vercel environment (Production and Preview) before deploying a build from `feat/neon-login` on**: unset or unknown in production = every request 500s, share links included (fails closed, no silent default) | optional (defaults to `supabase` outside production) | required (`supabase` until a clinic is switched to `neon`) |
 | `NEON_AUTH_BASE_URL` | Neon Auth endpoint of this clinic's Neon branch (Neon → Auth). Not a secret, but never print it next to a secret. Only read when `LOGIN_PROVIDER=neon` | only to run with `LOGIN_PROVIDER=neon` | required when `LOGIN_PROVIDER=neon` |
 | `NEON_AUTH_COOKIE_SECRET` | Signs the session cookie, at least 32 chars (`openssl rand -base64 32`). Only read when `LOGIN_PROVIDER=neon` | same | required · sensitive when `LOGIN_PROVIDER=neon` |
-| `CRON_SECRET` | The daily `/api/ping` keepalive must send it; without it the route refuses every call (fails closed). Same value as the `CRON_SECRET` GitHub repo secret | — | required · sensitive (set 2026-10-08) |
+| `CRON_SECRET` | The daily `/api/ping` keepalive must send it; without it the route refuses every call (fails closed). Same value as the `CRON_SECRET` GitHub repo secret. `deploy:prod` needs it locally too (shell, `.env`, or `~/.config/clinics/pawar.env`, chmod 600) for its smoke test | — | required · sensitive (set 2026-10-08) |
 | `PROD_DATABASE_URL`, `PROD_SITE_URL` | Used **only** by the `npm run *:prod` scripts on your Mac | Neon pooled URL / live URL | not used |
 
 The e2e `phone-modules-off` project starts a second `next dev` on port 3101 with `LOCAL_DB_DIR=.local-db-modules-off`, `NEXT_DIST_DIR=.next-modules-off` and every `FEATURE_*=false` (both folders are gitignored); a shared folder would clash on `.next/` and corrupt PGlite.
@@ -200,7 +200,7 @@ npm run db:migrate:prod    # only if pending; asks you to type "migrate prod"
 npm run deploy:prod        # build → promote → smoke test → auto-rollback on failure
 ```
 Both `:prod` write scripts refuse unless you're on a clean, pushed, up-to-date `main`, and
-`deploy:prod` refuses while migrations are pending or `CLINIC_PROFILE` / `LOGIN_PROVIDER` is missing from Vercel Production. It builds with `--skip-domain`, so a new build never goes live until `vercel promote` and the smoke test pass; if the CLI dies mid-build, production is still the previous deployment. Then log in on the live site and click through.
+`deploy:prod` refuses while migrations are pending, `CLINIC_PROFILE` / `LOGIN_PROVIDER` is missing from Vercel Production, or `CRON_SECRET` isn't set locally (shell, `.env`, or `~/.config/clinics/pawar.env`). Its smoke test calls `/api/ping` with that secret and needs 200, which means the database and the active login (Supabase or Neon) both answer. It builds with `--skip-domain`, so a new build never goes live until `vercel promote` and the smoke test pass; if the CLI dies mid-build, production is still the previous deployment. Then log in on the live site and click through.
 
 ## Debug with real data (careful)
 ```bash

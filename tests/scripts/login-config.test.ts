@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, writeFileSync, chmodSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { readClinicLoginConfig } from '../../scripts/clinic/login-config';
+import { readClinicLoginConfig, readClinicSecret } from '../../scripts/clinic/login-config';
 
 const GOOD = [
   'NEON_AUTH_BASE_URL=https://ep-x.neonauth.example/neondb/auth/',
@@ -61,5 +61,24 @@ describe('readClinicLoginConfig', () => {
 
   it('refuses a slug that is not a plain name', () => {
     expect(() => readClinicLoginConfig('../etc/passwd', dir)).toThrow(/clinic slug/);
+  });
+});
+
+describe('readClinicSecret', () => {
+  it('reads one key without needing the login keys', () => {
+    write('CRON_SECRET= cron-value \n');
+    expect(readClinicSecret('sunrise', 'CRON_SECRET', dir)).toBe('cron-value');
+  });
+
+  it('returns undefined for a missing or empty key', () => {
+    write('CRON_SECRET=\n');
+    expect(readClinicSecret('sunrise', 'CRON_SECRET', dir)).toBeUndefined();
+    expect(readClinicSecret('sunrise', 'OTHER', dir)).toBeUndefined();
+  });
+
+  it('refuses a missing file and a group/world-readable file, like the login settings', () => {
+    expect(() => readClinicSecret('sunrise', 'CRON_SECRET', dir)).toThrow(/not found/);
+    write('CRON_SECRET=cron-value', 0o644);
+    expect(() => readClinicSecret('sunrise', 'CRON_SECRET', dir)).toThrow(/chmod 600/);
   });
 });
