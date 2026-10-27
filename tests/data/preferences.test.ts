@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createTestDb } from '../helpers/db';
-import { getUserLanguage, setUserLanguage, getWhatsappNumber, setWhatsappNumber } from '@/data/preferences';
+import { getUserLanguage, setUserLanguage, getWhatsappNumber, setWhatsappNumber, moveUserPreferences } from '@/data/preferences';
 import type { Db } from '@/db/types';
 
 let db: Db;
@@ -62,5 +62,33 @@ describe('setWhatsappNumber', () => {
 
   it('rejects a malformed number at the DB check constraint', async () => {
     await expect(setWhatsappNumber(db, 'user-123', '12345')).rejects.toThrow();
+  });
+});
+
+describe('moveUserPreferences', () => {
+  it('moves the language and WhatsApp number to the new user id and returns 1', async () => {
+    await setUserLanguage(db, 'old-id', 'mr');
+    await setWhatsappNumber(db, 'old-id', '9876543210');
+    expect(await moveUserPreferences(db, 'old-id', 'new-id')).toBe(1);
+    expect(await getUserLanguage(db, 'new-id')).toBe('mr');
+    expect(await getWhatsappNumber(db, 'new-id')).toBe('9876543210');
+    expect(await getWhatsappNumber(db, 'old-id')).toBeNull();
+  });
+
+  it('refuses when the old id has no row', async () => {
+    await expect(moveUserPreferences(db, 'old-id', 'new-id')).rejects.toThrow(/--from/);
+  });
+
+  it('refuses when the new id already has a row, and leaves both rows alone', async () => {
+    await setUserLanguage(db, 'old-id', 'mr');
+    await setUserLanguage(db, 'new-id', 'en');
+    await expect(moveUserPreferences(db, 'old-id', 'new-id')).rejects.toThrow(/--to/);
+    expect(await getUserLanguage(db, 'old-id')).toBe('mr');
+    expect(await getUserLanguage(db, 'new-id')).toBe('en');
+  });
+
+  it('refuses the same id twice', async () => {
+    await setUserLanguage(db, 'same', 'mr');
+    await expect(moveUserPreferences(db, 'same', 'same')).rejects.toThrow(/differ/);
   });
 });
