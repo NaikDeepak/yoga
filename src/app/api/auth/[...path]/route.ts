@@ -10,6 +10,8 @@ const notFound = () => new Response('Not found', { status: 404 });
 function forward(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE') {
   return async (req: Request, ctx: Ctx): Promise<Response> => {
     const { path } = await ctx.params;
+    // Next sends HEAD to the GET export; check the method actually forwarded, not the export's name.
+    if (req.method !== method) return notFound();
     if (loginProvider() !== 'neon' || !isAllowedAuthRoute(method, path)) return notFound();
     // Lazy: the SDK is only loaded (and its env required) when Neon login is on.
     const { getNeonAuth } = await import('@/lib/neon-auth');

@@ -60,4 +60,13 @@ describe('/api/auth/[...path]', () => {
     }
     expect(handlerFactory).not.toHaveBeenCalled();
   });
+
+  it('answers 404 to HEAD sent to the GET export, without calling Neon', async () => {
+    vi.stubEnv('LOGIN_PROVIDER', 'neon');
+    const res = await route.GET(new Request('http://localhost/api/auth/get-session', { method: 'HEAD' }), {
+      params: Promise.resolve({ path: ['get-session'] }),
+    });
+    expect(res.status).toBe(404);
+    expect(neonHandler).not.toHaveBeenCalled();
+  });
 });
