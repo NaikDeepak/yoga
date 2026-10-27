@@ -90,6 +90,25 @@ describe('runCreateLogin', () => {
   });
 });
 
+describe('runCreateLogin error paths', () => {
+  const opts = (neon: ReturnType<typeof fakeNeon>, reset: boolean) =>
+    ({ fetch: neon.fetch, config, email: 'staff@example.com', reset, adminPassword: ADMIN_PW, newPassword: NEW_PW });
+
+  it('a 200 with an unreadable body gets a fixed message, no body snippet', async () => {
+    const neon = fakeNeon({ 'POST /neondb/auth/admin/create-user': () => new Response('<html>leaky-snippet</html>', { status: 200 }) });
+    const err = await runCreateLogin(opts(neon, false)).catch((e) => e);
+    expect(err.message).toBe('create-user answered 200 with an unreadable body');
+    const list = fakeNeon({ 'GET /neondb/auth/admin/list-users': () => new Response('not json', { status: 200 }) });
+    await expect(runCreateLogin(opts(list, true))).rejects.toThrow('list-users answered 200 with an unreadable body');
+  });
+
+  it('reset refuses with a distinct message when more than one login matches', async () => {
+    const neon = fakeNeon({ 'GET /neondb/auth/admin/list-users': () => json(200, { users: [{ id: 'a', email: 'staff@example.com' }, { id: 'b', email: 'STAFF@example.com' }], total: 2 }) });
+    await expect(runCreateLogin(opts(neon, true))).rejects.toThrow('more than one login matches staff@example.com');
+    expect(neon.calls.some((c) => c.url.pathname.endsWith('set-user-password'))).toBe(false);
+  });
+});
+
 describe('createLoginMain', () => {
   function harness(neon = fakeNeon(), answers = [ADMIN_PW, NEW_PW, NEW_PW]) {
     const out: string[] = [];

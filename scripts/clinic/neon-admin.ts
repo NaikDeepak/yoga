@@ -41,6 +41,14 @@ export async function runCreateLogin(o: CreateLoginOptions): Promise<string> {
     if (res.status !== 200) throw new AdminApiError(step, res.status, await errorCode(res));
     return res;
   };
+  // A 200 whose body isn't JSON gets a fixed message: no body snippet reaches stderr.
+  const readJson = async <T>(step: string, res: Response): Promise<T> => {
+    try {
+      return (await res.json()) as T;
+    } catch {
+      throw new Error(`${step} answered 200 with an unreadable body`);
+    }
+  };
 
   const signIn = await call('admin sign-in', 'sign-in/email', { email: o.config.adminEmail, password: o.adminPassword });
   const pairs = setCookiePairs(signIn);
@@ -49,7 +57,7 @@ export async function runCreateLogin(o: CreateLoginOptions): Promise<string> {
 
   if (!o.reset) {
     const res = await call('create-user', 'admin/create-user', { email: o.email, password: o.newPassword, name: o.email, role: 'user' });
-    const id = ((await res.json()) as { user?: { id?: string } }).user?.id;
+    const id = (await readJson<{ user?: { id?: string } }>('create-user', res)).user?.id;
     if (!id) throw new Error('create-user answered 200 without a user id');
     return `created ${o.email} id=${id}`;
   }
@@ -57,9 +65,10 @@ export async function runCreateLogin(o: CreateLoginOptions): Promise<string> {
   // list-users defaults to a "contains" search, so ask for an exact match and re-check it here.
   const query = new URLSearchParams({ filterField: 'email', filterOperator: 'eq', filterValue: o.email, limit: '2' });
   const list = await call('list-users', `admin/list-users?${query}`);
-  const users = ((await list.json()) as { users?: { id: string; email: string }[] }).users ?? [];
+  const users = (await readJson<{ users?: { id: string; email: string }[] }>('list-users', list)).users ?? [];
   const matches = users.filter((u) => u.email?.toLowerCase() === o.email);
-  if (matches.length !== 1) throw new Error(`no login found for ${o.email}`);
+  if (matches.length === 0) throw new Error(`no login found for ${o.email}`);
+  if (matches.length > 1) throw new Error(`more than one login matches ${o.email}`);
   await call('set-user-password', 'admin/set-user-password', { userId: matches[0].id, newPassword: o.newPassword });
   return `password reset for ${o.email}`;
 }
