@@ -27,7 +27,8 @@
     "dev:prod-db": "./scripts/run-prod.sh",
     "create-login": "tsx scripts/clinic/create-login.ts",
     "move-preferences": "tsx scripts/clinic/move-preferences.ts",
-    "login-smoke": "tsx scripts/clinic/login-smoke.ts"
+    "login-smoke": "tsx scripts/clinic/login-smoke.ts",
+    "reset-password": "tsx scripts/clinic/reset-password.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",
