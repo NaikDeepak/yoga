@@ -88,4 +88,45 @@ describe('GET /api/ping', () => {
       vi.unstubAllGlobals();
     }
   });
+
+  describe('Neon login health (LOGIN_PROVIDER=neon)', () => {
+    const BASE = 'https://ep-x.neonauth.example/neondb/auth';
+    beforeEach(() => {
+      vi.stubEnv('CRON_SECRET', 's3cret');
+      vi.stubEnv('LOGIN_PROVIDER', 'neon');
+    });
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('GETs {NEON_AUTH_BASE_URL}/ok and reports auth ok on 200', async () => {
+      vi.stubEnv('NEON_AUTH_BASE_URL', `${BASE}/`);
+      const fetchMock = vi.fn().mockResolvedValue(new Response('{"ok":true}', { status: 200 }));
+      vi.stubGlobal('fetch', fetchMock);
+      const res = await GET(req('Bearer s3cret'));
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(fetchMock.mock.calls[0][0]).toBe(`${BASE}/ok`);
+      expect(fetchMock.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true, db: true, auth: true });
+    });
+
+    it('a missing NEON_AUTH_BASE_URL fails auth with a 500', async () => {
+      vi.stubEnv('NEON_AUTH_BASE_URL', '');
+      const fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+      const res = await GET(req('Bearer s3cret'));
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(res.status).toBe(500);
+      expect(await res.json()).toMatchObject({ db: true, auth: false });
+    });
+
+    it('a non-200 answer or a network error fails auth with a 500', async () => {
+      vi.stubEnv('NEON_AUTH_BASE_URL', BASE);
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('x', { status: 503 })));
+      const down = await GET(req('Bearer s3cret'));
+      expect(down.status).toBe(500);
+      expect(await down.json()).toMatchObject({ auth: false });
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('boom')));
+      expect((await GET(req('Bearer s3cret'))).status).toBe(500);
+    });
+  });
 });
