@@ -44,6 +44,18 @@ describe('getSessionUser', () => {
     getUser.mockResolvedValue({ data: { user: { id: 'u2' } } });
     expect(await getSessionUser()).toStrictEqual({ id: 'u2', email: null });
   });
+  it('reads cookies before the provider check, even when it throws', async () => {
+    const spy = vi.fn();
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('LOGIN_PROVIDER', '');
+    cookieGet.mockImplementation(spy);
+    const headers = await import('next/headers');
+    const cookiesSpy = vi.spyOn(headers, 'cookies');
+    await expect(getSessionUser()).rejects.toThrow('LOGIN_PROVIDER must be set');
+    expect(cookiesSpy).toHaveBeenCalled();
+    cookiesSpy.mockRestore();
+    vi.unstubAllEnvs();
+  });
   it('throws for the neon provider until it is wired', async () => {
     vi.stubEnv('LOGIN_PROVIDER', 'neon');
     await expect(getSessionUser()).rejects.toThrow('Neon login is not wired yet');

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+vi.mock('next/headers', () => ({ cookies: async () => ({ get: () => undefined }) }));
 vi.mock('@/lib/supabase/server', () => ({ createSupabaseServerClient: vi.fn() }));
 vi.mock('@/db/client', () => ({ getDb: vi.fn(() => ({})) }));
 vi.mock('@/data/patients', () => ({ searchPatients: vi.fn() }));

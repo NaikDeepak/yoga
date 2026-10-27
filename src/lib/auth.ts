@@ -8,9 +8,11 @@ export type SessionUser = { id: string; email: string | null };
 
 // Non-redirecting session check for API route handlers (they return 401 JSON).
 export async function getSessionUser(): Promise<SessionUser | null> {
+  // Reading cookies first makes every caller dynamic before the provider check,
+  // so builds don't prerender auth'd pages; a missing LOGIN_PROVIDER still fails closed at runtime.
+  const cookieStore = await cookies();
   switch (loginProvider()) {
     case 'mock': {
-      const cookieStore = await cookies();
       return cookieStore.get(MOCK_SESSION_COOKIE) ? MOCK_USER : null;
     }
     case 'supabase': {
