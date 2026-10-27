@@ -3,7 +3,7 @@
 Read this before touching code — it replaces scanning `src/`.
 
 ## System shape
-Next.js 15 App Router monolith on Vercel. Production: **Neon** = Postgres, **Cloudflare R2** = files (private bucket `patient-files`), **Supabase = Auth only**. Local dev: mock mode (PGlite + mock login + local files). See `docs/environments.md`.
+Next.js 16 App Router monolith on Vercel. Production: **Neon** = Postgres, **Cloudflare R2** = files (private bucket `patient-files`), **Supabase = Auth only**. Local dev: mock mode (PGlite + mock login + local files). See `docs/environments.md`.
 Drizzle ORM everywhere; tests run the same migrations on in-memory PGlite.
 
 **Local mock mode** (`LOCAL_MOCK=true`, dev-only): file-backed PGlite at `.local-db/` (migrated +
@@ -118,7 +118,7 @@ Request flow: page (server component) → `src/actions/*` ('use server': auth �
 | `src/app/api/telemetry/capture` | POST capture-counter batches from `PostureCapture` (`navigator.sendBeacon` on page hide/close and on save, via `components/posture/capture-telemetry.ts`): session required (401), ≤10 KB (413), zod allow-list (400), recorded under today's IST date (204). Shown at Settings → Posture capture health (`/settings/capture`, card only when posture is enabled) | — |
 | `src/app/error.tsx`, `global-error.tsx`, `not-found.tsx` | app-wide bilingual error / not-found pages via `ErrorScreen` (no locale context needed; never shows the raw error text, shows the digest as a reference that matches the server log; global-error renders its own `<html>`) | — |
 | `src/app/s/[token]/*` | **public** client page for a share link (no login; `isPublicPath`): resolves the token (any kind) and renders `ExercisesBody` (+ `CheckinForm`), `PostureReportBody` or `ProgressReportBody` (progress links stay live with posture off; only the posture part hides); unknown/expired/revoked → one bilingual `not-found`; counts views (preview bots and reloads within 30 min skipped) | — |
-| `src/middleware.ts` | session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
+| `src/proxy.ts` | (Next 16 `proxy`, formerly middleware) session refresh; redirects unauthenticated → /login (`/api/*` exempt — handlers return 401 JSON) | — |
 | `src/app/robots.ts` | `robots.txt`: allows everything on purpose — a disallowed share link could still be listed from a link alone; `/s/*` relies on its `noindex` header. Public in `auth-paths` | `robots` (default) |
 | `src/app/manifest.ts` | PWA web-app manifest (installable on Android: standalone display, icons in `public/icons/`) | `manifest` (default) |
 

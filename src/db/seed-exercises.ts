@@ -74,19 +74,19 @@ function isSameValue(a: unknown, b: unknown): boolean {
 
 export async function seedExercises(db: Db, options: SeedOptions = {}): Promise<void> {
   const imageMap = options.imageMap ?? DEFAULT_IMAGE_MAP;
-  const seedDir = options.seedDir ?? path.resolve(process.cwd(), 'src/db/seed-data');
+  const seedDir = options.seedDir ?? path.resolve(/*turbopackIgnore: true*/ process.cwd(), 'src/db/seed-data');
 
   try {
     const seedItems: SeedExercise[] = [];
     for (const file of SEED_FILES) {
-      const jsonPath = path.join(seedDir, file);
-      if (!fs.existsSync(jsonPath)) {
+      const jsonPath = path.join(/*turbopackIgnore: true*/ seedDir, file);
+      if (!fs.existsSync(/*turbopackIgnore: true*/ jsonPath)) {
         console.warn(`Seed JSON file not found at: ${jsonPath}`);
         continue;
       }
       let data: { exercises: SeedExercise[] };
       try {
-        data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8')) as { exercises: SeedExercise[] };
+        data = JSON.parse(fs.readFileSync(/*turbopackIgnore: true*/ jsonPath, 'utf-8')) as { exercises: SeedExercise[] };
       } catch (parseError) {
         throw new Error(`Invalid JSON in seed file ${file}: ${String(parseError)}`);
       }

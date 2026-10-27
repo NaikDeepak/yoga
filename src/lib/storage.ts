@@ -22,7 +22,7 @@ export { r2Storage };
 // directly. URLs are not signed or access-controlled — dev-only by design
 // (isLocalMock() refuses to run in production).
 export function localFileStorage(baseDir: string = LOCAL_UPLOADS_DIR): FileStorage {
-  const root = resolve(baseDir);
+  const root = resolve(/*turbopackIgnore: true*/ baseDir);
   // Storage keys are relative POSIX paths; anything that resolves outside
   // baseDir (absolute paths, .. segments, backslashes) is rejected.
   const safeTarget = (path: string): string => {
@@ -48,7 +48,7 @@ export function localFileStorage(baseDir: string = LOCAL_UPLOADS_DIR): FileStora
     async removePrefix(prefix) {
       assertClientFolder(prefix);
       const target = safeTarget(prefix);
-      const entries = await readdir(target, { recursive: true, withFileTypes: true }).catch((err: NodeJS.ErrnoException) => {
+      const entries = await readdir(/*turbopackIgnore: true*/ target, { recursive: true, withFileTypes: true }).catch((err: NodeJS.ErrnoException) => {
         if (err.code === 'ENOENT') return []; // no folder: nothing to delete
         throw err;
       });
