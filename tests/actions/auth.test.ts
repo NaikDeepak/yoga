@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { signInAction, signOutAction, signUpAction } from '@/actions/auth';
+import * as actions from '@/actions/auth';
+import { signInAction, signOutAction } from '@/actions/auth';
 import { MOCK_SESSION_COOKIE } from '@/lib/local-mock';
 
 vi.mock('next/navigation', () => ({
@@ -9,7 +10,6 @@ vi.mock('next/navigation', () => ({
 const auth = {
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
-  signUp: vi.fn(),
 };
 vi.mock('@/lib/supabase/server', () => ({
   createSupabaseServerClient: async () => ({ auth }),
@@ -56,18 +56,49 @@ describe('signOutAction', () => {
   });
 });
 
-describe('signUpAction', () => {
-  it('registers and redirects to /login with registered flag', async () => {
-    auth.signUp.mockResolvedValue({ error: null });
-    await expect(signUpAction(fd({ email: 'new@b.c', password: 'secret' })))
-      .rejects.toThrow('REDIRECT:/login?registered=1');
-    expect(auth.signUp).toHaveBeenCalledWith({ email: 'new@b.c', password: 'secret' });
+const neonSignIn = vi.fn();
+const neonSignOut = vi.fn();
+vi.mock('@/lib/neon-auth', () => ({
+  getNeonAuth: () => ({ signIn: { email: neonSignIn }, signOut: neonSignOut }),
+}));
+
+describe('neon provider', () => {
+  beforeEach(() => vi.stubEnv('LOGIN_PROVIDER', 'neon'));
+  afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
+
+  it('signs in with the credentials and redirects to /dashboard', async () => {
+    neonSignIn.mockResolvedValue({ data: {}, error: null });
+    await expect(signInAction(fd({ email: 'a@b.c', password: 'secret' })))
+      .rejects.toThrow('REDIRECT:/dashboard');
+    expect(neonSignIn).toHaveBeenCalledWith({ email: 'a@b.c', password: 'secret' });
+    expect(auth.signInWithPassword).not.toHaveBeenCalled();
   });
-  it('redirects back to /register with the error message on failure', async () => {
-    auth.signUp.mockResolvedValue({ error: { message: 'User already registered' } });
-    await expect(signUpAction(fd({ email: 'dup@b.c', password: 'secret' })))
-      .rejects.toThrow(`REDIRECT:/register?error=${encodeURIComponent('User already registered')}`);
+  it('an error result redirects to /login?error=1', async () => {
+    neonSignIn.mockResolvedValue({ data: null, error: { message: 'bad' } });
+    await expect(signInAction(fd({ email: 'a@b.c', password: 'wrong' })))
+      .rejects.toThrow('REDIRECT:/login?error=1');
   });
+  it('a thrown error redirects to /login?error=1 and never logs the password', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    neonSignIn.mockRejectedValue(new Error('network down'));
+    await expect(signInAction(fd({ email: 'a@b.c', password: 'hunter2-secret' })))
+      .rejects.toThrow('REDIRECT:/login?error=1');
+    expect(JSON.stringify(spy.mock.calls)).not.toContain('hunter2-secret');
+  });
+  it('sign-out calls signOut and redirects to /login', async () => {
+    neonSignOut.mockResolvedValue({ data: {}, error: null });
+    await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
+    expect(neonSignOut).toHaveBeenCalled();
+  });
+  it('sign-out redirects to /login even when signOut throws', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    neonSignOut.mockRejectedValue(new Error('boom'));
+    await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
+  });
+});
+
+it('self-registration is gone', () => {
+  expect('signUpAction' in actions).toBe(false);
 });
 
 describe('local mock mode', () => {
@@ -93,11 +124,5 @@ describe('local mock mode', () => {
     await expect(signOutAction()).rejects.toThrow('REDIRECT:/login');
     expect(cookieDelete).toHaveBeenCalledWith({ name: MOCK_SESSION_COOKIE, path: '/' });
     expect(auth.signOut).not.toHaveBeenCalled();
-  });
-
-  it('short-circuits sign-up to the login page', async () => {
-    await expect(signUpAction(fd({ email: 'x@y.z', password: 'pw' })))
-      .rejects.toThrow('REDIRECT:/login?registered=1');
-    expect(auth.signUp).not.toHaveBeenCalled();
   });
 });

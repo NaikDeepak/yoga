@@ -4,7 +4,6 @@ import { isPublicPath } from '@/lib/auth-paths';
 describe('isPublicPath', () => {
   it('login and next internals are public', () => {
     expect(isPublicPath('/login')).toBe(true);
-    expect(isPublicPath('/register')).toBe(true);
     expect(isPublicPath('/_next/static/x.js')).toBe(true);
     expect(isPublicPath('/favicon.ico')).toBe(true);
   });
@@ -13,6 +12,9 @@ describe('isPublicPath', () => {
   });
   it('robots.txt is public (crawlers have no login cookie; it tells them to stay out)', () => {
     expect(isPublicPath('/robots.txt')).toBe(true);
+  });
+  it('self-registration is gone: /register is protected', () => {
+    expect(isPublicPath('/register')).toBe(false);
   });
   it('app pages are protected', () => {
     expect(isPublicPath('/')).toBe(false);

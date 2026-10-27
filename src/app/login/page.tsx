@@ -10,8 +10,8 @@ import { clinicProfile, clinicName } from '@/clinics';
 
 export default async function LoginPage({
   searchParams,
-}: { searchParams: Promise<{ error?: string; registered?: string }> }) {
-  const { error, registered } = await searchParams;
+}: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
   const locale = await getLocale();
   const t = getTranslations(locale);
   return (
@@ -28,11 +28,6 @@ export default async function LoginPage({
           {error && (
             <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {t.auth.wrongCredentials}
-            </p>
-          )}
-          {registered === '1' && (
-            <p className="rounded-md bg-primary/10 px-3 py-2 text-sm text-primary">
-              {t.auth.accountRegistered}
             </p>
           )}
           <form action={signInAction} className="space-y-4">

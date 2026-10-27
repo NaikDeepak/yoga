@@ -16,7 +16,7 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/login';
       return NextResponse.redirect(url);
     }
-    if (hasSession && (pathname === '/login' || pathname === '/register')) {
+    if (hasSession && pathname === '/login') {
       const url = request.nextUrl.clone();
       url.pathname = '/dashboard';
       return NextResponse.redirect(url);
@@ -56,7 +56,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If user is logged in and visits login or register, redirect to dashboard
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
+  if (user && request.nextUrl.pathname === '/login') {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     const redirectResponse = NextResponse.redirect(url);
