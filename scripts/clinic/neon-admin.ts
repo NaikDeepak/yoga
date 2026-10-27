@@ -3,7 +3,9 @@
 //   POST admin/create-user        { email, password, name, role }  -> { user: { id } }
 //   GET  admin/list-users?filterField=email&filterOperator=eq&filterValue=<email> -> { users, total }
 //   POST admin/set-user-password  { userId, newPassword }          -> { status: true }
-// Prints only "created <email> id=<id>" / "password reset for <email>"; errors carry status + code only.
+//   POST admin/revoke-user-sessions { userId }                     -> { success: true } (reset signs the person out)
+//   POST sign-out (with the admin cookies, always, when done)
+// Prints only "created <email> id=<id>" / "password reset for <email>; signed out everywhere"; errors carry status + code only.
 import { newPasswordProblem, parseClinicArgs, type Ask, type Print } from './cli';
 import { cookieHeader, errorCode, setCookiePairs } from './http';
 import type { ClinicLoginConfig } from './login-config';
@@ -55,22 +57,34 @@ export async function runCreateLogin(o: CreateLoginOptions): Promise<string> {
   if (pairs.size === 0) throw new Error('admin sign-in returned no session cookie');
   cookies = cookieHeader(pairs);
 
-  if (!o.reset) {
-    const res = await call('create-user', 'admin/create-user', { email: o.email, password: o.newPassword, name: o.email, role: 'user' });
-    const id = (await readJson<{ user?: { id?: string } }>('create-user', res)).user?.id;
-    if (!id) throw new Error('create-user answered 200 without a user id');
-    return `created ${o.email} id=${id}`;
-  }
+  try {
+    if (!o.reset) {
+      const res = await call('create-user', 'admin/create-user', { email: o.email, password: o.newPassword, name: o.email, role: 'user' });
+      const id = (await readJson<{ user?: { id?: string } }>('create-user', res)).user?.id;
+      if (!id) throw new Error('create-user answered 200 without a user id');
+      return `created ${o.email} id=${id}`;
+    }
 
-  // list-users defaults to a "contains" search, so ask for an exact match and re-check it here.
-  const query = new URLSearchParams({ filterField: 'email', filterOperator: 'eq', filterValue: o.email, limit: '2' });
-  const list = await call('list-users', `admin/list-users?${query}`);
-  const users = (await readJson<{ users?: { id: string; email: string }[] }>('list-users', list)).users ?? [];
-  const matches = users.filter((u) => u.email?.toLowerCase() === o.email);
-  if (matches.length === 0) throw new Error(`no login found for ${o.email}`);
-  if (matches.length > 1) throw new Error(`more than one login matches ${o.email}`);
-  await call('set-user-password', 'admin/set-user-password', { userId: matches[0].id, newPassword: o.newPassword });
-  return `password reset for ${o.email}`;
+    // list-users defaults to a "contains" search, so ask for an exact match and re-check it here.
+    const query = new URLSearchParams({ filterField: 'email', filterOperator: 'eq', filterValue: o.email, limit: '2' });
+    const list = await call('list-users', `admin/list-users?${query}`);
+    const users = (await readJson<{ users?: { id: string; email: string }[] }>('list-users', list)).users ?? [];
+    const matches = users.filter((u) => u.email?.toLowerCase() === o.email);
+    if (matches.length === 0) throw new Error(`no login found for ${o.email}`);
+    if (matches.length > 1) throw new Error(`more than one login matches ${o.email}`);
+    await call('set-user-password', 'admin/set-user-password', { userId: matches[0].id, newPassword: o.newPassword });
+    // set-user-password does not end existing sessions; without this a signed-in phone keeps working.
+    try {
+      await call('revoke-user-sessions', 'admin/revoke-user-sessions', { userId: matches[0].id });
+    } catch (e) {
+      const status = e instanceof AdminApiError ? `${e.status}${e.code ? ` ${e.code}` : ''}` : 'no answer';
+      throw new Error(`password changed but sessions not revoked (${status})`);
+    }
+    return `password reset for ${o.email}; signed out everywhere`;
+  } finally {
+    // The admin session only lives in memory here; end it on Neon too. Errors are ignored.
+    await call('admin sign-out', 'sign-out', {}).catch(() => undefined);
+  }
 }
 
 export interface CreateLoginMainDeps {

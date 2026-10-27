@@ -99,7 +99,9 @@ npm run create-login -- --clinic <clinic> --email <staff email> --reset
 
 1. Type **your admin password**.
 2. Type the **new password** for the staff member, twice.
-3. You should see: `password reset for <staff email>`.
+3. You should see: `password reset for <staff email>; signed out everywhere`. The person is signed out on every phone and
+   computer and must sign in again with the new password. If you see anything else, the sign-out may not have happened:
+   see *Common messages*.
 
 Examples:
 
@@ -139,8 +141,8 @@ and the status code. Send that line to Claude.
 ## Remove a login (someone leaves)
 
 There is no command for this yet. Ask Claude to remove it. Claude deletes the user through Neon's API, and
-that also signs them out everywhere. Until it's removed, you can lock the person out by resetting their password
-(above) and not telling them the new one.
+that also signs them out everywhere. Until it's removed, resetting their password (above) locks them out at once
+(it signs them out everywhere too); just don't tell them the new one. Still ask Claude to delete the login.
 
 ---
 
@@ -153,4 +155,5 @@ that also signs them out everywhere. Until it's removed, you can lock the person
 | `no login found for <email>` | No login with that exact email | Check the spelling, or create it |
 | `No input` | You pressed Ctrl-D, or closed the prompt | Run the command again |
 | `INVALID_ORIGIN` | The site address isn't trusted by the clinic's Neon login | Ask Claude |
+| `password changed but sessions not revoked (<status> <code>)` | The new password is set, but the person may still be signed in on a device | Run the same `--reset` command again; if it repeats, ask Claude to delete the login |
 | The reset email never arrives | Neon's shared email is slow or blocked | Wait 10 minutes and check spam, then ask Claude |

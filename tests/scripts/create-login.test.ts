@@ -22,6 +22,8 @@ function fakeNeon(override: Partial<Record<string, (c: Call) => Response>> = {})
     'POST /neondb/auth/admin/create-user': () => json(200, { user: { id: 'user-42', email: 'staff@example.com' } }),
     'GET /neondb/auth/admin/list-users': () => json(200, { users: [{ id: 'user-42', email: 'staff@example.com' }], total: 1 }),
     'POST /neondb/auth/admin/set-user-password': () => json(200, { status: true }),
+    'POST /neondb/auth/admin/revoke-user-sessions': () => json(200, { success: true }),
+    'POST /neondb/auth/sign-out': () => json(200, { success: true }),
     ...override,
   };
   const fetch = async (input: string | URL | Request, init: RequestInit = {}) => {
@@ -51,12 +53,34 @@ describe('runCreateLogin', () => {
   it('with reset, looks the user up by exact email and sets the password', async () => {
     const neon = fakeNeon();
     const line = await runCreateLogin({ fetch: neon.fetch, config, email: 'staff@example.com', reset: true, adminPassword: ADMIN_PW, newPassword: NEW_PW });
-    expect(line).toBe('password reset for staff@example.com');
+    expect(line).toBe('password reset for staff@example.com; signed out everywhere');
     const list = neon.calls[1];
     expect(list.url.searchParams.get('filterField')).toBe('email');
     expect(list.url.searchParams.get('filterOperator')).toBe('eq');
     expect(list.url.searchParams.get('filterValue')).toBe('staff@example.com');
     expect(neon.calls[2].body).toEqual({ userId: 'user-42', newPassword: NEW_PW });
+    expect(neon.calls[3].url.href).toBe(`${BASE}/admin/revoke-user-sessions`);
+    expect(neon.calls[3].method).toBe('POST');
+    expect(neon.calls[3].body).toEqual({ userId: 'user-42' });
+  });
+
+  it('reset fails loudly when the sessions could not be revoked, never claiming success', async () => {
+    const neon = fakeNeon({ 'POST /neondb/auth/admin/revoke-user-sessions': () => json(403, { code: 'FORBIDDEN' }) });
+    await expect(runCreateLogin({ fetch: neon.fetch, config, email: 'staff@example.com', reset: true, adminPassword: ADMIN_PW, newPassword: NEW_PW }))
+      .rejects.toThrow('password changed but sessions not revoked (403 FORBIDDEN)');
+  });
+
+  it('signs the admin session out after success and after failure', async () => {
+    const ok = fakeNeon();
+    await runCreateLogin({ fetch: ok.fetch, config, email: 'staff@example.com', reset: false, adminPassword: ADMIN_PW, newPassword: NEW_PW });
+    const out = ok.calls.at(-1)!;
+    expect(out.url.href).toBe(`${BASE}/sign-out`);
+    expect(out.method).toBe('POST');
+    expect(out.headers.get('cookie')).toBe('__Secure-x.session_token=adm-tok; x.session_data=adm-cache');
+    const bad = fakeNeon({ 'POST /neondb/auth/admin/create-user': () => json(403, { code: 'X' }), 'POST /neondb/auth/sign-out': () => json(500, {}) });
+    await expect(runCreateLogin({ fetch: bad.fetch, config, email: 'staff@example.com', reset: false, adminPassword: ADMIN_PW, newPassword: NEW_PW }))
+      .rejects.toThrow('create-user failed: status 403 X');
+    expect(bad.calls.at(-1)!.url.pathname).toBe('/neondb/auth/sign-out');
   });
 
   it('reset refuses when no user has exactly that email', async () => {
